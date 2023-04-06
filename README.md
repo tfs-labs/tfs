@@ -96,5 +96,6 @@ xx:Program version number
 
 ### The official website link and the official Twitter link are as follows：
 
-![TFSC](https://www.tfsc.io/)
-![Twitter](https://mobile.twitter.com/TFSCChain)
+[TFSC](https://www.tfsc.io/)
+
+[Twitter](https://mobile.twitter.com/TFSCChain)
