@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+import "sign.proto";
+
+
+
+message CTxPrevOutput{
+  string hash = 1;
+  uint32 n = 2;
+}
+
+message CTxInput{
+  repeated CTxPrevOutput prevOut = 1;
+  CSign vinSign = 2;
+  uint32 sequence = 3;
+}
+
+message CTxOutput{
+  int64 value = 1;
+  string addr = 2;
+}
+
+message CTxUtxo{
+  repeated string owner = 1;
+  repeated CTxInput vin = 2;
+  repeated CTxOutput vout = 3;
+  repeated CSign multiSign = 4;
+}
+
+message CTransaction{
+  uint32 version            = 1;
+  uint64 time               = 2;
+  uint32 n                  = 3;
+  string identity           = 4;
+  string hash               = 5;
+
+  CTxUtxo utxo              = 6;
+
+  string type               = 7;
+  uint32 consensus          = 8;
+  
+  uint32 txType             = 9;
+
+  string data               = 10;
+  string info               = 11;
+
+  repeated CSign verifySign = 12;
+
+  string reserve0           = 13;
+  string reserve1           = 14;
+}

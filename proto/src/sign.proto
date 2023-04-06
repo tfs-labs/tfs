@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+
+
+message CSign{
+    bytes sign = 1;
+    bytes pub = 2;
+}

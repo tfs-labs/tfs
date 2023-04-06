@@ -1,0 +1,217 @@
+syntax = "proto3";
+
+import "ca_protomsg.proto";
+
+message GetSDKReq
+{
+    string   version = 1; //version
+    repeated string address = 2; //Account address
+    string toaddr = 3 ; //
+    uint64 time               = 4;
+    uint64  type = 5;
+}
+
+message SDKUtxo
+{
+	string address = 1;
+    string hash = 2; // utxo hash
+    uint64 value = 3; // utxo value
+    uint32 n = 4; // utxo n
+}
+
+message SDKBonusamout
+{
+    string address = 1;
+    uint64 invest_amount = 2;
+}
+
+message SDKBonusTx
+{
+    string address = 1;
+    string utxo = 2;
+    bytes tx = 3;  
+}
+
+message SDKPledgeTx
+{
+    string address = 1;
+    bytes utxo = 2;
+    bytes tx =3;
+}
+
+message Claimtx
+{
+    string address = 1;
+    string utxo = 2;
+    bytes tx =3;
+}
+
+
+message AbnormalAddrCnt
+{
+    string address = 1;
+    uint64 count = 2;
+}
+
+message SDKClaimBonusTx
+{
+    string address = 1;
+    string utxo = 2;
+    bytes tx = 3;  
+}
+
+//node
+message SDKNodeInfo 
+{
+  bytes pub = 1;
+  bytes sign = 2;
+  bytes identity = 3;
+  string base58addr = 4;
+  string public_base58addr = 5;
+  string name	= 6;
+   string logo	= 7;
+  uint32 listen_ip = 8;
+  uint32 listen_port = 9;
+  uint32 public_ip = 10;
+  uint32 public_port = 11;  
+  uint32 height = 12;
+  uint64 time_stamp = 13;
+  string version = 14;
+}
+
+
+message GetSDKAck
+{
+
+    string version = 1; //version
+    int32 code = 2; //Error code
+    string message = 3; //Returns an error message
+    
+
+    uint64 height = 4;  
+
+
+    repeated SDKUtxo utxos = 5; 
+
+    repeated bytes    blocks  = 6;
+
+   // repeated CBlock  blocks = 6;    //---> checkTxTimeOut
+
+    repeated SDKBonusamout bonusamount = 8;  //--->VerifyBonusAddr
+
+
+    repeated SDKPledgeTx pledgetx = 9;  //---->ca_algorithm::GetPledgeTimeByAddr
+    repeated string pledgeaddr = 10;   //---->IsQualifiedToUnstake
+    repeated string pledgeutxo = 11;   //---->IsQualifiedToUnstake
+
+
+    repeated string BonusAddr = 12;   //----->CheckInvestQualification
+    repeated string InvestedAddr = 13; //---->CheckInvestQualification
+    repeated SDKBonusTx  BonusTx = 14;          //--->IsQualifiedToDisinvest
+    repeated string  BonusAddrInvestUtxos = 15;  //----->IsQualifiedToDisinvest
+
+  
+    repeated Claimtx claimtx = 16;   //---->CreateBonusTransaction
+    repeated  AbnormalAddrCnt  abnormaladdr_cnt= 17;
+
+    uint64   M2 = 18;
+    uint64  Totalinvest = 19;
+    uint64  TotalAwardAmount = 20;
+
+    repeated  SDKNodeInfo   nodeinfo = 22; 
+    uint64  type = 23;
+
+    repeated SDKClaimBonusTx  ClaimBonusTx = 24;//----->CreateBonusTransaction
+    repeated string ClaimInvestedAddr = 26; //---->CalcBonusValue
+    repeated string  ClaimBonusAddrInvestUtxos = 27;  //----->CalcBonusValue
+}
+
+
+
+
+
+
+message SDKNormalTransactionReq
+{
+    string   version = 1; // version
+    repeated string address = 2; //Account address
+}
+
+message SDKNormalTransactionAck
+{
+    string version = 1; //version
+    int32 code = 2; //Error code
+    string message = 3; //Returns an error message
+    
+    uint64 height = 4; 
+
+    repeated SDKUtxo utxos = 5; //utxo All UTXOs under the account  ---->FindUtxo
+
+    repeated bytes  blocks = 6;    //---> checkTxTimeOut
+
+   repeated SDKBonusamout bonusamount = 7;  //--->VerifyBonusAddr
+
+
+    repeated SDKPledgeTx pledgetx = 8;  //---->ca_algorithm::GetPledgeTimeByAddr
+    
+    repeated string pledgeaddr = 9;   //---->IsQualifiedToUnstake
+    repeated string pledgeutxo = 10;   //---->IsQualifiedToUnstake
+    repeated  SDKNodeInfo   nodeinfo = 11; 
+}
+//-----------------------------------------------------------------------//
+
+
+
+
+enum vrfAgentType
+{
+    vrfAgentType_defalut = 0; 
+    vrfAgentType_vrf  = 1;
+    vrfAgentType_local = 2;
+    vrfAgentType_unknow =3;
+};
+
+message SDKContractDeployReq
+{
+    string   version = 1;       //version
+    string   address = 2;       //Account address
+    string   deploy_amount = 3;  
+    int32    nContractType  = 4;
+    string  pubStr = 5;
+}
+
+message SDKContractDeployAck
+{
+   
+    string version = 1; //version
+    int32 code = 2; //Error code
+    string message = 3; //Returns an error message
+    bytes tx = 4;
+    uint64  top = 5;
+    uint64  ip  = 6;
+    uint64  port = 7;
+    vrfAgentType isNeedAgent_flag = 8;
+    Vrf      vrfInfo              = 9;
+}
+
+
+message SDKContractCallReq
+{
+    string   version = 1;        //version
+    string   fromaddr = 2;       //Account address
+    string   toaddr = 3;         
+    uint64   deploy_strTxHash = 4; 
+}
+
+message SDKContractCallAck
+{
+    string version = 1; //version
+    int32 code = 2; //Error code
+    string message = 3; //Returns an error message
+    bytes tx = 4;
+    uint64  top = 5;
+    uint64  ip  = 6;
+    uint64  port = 7;
+    vrfAgentType isNeedAgent_flag = 8;
+    Vrf      vrfInfo              = 9;
+}

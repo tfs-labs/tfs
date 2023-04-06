@@ -1,0 +1,16 @@
+syntax                  = "proto3";
+
+/**********Generic message body********/
+
+
+message CommonMsg 
+{
+  string version         = 1;
+  string type           = 2;
+  int32 encrypt         = 3;
+  int32 compress        = 4;
+  bytes data            = 5;
+  bytes pub    = 6;
+  bytes sign = 7;
+  bytes key = 8;
+}

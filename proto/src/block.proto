@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+import "transaction.proto";
+import "ca_protomsg.proto";
+import "sign.proto";
+
+
+message CBlock {
+  uint32 version = 1;
+  uint64 time = 2;
+  string hash = 3;
+  string prevHash = 4;
+  int64 height = 5;
+  string merkleRoot = 6;
+  repeated CTransaction txs = 7;
+  string data = 8;
+  string info = 9;
+
+  repeated CSign sign = 10;
+
+  string reserve0 = 11;
+  string reserve1 = 12;
+}
+
+
+message BlockMsg
+{
+  string    version            = 1;
+  sint32    code               = 2;
+  string    message            = 3;
+  uint64    time               = 4;
+  bytes     block              = 5;
+  repeated  Vrf  vrfInfo       = 6;
+}
+
+
+message SeekPreHashByHightReq
+{
+    string                  self_node_id         = 1;
+    string                  msg_id               = 2;
+    uint64 		              seek_height          = 3;
+}
+
+message SeekPreHashByHightAck
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    uint64 		              seek_height        = 3;
+    repeated string         prehashes          = 4;
+}

@@ -1,0 +1,74 @@
+# Prerequisites
+.d
+
+# Compiled Object files
+.slo
+.lo
+.o
+.obj
+/objs
+/crypto/cryptopp
+/hiredis
+/rocksdb
+/protobuf
+/boost
+
+# Precompiled Headers
+.gch
+.pch
+
+# Compiled Dynamic libraries
+.so
+.dylib
+.dll
+
+# Fortran module files
+.mod
+.smod
+
+# Compiled Static libraries
+.lai
+.la
+.a
+.lib
+
+# Executables
+.exe
+.out
+.app
+ebpc*
+/tools/protoc/.libs/lt-protoc
+/tools/protoc/protoc
+/proto/python/
+
+# Dir
+/.vscode
+/data*
+/cert
+/logs
+/data.db
+/build*
+# File
+*.json
+log.txt
+block_*.*
+net.conf
+config.json*
+trans.sh
+blockdata.txt
+proto/ca_protomsg.pb.cc.rej
+copy_ebpc.sh
+.fuse_hidden0000672900000002
+/libfmt
+/spdlog
+/.cache
+/.ccls-cache
+/compile_commands.json
+.idea/
+/evmone
+/.hunter
+cmake-build-debug/
+/libevent
+openssl/
+./CMakeLists.txt
+tfs_v0.2.0_53faf1c_devnet

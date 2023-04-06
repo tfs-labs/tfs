@@ -1,0 +1,177 @@
+syntax = "proto3";
+
+
+/*************************************Fast synchronization*************************************/
+
+
+message FastSyncGetHashReq
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+    uint64                 start_height       = 3;
+    uint64                 end_height         = 4;
+}
+
+message FastSyncBlockHashs
+{
+    uint64 height = 1;
+    repeated string hashs = 2;
+};
+
+message FastSyncGetHashAck
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+    uint64                 node_block_height  = 3;
+    repeated FastSyncBlockHashs  hashs = 4;
+}
+
+message FastSyncGetBlockReq
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+    repeated FastSyncBlockHashs  hashs = 3;
+}
+
+message FastSyncBlock
+{
+    uint64 height = 1;
+    repeated bytes         blocks             = 2;
+}
+
+message FastSyncGetBlockAck
+{
+    string                 msg_id             = 1;
+    repeated FastSyncBlock         blocks             = 2;
+}
+
+
+/*************************************New synchronization*************************************/
+
+message SyncGetSumHashReq
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+    uint64 		           start_height	      = 3;
+    uint64 		           end_height		  = 4;
+}
+
+message SyncSumHash
+{
+    uint64 		           start_height	      = 1;
+    uint64 		           end_height		  = 2;
+    string                 hash               = 3;
+}
+
+message SyncGetSumHashAck
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    uint64 		            node_block_height  = 3;
+    repeated SyncSumHash    sync_sum_hashes    = 4;
+}
+
+message SyncGetHeightHashReq
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    uint64 		            start_height       = 3;
+    uint64 		            end_height		   = 4;
+}
+
+message SyncGetHeightHashAck
+{
+    int32                   code               = 1;
+    string                  self_node_id       = 2;
+    string                  msg_id             = 3;
+    repeated string         block_hashes       = 4;
+}
+
+message SyncGetBlockReq
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    repeated string         block_hashes       = 3;
+}
+
+message SyncGetBlockAck
+{
+    string                  msg_id             = 1;
+    repeated bytes          blocks             = 2;
+}
+
+message SyncFromZeroSumHash
+{
+    uint64                 height              = 1;
+    string                 hash                = 2;
+}
+
+message SyncFromZeroGetSumHashReq
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+    repeated uint64 	   heights	          = 3;
+}
+
+message SyncFromZeroGetSumHashAck
+{
+    int32                           code               = 1;
+    string                          self_node_id       = 2;
+    string                          msg_id             = 3;
+    repeated SyncFromZeroSumHash    sum_hashes         = 4;
+}
+
+message SyncFromZeroGetBlockReq
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    uint64                  height             = 3;
+}
+
+message SyncFromZeroGetBlockAck
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    uint64                  height             = 3;
+    repeated bytes          blocks             = 4;
+}
+
+
+/*************************************Handle missing block related protocols*************************************/
+
+
+message GetBlockByUtxoReq
+{
+    string                  addr                = 1;
+    string                  utxo                = 2;
+    string                  msg_id              = 3;
+}
+
+message GetBlockByUtxoAck
+{
+    string                  addr                = 1;
+    string                  utxo                = 2;
+    string                  msg_id              = 3;
+    bytes                   block_raw           = 4;
+}
+
+message HashType
+{
+    string      hash                = 1;
+    bool        tx_or_block         = 2;
+    bytes       block_raw           = 3; 
+}
+
+message GetBlockByHashReq
+{
+    string                           addr                = 1;
+    repeated HashType                missingHashs        = 2;
+    string                           msg_id              = 3;
+}
+
+message GetBlockByHashAck
+{
+    string                           addr                = 1;
+    repeated HashType                blocks              = 2;
+    string                           msg_id              = 3;
+}

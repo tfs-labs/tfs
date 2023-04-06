@@ -1,0 +1,127 @@
+syntax                  = "proto3";
+
+
+message PrintMsgReq 
+{
+    string data         = 1;
+    int32  type         = 2;
+}
+
+
+//node
+message NodeInfo 
+{
+  bytes pub = 1;
+  bytes sign = 2;
+  bytes identity = 3;
+  string base58addr = 4;
+  string public_base58addr = 5;
+	string name	= 6;
+	string logo	= 7;
+  uint32 listen_ip = 8;
+  uint32 listen_port = 9;
+  uint32 public_ip = 10;
+  uint32 public_port = 11;  
+  uint32 height = 12;
+  uint64 time_stamp = 13;
+  string version = 14;
+}
+
+
+message RegisterNodeReq 
+{
+  NodeInfo mynode = 1;
+  bool     is_get_nodelist = 2;
+  string msg_id            = 3;
+}
+
+
+message RegisterNodeAck 
+{
+  repeated NodeInfo nodes = 1;
+  string msg_id           = 2;
+  uint32 from_ip          = 3;
+  uint32 from_port        = 4;
+  uint32 fd               = 5;
+}
+
+
+message SyncNodeReq 
+{
+  string ids = 1;
+  //repeated NodeInfo nodes = 2;  
+  string msg_id           = 3;
+}
+
+
+message SyncNodeAck 
+{
+  repeated NodeInfo nodes = 1;   
+  string ids              = 2;
+  string msg_id           = 3;
+}
+
+message BroadcastMsgReq
+{
+  NodeInfo from = 1;
+  bytes data = 2;
+  uint32 priority = 3;
+}
+
+message PingReq 
+{
+  string id        = 1;
+}
+
+message PongReq 
+{
+  string id        = 1;
+}
+
+
+message EchoReq 
+{
+  string id = 1;
+  string message = 2;
+}
+
+message EchoAck 
+{
+  string id = 1;
+  string message = 2;
+}
+
+message NodeHeightChangedReq
+{
+  string id = 1;
+  uint32 height = 2;
+}
+
+message NodeSign{
+  bytes sign = 1;
+  bytes pub = 2;
+}
+
+message NodeBase58AddrChangedReq
+{
+  string version = 1;
+  NodeSign oldSign = 2;
+  NodeSign newSign = 3;
+}
+
+
+message TestNetAck
+{
+  string data = 1;
+  string hash = 2;
+  uint64 time = 3;
+  string id   = 4;
+}
+
+message TestNetReq
+{
+  string data = 1;
+  string hash = 2;
+  uint64 time = 3;
+  string id   = 4;
+}

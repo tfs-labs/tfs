@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+
+/*************************************Transaction-related agreements*************************************/
+import "sign.proto";
+
+
+message SignNodeMsg
+{
+	string id   = 1; //id Signing node ID
+	bytes sign	= 2; //Sign node signature information
+	bytes pub   = 3; //The signer's public key
+}
+
+message TxMsgInfo
+{
+  uint32    type = 1; //Transaction flow type
+  bytes     tx = 2; //Transaction Information
+  uint64    height = 3; //The height value of the initiating transaction node
+}
+
+//PC-side transaction information body
+message TxMsgReq
+{
+  string       version              = 1; //version					
+  TxMsgInfo    txMsgInfo            = 2;
+  Vrf      vrfInfo              = 3;
+  Vrf      txvrfInfo              = 4;
+	repeated SignNodeMsg signNodeMsg  = 5;  //The signature information of the signing node in the transaction flow
+	repeated string prevBlkHashs      = 6;	//hashs		Pre-block hashs	
+
+}
+
+message Vrf
+{
+  string data = 1;
+  CSign  Vrfsign = 2;
+}
+
+message TxMsgAck
+{
+  string version = 1; //version
+  int32 code = 2; //Error code
+  string message = 3; //Returns an error message
+
+  bytes tx = 4;
+}
+
+message BuildBlockBroadcastMsg
+{
+  string      version         = 1;                         //version	
+  string      id              = 2;
+	bytes 		  blockRaw		    = 3;				          		//Block information
+  Vrf         vrfInfo         = 4;
+  int32       flag            = 5;
+  int32       type            = 6;
+  repeated string      castAddrs     = 7;
+}
+
+message BuildBlockBroadcastMsgAck 
+{
+  string version          = 1;
+  string id               = 2;
+  string success          = 3;
+  string blockhash		    = 4;				          		//Block information
+}
+
