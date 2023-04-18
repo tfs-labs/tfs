@@ -290,10 +290,21 @@ bool UnregisterNode::StartSyncNode()
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(ip.c_str());
 
+    //Set socket options
+    struct timeval timeout; 
+    timeout.tv_sec = 30; 
+    // Timeout time of 30 seconds 
+    timeout.tv_usec = 0; 
+    if (setsockopt(cfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) 
+    { 
+       std::cerr << "setsockopt error: " << std::strerror(errno) << std::endl; 
+       return false; 
+    }
+
     //socket Connect the socket of the corresponding address
     if (connect(cfd, (sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
-        ERRORLOG("connection");
+        ERRORLOG("Connection timeout IP : {} ",ip);
         close(cfd);
         return false;
     }
