@@ -786,12 +786,32 @@ bool net_com::SendSyncNodeReq(const Node& dest, std::string &msg_id)
 
 void net_com::SendNodeHeightChanged()
 {
-	DEBUGLOG("send height change notify");
 	NodeHeightChangedReq heightChangeReq;
-	heightChangeReq.set_id(MagicSingleton<PeerNode>::GetInstance()->get_self_id());
+	std::string selfId = MagicSingleton<PeerNode>::GetInstance()->get_self_id();
+
+	heightChangeReq.set_id(selfId);
 	uint32 chainHeight = 0;
 	int ret = net_callback::chain_height_callback(chainHeight);
 	heightChangeReq.set_height(chainHeight);
+
+	Account defaultEd;
+	MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultEd);
+
+	std::stringstream base58Height;
+
+	base58Height << selfId << "_" << std::to_string(chainHeight);
+	std::string serVinHash = getsha256hash(base58Height.str());
+	std::string signature;
+	std::string pub;
+
+	if (defaultEd.Sign(serVinHash, signature) == false)
+	{
+		std::cout << "tx sign fail !" << std::endl;
+	}
+	CSign * sign = heightChangeReq.mutable_sign();
+	sign->set_sign(signature);
+	sign->set_pub(defaultEd.GetPubStr());
+
 
 	auto selfNode = MagicSingleton<PeerNode>::GetInstance()->get_self_node();
 	std::vector<Node> publicNodes = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
