@@ -24,6 +24,7 @@
 #include "net/ip_port.h"
 #include "utils/qrcode.h"
 #include "utils/string_util.h"
+#include "utils/tmplog.h"
 #include "utils/util.h"
 #include "utils/time_util.h"
 #include "utils/bip39.h"
@@ -1702,7 +1703,7 @@ int checkNtpTime()
     }
 }
 
-std::string handle__deploy_contract_rpc(void * arg){
+std::string handle__deploy_contract_rpc(void * arg,void *ack){
 
     deploy_contract_req * req_=(deploy_contract_req *)arg;
 
@@ -1756,7 +1757,7 @@ std::string handle__deploy_contract_rpc(void * arg){
         ret = interface_evm::CreateEvmDeployContractTransaction(strFromAddr, OwnerEvmAddr, code, top + 1, contract_info_,
                                                            outTx,
                                                            isNeedAgent_flag,
-                                                           info_);
+                                                           info_,ack);
         if(ret != 0)
         {
            return "Failed to create DeployContract transaction! The error code is:" + std::to_string(ret);
@@ -1767,37 +1768,139 @@ std::string handle__deploy_contract_rpc(void * arg){
         return "unknow error";
     }
 
-	TxMsgReq txMsg;
-	txMsg.set_version(global::kVersion);
-    TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
-    txMsgInfo->set_type(0);
-    txMsgInfo->set_tx(outTx.SerializeAsString());
-    txMsgInfo->set_height(top);
-
-	if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf)
-    {
-        Vrf * new_info=txMsg.mutable_vrfinfo();
-        new_info->CopyFrom(info_);
-
-    }
-
-    auto msg = make_shared<TxMsgReq>(txMsg);
-    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if(isNeedAgent_flag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
-    {
-        ret = DropshippingTx(msg,outTx);
-    }
-    else
-    {
-        ret = DoHandleTx(msg,outTx);
-    }
+	
 
     return std::to_string(ret);
 }
 
 
-std::string handle__call_contract_rpc(void * arg){
+std::string handle__call_contract_rpc(void * arg,void *ack){
+
+    call_contract_req * ret_t=(call_contract_req*)arg;
+
+    std::string strFromAddr=ret_t->addr;
+    
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        return DSTR"Input addr error!" ;
+    }
+
+     DBReader data_reader;
+    // std::vector<std::string> vecDeployers;
+    // data_reader.GetAllDeployerAddr(vecDeployers);
+    // std::cout << "=====================deployers=====================" << std::endl;
+    // for(auto& deployer : vecDeployers)
+    // {
+    //     std::cout << "deployer: " << deployer << std::endl;
+    // }
+    // std::cout << "=====================deployers=====================" << std::endl;
+    std::string strToAddr=ret_t->deployer;
+    
+    if(!CheckBase58Addr(strToAddr))
+    {
+        return DSTR "Input addr error!";
+             
+    }
+
+    // std::vector<std::string> vecDeployUtxos;
+    // data_reader.GetDeployUtxoByDeployerAddr(strToAddr, vecDeployUtxos);
+    // std::cout << "=====================deployed utxos=====================" << std::endl;
+    // for(auto& deploy_utxo : vecDeployUtxos)
+    // {
+    //     std::cout << "deployed utxo: " << deploy_utxo << std::endl;
+    // }
+    // std::cout << "=====================deployed utxos=====================" << std::endl;
+    std::string strTxHash=ret_t->deployutxo;
+    
+    
+    std::string strInput=ret_t->args;
+    
+    if(strInput.substr(0, 2) == "0x")
+    {
+        strInput = strInput.substr(2);
+    }
+
+    uint64_t top = 0;
+	if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
+    {
+        return DSTR"db get top failed!!";
+        
+    }
 
 
-return std::string("");
+    CTransaction outTx;
+    CTransaction tx;
+    std::string tx_raw;
+    if (DBStatus::DB_SUCCESS != data_reader.GetTransactionByHash(strTxHash, tx_raw))
+    {
+        return DSTR"get contract transaction failed!!";
+        
+    }
+    if(!tx.ParseFromString(tx_raw))
+    {
+        return DSTR"contract transaction parse failed!!";
+    }
+    
+
+    nlohmann::json data_json = nlohmann::json::parse(tx.data());
+    nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
+    int vm_type = tx_info["VmType"].get<int>();
+ 
+    int ret = 0;
+     std::pair<int,std::string> ret_evm;
+    TxHelper::vrfAgentType isNeedAgent_flag;
+    Vrf info_;
+    if (vm_type == global::ca::VmType::EVM)
+    {
+        Base64 base_;
+        std::string pubstr_=base_.Decode(ret_t->pubstr.c_str(),ret_t->pubstr.size());
+        std::string OwnerEvmAddr = evm_utils::generateEvmAddr(pubstr_);
+        ret_evm = interface_evm::ReplaceCreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
+                                                         OwnerEvmAddr, top + 1,
+                                                         outTx, isNeedAgent_flag, info_,ack);
+        if(ret_evm.first != 0)
+        {
+           return DSTR"Create call contract transaction failed! ret:"+ret_evm.second;        
+            
+        }
+    }
+    else
+    {
+        return DSTR"unkown";
+    }
+
+    // TxMsgReq txMsg;
+	// txMsg.set_version(global::kVersion);
+    // TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
+    // txMsgInfo->set_type(0);
+    // txMsgInfo->set_tx(outTx.SerializeAsString());
+    // txMsgInfo->set_height(top);
+
+    // if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    // {
+    //     Vrf * new_info=txMsg.mutable_vrfinfo();
+    //     new_info -> CopyFrom(info_);
+
+    // }
+
+    // if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    // {
+    //     Vrf * new_info=txMsg.mutable_vrfinfo();
+    //     new_info->CopyFrom(info_);
+
+    // }
+
+    // auto msg = make_shared<TxMsgReq>(txMsg);
+    // std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    // if(isNeedAgent_flag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    // {
+    //     ret = DropshippingTx(msg,outTx);
+    // }
+    // else
+    // {
+    //     ret = DoHandleTx(msg,outTx);
+    // }
+
+     return std::to_string(ret);
+
 }

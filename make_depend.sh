@@ -31,7 +31,7 @@ then
 else
     tar -xvf ./3rd/openssl-3.0.5.tar.gz;
     mv openssl-3.0.5 openssl;
-    cd ${OPENSSL_DIR} && ./Configure && make -j$COMPILE_NUM && make install;
+    cd ${OPENSSL_DIR} && ./Configure && make -j$COMPILE_NUM;
 fi;
 
 # rocksdb
@@ -53,7 +53,7 @@ then
 else
     unzip ./3rd/protobuf-cpp-3.21.9.zip -d ./;
     mv protobuf-3.21.9 protobuf;
-    cd ${PROTOBUF_DIR} && ./autogen.sh && ./configure && make -j$COMPILE_NUM;
+    cd ${PROTOBUF_DIR}  && ./configure && make -j$COMPILE_NUM;
 fi;
 
 # boost

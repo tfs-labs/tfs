@@ -30,9 +30,11 @@ class Account
 
         bool Sign(const std::string &message, std::string &signature);
         bool Verify(const std::string &message, std::string &signature);
+        
+         void _GetPubStr();
 
     private:
-        void _GetPubStr();
+       
         void _GetPriStr();
         void _GetBase58Addr(Base58Ver ver);
 

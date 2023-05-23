@@ -810,7 +810,7 @@ void net_com::SendNodeHeightChanged()
 	}
 	CSign * sign = heightChangeReq.mutable_sign();
 	sign->set_sign(signature);
-	sign->set_pub(defaultEd.GetPubStr());
+	sign->set_pub(defaultEd.pubStr);
 
 
 	auto selfNode = MagicSingleton<PeerNode>::GetInstance()->get_self_node();

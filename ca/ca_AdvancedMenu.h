@@ -28,7 +28,7 @@ void get_tx_block_info(uint64_t& top);
 void gen_mnemonic();
 void get_balance_by_utxo();
 int imitate_create_tx_struct();
-void get_stake();
+// void get_stake();
 void multi_tx();
 
 void get_all_pledge_addr();

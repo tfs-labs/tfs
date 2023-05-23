@@ -193,6 +193,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR NodeHeightChangedReq::NodeHeightChangedReq(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.sign_)*/nullptr
   , /*decltype(_impl_.height_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct NodeHeightChangedReqDefaultTypeInternal {
@@ -382,6 +383,7 @@ const uint32_t TableStruct_net_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(prot
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::NodeHeightChangedReq, _impl_.id_),
   PROTOBUF_FIELD_OFFSET(::NodeHeightChangedReq, _impl_.height_),
+  PROTOBUF_FIELD_OFFSET(::NodeHeightChangedReq, _impl_.sign_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::NodeSign, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -433,10 +435,10 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 88, -1, -1, sizeof(::EchoReq)},
   { 96, -1, -1, sizeof(::EchoAck)},
   { 104, -1, -1, sizeof(::NodeHeightChangedReq)},
-  { 112, -1, -1, sizeof(::NodeSign)},
-  { 120, -1, -1, sizeof(::NodeBase58AddrChangedReq)},
-  { 129, -1, -1, sizeof(::TestNetAck)},
-  { 139, -1, -1, sizeof(::TestNetReq)},
+  { 113, -1, -1, sizeof(::NodeSign)},
+  { 121, -1, -1, sizeof(::NodeBase58AddrChangedReq)},
+  { 130, -1, -1, sizeof(::TestNetAck)},
+  { 140, -1, -1, sizeof(::TestNetReq)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -459,42 +461,46 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_net_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\tnet.proto\")\n\013PrintMsgReq\022\014\n\004data\030\001 \001(\t"
-  "\022\014\n\004type\030\002 \001(\005\"\207\002\n\010NodeInfo\022\013\n\003pub\030\001 \001(\014"
-  "\022\014\n\004sign\030\002 \001(\014\022\020\n\010identity\030\003 \001(\014\022\022\n\nbase"
-  "58addr\030\004 \001(\t\022\031\n\021public_base58addr\030\005 \001(\t\022"
-  "\014\n\004name\030\006 \001(\t\022\014\n\004logo\030\007 \001(\t\022\021\n\tlisten_ip"
-  "\030\010 \001(\r\022\023\n\013listen_port\030\t \001(\r\022\021\n\tpublic_ip"
-  "\030\n \001(\r\022\023\n\013public_port\030\013 \001(\r\022\016\n\006height\030\014 "
-  "\001(\r\022\022\n\ntime_stamp\030\r \001(\004\022\017\n\007version\030\016 \001(\t"
-  "\"U\n\017RegisterNodeReq\022\031\n\006mynode\030\001 \001(\0132\t.No"
-  "deInfo\022\027\n\017is_get_nodelist\030\002 \001(\010\022\016\n\006msg_i"
-  "d\030\003 \001(\t\"k\n\017RegisterNodeAck\022\030\n\005nodes\030\001 \003("
-  "\0132\t.NodeInfo\022\016\n\006msg_id\030\002 \001(\t\022\017\n\007from_ip\030"
-  "\003 \001(\r\022\021\n\tfrom_port\030\004 \001(\r\022\n\n\002fd\030\005 \001(\r\"*\n\013"
-  "SyncNodeReq\022\013\n\003ids\030\001 \001(\t\022\016\n\006msg_id\030\003 \001(\t"
-  "\"D\n\013SyncNodeAck\022\030\n\005nodes\030\001 \003(\0132\t.NodeInf"
-  "o\022\013\n\003ids\030\002 \001(\t\022\016\n\006msg_id\030\003 \001(\t\"J\n\017Broadc"
-  "astMsgReq\022\027\n\004from\030\001 \001(\0132\t.NodeInfo\022\014\n\004da"
-  "ta\030\002 \001(\014\022\020\n\010priority\030\003 \001(\r\"\025\n\007PingReq\022\n\n"
-  "\002id\030\001 \001(\t\"\025\n\007PongReq\022\n\n\002id\030\001 \001(\t\"&\n\007Echo"
-  "Req\022\n\n\002id\030\001 \001(\t\022\017\n\007message\030\002 \001(\t\"&\n\007Echo"
-  "Ack\022\n\n\002id\030\001 \001(\t\022\017\n\007message\030\002 \001(\t\"2\n\024Node"
-  "HeightChangedReq\022\n\n\002id\030\001 \001(\t\022\016\n\006height\030\002"
-  " \001(\r\"%\n\010NodeSign\022\014\n\004sign\030\001 \001(\014\022\013\n\003pub\030\002 "
-  "\001(\014\"c\n\030NodeBase58AddrChangedReq\022\017\n\007versi"
-  "on\030\001 \001(\t\022\032\n\007oldSign\030\002 \001(\0132\t.NodeSign\022\032\n\007"
-  "newSign\030\003 \001(\0132\t.NodeSign\"B\n\nTestNetAck\022\014"
-  "\n\004data\030\001 \001(\t\022\014\n\004hash\030\002 \001(\t\022\014\n\004time\030\003 \001(\004"
-  "\022\n\n\002id\030\004 \001(\t\"B\n\nTestNetReq\022\014\n\004data\030\001 \001(\t"
-  "\022\014\n\004hash\030\002 \001(\t\022\014\n\004time\030\003 \001(\004\022\n\n\002id\030\004 \001(\t"
-  "b\006proto3"
+  "\n\tnet.proto\032\nsign.proto\")\n\013PrintMsgReq\022\014"
+  "\n\004data\030\001 \001(\t\022\014\n\004type\030\002 \001(\005\"\207\002\n\010NodeInfo\022"
+  "\013\n\003pub\030\001 \001(\014\022\014\n\004sign\030\002 \001(\014\022\020\n\010identity\030\003"
+  " \001(\014\022\022\n\nbase58addr\030\004 \001(\t\022\031\n\021public_base5"
+  "8addr\030\005 \001(\t\022\014\n\004name\030\006 \001(\t\022\014\n\004logo\030\007 \001(\t\022"
+  "\021\n\tlisten_ip\030\010 \001(\r\022\023\n\013listen_port\030\t \001(\r\022"
+  "\021\n\tpublic_ip\030\n \001(\r\022\023\n\013public_port\030\013 \001(\r\022"
+  "\016\n\006height\030\014 \001(\r\022\022\n\ntime_stamp\030\r \001(\004\022\017\n\007v"
+  "ersion\030\016 \001(\t\"U\n\017RegisterNodeReq\022\031\n\006mynod"
+  "e\030\001 \001(\0132\t.NodeInfo\022\027\n\017is_get_nodelist\030\002 "
+  "\001(\010\022\016\n\006msg_id\030\003 \001(\t\"k\n\017RegisterNodeAck\022\030"
+  "\n\005nodes\030\001 \003(\0132\t.NodeInfo\022\016\n\006msg_id\030\002 \001(\t"
+  "\022\017\n\007from_ip\030\003 \001(\r\022\021\n\tfrom_port\030\004 \001(\r\022\n\n\002"
+  "fd\030\005 \001(\r\"*\n\013SyncNodeReq\022\013\n\003ids\030\001 \001(\t\022\016\n\006"
+  "msg_id\030\003 \001(\t\"D\n\013SyncNodeAck\022\030\n\005nodes\030\001 \003"
+  "(\0132\t.NodeInfo\022\013\n\003ids\030\002 \001(\t\022\016\n\006msg_id\030\003 \001"
+  "(\t\"J\n\017BroadcastMsgReq\022\027\n\004from\030\001 \001(\0132\t.No"
+  "deInfo\022\014\n\004data\030\002 \001(\014\022\020\n\010priority\030\003 \001(\r\"\025"
+  "\n\007PingReq\022\n\n\002id\030\001 \001(\t\"\025\n\007PongReq\022\n\n\002id\030\001"
+  " \001(\t\"&\n\007EchoReq\022\n\n\002id\030\001 \001(\t\022\017\n\007message\030\002"
+  " \001(\t\"&\n\007EchoAck\022\n\n\002id\030\001 \001(\t\022\017\n\007message\030\002"
+  " \001(\t\"H\n\024NodeHeightChangedReq\022\n\n\002id\030\001 \001(\t"
+  "\022\016\n\006height\030\002 \001(\r\022\024\n\004sign\030\003 \001(\0132\006.CSign\"%"
+  "\n\010NodeSign\022\014\n\004sign\030\001 \001(\014\022\013\n\003pub\030\002 \001(\014\"c\n"
+  "\030NodeBase58AddrChangedReq\022\017\n\007version\030\001 \001"
+  "(\t\022\032\n\007oldSign\030\002 \001(\0132\t.NodeSign\022\032\n\007newSig"
+  "n\030\003 \001(\0132\t.NodeSign\"B\n\nTestNetAck\022\014\n\004data"
+  "\030\001 \001(\t\022\014\n\004hash\030\002 \001(\t\022\014\n\004time\030\003 \001(\004\022\n\n\002id"
+  "\030\004 \001(\t\"B\n\nTestNetReq\022\014\n\004data\030\001 \001(\t\022\014\n\004ha"
+  "sh\030\002 \001(\t\022\014\n\004time\030\003 \001(\004\022\n\n\002id\030\004 \001(\tb\006prot"
+  "o3"
   ;
+static const ::_pbi::DescriptorTable* const descriptor_table_net_2eproto_deps[1] = {
+  &::descriptor_table_sign_2eproto,
+};
 static ::_pbi::once_flag descriptor_table_net_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_net_2eproto = {
-    false, false, 1168, descriptor_table_protodef_net_2eproto,
+    false, false, 1202, descriptor_table_protodef_net_2eproto,
     "net.proto",
-    &descriptor_table_net_2eproto_once, nullptr, 0, 16,
+    &descriptor_table_net_2eproto_once, descriptor_table_net_2eproto_deps, 1, 16,
     schemas, file_default_instances, TableStruct_net_2eproto::offsets,
     file_level_metadata_net_2eproto, file_level_enum_descriptors_net_2eproto,
     file_level_service_descriptors_net_2eproto,
@@ -3754,8 +3760,19 @@ void EchoAck::InternalSwap(EchoAck* other) {
 
 class NodeHeightChangedReq::_Internal {
  public:
+  static const ::CSign& sign(const NodeHeightChangedReq* msg);
 };
 
+const ::CSign&
+NodeHeightChangedReq::_Internal::sign(const NodeHeightChangedReq* msg) {
+  return *msg->_impl_.sign_;
+}
+void NodeHeightChangedReq::clear_sign() {
+  if (GetArenaForAllocation() == nullptr && _impl_.sign_ != nullptr) {
+    delete _impl_.sign_;
+  }
+  _impl_.sign_ = nullptr;
+}
 NodeHeightChangedReq::NodeHeightChangedReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -3767,6 +3784,7 @@ NodeHeightChangedReq::NodeHeightChangedReq(const NodeHeightChangedReq& from)
   NodeHeightChangedReq* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.id_){}
+    , decltype(_impl_.sign_){nullptr}
     , decltype(_impl_.height_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
@@ -3779,6 +3797,9 @@ NodeHeightChangedReq::NodeHeightChangedReq(const NodeHeightChangedReq& from)
     _this->_impl_.id_.Set(from._internal_id(), 
       _this->GetArenaForAllocation());
   }
+  if (from._internal_has_sign()) {
+    _this->_impl_.sign_ = new ::CSign(*from._impl_.sign_);
+  }
   _this->_impl_.height_ = from._impl_.height_;
   // @@protoc_insertion_point(copy_constructor:NodeHeightChangedReq)
 }
@@ -3789,6 +3810,7 @@ inline void NodeHeightChangedReq::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.id_){}
+    , decltype(_impl_.sign_){nullptr}
     , decltype(_impl_.height_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
@@ -3810,6 +3832,7 @@ NodeHeightChangedReq::~NodeHeightChangedReq() {
 inline void NodeHeightChangedReq::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.id_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.sign_;
 }
 
 void NodeHeightChangedReq::SetCachedSize(int size) const {
@@ -3823,6 +3846,10 @@ void NodeHeightChangedReq::Clear() {
   (void) cached_has_bits;
 
   _impl_.id_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.sign_ != nullptr) {
+    delete _impl_.sign_;
+  }
+  _impl_.sign_ = nullptr;
   _impl_.height_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -3847,6 +3874,14 @@ const char* NodeHeightChangedReq::_InternalParse(const char* ptr, ::_pbi::ParseC
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
           _impl_.height_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .CSign sign = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_sign(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -3896,6 +3931,13 @@ uint8_t* NodeHeightChangedReq::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_height(), target);
   }
 
+  // .CSign sign = 3;
+  if (this->_internal_has_sign()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(3, _Internal::sign(this),
+        _Internal::sign(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3917,6 +3959,13 @@ size_t NodeHeightChangedReq::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_id());
+  }
+
+  // .CSign sign = 3;
+  if (this->_internal_has_sign()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.sign_);
   }
 
   // uint32 height = 2;
@@ -3945,6 +3994,10 @@ void NodeHeightChangedReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, c
   if (!from._internal_id().empty()) {
     _this->_internal_set_id(from._internal_id());
   }
+  if (from._internal_has_sign()) {
+    _this->_internal_mutable_sign()->::CSign::MergeFrom(
+        from._internal_sign());
+  }
   if (from._internal_height() != 0) {
     _this->_internal_set_height(from._internal_height());
   }
@@ -3971,7 +4024,12 @@ void NodeHeightChangedReq::InternalSwap(NodeHeightChangedReq* other) {
       &_impl_.id_, lhs_arena,
       &other->_impl_.id_, rhs_arena
   );
-  swap(_impl_.height_, other->_impl_.height_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(NodeHeightChangedReq, _impl_.height_)
+      + sizeof(NodeHeightChangedReq::_impl_.height_)
+      - PROTOBUF_FIELD_OFFSET(NodeHeightChangedReq, _impl_.sign_)>(
+          reinterpret_cast<char*>(&_impl_.sign_),
+          reinterpret_cast<char*>(&other->_impl_.sign_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata NodeHeightChangedReq::GetMetadata() const {

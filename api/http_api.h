@@ -34,19 +34,28 @@ void api_get_block_info(const Request &req, Response &res);
 void api_get_tx_info(const Request &req,Response &res);
 
 
-nlohmann::json jsonrpc_get_height(const nlohmann::json & param);
-nlohmann::json jsonrpc_get_balance(const nlohmann::json & param);
-
-
-bool jsonrpc_get_sigvalue(const std::string& addr, const std::string& message, std::string & signature, std::string& pub);
-void jsonrpc_get_StakeUtxos(const Request & req, Response & res);
-void jsonrpc_get_DisinvestUtxos(const Request & req, Response & res);
-void jsonrpc_get_TxTransaction(const Request & req, Response & res);
-void jsonrpc_get_StakeTransaction(const Request & req, Response & res);
-void jsonrpc_get_UnstakeTransaction(const Request & req, Response & res);
-void jsonrpc_get_InvestTransaction(const Request & req, Response & res);
-void jSonrpc_get_DisinvestTransaction(const Request & req, Response & res);
-void jSonrpc_get_DeclareTransaction(const Request & req, Response & res);
-void jSonrpc_get_BonusTransaction(const Request & req, Response & res);
-void jSonrpc_get_RSA_PUBSTR(const Request & req, Response & res);
+void jsonrpc_get_height(const Request &req,Response &res);
+void jsonrpc_get_balance(const Request &req, Response &res) ;
+void get_stakeutxo(const Request & req, Response & res);
+void get_disinvestutxo(const Request & req, Response & res);
+void get_transaction(const Request & req, Response & res);
+void get_stake(const Request & req, Response & res);
+void get_unstake(const Request & req, Response & res);
+void get_invest(const Request & req, Response & res);
+void get_disinvest(const Request & req, Response & res);
+void get_declare(const Request & req, Response & res);
+void get_bonus(const Request & req, Response & res);
+void get_rsa_pub(const Request & req, Response & res);
 void deploy_contract(const Request & req, Response & res);
+void call_contract(const Request & req, Response & res);
+
+void send_message(const Request & req, Response & res);
+
+void get_isonchain(const Request & req, Response & res);
+
+void get_deployer(const Request & req, Response & res);
+
+void get_deployerutxo(const Request & req, Response & res);
+
+
+void get_restinvest(const Request & req, Response & res);

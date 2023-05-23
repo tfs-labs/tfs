@@ -12,10 +12,12 @@
 #include "ca_global.h"
 #include "include/logging.h"
 #include "utils/ContractUtils.h"
-#include "sig.h"
 #include "utils/tmplog.h"
 #include <future>
 #include <chrono>
+#include "api/interface/tx.h"
+#include <google/protobuf/util/json_util.h>
+#include "ca/ca_txhelper.h"
 
 static int
 ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &host, std::string &strOutput,
@@ -294,8 +296,9 @@ int ContractInfoAdd(const TfsHost& host, nlohmann::json& jTxInfo, global::ca::Tx
 static int
 FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType tx_type,
           const std::vector<std::pair<std::string, uint64_t>> &transferrings, const nlohmann::json &jTxInfo,
-          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_)
+          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_,void *ack)
 {
+    tx_ack *ack_t=(tx_ack*)ack;
     std::vector<std::string> vecfromAddr;
     vecfromAddr.push_back(fromAddr);
     int ret = TxHelper::Check(vecfromAddr, height);
@@ -357,17 +360,17 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
         }
         vin->set_sequence(n++);
 
-        std::string serVinHash = getsha256hash(vin->SerializeAsString());
-        std::string signature;
-        std::string pub;
-        if (jsonrpc_get_sigvalue(owner, serVinHash, signature, pub) == false)
-        {
-            return -8;
-        }
+        // std::string serVinHash = getsha256hash(vin->SerializeAsString());
+        // std::string signature;
+        // std::string pub;
+        // if (jsonrpc_get_sigvalue(owner, serVinHash, signature, pub) == false)
+        // {
+        //     return -8;
+        // }
 
-        CSign * vinSign = vin->mutable_vinsign();
-        vinSign->set_sign(signature);
-        vinSign->set_pub(pub);
+        // CSign * vinSign = vin->mutable_vinsign();
+        // vinSign->set_sign(signature);
+        // vinSign->set_pub(pub);
     }
 
     nlohmann::json data;
@@ -438,6 +441,7 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
         return -9;
     }
     expend += gas;
+    
     //Judge whether utxo is enough
     if(total < expend)
     {
@@ -452,7 +456,9 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
     //This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
         type = TxHelper::vrfAgentType_defalut;
     }
-
+    ack_t->gas = std::to_string(gas);
+	ack_t->time = std::to_string(current_time);
+    
     CTxOutput * vout = txUtxo->add_vout();
     vout->set_addr(global::ca::kVirtualDeployContractAddr);
     vout->set_value(gasCost);
@@ -477,20 +483,20 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
     vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
     vout_burn->set_value(gas);
 
-    for (auto & owner : setTxowners)
-    {
-        if (AddMutilSign_rpc(owner, outTx)!=0)
-        {
-            return -11;
-        }
-    }
+    // for (auto & owner : setTxowners)
+    // {
+    //     if (AddMutilSign_rpc(owner, outTx)!=0)
+    //     {
+    //         return -11;
+    //     }
+    // }
     outTx.set_time(current_time);
 
 
     //Determine whether dropshipping is default or local dropshipping
     if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
     {
-        outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+        outTx.set_identity(TxHelper::GetEligibleNodes());
     }
     else{
 
@@ -514,15 +520,29 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
     outTx.set_txtype((uint32_t)tx_type);
     outTx.set_consensus(global::ca::kConsensus);
 
-    std::string txHash = getsha256hash(outTx.SerializeAsString());
-    outTx.set_hash(txHash);
+    // std::string txHash = getsha256hash(outTx.SerializeAsString());
+    // outTx.set_hash(txHash);
+
+     
+
+    std::string txJsonString;
+	std::string vrfJsonString;
+	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
+	status=google::protobuf::util::MessageToJsonString(info_,&vrfJsonString);
+
+	ack_t->txJson=txJsonString;
+	ack_t->vrfJson=vrfJsonString;
+	ack_t->ErrorCode="0";
+	ack_t->height=std::to_string(height-1);
+	ack_t->txType=std::to_string((int)type);
+
     return 0;
 }
 
 int FillCallOutTx(const std::string &fromAddr, const std::string &toAddr,
                           const std::vector<std::pair<std::string, uint64_t>> &transferrings,
                           const nlohmann::json &jTxInfo, uint64_t height, int64_t gasCost, CTransaction &outTx,
-                          TxHelper::vrfAgentType &type, Vrf &info_)
+                          TxHelper::vrfAgentType &type, Vrf &info_,void *ack)
 {
     if (!CheckBase58Addr(toAddr))
     {
@@ -532,23 +552,23 @@ int FillCallOutTx(const std::string &fromAddr, const std::string &toAddr,
 
     return FillOutTx(fromAddr, toAddr,
                      global::ca::TxType::kTxTypeCallContract, transferrings, jTxInfo, height, gasCost, outTx, type,
-                     info_);
+                     info_,ack);
 }
 
 int FillDeployOutTx(const std::string &fromAddr, const std::string &toAddr,
                             const std::vector<std::pair<std::string, uint64_t>> &transferrings,
                             const nlohmann::json &jTxInfo, int64_t gasCost, uint64_t height, CTransaction &outTx,
-                            TxHelper::vrfAgentType &type, Vrf &info_)
+                            TxHelper::vrfAgentType &type, Vrf &info_,void * ack)
 {
     return FillOutTx(fromAddr, toAddr,
                      global::ca::TxType::kTxTypeDeployContract, transferrings, jTxInfo, height, gasCost, outTx, type,
-                     info_);
+                     info_,ack);
 }
 
 int CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
                                                  const std::string &code, uint64_t height,
                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
-                                                 TxHelper::vrfAgentType &type, Vrf &info_)
+                                                 TxHelper::vrfAgentType &type, Vrf &info_,void *ack)
 {
     std::string strOutput;
     TfsHost host;
@@ -577,7 +597,7 @@ int CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::s
     }
 
     ret = interface_evm::FillDeployOutTx(fromAddr, global::ca::kVirtualDeployContractAddr,
-                                  host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, info_);
+                                  host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, info_,ack);
     return ret;
 }
 
@@ -587,7 +607,7 @@ std::pair<int,std::string> ReplaceCreateEvmCallContractTransaction(const std::st
                                                const std::string &txHash,
                                                const std::string &strInput, const std::string &OwnerEvmAddr,
                                                uint64_t height,
-                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_)
+                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_,void *ack)
 {
     std::pair<int,std::string> ret_;
     std::string strOutput;
@@ -619,7 +639,7 @@ std::pair<int,std::string> ReplaceCreateEvmCallContractTransaction(const std::st
     }
 
     ret = interface_evm::FillCallOutTx(fromAddr, toAddr, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
-                                info_);
+                                info_,ack);
     if (ret != 0)
     {
          ret_.second=  DSTR"FillCallOutTx fail ret: :"+ts_s(ret);

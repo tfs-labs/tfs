@@ -147,27 +147,33 @@ public:
     static void GetInitiatorType(const std::vector<std::string> &fromaddr, TxHelper::vrfAgentType &type);
 
 
-    static std::string ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
-									const std::map<std::string, int64_t> & toAddr);
+     static std::string ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
+									const std::map<std::string, int64_t> & toAddr, void* ack);
 
-    static std::string ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stake_amount,  int32_t pledgeType);
+    static std::string ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stake_amount,  int32_t pledgeType, void* ack);
 
-    static std::string ReplaceCreatUnstakeTransaction(const std::string& fromAddr, const std::string& utxo_hash);
+    static std::string ReplaceCreatUnstakeTransaction(const std::string& fromAddr, const std::string& utxo_hash, void* ack);
 
     static std::string ReplaceCreateInvestTransaction(const std::string & fromAddr,
-                                    const std::string& toAddr,uint64_t invest_amount, int32_t investType);
+                                    const std::string& toAddr,uint64_t invest_amount, int32_t investType, void* ack);
 
     static std::string ReplaceCreateDisinvestTransaction(const std::string& fromAddr,
-                                    const std::string& toAddr, const std::string& utxo_hash);
+                                    const std::string& toAddr, const std::string& utxo_hash, void* ack);
 
     static std::string ReplaceCreateDeclareTransaction(const std::string & fromaddr, //Initiator
                                     const std::string & toAddr, //Recipient
                                     uint64_t amount, 
                                     const std::string & multiSignPub, //Multi-Sig address public key
                                     const std::vector<std::string> & signAddrList, // Record the federation node
-                                    uint64_t signThreshold);//The number of consensus numbers for multiple signs
-     
-    static std::string ReplaceCreateBonusTransaction(const std::string& Addr);
+                                    uint64_t signThreshold, //The number of consensus numbers for multiple signs
+                                    void* ack);
+    static std::string ReplaceCreateBonusTransaction(const std::string& Addr, void* ack);
+
+
+    static int sendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vrfAgentType type);
+
+
+    static std::string GetEligibleNodes();
     
 };
 

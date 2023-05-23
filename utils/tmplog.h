@@ -20,7 +20,7 @@ void write_tmplog(const std::string& content, OUTTYPE out = file, const std::str
 
 
 
-#define DSTR __FILE__+std::to_string(__LINE__)+
+#define DSTR __FILE__+std::string(":")+std::to_string(__LINE__)+
 #define ts_s(value) std::to_string(value)
 
 #define RED_t "\033[31m"

@@ -138,32 +138,46 @@ std::vector<std::string> fromAddr;
 std::map<std::string, std::string> toAddr;
 UCTE
 
-UCTS_REQ(getStake_req)
+
+
+
+UCTS_ACK(tx_ack)
+std::string txJson;
+std::string height;
+std::string vrfJson;
+std::string txType;
+std::string time;
+std::string gas;
+UCTE
+
+
+
+UCTS_REQ(get_stake_req)
 std::string fromAddr;
 std::string stake_amount;
 std::string PledgeType;
 UCTE
 
 
-UCTS_REQ(getUnstake_req)
+UCTS_REQ(get_unstake_req)
 std::string fromAddr;
 std::string utxo_hash;
 UCTE
 
-UCTS_REQ(getInvest_req)
+UCTS_REQ(get_invest_req)
 std::string fromAddr;
 std::string toAddr;
 std::string invest_amount;
 std::string investType;
 UCTE
 
-UCTS_REQ(getDisInvest_req)
+UCTS_REQ(get_disinvest_req)
 std::string fromAddr;
 std::string toAddr;
 std::string utxo_hash;
 UCTE
 
-UCTS_REQ(getDeclare_req)
+UCTS_REQ(get_declare_req)
 std::string fromAddr;
 std::string toAddr;
 std::string amount;
@@ -172,22 +186,31 @@ std::vector<std::string> signAddrList;
 std::string signThreshold;
 UCTE
 
-UCTS_REQ(getBonus_req)
+UCTS_REQ(get_bonus_req)
 std::string Addr;
 UCTE
 
-UCTS_ACK(getStakeUtxo_req)
+UCTS_ACK(get_stakeutxo_req)
 std::string fromAddr;
 UCTE
 
-UCTS_ACK(getStakeUtxo_ack)
+UCTS_ACK(get_stakeutxo_ack)
 std::map<std::string,uint64_t> utxos;
 UCTE
 
-UCTS_ACK(rpc_ack)
-UCTE
+// UCTS_ACK(rpc_ack)
+// std::string txhash;
+// UCTE
+struct rpc_ack {
+  bool paseFromJson(std ::string json);
+  std ::string paseToString();
+  std ::string type;
+  std ::string ErrorCode;
+  std ::string ErrorMessage;
+  std::string txhash;
+};
 
-UCTS_REQ(RSA_CODE)
+UCTS_REQ(rsa_code)
 std::string isEcode;
 std::string strEncTxt;
 std::string cipher_text;
@@ -195,18 +218,51 @@ std::string sign_message;
 std::string strpub;
 UCTE
 
-UCTS_ACK(RSA_PUBSTR_ack)
+UCTS_ACK(rsa_pubstr_ack)
 std::string rsa_pubstr;
 UCTE
 
-UCTS_REQ(getDisInvestUtxo_req)
+UCTS_REQ(get_disinvestutxo_req)
 std::string fromAddr;
 std::string toAddr;
 UCTE
 
 
-UCTS_ACK(getDisInvestUtxo_ack)
+UCTS_ACK(get_disinvestutxo_ack)
 std::vector<std::string> utxos;
 UCTE
+
+
+UCTS_REQ(get_isonchain_req)
+std::string txhash;
+UCTE
+
+UCTS_ACK(get_isonchain_ack)
+std::string txhash;
+std::string pro;
+UCTE
+
+UCTS_REQ(get_restinverst_req)
+std::string addr;
+UCTE
+
+UCTS_ACK(get_restinverst_ack)
+std::string addr;
+std::string amount;
+std::string message;
+UCTE
+
+
+
+UCTS_REQ(get_tx_info_req)
+std::string txhash;
+UCTE
+
+UCTS_ACK(get_tx_info_ack)
+std::string tx;
+uint64_t blockheight;
+std::string blockhash;
+UCTE
+
 
 #endif

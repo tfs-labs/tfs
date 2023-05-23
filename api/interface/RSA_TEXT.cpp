@@ -4,7 +4,7 @@
 bool RSAEnCode(const std::string& data, envelop* enve,const std::string& rsa_pubstr, std::string& message)
 {
     Base64 base_;
-    RSA_CODE rsa_encode;
+    rsa_code rsa_encode;
     std::string pubstr = enve->getPubstr();
     std::string strEncTxt;
     std::string cipher_text;
@@ -35,7 +35,7 @@ bool RSAEnCode(const std::string& data, envelop* enve,const std::string& rsa_pub
 
 bool RSADeCode(const std::string& data, envelop* enve,std::string & rsa_pubstr, std::string& message) {
 
-    RSA_CODE code;
+    rsa_code code;
     if (code.paseFromJson(data) == false) {
         return false;
    }
