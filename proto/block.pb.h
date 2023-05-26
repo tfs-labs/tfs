@@ -50,6 +50,9 @@ extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table
 class BlockMsg;
 struct BlockMsgDefaultTypeInternal;
 extern BlockMsgDefaultTypeInternal _BlockMsg_default_instance_;
+class BlockStatus;
+struct BlockStatusDefaultTypeInternal;
+extern BlockStatusDefaultTypeInternal _BlockStatus_default_instance_;
 class CBlock;
 struct CBlockDefaultTypeInternal;
 extern CBlockDefaultTypeInternal _CBlock_default_instance_;
@@ -59,11 +62,16 @@ extern SeekPreHashByHightAckDefaultTypeInternal _SeekPreHashByHightAck_default_i
 class SeekPreHashByHightReq;
 struct SeekPreHashByHightReqDefaultTypeInternal;
 extern SeekPreHashByHightReqDefaultTypeInternal _SeekPreHashByHightReq_default_instance_;
+class TxStatus;
+struct TxStatusDefaultTypeInternal;
+extern TxStatusDefaultTypeInternal _TxStatus_default_instance_;
 PROTOBUF_NAMESPACE_OPEN
 template<> ::BlockMsg* Arena::CreateMaybeMessage<::BlockMsg>(Arena*);
+template<> ::BlockStatus* Arena::CreateMaybeMessage<::BlockStatus>(Arena*);
 template<> ::CBlock* Arena::CreateMaybeMessage<::CBlock>(Arena*);
 template<> ::SeekPreHashByHightAck* Arena::CreateMaybeMessage<::SeekPreHashByHightAck>(Arena*);
 template<> ::SeekPreHashByHightReq* Arena::CreateMaybeMessage<::SeekPreHashByHightReq>(Arena*);
+template<> ::TxStatus* Arena::CreateMaybeMessage<::TxStatus>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 
 // ===================================================================
@@ -512,6 +520,7 @@ class BlockMsg final :
 
   enum : int {
     kVrfInfoFieldNumber = 6,
+    kTxvrfInfoFieldNumber = 7,
     kVersionFieldNumber = 1,
     kMessageFieldNumber = 3,
     kBlockFieldNumber = 5,
@@ -535,6 +544,24 @@ class BlockMsg final :
   ::Vrf* add_vrfinfo();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf >&
       vrfinfo() const;
+
+  // repeated .Vrf txvrfInfo = 7;
+  int txvrfinfo_size() const;
+  private:
+  int _internal_txvrfinfo_size() const;
+  public:
+  void clear_txvrfinfo();
+  ::Vrf* mutable_txvrfinfo(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf >*
+      mutable_txvrfinfo();
+  private:
+  const ::Vrf& _internal_txvrfinfo(int index) const;
+  ::Vrf* _internal_add_txvrfinfo();
+  public:
+  const ::Vrf& txvrfinfo(int index) const;
+  ::Vrf* add_txvrfinfo();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf >&
+      txvrfinfo() const;
 
   // string version = 1;
   void clear_version();
@@ -605,11 +632,376 @@ class BlockMsg final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf > vrfinfo_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf > txvrfinfo_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr block_;
     uint64_t time_;
     int32_t code_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_block_2eproto;
+};
+// -------------------------------------------------------------------
+
+class TxStatus final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:TxStatus) */ {
+ public:
+  inline TxStatus() : TxStatus(nullptr) {}
+  ~TxStatus() override;
+  explicit PROTOBUF_CONSTEXPR TxStatus(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  TxStatus(const TxStatus& from);
+  TxStatus(TxStatus&& from) noexcept
+    : TxStatus() {
+    *this = ::std::move(from);
+  }
+
+  inline TxStatus& operator=(const TxStatus& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline TxStatus& operator=(TxStatus&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const TxStatus& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const TxStatus* internal_default_instance() {
+    return reinterpret_cast<const TxStatus*>(
+               &_TxStatus_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    2;
+
+  friend void swap(TxStatus& a, TxStatus& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(TxStatus* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(TxStatus* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  TxStatus* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<TxStatus>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const TxStatus& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const TxStatus& from) {
+    TxStatus::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(TxStatus* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "TxStatus";
+  }
+  protected:
+  explicit TxStatus(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTxHashFieldNumber = 1,
+    kStatusFieldNumber = 2,
+  };
+  // string txHash = 1;
+  void clear_txhash();
+  const std::string& txhash() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_txhash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_txhash();
+  PROTOBUF_NODISCARD std::string* release_txhash();
+  void set_allocated_txhash(std::string* txhash);
+  private:
+  const std::string& _internal_txhash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_txhash(const std::string& value);
+  std::string* _internal_mutable_txhash();
+  public:
+
+  // int32 status = 2;
+  void clear_status();
+  int32_t status() const;
+  void set_status(int32_t value);
+  private:
+  int32_t _internal_status() const;
+  void _internal_set_status(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:TxStatus)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr txhash_;
+    int32_t status_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_block_2eproto;
+};
+// -------------------------------------------------------------------
+
+class BlockStatus final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:BlockStatus) */ {
+ public:
+  inline BlockStatus() : BlockStatus(nullptr) {}
+  ~BlockStatus() override;
+  explicit PROTOBUF_CONSTEXPR BlockStatus(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  BlockStatus(const BlockStatus& from);
+  BlockStatus(BlockStatus&& from) noexcept
+    : BlockStatus() {
+    *this = ::std::move(from);
+  }
+
+  inline BlockStatus& operator=(const BlockStatus& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline BlockStatus& operator=(BlockStatus&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const BlockStatus& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const BlockStatus* internal_default_instance() {
+    return reinterpret_cast<const BlockStatus*>(
+               &_BlockStatus_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  friend void swap(BlockStatus& a, BlockStatus& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(BlockStatus* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(BlockStatus* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  BlockStatus* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<BlockStatus>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const BlockStatus& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const BlockStatus& from) {
+    BlockStatus::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(BlockStatus* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "BlockStatus";
+  }
+  protected:
+  explicit BlockStatus(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTxStatusFieldNumber = 3,
+    kBlockHashFieldNumber = 1,
+    kIdFieldNumber = 4,
+    kStatusFieldNumber = 2,
+  };
+  // repeated .TxStatus txStatus = 3;
+  int txstatus_size() const;
+  private:
+  int _internal_txstatus_size() const;
+  public:
+  void clear_txstatus();
+  ::TxStatus* mutable_txstatus(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxStatus >*
+      mutable_txstatus();
+  private:
+  const ::TxStatus& _internal_txstatus(int index) const;
+  ::TxStatus* _internal_add_txstatus();
+  public:
+  const ::TxStatus& txstatus(int index) const;
+  ::TxStatus* add_txstatus();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxStatus >&
+      txstatus() const;
+
+  // string blockHash = 1;
+  void clear_blockhash();
+  const std::string& blockhash() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_blockhash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_blockhash();
+  PROTOBUF_NODISCARD std::string* release_blockhash();
+  void set_allocated_blockhash(std::string* blockhash);
+  private:
+  const std::string& _internal_blockhash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_blockhash(const std::string& value);
+  std::string* _internal_mutable_blockhash();
+  public:
+
+  // string id = 4;
+  void clear_id();
+  const std::string& id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_id();
+  PROTOBUF_NODISCARD std::string* release_id();
+  void set_allocated_id(std::string* id);
+  private:
+  const std::string& _internal_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_id(const std::string& value);
+  std::string* _internal_mutable_id();
+  public:
+
+  // int32 status = 2;
+  void clear_status();
+  int32_t status() const;
+  void set_status(int32_t value);
+  private:
+  int32_t _internal_status() const;
+  void _internal_set_status(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:BlockStatus)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxStatus > txstatus_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr blockhash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr id_;
+    int32_t status_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -665,7 +1057,7 @@ class SeekPreHashByHightReq final :
                &_SeekPreHashByHightReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    2;
+    4;
 
   friend void swap(SeekPreHashByHightReq& a, SeekPreHashByHightReq& b) {
     a.Swap(&b);
@@ -845,7 +1237,7 @@ class SeekPreHashByHightAck final :
                &_SeekPreHashByHightAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    5;
 
   friend void swap(SeekPreHashByHightAck& a, SeekPreHashByHightAck& b) {
     a.Swap(&b);
@@ -1727,6 +2119,281 @@ BlockMsg::vrfinfo() const {
   return _impl_.vrfinfo_;
 }
 
+// repeated .Vrf txvrfInfo = 7;
+inline int BlockMsg::_internal_txvrfinfo_size() const {
+  return _impl_.txvrfinfo_.size();
+}
+inline int BlockMsg::txvrfinfo_size() const {
+  return _internal_txvrfinfo_size();
+}
+inline ::Vrf* BlockMsg::mutable_txvrfinfo(int index) {
+  // @@protoc_insertion_point(field_mutable:BlockMsg.txvrfInfo)
+  return _impl_.txvrfinfo_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf >*
+BlockMsg::mutable_txvrfinfo() {
+  // @@protoc_insertion_point(field_mutable_list:BlockMsg.txvrfInfo)
+  return &_impl_.txvrfinfo_;
+}
+inline const ::Vrf& BlockMsg::_internal_txvrfinfo(int index) const {
+  return _impl_.txvrfinfo_.Get(index);
+}
+inline const ::Vrf& BlockMsg::txvrfinfo(int index) const {
+  // @@protoc_insertion_point(field_get:BlockMsg.txvrfInfo)
+  return _internal_txvrfinfo(index);
+}
+inline ::Vrf* BlockMsg::_internal_add_txvrfinfo() {
+  return _impl_.txvrfinfo_.Add();
+}
+inline ::Vrf* BlockMsg::add_txvrfinfo() {
+  ::Vrf* _add = _internal_add_txvrfinfo();
+  // @@protoc_insertion_point(field_add:BlockMsg.txvrfInfo)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf >&
+BlockMsg::txvrfinfo() const {
+  // @@protoc_insertion_point(field_list:BlockMsg.txvrfInfo)
+  return _impl_.txvrfinfo_;
+}
+
+// -------------------------------------------------------------------
+
+// TxStatus
+
+// string txHash = 1;
+inline void TxStatus::clear_txhash() {
+  _impl_.txhash_.ClearToEmpty();
+}
+inline const std::string& TxStatus::txhash() const {
+  // @@protoc_insertion_point(field_get:TxStatus.txHash)
+  return _internal_txhash();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void TxStatus::set_txhash(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.txhash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:TxStatus.txHash)
+}
+inline std::string* TxStatus::mutable_txhash() {
+  std::string* _s = _internal_mutable_txhash();
+  // @@protoc_insertion_point(field_mutable:TxStatus.txHash)
+  return _s;
+}
+inline const std::string& TxStatus::_internal_txhash() const {
+  return _impl_.txhash_.Get();
+}
+inline void TxStatus::_internal_set_txhash(const std::string& value) {
+  
+  _impl_.txhash_.Set(value, GetArenaForAllocation());
+}
+inline std::string* TxStatus::_internal_mutable_txhash() {
+  
+  return _impl_.txhash_.Mutable(GetArenaForAllocation());
+}
+inline std::string* TxStatus::release_txhash() {
+  // @@protoc_insertion_point(field_release:TxStatus.txHash)
+  return _impl_.txhash_.Release();
+}
+inline void TxStatus::set_allocated_txhash(std::string* txhash) {
+  if (txhash != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.txhash_.SetAllocated(txhash, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.txhash_.IsDefault()) {
+    _impl_.txhash_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:TxStatus.txHash)
+}
+
+// int32 status = 2;
+inline void TxStatus::clear_status() {
+  _impl_.status_ = 0;
+}
+inline int32_t TxStatus::_internal_status() const {
+  return _impl_.status_;
+}
+inline int32_t TxStatus::status() const {
+  // @@protoc_insertion_point(field_get:TxStatus.status)
+  return _internal_status();
+}
+inline void TxStatus::_internal_set_status(int32_t value) {
+  
+  _impl_.status_ = value;
+}
+inline void TxStatus::set_status(int32_t value) {
+  _internal_set_status(value);
+  // @@protoc_insertion_point(field_set:TxStatus.status)
+}
+
+// -------------------------------------------------------------------
+
+// BlockStatus
+
+// string blockHash = 1;
+inline void BlockStatus::clear_blockhash() {
+  _impl_.blockhash_.ClearToEmpty();
+}
+inline const std::string& BlockStatus::blockhash() const {
+  // @@protoc_insertion_point(field_get:BlockStatus.blockHash)
+  return _internal_blockhash();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void BlockStatus::set_blockhash(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.blockhash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:BlockStatus.blockHash)
+}
+inline std::string* BlockStatus::mutable_blockhash() {
+  std::string* _s = _internal_mutable_blockhash();
+  // @@protoc_insertion_point(field_mutable:BlockStatus.blockHash)
+  return _s;
+}
+inline const std::string& BlockStatus::_internal_blockhash() const {
+  return _impl_.blockhash_.Get();
+}
+inline void BlockStatus::_internal_set_blockhash(const std::string& value) {
+  
+  _impl_.blockhash_.Set(value, GetArenaForAllocation());
+}
+inline std::string* BlockStatus::_internal_mutable_blockhash() {
+  
+  return _impl_.blockhash_.Mutable(GetArenaForAllocation());
+}
+inline std::string* BlockStatus::release_blockhash() {
+  // @@protoc_insertion_point(field_release:BlockStatus.blockHash)
+  return _impl_.blockhash_.Release();
+}
+inline void BlockStatus::set_allocated_blockhash(std::string* blockhash) {
+  if (blockhash != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.blockhash_.SetAllocated(blockhash, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.blockhash_.IsDefault()) {
+    _impl_.blockhash_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:BlockStatus.blockHash)
+}
+
+// int32 status = 2;
+inline void BlockStatus::clear_status() {
+  _impl_.status_ = 0;
+}
+inline int32_t BlockStatus::_internal_status() const {
+  return _impl_.status_;
+}
+inline int32_t BlockStatus::status() const {
+  // @@protoc_insertion_point(field_get:BlockStatus.status)
+  return _internal_status();
+}
+inline void BlockStatus::_internal_set_status(int32_t value) {
+  
+  _impl_.status_ = value;
+}
+inline void BlockStatus::set_status(int32_t value) {
+  _internal_set_status(value);
+  // @@protoc_insertion_point(field_set:BlockStatus.status)
+}
+
+// repeated .TxStatus txStatus = 3;
+inline int BlockStatus::_internal_txstatus_size() const {
+  return _impl_.txstatus_.size();
+}
+inline int BlockStatus::txstatus_size() const {
+  return _internal_txstatus_size();
+}
+inline void BlockStatus::clear_txstatus() {
+  _impl_.txstatus_.Clear();
+}
+inline ::TxStatus* BlockStatus::mutable_txstatus(int index) {
+  // @@protoc_insertion_point(field_mutable:BlockStatus.txStatus)
+  return _impl_.txstatus_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxStatus >*
+BlockStatus::mutable_txstatus() {
+  // @@protoc_insertion_point(field_mutable_list:BlockStatus.txStatus)
+  return &_impl_.txstatus_;
+}
+inline const ::TxStatus& BlockStatus::_internal_txstatus(int index) const {
+  return _impl_.txstatus_.Get(index);
+}
+inline const ::TxStatus& BlockStatus::txstatus(int index) const {
+  // @@protoc_insertion_point(field_get:BlockStatus.txStatus)
+  return _internal_txstatus(index);
+}
+inline ::TxStatus* BlockStatus::_internal_add_txstatus() {
+  return _impl_.txstatus_.Add();
+}
+inline ::TxStatus* BlockStatus::add_txstatus() {
+  ::TxStatus* _add = _internal_add_txstatus();
+  // @@protoc_insertion_point(field_add:BlockStatus.txStatus)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxStatus >&
+BlockStatus::txstatus() const {
+  // @@protoc_insertion_point(field_list:BlockStatus.txStatus)
+  return _impl_.txstatus_;
+}
+
+// string id = 4;
+inline void BlockStatus::clear_id() {
+  _impl_.id_.ClearToEmpty();
+}
+inline const std::string& BlockStatus::id() const {
+  // @@protoc_insertion_point(field_get:BlockStatus.id)
+  return _internal_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void BlockStatus::set_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:BlockStatus.id)
+}
+inline std::string* BlockStatus::mutable_id() {
+  std::string* _s = _internal_mutable_id();
+  // @@protoc_insertion_point(field_mutable:BlockStatus.id)
+  return _s;
+}
+inline const std::string& BlockStatus::_internal_id() const {
+  return _impl_.id_.Get();
+}
+inline void BlockStatus::_internal_set_id(const std::string& value) {
+  
+  _impl_.id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* BlockStatus::_internal_mutable_id() {
+  
+  return _impl_.id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* BlockStatus::release_id() {
+  // @@protoc_insertion_point(field_release:BlockStatus.id)
+  return _impl_.id_.Release();
+}
+inline void BlockStatus::set_allocated_id(std::string* id) {
+  if (id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.id_.SetAllocated(id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.id_.IsDefault()) {
+    _impl_.id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:BlockStatus.id)
+}
+
 // -------------------------------------------------------------------
 
 // SeekPreHashByHightReq
@@ -2053,6 +2720,10 @@ SeekPreHashByHightAck::mutable_prehashes() {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

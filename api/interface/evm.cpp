@@ -12,6 +12,7 @@
 #include "ca_global.h"
 #include "include/logging.h"
 #include "utils/ContractUtils.h"
+#include "sig.h"
 #include "utils/tmplog.h"
 #include <future>
 #include <chrono>

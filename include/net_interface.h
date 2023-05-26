@@ -164,6 +164,11 @@ double net_get_connected_percent();
 
 
 template <typename T>
+void net_register_callback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->net_registerCallback<T>(cb);
+}
+template <typename T>
 void ca_register_callback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
 {
     MagicSingleton<ProtobufDispatcher>::GetInstance()->ca_registerCallback<T>(cb);
@@ -189,9 +194,52 @@ void block_register_callback(std::function<int( const std::shared_ptr<T>& msg, c
     MagicSingleton<ProtobufDispatcher>::GetInstance()->block_registerCallback<T>(cb);
 }
 template <typename T>
+void broadcast_register_callback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->broadcast_registerCallback<T>(cb);
+}
+
+
+
+template <typename T>
 void net_unregister_callback()
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->net_unRegisterCallback<T>();
+}
+template <typename T>
+void ca_unregister_callback()
 {
     MagicSingleton<ProtobufDispatcher>::GetInstance()->ca_unRegisterCallback<T>();
 }
+template <typename T>
+void broadcast_unregister_callback()
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->broadcast_unRegisterCallback<T>();
+}
+
+
+template <typename T>
+void tx_unregister_callback()
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->tx_unRegisterCallback<T>();
+}
+
+template <typename T>
+void syncBlock_unregister_callback()
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->syncBlock_unRegisterCallback<T>();
+}
+
+template <typename T>
+void saveBlock_unregister_callback()
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->saveBlock_unRegisterCallback<T>();
+}
+template <typename T>
+void block_unregister_callback()
+{
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->block_unRegisterCallback<T>();
+}
+
 #endif
 

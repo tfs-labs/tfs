@@ -56,7 +56,7 @@ void gen_key()
     {
         Account acc(Base58Ver::kBase58Ver_Normal);
         MagicSingleton<AccountManager>::GetInstance()->AddAccount(acc);
-        MagicSingleton<AccountManager>::GetInstance()->SavePrivateKeyToFile(acc.base58Addr);
+        MagicSingleton<AccountManager>::GetInstance()->SavePrivateKeyToFile(acc.GetBase58());
     }
 
     std::cout << "Successfully generated account " << std::endl;
@@ -222,20 +222,13 @@ void menu_blockinfo()
         {
         case 0:
             return;
-            //         case 1:
-            //             break;
+           
+
         case 2:
             get_tx_block_info(top);
             break;
-            //         case 5:
-            //             std::cout << "none" << std::endl;
-            //             break;
-            //         case 6:
-            //             std::cout << "none" << std::endl;
-            //             break;
-            //         case 7:
-            //             std::cout << "none" << std::endl;
-            //             break;
+       
+
         default:
             std::cout << "Invalid input." << std::endl;
             continue;
@@ -317,10 +310,10 @@ void gen_mnemonic()
 
     Account defaultEd;
     MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultEd);
-    MagicSingleton<AccountManager>::GetInstance()->GetMnemonic(defaultEd.base58Addr, mnemonic);
+    MagicSingleton<AccountManager>::GetInstance()->GetMnemonic(defaultEd.GetBase58(), mnemonic);
     std::cout << "mnemonic : " << mnemonic << std::endl;
-    std::cout << "priStr : " << Str2Hex(defaultEd.priStr) << std::endl;
-    std::cout << "pubStr : " << Str2Hex(defaultEd.pubStr) << std::endl;
+    std::cout << "priStr : " << Str2Hex(defaultEd.GetPriStr()) << std::endl;
+    std::cout << "pubStr : " << Str2Hex(defaultEd.GetPubStr()) << std::endl;
 
     std::cout << "input mnemonic:" << std::endl;
     std::string str;
@@ -599,13 +592,13 @@ void get_balance_by_utxo()
 int imitate_create_tx_struct()
 {
     Account acc;
-    EVP_PKEY_free(acc.pkey);
+    EVP_PKEY_free(acc.GetKey());
     if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
     {
         return -1;
     }
 
-    const std::string addr = acc.base58Addr;
+    const std::string addr = acc.GetBase58();
     uint64_t time = global::ca::kGenesisTime;
 
     CTransaction tx;
@@ -635,7 +628,7 @@ int imitate_create_tx_struct()
 
         CSign *sign = txin->mutable_vinsign();
         sign->set_sign(signature);
-        sign->set_pub(acc.pubStr);
+        sign->set_pub(acc.GetPubStr());
     }
 
     {
@@ -654,7 +647,7 @@ int imitate_create_tx_struct()
 
         CSign *multiSign = utxo->add_multisign();
         multiSign->set_sign(signature);
-        multiSign->set_pub(acc.pubStr);
+        multiSign->set_pub(acc.GetPubStr());
     }
     
     tx.set_txtype((uint32)global::ca::TxType::kTxTypeGenesis);
@@ -1487,19 +1480,16 @@ void GetRewardAmount()
     int64_t start_height = 0;
     int64_t end_height = 0;
     std::string addr;
-    
     std::cout << "Please input start height:";
     std::cin >> start_height;
-
     std::cout << "Please input end height:";
     std::cin >> end_height;
-
     if(end_height < start_height)
     {
         std::cout<< "input invalid" << std::endl;
         return ;
     } 
-    std::cout << "Please input the base58address：";
+    std::cout << "Please input the base58address:";
     std::cin >> addr;
     
     if(!CheckBase58Addr(addr))
@@ -1564,7 +1554,6 @@ void GetRewardAmount()
                             {
                             for(auto &vout : tx.utxo().vout())
                             { 
-                                 
                                 if(vout.addr() != owner && vout.addr() != "VirtualBurnGas")
                                 {
                                 {
@@ -1580,10 +1569,7 @@ void GetRewardAmount()
                             
                     for(auto it = kmap.begin(); it != kmap.end();++it)
                     {
-                        
-                        
-                            std::cout << "reward addr:" << it->first << "reward amount" << it->second <<endl;
-                        
+                            std::cout << "reward addr:" << it->first << "reward amount" << it->second <<endl;   
                     }
                     if(claim_amount!=0)
                     {
@@ -1592,8 +1578,12 @@ void GetRewardAmount()
                     }
                     }
                 }
-                }
-            
+                }   
         }
-        
+
+    
+
 }
+
+
+ 

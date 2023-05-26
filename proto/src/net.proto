@@ -96,7 +96,7 @@ message NodeHeightChangedReq
 {
   string id = 1;
   uint32 height = 2;
-  CSign sign = 3;
+  CSign  sign = 3;
 }
 
 message NodeSign{

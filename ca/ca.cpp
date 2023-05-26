@@ -1,5 +1,6 @@
 #include "ca.h"
 
+#include "api/interface/base64.h"
 #include "unistd.h"
 
 #include <iostream>
@@ -24,7 +25,6 @@
 #include "net/ip_port.h"
 #include "utils/qrcode.h"
 #include "utils/string_util.h"
-#include "utils/tmplog.h"
 #include "utils/util.h"
 #include "utils/time_util.h"
 #include "utils/bip39.h"
@@ -54,6 +54,8 @@
 #include "ca_evmone.h"
 #include "api/interface/tx.h"
 #include "api/interface/evm.h"
+#include "utils/tmplog.h"
+#include "ca_DoubleSpendCache.h"
 
 bool bStopTx = false;
 bool bIsCreateTx = false;
@@ -72,8 +74,9 @@ int ca_startTimerTask()
     // Block synchronization thread
     MagicSingleton<SyncBlock>::GetInstance()->ThreadStart();
 
-
     MagicSingleton<BlockStroage>::GetInstance();
+
+    MagicSingleton<DoubleSpendCache>::GetInstance();
 
     return 0;
 }
@@ -260,9 +263,9 @@ void handle_stake()
               << std::endl;
 
     Account account;
-    EVP_PKEY_free(account.pkey);
+    EVP_PKEY_free(account.GetKey());
     MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(account);
-    std::string strFromAddr = account.base58Addr;
+    std::string strFromAddr = account.GetBase58();
     std::cout << "stake addr: " << strFromAddr << std::endl;
     std::string strStakeFee;
     std::cout << "Please enter the amount to stake:" << std::endl;
@@ -747,7 +750,7 @@ void handle_SetdefaultAccount()
     }
 
     Account oldAccount;
-    EVP_PKEY_free(oldAccount.pkey);
+    EVP_PKEY_free(oldAccount.GetKey());
     if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(oldAccount) != 0)
     {
         ERRORLOG("not found DefaultKeyBs58Addr  in the _accountList");
@@ -761,15 +764,15 @@ void handle_SetdefaultAccount()
     }
 
     Account newAccount;
-    EVP_PKEY_free(newAccount.pkey);
+    EVP_PKEY_free(newAccount.GetKey());
     if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(newAccount) != 0)
     {
         ERRORLOG("not found DefaultKeyBs58Addr  in the _accountList");
         return;
     }
 
-    if (!CheckBase58Addr(oldAccount.base58Addr, Base58Ver::kBase58Ver_Normal) ||
-        !CheckBase58Addr(newAccount.base58Addr, Base58Ver::kBase58Ver_Normal))
+    if (!CheckBase58Addr(oldAccount.GetBase58(), Base58Ver::kBase58Ver_Normal) ||
+        !CheckBase58Addr(newAccount.GetBase58(), Base58Ver::kBase58Ver_Normal))
     {
         return;
     }
@@ -779,25 +782,25 @@ void handle_SetdefaultAccount()
     req.set_version(global::kVersion);
 
     NodeSign *oldSign = req.mutable_oldsign();
-    oldSign->set_pub(oldAccount.pubStr);
+    oldSign->set_pub(oldAccount.GetPubStr());
     std::string oldSignature;
-    if (!oldAccount.Sign(getsha256hash(newAccount.base58Addr), oldSignature))
+    if (!oldAccount.Sign(getsha256hash(newAccount.GetBase58()), oldSignature))
     {
         return;
     }
     oldSign->set_sign(oldSignature);
 
     NodeSign *newSign = req.mutable_newsign();
-    newSign->set_pub(newAccount.pubStr);
+    newSign->set_pub(newAccount.GetPubStr());
     std::string newSignature;
-    if (!newAccount.Sign(getsha256hash(oldAccount.base58Addr), newSignature))
+    if (!newAccount.Sign(getsha256hash(oldAccount.GetBase58()), newSignature))
     {
         return;
     }
     newSign->set_sign(newSignature);
 
-    MagicSingleton<PeerNode>::GetInstance()->set_self_id(newAccount.base58Addr);
-    MagicSingleton<PeerNode>::GetInstance()->set_self_identity(newAccount.pubStr);
+    MagicSingleton<PeerNode>::GetInstance()->set_self_id(newAccount.GetBase58());
+    MagicSingleton<PeerNode>::GetInstance()->set_self_identity(newAccount.GetPubStr());
     std::vector<Node> publicNodes = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
     for (auto &node : publicNodes)
     {
@@ -1189,7 +1192,7 @@ void handle_deploy_contract()
             ERRORLOG("Failed to find account {}", strFromAddr);
             return;
         }
-        std::string OwnerEvmAddr = evm_utils::generateEvmAddr(launchAccount.pubStr);
+        std::string OwnerEvmAddr = evm_utils::generateEvmAddr(launchAccount.GetPubStr());
         ret = TxHelper::CreateEvmDeployContractTransaction(strFromAddr, OwnerEvmAddr, code, top + 1, contract_info,
                                                            outTx,
                                                            isNeedAgent_flag,
@@ -1327,7 +1330,7 @@ void handle_call_contract()
             ERRORLOG("Failed to find account {}", strFromAddr);
             return;
         }
-        std::string OwnerEvmAddr = evm_utils::generateEvmAddr(launchAccount.pubStr);
+        std::string OwnerEvmAddr = evm_utils::generateEvmAddr(launchAccount.GetPubStr());
         ret = TxHelper::CreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
                                                          OwnerEvmAddr, top + 1,
                                                          outTx, isNeedAgent_flag, info_);
@@ -1390,7 +1393,7 @@ void handle_export_private_key()
     std::cin >> addr;
 
     Account account;
-    EVP_PKEY_free(account.pkey);
+    EVP_PKEY_free(account.GetKey());
     MagicSingleton<AccountManager>::GetInstance()->FindAccount(addr, account);
 
     file << "Please use Courier New font to view" << std::endl
@@ -1401,11 +1404,11 @@ void handle_export_private_key()
 
     char out_data[1024] = {0};
     int data_len = sizeof(out_data);
-    mnemonic_from_data((const uint8_t *)account.priStr.c_str(), account.priStr.size(), out_data, data_len);
+    mnemonic_from_data((const uint8_t *)account.GetPriStr().c_str(), account.GetPriStr().size(), out_data, data_len);
     file << "Mnemonic: " << out_data << std::endl;
     std::cout << "Mnemonic: " << out_data << std::endl;
 
-    std::string strPriHex = Str2Hex(account.priStr);
+    std::string strPriHex = Str2Hex(account.GetPriStr());
     file << "Private key: " << strPriHex << std::endl;
     std::cout << "Private key: " << strPriHex << std::endl;
 
@@ -1495,6 +1498,9 @@ void RegisterCallback()
     syncBlock_register_callback<SyncFromZeroGetBlockReq>(HandleFromZeroSyncGetBlockReq);
     syncBlock_register_callback<SyncFromZeroGetBlockAck>(HandleFromZeroSyncGetBlockAck);
 
+    syncBlock_register_callback<SyncNodeHashReq>(HandleSyncNodeHashReq);
+    syncBlock_register_callback<SyncNodeHashAck>(HandleSyncNodeHashAck);
+
     syncBlock_register_callback<GetBlockByUtxoReq>(HandleBlockByUtxoReq);
     syncBlock_register_callback<GetBlockByUtxoAck>(HandleBlockByUtxoAck);
 
@@ -1512,8 +1518,10 @@ void RegisterCallback()
 
     block_register_callback<BlockMsg>(HandleBlock);      // PCEnd transaction flow
     block_register_callback<BuildBlockBroadcastMsgAck>(HandleAddBlockAck);
+    
 
     ca_register_callback<MultiSignTxReq>(HandleMultiSignTxReq);
+    ca_register_callback<BlockStatus>(HandleBlockStatusMsg); //retransmit
 
     net_register_chain_height_callback();
 }

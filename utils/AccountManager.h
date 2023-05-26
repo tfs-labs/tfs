@@ -30,20 +30,57 @@ class Account
 
         bool Sign(const std::string &message, std::string &signature);
         bool Verify(const std::string &message, std::string &signature);
+
+        EVP_PKEY * GetKey () const
+        {
+            return pkey;
+        }
+
+        void SetKey(EVP_PKEY * key)
+        {
+            pkey = key;
+        }
         
-         void _GetPubStr();
+        std::string GetPubStr() const
+        {
+            return pubStr;
+        }
+        
+        void SetPubStr(std::string &str)
+        {
+            pubStr = str;
+        }
+
+        std::string GetPriStr() const
+        {
+            return priStr;
+        }
+
+        void SetPriStr(std::string &str)
+        {
+            priStr = str;
+        }
+
+        std::string GetBase58() const
+        {
+            return base58Addr;
+        }
+
+        void SetBase58(std::string & base58)
+        {
+            base58Addr = base58;
+        }
 
     private:
-       
-        void _GetPriStr();
-        void _GetBase58Addr(Base58Ver ver);
-
-    public:
+        void GeneratePubStr();
+        void GeneratePriStr();
+        void GenerateBase58Addr(Base58Ver ver);
+    private:
         EVP_PKEY *pkey;
         std::string pubStr;
         std::string priStr;
         std::string base58Addr;
-    
+
 };
 
 class AccountManager

@@ -20,15 +20,32 @@ public:
     int Add(const Node & node);
     int Find(const Node & node);
 
-    bool tool_connect(const std::string & ip,int port);
-
     bool Register(std::map<uint32_t, Node> node_map);
     bool StartRegisterNode(std::map<std::string, int> &server_list);
     bool StartSyncNode();
+
+    struct NodeCompare
+    {
+        bool operator()(const Node& n1, const Node& n2) const {
+            return n1.base58address < n2.base58address;
+        }
+    };
+
+    void getIpMap(std::map<uint64_t, std::map<Node,int, NodeCompare>> & m1); 
+    std::vector<Node> GetConsensusNodeList();
     
+    void AddConsensusNode(const std::map<Node, int, NodeCompare>  sync_node_count);
+    void ClearConsensusNodeList();
+
+
 private:
     std::shared_mutex _mutex_for_nodes;
+    std::shared_mutex _mutex_consensus_nodes;
     std::map<std::string, Node> _nodes;
+
+    //The IP address and the corresponding number of times are stored once and synchronized once
+    std::map<uint64_t, std::map<Node,int, NodeCompare>> consensus_node_list;
+
 };
 
 #endif 

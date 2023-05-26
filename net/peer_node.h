@@ -1,6 +1,7 @@
 #ifndef _PEER_NODE_H_
 #define _PEER_NODE_H_
 
+#include <cstdint>
 #include <map>
 #include <list>
 #include <mutex>
@@ -35,6 +36,7 @@ public:
 	
 	std::vector<Node> get_nodelist(NodeType type = NODE_ALL, bool mustAlive = false);
 	void get_nodelist(std::map<std::string, bool>& NodeAddrs, NodeType type = NODE_ALL, bool mustAlive = false);
+	uint64_t get_nodelist_size();
 
 	void delete_node(std::string base58addr);
 	void delete_by_fd(int fd);

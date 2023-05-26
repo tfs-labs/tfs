@@ -38,7 +38,7 @@ class VRF
         int testVRF()
         {
             Account account;
-            auto pkey=account.pkey;
+            auto pkey=account.GetKey();
 
             std::string test="hello,world!";
             std::string output,proof;
@@ -78,12 +78,24 @@ class VRF
             }
         }
 
+        void addTxVrfInfo(const std::string & TxHash,const Vrf & info){
+            std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
+            auto ite=txvrfCache.find(TxHash);
+            if(ite==txvrfCache.end()){
+                txvrfCache[TxHash]=info;
+            }
+        }
+
         void removeVrfInfo(const std::string & TxHash)
         {
             std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
             auto ite = vrfCache.find(TxHash);
             if(ite != vrfCache.end()){
                 vrfCache.erase(ite);
+            }
+            auto ite2 = txvrfCache.find(TxHash);
+            if(ite2 != txvrfCache.end()){
+                txvrfCache.erase(ite2);
             }
             removeVerifyNodes(TxHash);
         }
@@ -92,6 +104,16 @@ class VRF
             std::shared_lock<std::shared_mutex> lck(vrfInfoMutex);
             auto ite= vrfCache.find(TxHash);
             if(ite!=vrfCache.end()){
+                vrf.first=ite->first;
+                vrf.second=ite->second;
+                return true;
+            }
+            return false;
+        }
+        bool  getTxVrfInfo(const std::string & TxHash,std::pair<std::string,Vrf> & vrf){
+            std::shared_lock<std::shared_mutex> lck(vrfInfoMutex);
+            auto ite= txvrfCache.find(TxHash);
+            if(ite!=txvrfCache.end()){
                 vrf.first=ite->first;
                 vrf.second=ite->second;
                 return true;
@@ -130,6 +152,7 @@ class VRF
 
      private:
         std::map<std::string,Vrf> vrfCache;
+        std::map<std::string,Vrf> txvrfCache;
         std::map<std::string,std::vector<std::string>> vrfVerifyNode;
         std::shared_mutex vrfInfoMutex;
         std::shared_mutex vrfNodeMutex;

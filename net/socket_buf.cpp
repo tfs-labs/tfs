@@ -140,7 +140,7 @@ void SocketBuf::printf_cache()
     DEBUGLOG("fd: {}", this->fd);
     DEBUGLOG("port_and_ip: {}", this->port_and_ip);
     DEBUGLOG("cache: {}", this->cache.c_str());
-    DEBUGLOG("send_cache： {}", this->send_cache.c_str());
+    DEBUGLOG("send_cache: {}", this->send_cache.c_str());
 }
 
 std::string SocketBuf::get_send_msg()

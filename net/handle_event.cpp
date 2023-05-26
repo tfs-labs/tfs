@@ -62,19 +62,12 @@ int handleRegisterNodeReq(const std::shared_ptr<RegisterNodeReq> &registerNode, 
 	{
 		return ret -= 1;
 	}
-
-	bool isOpen = MagicSingleton<UnregisterNode>::GetInstance() -> tool_connect(IpPort::ipsz(from.ip), SERVERMAINPORT);
-	if (!isOpen)
-	{
-		DEBUGLOG("IP:{} port{} not open ", IpPort::ipsz(from.ip), SERVERMAINPORT);
-		return ret -= 2;
-	}
 		
 	//Prohibit intranet node connection
 	if(IpPort::isLAN(IpPort::ipsz(from.ip)) == true)
 	{
 		ERRORLOG("{} is an intranet node", IpPort::ipsz(from.ip));
-		return ret -= 3;
+		return ret -= 2;
 	}
 
 	Node selfNode = MagicSingleton<PeerNode>::GetInstance()->get_self_node();
@@ -105,9 +98,8 @@ int handleRegisterNodeReq(const std::shared_ptr<RegisterNodeReq> &registerNode, 
     if (0 != Util::IsVersionCompatible(nodeinfo->version()))
     {
         ERRORLOG("Incompatible version!");
-        return ret -= 13;
+        return ret -= 3;
     }
-
 
 	if(node.base58address == MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr())
     {
@@ -199,22 +191,22 @@ int handleRegisterNodeReq(const std::shared_ptr<RegisterNodeReq> &registerNode, 
 	std::string signature;
 
 	Account acc;
-	EVP_PKEY_free(acc.pkey);
+	EVP_PKEY_free(acc.GetKey());
 	if(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
 		return ret -= 10;
 	}
 
-	if (selfNode.base58address != acc.base58Addr)
+	if (selfNode.base58address != acc.GetBase58())
 	{
 		return ret -= 11;
 	}
-	if(!acc.Sign(getsha256hash(acc.base58Addr), signature))
+	if(!acc.Sign(getsha256hash(acc.GetBase58()), signature))
 	{
 		return ret -= 12;
 	}
 
-	selfNode.identity = acc.pubStr;
+	selfNode.identity = acc.GetPubStr();
 	selfNode.sign = signature;
 
 	RegisterNodeAck registerNodeAck;
@@ -753,7 +745,7 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 	//Determine broadcast type
 	if(msg->type()==1)
 	{
-		std::cout << "cast coming 1....." << std::endl;
+		//std::cout << "cast coming 1....." << std::endl;
 
 
 		std::vector<std::string> nodeListAddrs;
@@ -788,7 +780,7 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 			cyc_node_list.push_back(addr);
 		}
 		msg->set_type(2);
-		msg->clear_castaddrs();
+		//msg->clear_castaddrs();
 		for(;FindTimes < upAddr.size() && FindTimes < downAddr.size(); FindTimes++){
 			auto upIter = getUpIter(FindTimes,cyc_node_list);
 			auto downIter = getDownIter(FindTimes,cyc_node_list);
@@ -812,7 +804,7 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 		}
 
 	}else if(msg->type()==2){
-		std::cout << "cast coming 2....." << std::endl;
+		//std::cout << "cast coming 2....." << std::endl;
 	}
 
 	return 0;

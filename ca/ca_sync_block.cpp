@@ -1,25 +1,47 @@
+#include "logging.h"
 #include "utils/MagicSingleton.h"
 #include "ca/ca_algorithm.h"
 #include "ca/ca_transaction.h"
 #include "ca/ca_txhelper.h"
 #include "common/global_data.h"
 #include "db/db_api.h"
-#include "ca/ca_block_http_callback.h"
 #include "ca/ca_sync_block.h"
-#include "../utils/time_util.h"
 #include "ca_global.h"
-#include "ca_transaction_cache.h"
 #include "ca_blockcache.h"
-#include "utils/MagicSingleton.h"
 #include "utils/console.h"
 
 #include "ca_blockhelper.h"
 #include "utils/AccountManager.h"
+#include "utils/json.hpp"
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <filesystem>
+#include <map>
+#include <string>
 #include <sys/file.h>
-
+#include <tuple>
+#include <utility>
+#include <vector>
+#include <tuple>
+#include "net/dispatcher.h"
+#include <cmath>
 const static uint64_t stability_time = 60 * 1000000;
 static uint64_t new_sync_fail_height = 0;
 static bool run_fast_sync = false;
+
+static uint32_t sync_height_cnt_ = 50;
+const static uint32_t sync_height_time_ = 50;
+const static uint32_t sync_stuck_overtime_count = 6;
+static uint64_t sync_send_new_sync_num = 25;
+static uint64_t sync_send_fast_sync_num = 10;
+static uint64_t sync_send_zero_sync_num = 10;
+const  static int nnormal_sum_hash_num = 1;
+static uint32_t run_fast_sunc_num = 0;
+static bool sync_to_tx = false;
+// #include <fstream> 
+// static std::ofstream fout("./test.txt", std::ios::trunc);
+
 
 inline static global::ca::SaveType GetSaveSyncType(uint64_t height, uint64_t chain_height)
 {
@@ -46,7 +68,7 @@ static bool SumHeightHash(std::vector<std::string> &block_hashes, std::string &h
     return true;
 }
 
-bool SyncBlock::SumHeightsHash(std::map<uint64_t, std::vector<std::string>> height_blocks, std::string &hash)
+bool SyncBlock::SumHeightsHash(const std::map<uint64_t, std::vector<std::string>>& height_blocks, std::string &hash)
 {
     std::vector<std::string> height_block_hashes;
     for(auto height_block : height_blocks)
@@ -95,7 +117,7 @@ static bool GetHeightBlockHash(uint64_t start_height, uint64_t end_height, std::
         }
         FastSyncBlockHashs fastSyncBlockHashs;
         fastSyncBlockHashs.set_height(start_height);
-        for(auto block_raw : blocks_raw)
+        for(const auto& block_raw : blocks_raw)
         {
             CBlock block;
             if(!block.ParseFromString(block_raw))
@@ -139,15 +161,12 @@ static bool GetHeightBlockHash(uint64_t start_height, uint64_t end_height, std::
 
 void SyncBlock::ThreadStart()
 {
-
-    sync_height_time_ = 50;
-    sync_height_cnt_ = 50;
     if(sync_height_cnt_ > sync_bound)
     {
         sync_height_cnt_ = sync_bound;
     }
     fast_sync_height_cnt_ = 0; // 0 means "this variable doesn't use for now"
-
+    
     sync_thread_runing = true;
     sync_thread_ = std::thread(
         [this]()
@@ -155,7 +174,6 @@ void SyncBlock::ThreadStart()
             uint32_t  sleep_time = sync_height_time_;
             while (sync_thread_runing)
             {
-                syncing_ = false;
                 std::unique_lock<std::mutex> block_thread_runing_locker(sync_thread_runing_mutex);
                 sync_thread_runing_condition.wait_for(block_thread_runing_locker, std::chrono::seconds(sleep_time));
                 sync_thread_runing_mutex.unlock();
@@ -168,7 +186,6 @@ void SyncBlock::ThreadStart()
                 {
                     sleep_time = sync_height_time_;
                 }
-                syncing_ = true;
                 uint64_t chain_height = 0;
                 if(!MagicSingleton<BlockHelper>::GetInstance()->obtain_chain_height(chain_height))
                 {
@@ -220,8 +237,19 @@ void SyncBlock::ThreadStart()
                     }
                 }
 
+                if(run_fast_sunc_num >= 2)
+                {
+                    if(run_fast_sync)
+                    {
+                        run_fast_sunc_num = 0;
+                        run_fast_sync = false;
+                    }
+                }
+
                 if(run_fast_sync)
                 {
+                    ++run_fast_sunc_num;
+
                     if (new_sync_fail_height > fast_sync_height_cnt_)
                     {
                         start_sync_height = new_sync_fail_height - fast_sync_height_cnt_;
@@ -230,25 +258,46 @@ void SyncBlock::ThreadStart()
                     {
                         start_sync_height = new_sync_fail_height;
                     }
-                    end_sync_height = new_sync_fail_height + fast_sync_height_cnt_;
+
+                    if(start_sync_height > self_node_height)
+                    { 
+                        // fout << "start_sync_height: " << start_sync_height << "\tself_node_height" << self_node_height << std::endl;
+                        start_sync_height = self_node_height + 1;
+                    }
+
+                    end_sync_height = start_sync_height + fast_sync_height_cnt_;
 
                     INFOLOG("begin fast sync {} {} ", start_sync_height, end_sync_height);
-                    if(!RunFastSyncOnce(pledge_addr, chain_height, start_sync_height, end_sync_height))
+                    bool if_success = RunFastSyncOnce(pledge_addr, chain_height, start_sync_height, end_sync_height);
+                    if(!if_success)
                     {
+                        sync_send_fast_sync_num += 15;
+                        // fout << "fast sync fail" << std::endl;
                         DEBUGLOG("fast sync fail");
                     }
+                    else
+                    {
+                        sync_send_fast_sync_num = 10;
+                    }
+                    // fout << "-----------------------------------------------------------------------------------------------" << std::endl;
                     run_fast_sync = false;
                 }
                 else
-                {
+                { 
                     auto sync_type = GetSaveSyncType(self_node_height, chain_height);
+
                     if (sync_type == global::ca::SaveType::SyncFromZero)
                     {
                         INFOLOG("begin from zero sync");
                         int run_status = RunFromZeroSyncOnce(pledge_addr, chain_height, self_node_height);
                         if (run_status != 0)
                         {
+                            sync_send_zero_sync_num += 10;
                             ERRORLOG("from zero sync fail ret: {}", run_status);
+                        }
+                        else 
+                        {
+                            sync_send_zero_sync_num = 10;
                         }
                     }
                     else
@@ -280,11 +329,23 @@ void SyncBlock::ThreadStart()
                         }
                         sleep_time = sync_height_time_;
                         INFOLOG("begin new sync {} {} ", start_sync_height, end_sync_height);
+
                         int run_status = RunNewSyncOnce(pledge_addr, chain_height, self_node_height, start_sync_height, end_sync_height);
-                        if(run_status <= 0)
+                        if(run_status < 0)
+                        {   
+                            new_sync_fail_height = 0;
+                            run_fast_sync = false;
+                            sync_send_new_sync_num *= 10;
+                        }
+                        if(run_status == 0)
                         {
                             new_sync_fail_height = 0;
                             run_fast_sync = false;
+                            sync_send_new_sync_num = 25;
+                        }
+                        if(run_status > 0)
+                        {
+                            sync_send_new_sync_num *= 10;
                         }
                     }
                 }
@@ -293,6 +354,7 @@ void SyncBlock::ThreadStart()
     sync_thread_.detach();
 }
 
+
 bool SyncBlock::RunFastSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t start_sync_height, uint64_t end_sync_height)
 {
     if (start_sync_height > end_sync_height)
@@ -300,7 +362,7 @@ bool SyncBlock::RunFastSyncOnce(const std::vector<std::string> &pledge_addr, uin
         return false;
     }
     std::vector<std::string> send_node_ids;
-    if (GetNewSyncNode(10, chain_height, pledge_addr, send_node_ids) != 0)
+    if (GetSyncNode(sync_send_fast_sync_num, chain_height, pledge_addr, send_node_ids) != 0)
     {
         ERRORLOG("get sync node fail");
         return false;
@@ -308,6 +370,10 @@ bool SyncBlock::RunFastSyncOnce(const std::vector<std::string> &pledge_addr, uin
     std::vector<std::string> ret_node_ids;
     std::vector<FastSyncBlockHashs> request_hashs;
 
+    // for(const auto& t : send_node_ids)
+    // {
+    //     fout << "Run Fast send node ids" << t << std::endl;
+    // }
 
     INFOLOG("begin GetFastSyncSumHashNode {} {} ", start_sync_height, end_sync_height);
     if (!GetFastSyncSumHashNode(send_node_ids, start_sync_height, end_sync_height, request_hashs, ret_node_ids, chain_height))
@@ -328,6 +394,7 @@ bool SyncBlock::RunFastSyncOnce(const std::vector<std::string> &pledge_addr, uin
     return flag;
 }
 
+
 int SyncBlock::RunNewSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t self_node_height, uint64_t start_sync_height, uint64_t end_sync_height)
 {
     int ret = 0;
@@ -337,16 +404,18 @@ int SyncBlock::RunNewSyncOnce(const std::vector<std::string> &pledge_addr, uint6
         return ret;
     }
     std::vector<std::string> send_node_ids;
-    if ((ret = GetNewSyncNode(10, chain_height, pledge_addr, send_node_ids)) != 0)
+    //  if ((ret = GetNewSyncNode(sync_send_new_sync_num, chain_height, pledge_addr, send_node_ids)) != 0)
+    if ((ret = GetSyncNode(sync_send_new_sync_num, chain_height, pledge_addr, send_node_ids)) != 0)
     {
         ERRORLOG("get sync node fail");
         return ret - 1000;
     }
+
     std::map<uint64_t, uint64_t> need_sync_heights;
     std::vector<std::string> ret_node_ids;
     chain_height = 0;
     DEBUGLOG("GetSyncSumHashNode begin:{}:{}", start_sync_height, end_sync_height);
-    if ((ret = GetSyncSumHashNode(send_node_ids, start_sync_height, end_sync_height, need_sync_heights, ret_node_ids, chain_height)) < 0)
+    if ((ret = GetSyncSumHashNode(pledge_addr.size(), send_node_ids, start_sync_height, end_sync_height, need_sync_heights, ret_node_ids, chain_height)) < 0)
     {
         ERRORLOG("get sync sum hash fail");
         return ret - 2000;
@@ -381,6 +450,11 @@ int SyncBlock::RunNewSyncOnce(const std::vector<std::string> &pledge_addr, uint6
         }
         DEBUGLOG("GetSyncBlockData success:{}", req_hashes.size());
     }
+
+    if(run_fast_sync)
+    {
+        return 99;
+    }
     if(fast_sync_flag)
     {
         return 1;
@@ -393,13 +467,13 @@ int SyncBlock::RunFromZeroSyncOnce(const std::vector<std::string> &pledge_addr, 
     int ret = 0;
 
     std::vector<std::string> send_node_ids;
-    if ((ret = GetFastSyncNode(10, chain_height, pledge_addr, send_node_ids)) != 0)
+    if ((ret = GetSyncNodeSimplify(sync_send_zero_sync_num, chain_height, pledge_addr, send_node_ids)) != 0)
     {
-        ERRORLOG("get from zero sync node fail");
         return ret - 1000;
     }
 
-    std::vector<std::string> ret_node_ids;
+    // std::vector<std::string> ret_node_ids;
+    std::set<std::string> ret_node_ids;
     std::vector<uint64_t> heights;
     if (!sync_from_zero_reserve_heights.empty())
     {
@@ -407,8 +481,15 @@ int SyncBlock::RunFromZeroSyncOnce(const std::vector<std::string> &pledge_addr, 
     }
     else
     {
-        uint64_t height_ceiling = ca_algorithm::GetSumHashFloorHeight(chain_height) - global::ca::sum_hash_range;
+        uint64_t height_ceiling = ca_algorithm::GetSumHashFloorHeight(chain_height) - global::ca::sum_hash_range; //100
+
         auto sync_height = ca_algorithm::GetSumHashCeilingHeight(self_node_height);
+
+        if(height_ceiling - sync_height > 1000)
+        {
+            height_ceiling = sync_height + 1000;
+        }
+
         heights = {sync_height};
         for(auto i = send_node_ids.size() - 1; i > 0; --i)
         {
@@ -420,14 +501,16 @@ int SyncBlock::RunFromZeroSyncOnce(const std::vector<std::string> &pledge_addr, 
             heights.push_back(sync_height);
         }        
     }
+
     std::map<uint64_t, std::string> sum_hashes;
 
     std::string request_heights;
     for(auto height : heights)
     {
         request_heights += " ";
-        request_heights += height;
+        request_heights += std::to_string(height);
     }
+
     DEBUGLOG("GetFromZeroSyncSumHashNode begin{}", request_heights);
     if ((ret = GetFromZeroSyncSumHashNode(send_node_ids, heights, self_node_height, ret_node_ids, sum_hashes)) < 0)
     {
@@ -435,8 +518,9 @@ int SyncBlock::RunFromZeroSyncOnce(const std::vector<std::string> &pledge_addr, 
         return ret - 2000;
     }
     DEBUGLOG("GetFromZeroSyncSumHashNode success");
+
     DEBUGLOG("GetFromZeroSyncBlockData begin");
-    if ((ret = GetFromZeroSyncBlockData(sum_hashes, heights, ret_node_ids)) != 0 )
+    if ((ret = GetFromZeroSyncBlockData(sum_hashes, heights, ret_node_ids, self_node_height)) != 0 )
     {
         return ret -3000;
     }
@@ -444,8 +528,8 @@ int SyncBlock::RunFromZeroSyncOnce(const std::vector<std::string> &pledge_addr, 
     return 0;
 }
 
-int SyncBlock::GetNewSyncNode(uint32_t num, uint64_t chain_height, const std::vector<std::string> &pledge_addr,
-                    std::vector<std::string> &send_node_ids)
+int SyncBlock::GetSyncNode(uint32_t num, uint64_t chain_height, const std::vector<std::string> &pledge_addr,
+                           std::vector<std::string> &send_node_ids)
 {
     static bool force_find_base_chain = false;
     DBReader db_reader;
@@ -457,26 +541,65 @@ int SyncBlock::GetNewSyncNode(uint32_t num, uint64_t chain_height, const std::ve
         return -10 - status;
     }
 
+    if (self_node_height == chain_height)
+    {
+        static uint64_t last_equal_height = 0;
+        static uint32_t equal_height_count = 0;
+
+        if (self_node_height == last_equal_height)
+        {
+            equal_height_count++;
+            if (equal_height_count >= sync_stuck_overtime_count)
+            {
+                std::vector<std::string> selected_addrs;
+                if (NeedByzantineAdjustment(chain_height, pledge_addr, selected_addrs))
+                {
+                    auto discard_comparator = std::less<>();
+                    auto reserve_comparator = std::greater_equal<>();
+                    int ret = GetSyncNodeBasic(num, chain_height, discard_comparator, reserve_comparator, selected_addrs,
+                                            send_node_ids);
+                    if (ret != 0)
+                    {
+                        DEBUGLOG("get sync node fail, ret: {}", ret);
+                        force_find_base_chain = true;
+                    }
+                    else
+                    {
+                        DEBUGLOG("Preparing to solve the forking problem");
+                        return 0;
+                    }
+                }
+            }
+        }
+        else
+        {
+            equal_height_count = 0;
+            last_equal_height = self_node_height;
+        }
+
+    }
+
     if (force_find_base_chain || self_node_height < chain_height)
     {
         DEBUGLOG("find node base on chain height {}", chain_height);
         force_find_base_chain = false;
-        auto discard_comparator = std::less<uint64_t>();
-        auto reserve_comparator = std::greater_equal<uint64_t>();
-        return GetSyncNode(num, chain_height, discard_comparator, reserve_comparator, pledge_addr, send_node_ids);
+        auto discard_comparator = std::less<>();
+        auto reserve_comparator = std::greater_equal<>();
+        return GetSyncNodeBasic(num, chain_height, discard_comparator, reserve_comparator, pledge_addr, send_node_ids);
     }
     else
     {
         DEBUGLOG("find node base on self height {}", self_node_height);
         force_find_base_chain = true;
-        auto discard_comparator = std::less_equal<uint64_t>();
-        auto reserve_comparator = std::greater<uint64_t>();
-        return GetSyncNode(num, self_node_height, discard_comparator, reserve_comparator, pledge_addr, send_node_ids);
+        auto discard_comparator = std::less_equal<>();
+        auto reserve_comparator = std::greater<>();
+        return GetSyncNodeBasic(num, self_node_height, discard_comparator, reserve_comparator, pledge_addr,
+                                send_node_ids);
     }
 }
 
-int SyncBlock::GetFastSyncNode(uint32_t num, uint64_t chain_height, const std::vector<std::string> &pledge_addr,
-                    std::vector<std::string> &send_node_ids)
+int SyncBlock::GetSyncNodeSimplify(uint32_t num, uint64_t chain_height, const std::vector<std::string> &pledge_addr,
+                                   std::vector<std::string> &send_node_ids)
 {
     DBReader db_reader;
     uint64_t self_node_height = 0;
@@ -487,14 +610,18 @@ int SyncBlock::GetFastSyncNode(uint32_t num, uint64_t chain_height, const std::v
         return -10 - status;
     }
     DEBUGLOG("find node base on self height {}", self_node_height);
-    auto discard_comparator = std::less<uint64_t>();
-    auto reserve_comparator = std::greater_equal<uint64_t>();
-    return GetSyncNode(num, self_node_height, discard_comparator, reserve_comparator, pledge_addr, send_node_ids);
+    auto discard_comparator = std::less<>();
+    auto reserve_comparator = std::greater_equal<>();
+    return GetSyncNodeBasic(num, self_node_height, discard_comparator, reserve_comparator, pledge_addr, send_node_ids);
 }
 
-int SyncBlock::GetSyncNode(uint32_t num, uint64_t height_baseline, std::function<bool(uint64_t, uint64_t)> discard_comparator, std::function<bool(uint64_t, uint64_t)> reserve_comparator, const std::vector<std::string> &pledge_addr,
-                            std::vector<std::string> &send_node_ids)
+int SyncBlock::GetSyncNodeBasic(uint32_t num, uint64_t height_baseline,
+                                const std::function<bool(uint64_t, uint64_t)>& discard_comparator,
+                                const std::function<bool(uint64_t, uint64_t)>& reserve_comparator,
+                                const std::vector<std::string> &pledge_addr,
+                                std::vector<std::string> &send_node_ids)
 {
+    DEBUGLOG("{} Nodes have passed qualification verification", pledge_addr.size());
     int ret = 0;
     std::vector<Node> nodes;
     auto peer_node = MagicSingleton<PeerNode>::GetInstance();
@@ -506,21 +633,27 @@ int SyncBlock::GetSyncNode(uint32_t num, uint64_t height_baseline, std::function
         ret = -1;
         return ret;
     }
+
+    if(num > nodes.size() || num < 10)
+    {
+        num = nodes.size();
+    }
     if (nodes.size() <= num)
     {
         for (auto &node : nodes)
         {
-            if (discard_comparator(node.height, height_baseline))
-            {
-                continue;
-            }
+            // fout << "node.height:" << node.height << "\theight_baseline:" << height_baseline << std::endl; 
+            // if (discard_comparator(node.height, height_baseline))
+            // {
+            //     continue;
+            // }
             send_node_ids.push_back(node.base58address);
         }
     }
     else
     {
         std::vector<Node> node_info = nodes;
-        if(pledge_addr.size() < 10)
+        if(pledge_addr.size() < num)
         {
             int count = 0;
             for(auto &node : node_info)
@@ -590,10 +723,10 @@ int SyncBlock::GetSyncNode(uint32_t num, uint64_t height_baseline, std::function
             }
         }
     }
-    if (send_node_ids.size() < 5)
+    if (send_node_ids.size() < num * 0.5)
     {
-        std::vector<Node> nodes = peer_node->get_nodelist();
-        for(auto &it : nodes)
+        std::vector<Node> nodelist = peer_node->get_nodelist();
+        for(auto &it : nodelist)
         {
             DEBUGLOG("Node height:{}", it.height);
         }
@@ -647,9 +780,9 @@ bool SyncBlock::GetFastSyncSumHashNode(const std::vector<std::string> &send_node
             continue;
         }
         auto ret_height_data = ack.hashs();
-        for(auto ret_height_hashs : ret_height_data)
+        for(const auto& ret_height_hashs : ret_height_data)
         {
-            for(auto hash : ret_height_hashs.hashs())
+            for(const auto& hash : ret_height_hashs.hashs())
             {
                 auto it = sync_hashs.find(hash);
                 if (sync_hashs.end() == it)
@@ -688,7 +821,7 @@ bool SyncBlock::GetFastSyncSumHashNode(const std::vector<std::string> &send_node
             local_hashs = result->second;
         }
         
-        bool byzantine_success = check_byzantine(ret_num, iter->second.hits);
+        bool byzantine_success = iter->second.hits >= ret_num * 0.66;//check_byzantine(ret_num, iter->second.hits);
         if (!byzantine_success)
         {
             std::string block_raw;
@@ -810,10 +943,12 @@ bool SyncBlock::GetFastSyncBlockData(const std::string &send_node_id, const std:
             {
                 hash_block = block;
                 hash_block.clear_hash();
+                hash_block.clear_sign();
                 if (block.hash() != getsha256hash(hash_block.SerializeAsString()))
                 {
                     continue;
                 }
+                DEBUGLOG("FastSync  block.height(): {} \tblock.hash(): {}", block.height(), block.hash());
                 AddBlockToMap(block, fast_sync_block_data);
                 block_hashes.push_back(block.hash());
             }
@@ -833,7 +968,7 @@ bool SyncBlock::GetFastSyncBlockData(const std::string &send_node_id, const std:
     return true;
 }
 
-int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height,
+int SyncBlock::GetSyncSumHashNode(uint64_t pledge_addr_size, const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height,
                                    std::map<uint64_t, uint64_t> &need_sync_heights, std::vector<std::string> &ret_node_ids, uint64_t &chain_height)
 {
     int ret = 0;
@@ -841,7 +976,14 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
     ret_node_ids.clear();
     std::string msg_id;
     size_t send_num = send_node_ids.size();
-    if (!GLOBALDATAMGRPTR.CreateWait(90, send_num * 0.8, msg_id))
+
+    auto peer_node_size = MagicSingleton<PeerNode>::GetInstance()->get_nodelist_size();
+    double acceptance_rate = 0.8;
+    if(sync_send_new_sync_num > peer_node_size)
+    {
+        acceptance_rate = 0.91;
+    }
+    if (!GLOBALDATAMGRPTR.CreateWait(90, send_num * acceptance_rate, msg_id))
     {
         ret = -1;
         return ret;
@@ -860,9 +1002,13 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
             return ret;
         }
     }
+
     std::vector<uint64_t> ret_node_tops;
     SyncGetSumHashAck ack;
+    DBReader db_reader;
 
+    //key:sumHash    pair.first:height    pair.second:node list
+    std::map<std::string, std::pair<uint32_t, std::vector<std::string> >> consensus_map;
     std::vector<std::pair<std::string, uint32_t>> sync_hash_datas;
     for (auto &ret_data : ret_datas)
     {
@@ -875,11 +1021,21 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
         ret_node_tops.push_back(ack.node_block_height());
         for (auto &sync_sum_hash : ack.sync_sum_hashes())
         {
+            auto find_sum_hash = consensus_map.find(sync_sum_hash.hash());
+            if(find_sum_hash == consensus_map.end())
+            {
+                consensus_map.insert(std::make_pair(sync_sum_hash.hash(), std::make_pair(sync_sum_hash.start_height(), std::vector<std::string>() )));
+            }
+            auto &value = consensus_map.at(sync_sum_hash.hash());
+            value.second.push_back(ack.self_node_id());
+
+            
+
             std::string key = std::to_string(sync_sum_hash.start_height()) + "_" + std::to_string(sync_sum_hash.end_height()) + "_" + sync_sum_hash.hash();
             auto it = std::find_if(sync_hash_datas.begin(), sync_hash_datas.end(), [&key](const std::pair<std::string, uint32_t>& sync_hash_data){return key == sync_hash_data.first;}); //sync_hash_datas.find(key);
             if (sync_hash_datas.end() == it)
             {
-                sync_hash_datas.push_back(std::make_pair(key, 1));
+                sync_hash_datas.emplace_back(key, 1);
             }
             else
             {
@@ -902,6 +1058,16 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
     uint64_t end_height = 0;
     std::vector<std::string> block_hashes;
     std::vector<std::string> data_key;
+
+    std::sort(sync_hash_datas.begin(),sync_hash_datas.end(),[](const std::pair<std::string, uint32_t> v1, const std::pair<std::string, uint32_t> v2){
+        std::vector<std::string> v1Height;
+        StringUtil::SplitString(v1.first, "_", v1Height);
+        std::vector<std::string> v2Height;
+        StringUtil::SplitString(v2.first, "_", v2Height);
+
+        return v1Height.at(0) < v2Height.at(0);
+    });
+
     for (auto &sync_hash_data : sync_hash_datas)
     {
         data_key.clear();
@@ -912,25 +1078,113 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
         }
         start_height = std::stoull(data_key.at(0));
         end_height = std::stoull(data_key.at(1));
+
         if (sync_hash_data.second < verify_num)
         {
+            DEBUGLOG("verify error, error height: {} sync_hash_data.second: {} verify_num: {}", start_height, sync_hash_data.second, verify_num);
             uint64_t self_node_height = 0;
-            DBReader db_reader;
+            // DBReader db_reader;
             if(DBStatus::DB_SUCCESS != db_reader.GetBlockTop(self_node_height))
             {
                 ERRORLOG("(GetSyncSumHashNode) GetBlockTop failed !");
                 ret = -4;
                 return ret;
             }
+
+            if(start_height > self_node_height)
+            {
+                ERRORLOG("error height > self height  error height:{}  self_node_height:{}" ,start_height, self_node_height);
+                if(sync_send_new_sync_num >= peer_node_size)
+                {
+                    new_sync_fail_height = start_height;
+                    run_fast_sync = true;   
+                    INFOLOG("new sync fail,next round will run fast sync"); 
+                }
+
+                continue;
+            }
+
+
             if(chain_height >= self_node_height && chain_height - self_node_height <= 500)
             {
-                new_sync_fail_height = start_height;
-                run_fast_sync = true;   
-                INFOLOG("new sync fail,next round will run fast sync"); 
+
+                if(sync_send_new_sync_num >= peer_node_size)
+                {
+                    uint32_t acceptance_odds = pledge_addr_size * 0.9;
+                    ERRORLOG("peer_node_size{}   pledge_addr_size{}   ret_datas.size(){}", peer_node_size, pledge_addr_size, ret_datas.size());
+                    if (ret_datas.size() >= acceptance_odds)
+                    {
+                        // std::vector<std::vector<std::string>> node_lists;
+                        std::vector<std::pair<std::string, std::vector<std::string>>> node_lists;
+                        
+                        std::string self_sumhash;
+
+                        std::vector<std::string> self_block_hashes;
+                        auto res = db_reader.GetBlockHashsByBlockHeight(start_height, self_block_hashes);
+                        if(res != DBStatus::DB_SUCCESS)
+                        {
+                            ERRORLOG("get {}  block hash failed !", start_height);
+                            return -5;
+                        }
+
+                        if(!SumHeightHash(self_block_hashes, self_sumhash))
+                        {
+                            ERRORLOG("get {} block sum hash failed !", start_height);
+                            return -6;
+                        }
+                        uint32_t same_node_height = 0;
+                        
+                        for(auto consensus : consensus_map)
+                        {
+                            if(consensus.second.first == start_height)
+                            {
+                                // fout << consensus.first << "   ====   " << consensus.second.first << std::endl;
+                                // for(const auto& ss : consensus.second.second)
+                                // {
+                                //     fout << ss << std::endl;
+                                // }
+                                // node_lists.emplace_back(std::move(consensus.second.second));
+                                node_lists.emplace_back(std::make_pair(consensus.first, std::move(consensus.second.second)));
+                            }
+                            sort(node_lists.begin(), node_lists.end(), [](const std::pair<std::string, std::vector<std::string>> list1, const std::pair<std::string, std::vector<std::string>> list2){
+                                // return list1.size() > list2.size();
+                                return list1.second.size() > list2.second.size();
+                            });
+
+                           
+                        }
+                        //if(same_node_size < node_lists.at(0).second.size())
+                        if(self_sumhash != node_lists.at(0).first)
+                        {
+
+                            ret = GetSyncBlockBySumHashNode(node_lists.at(0).second, start_height, end_height, self_node_height, chain_height);
+                            if(ret != 0)
+                            {
+                                ERRORLOG("GetSyncBlockBySumHashNode failed !");
+                                return -6;
+                            }
+                        }
+                        else 
+                        {
+                            continue;
+                        }
+                    }
+
+                }
+                else 
+                {
+                    return -7;
+                }
+
+
+
+
+                // new_sync_fail_height = start_height;
+                // run_fast_sync = true;   
+                // INFOLOG("new sync fail,next round will run fast sync");
             }
             break;
         }
-
 
         hash.clear();
         block_hashes.clear();
@@ -974,10 +1228,10 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
     {
         need_sync_heights.insert(std::make_pair(start, end));
     }
-    if(run_fast_sync)
-    {
-        return 99;
-    }
+    // if(run_fast_sync)
+    // {
+    //     return 99;
+    // }
     // Synchronize the latest no_verify_height heights
     if (end_sync_height >= (chain_height - no_verify_height))
     {
@@ -991,11 +1245,168 @@ int SyncBlock::GetSyncSumHashNode(const std::vector<std::string> &send_node_ids,
             need_sync_heights.insert(std::make_pair(1, chain_height + no_verify_height));
         }
     }
+
+
+    // for(const auto& t : need_sync_heights)
+    // {
+    //     fout << "need sync height :" << t.first << "  <====>  " << t.second << std::endl;
+    // }
+    uint64_t self_node_height = 0;
+
+    db_reader.GetBlockTop(self_node_height);
+
     return 0;
 }
 
-int SyncBlock::GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_node_ids, const std::vector<uint64_t>& send_heights, uint64_t self_node_height, std::vector<std::string> &ret_node_ids, std::map<uint64_t, std::string>& sum_hashes)
+int SyncBlock::GetSyncBlockBySumHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height, uint64_t self_node_height, uint64_t chain_height)
 {
+    int ret = 0;
+    std::string msg_id;
+    uint64_t succent_count = 0;
+    if (!GLOBALDATAMGRPTR.CreateWait(90, send_node_ids.size() * 0.8, msg_id))
+    {
+        ret = -1;
+        return ret;
+    }
+    for (auto &node_id : send_node_ids)
+    {
+        DEBUGLOG("new sync get block hash from {}", node_id);
+        SendSyncGetHeightHashReq(node_id, msg_id, start_sync_height, end_sync_height);
+    }
+    std::vector<std::string> ret_datas;
+    if (!GLOBALDATAMGRPTR.WaitData(msg_id, ret_datas))
+    {
+        if(ret_datas.size() < send_node_ids.size() * 0.5)
+        {
+            ERRORLOG("wait sync block hash time out send:{} recv:{}", send_node_ids.size(), ret_datas.size());
+            ret = -2;
+            return ret;
+        }
+    }
+
+    SyncGetHeightHashAck ack;
+    std::set<std::string> verify_set;
+    for (auto &ret_data : ret_datas)
+    {
+        ack.Clear();
+        if (!ack.ParseFromString(ret_data))
+        {
+            continue;
+        }
+        if(ack.code() != 0)
+        {
+            continue;
+        }
+        std::string verify_str = "";
+        for (auto &key : ack.block_hashes())
+        {
+            verify_str += key;
+        }
+        verify_set.insert(verify_str);
+
+    }
+    if(verify_set.size() != 1)
+    {
+        DEBUGLOG("Byzantium failed");
+        return -3;
+    }
+
+    DBReader db_reader;
+    std::vector<std::string> self_block_hashes;
+    if(DBStatus::DB_SUCCESS != db_reader.GetBlockHashesByBlockHeight(start_sync_height, end_sync_height, self_block_hashes))
+    {
+        ret = -4;
+        DEBUGLOG("GetBlockHashesByBlockHeight failed");
+        return ret;
+    }
+
+    std::map<uint64_t, std::set<CBlock, CBlockCompare>> rollback_block_data;
+    CBlock block;
+    std::vector<std::string> diff_hashes;
+    std::set_difference(self_block_hashes.begin(), self_block_hashes.end(), ack.block_hashes().begin(), ack.block_hashes().end(), std::back_inserter(diff_hashes));
+    for(auto diff_hash: diff_hashes)
+    {
+        block.Clear();
+        string strblock;
+        auto res = db_reader.GetBlockByBlockHash(diff_hash, strblock);
+        if (DBStatus::DB_SUCCESS != res)
+        {
+            DEBUGLOG("GetBlockByBlockHash failed");
+            return -5;
+        }
+        block.ParseFromString(strblock);
+        
+        uint64_t tmp_height = block.height();
+        if ((tmp_height < chain_height) && chain_height - tmp_height > 10)
+        {
+            AddBlockToMap(block, rollback_block_data);
+            continue;
+        }
+
+        if(self_node_height - block.height() > 10)
+        {
+            uint64_t curtime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
+            if(curtime - block.time() > 100000000) //100s
+            {
+                if(sync_send_new_sync_num < MagicSingleton<PeerNode>::GetInstance()->get_nodelist_size())
+                {
+                    return -5;
+                }
+                AddBlockToMap(block, rollback_block_data);
+            }
+        }
+    }
+
+    // fout << "GetSyncBlockBySumHashNode rollback_block_data.size(): " << rollback_block_data.size() << std::endl;
+    // for(const auto& t : rollback_block_data)
+    // {
+    //     for(const auto & tt : t.second)
+    //     {
+    //         fout << "GetSyncBlockBySumHashNode rollback_block: " << tt.hash() << std::endl;
+    //     }
+    // }
+
+    if(!rollback_block_data.empty())
+    {
+        DEBUGLOG("==== new sync rollback ====");
+        MagicSingleton<BlockHelper>::GetInstance()->AddRollbackBlock(rollback_block_data);
+        return -7;
+    }
+
+    std::vector<std::string> need_sync_hashes;
+    std::set_difference(ack.block_hashes().begin(), ack.block_hashes().end(), self_block_hashes.begin(), self_block_hashes.end(),  std::back_inserter(need_sync_hashes));
+
+
+
+    // for(const auto&s :diff_hashes)
+    // {
+    //     fout << "diff_hashes" << s << std::endl;
+    // }
+    // for(const auto&s :need_sync_hashes)
+    // {
+    //     fout << "need_sync_hashes " << s << std::endl;
+    // }
+
+
+
+    ret = GetSyncBlockData(send_node_ids, need_sync_hashes, chain_height);
+    if(ret != 0)
+    {
+        DEBUGLOG("GetSyncBlockData failed {}", ret);
+        return -8;
+    }
+
+    return 0;
+}
+
+int SyncBlock::GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_node_ids, const std::vector<uint64_t>& send_heights, uint64_t self_node_height, std::set<std::string> &ret_node_ids, std::map<uint64_t, std::string>& sum_hashes)
+{
+    // for(const auto & t : send_node_ids)
+    // {
+    //     fout << "GetFromZeroSyncSumHashNode sync ids: " << t << std::endl;
+    // }
+    // fout << "self_node_height: " << self_node_height << std::endl;
+
     ret_node_ids.clear();
     std::string msg_id;
     size_t send_num = send_node_ids.size();
@@ -1003,8 +1414,6 @@ int SyncBlock::GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_n
     {
         return -1;
     }
-
-
 
     for (auto &node_id : send_node_ids)
     {
@@ -1022,7 +1431,8 @@ int SyncBlock::GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_n
     }
     
 
-    std::map<std::string, std::pair<uint64_t, int>> sum_hash_datas;
+    // std::map<std::string, std::pair<uint64_t, int>> sum_hash_datas;
+    std::map<std::string, std::pair<uint64_t, std::vector<std::string>>> sum_hash_datas;
     int success_count = 0;
     for (auto &ret_data : ret_datas)
     {
@@ -1036,35 +1446,47 @@ int SyncBlock::GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_n
             continue;
         }
         ++success_count;
-        ret_node_ids.push_back(ack.self_node_id());
-        auto sum_hashes = ack.sum_hashes();
-        for(auto sum_hash : sum_hashes)
+        // ret_node_ids.push_back(ack.self_node_id());
+        auto ret_sum_hashes = ack.sum_hashes();
+        for(const auto& sum_hash : ret_sum_hashes)
         {
-            auto hash = sum_hash.hash();
+            const auto& hash = sum_hash.hash();
             auto height = sum_hash.height();
+            
 
             auto found = sum_hash_datas.find(hash);
             if (found == sum_hash_datas.end())
             {
-                sum_hash_datas[hash].first = height;
-                sum_hash_datas[hash].second = 1;
+                sum_hash_datas.insert(std::make_pair(hash, std::make_pair(height, std::vector<std::string>())));
+                // sum_hash_datas[hash].first = height;
+                // sum_hash_datas[hash].second = 1;
                 continue;
             }
             auto& content = found->second;
-            content.second = content.second + 1;            
+            content.second.push_back(ack.self_node_id());  
         }
 
     }
-    if (!check_byzantine(send_num,success_count))
+
+    bool byzantine_success = success_count > send_num * 0.66;
+    // if (!check_byzantine(send_num,success_count))
+    if(!byzantine_success)
     {
+        // fout << "check byzantine error  send_num: " << send_num << "\tsuccess_count: " << success_count << std::endl; 
         return -3;
     }
 
-    for(auto sum_hash_data : sum_hash_datas)
+    for(const auto& sum_hash_data : sum_hash_datas)
     {
-        if (check_byzantine(success_count, sum_hash_data.second.second))
+        bool byzantine_success = sum_hash_data.second.second.size() > success_count * 0.66;
+        // if (check_byzantine(success_count, sum_hash_data.second.second))
+        if(byzantine_success)
         {
             sum_hashes[sum_hash_data.second.first] = sum_hash_data.first;
+            for(const auto& t : sum_hash_data.second.second)
+            {
+                ret_node_ids.insert(std::move(t));
+            }
         }
     }
 
@@ -1073,17 +1495,29 @@ int SyncBlock::GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_n
         return -4;
     }
     
+    // for(const auto& t : ret_node_ids)
+    // {
+    //     fout << "success id: " << t << std::endl;
+    // }
     
     return 0;
 }
 
-int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& sum_hashes, std::vector<uint64_t> &send_heights, std::vector<std::string> &send_node_ids)
+int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& sum_hashes, std::vector<uint64_t> &send_heights, std::set<std::string> &set_send_node_ids, uint64_t self_node_height)
 {
     int ret = 0;
-    if (send_node_ids.empty() || sum_hashes.empty())
+    if (set_send_node_ids.empty() || sum_hashes.empty())
     {
         return -1;
     }
+
+    std::vector<std::string> send_node_ids;
+
+    for(const auto& t : set_send_node_ids)  
+    {
+        send_node_ids.emplace_back(std::move(t));
+    }
+
     auto send_node_size = send_node_ids.size();
     auto send_hash_size = sum_hashes.size();
     if (send_node_size > send_hash_size)
@@ -1118,7 +1552,7 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
     }
 
     int send_node_index = 0;
-    for(auto sum_hash_item : sum_hashes)
+    for(const auto& sum_hash_item : sum_hashes)
     {
         auto node_id = send_node_ids[send_node_index];
         auto sum_hash_height = sum_hash_item.first;
@@ -1133,9 +1567,11 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
         DEBUGLOG("wait sync block data time out send:{} recv:{}", send_node_ids.size(), ret_datas.size());
     }
     
+    DBReader db_reader; 
     std::vector<uint64_t> success_heights;
+    // std::map<uint64_t, std::vector<std::string>> sync_height_hashs;
     
-    for(auto ret_data : ret_datas)
+    for(const auto& ret_data : ret_datas)
     {
         std::map<uint64_t, std::set<CBlock, CBlockCompare>> sync_block_data;
         SyncFromZeroGetBlockAck ack;
@@ -1145,9 +1581,9 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
         }
         
         auto blockraws = ack.blocks();
-        std::map<uint64_t, std::vector<std::string>> sum_hash_check_data;
+        std::map<uint64_t, std::vector<std::string>> sum_hash_check_data; 
         std::vector<CBlock> sum_hash_data;
-        for(auto block_raw : blockraws)
+        for(const auto& block_raw : blockraws)
         {
             CBlock block;
             if(!block.ParseFromString(block_raw))
@@ -1155,7 +1591,18 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
                 ERRORLOG("block parse fail");
                 break;
             }
+
             auto block_height = block.height();
+
+            // auto find_height = sync_height_hashs.find(block_height);
+            // if(find_height == sync_height_hashs.end())
+            // {
+            //     sync_height_hashs[block_height] = std::vector<std::string>();
+            // }
+            // auto& sum_vector = sync_height_hashs[block_height];
+            // sum_vector.push_back(block.hash());
+
+            // auto block_height = block.height();
             auto found = sum_hash_check_data.find(block_height);
             if(found == sum_hash_check_data.end())
             {
@@ -1165,8 +1612,9 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
             sum_hashes_vector.push_back(block.hash());
             
             sum_hash_data.push_back(block);
-            
+
         }
+
         std::string cal_sum_hash;
         SumHeightsHash(sum_hash_check_data, cal_sum_hash);
         auto found = sum_hashes.find(ack.height());
@@ -1180,8 +1628,71 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
             ERRORLOG("check sum hash at height {} fail, cal_sum_hash:{}, sum_hash:{}", ack.height(), cal_sum_hash, found->second);
             continue;
         }
+
+        for(const auto& hash_check : sum_hash_check_data)
+        {
+            std::vector<std::string> block_hashes;
+            if(self_node_height >= hash_check.first)
+            {
+                if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashesByBlockHeight(hash_check.first, hash_check.first, block_hashes))
+                {
+                    return -4;
+                }
+                std::string self_sum_hash;
+                std::string other_sum_hash;
+
+                auto find_height = sum_hash_check_data.find(hash_check.first);
+                if(find_height != sum_hash_check_data.end())
+                {
+                    if(SumHeightHash(block_hashes, self_sum_hash) && SumHeightHash(find_height->second, other_sum_hash))
+                    {
+                        if(self_sum_hash != other_sum_hash)
+                        {
+                            std::map<uint64_t, std::set<CBlock, CBlockCompare>> rollback_block_data;
+                            CBlock block;
+                            std::vector<std::string> diff_hashes;
+                            std::set_difference(block_hashes.begin(), block_hashes.end(), find_height->second.begin(), find_height->second.end(), std::back_inserter(diff_hashes));
+                            for(auto diff_hash: diff_hashes)
+                            {
+                                block.Clear();
+                                string strblock;
+                                auto res = db_reader.GetBlockByBlockHash(diff_hash, strblock);
+                                if (DBStatus::DB_SUCCESS != res)
+                                {
+                                    DEBUGLOG("GetBlockByBlockHash failed");
+                                    return -5;
+                                }
+                                block.ParseFromString(strblock);
+                                
+                                AddBlockToMap(block, rollback_block_data);
+                            }
+
+                            if(!rollback_block_data.empty())
+                            {
+                                int peer_node_size = MagicSingleton<PeerNode>::GetInstance()->get_nodelist_size();
+                                if(sync_send_zero_sync_num < peer_node_size)
+                                {
+                                    DEBUGLOG("sync_send_zero_sync_num:{} < peer_node_size:{}", sync_send_new_sync_num, peer_node_size);
+                                    sync_send_zero_sync_num = peer_node_size;
+                                    return -6;
+                                }
+                                DEBUGLOG("==== GetFromZeroSyncBlockData rollback ====");
+                                MagicSingleton<BlockHelper>::GetInstance()->AddRollbackBlock(rollback_block_data);
+                            }
+                            DEBUGLOG("self_sum_hash: {}", self_sum_hash);
+                            DEBUGLOG("other_sum_hash: {}", other_sum_hash);
+                            new_sync_fail_height = hash_check.first;
+                            run_fast_sync = true;   
+                            INFOLOG("GetFromZeroSyncBlockData height:{} fail,next round will run fast sync", hash_check.first); 
+                            return -7;
+                        }
+                    }
+                }
+            }
+        }
+
         success_heights.push_back(ack.height());
-        for(auto block : sum_hash_data)
+        for(const auto& block : sum_hash_data)
         {
             AddBlockToMap(block, sync_block_data);
         }
@@ -1192,7 +1703,7 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
     }
     if (success_heights.empty())
     {
-        return -1;
+        return -8;
     }
         
     for(auto height : success_heights)
@@ -1209,7 +1720,8 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
     {
         sync_from_zero_reserve_heights.push_back(fail_height);
     }
-    
+
+
     if (send_heights.empty())
     {
         auto from_zero_sync_add_thread = std::thread(
@@ -1217,7 +1729,8 @@ int SyncBlock::GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& s
                 {
                     std::lock_guard<std::mutex> lock(sync_from_zero_cache_mutex);
                     INFOLOG("from_zero_sync_add_thread start");
-                    for(auto cache : this->sync_from_zero_cache)
+                    //std::map<uint64_t, std::map<uint64_t, std::set<CBlock, CBlockCompare>>> sync_from_zero_cache;
+                    for(const auto& cache : this->sync_from_zero_cache)
                     {
                         MagicSingleton<BlockHelper>::GetInstance()->AddSyncBlock(cache.second, global::ca::SaveType::SyncFromZero);
                     }
@@ -1281,6 +1794,7 @@ int SyncBlock::GetSyncBlockHashNode(const std::vector<std::string> &send_node_id
             value.insert(ack.self_node_id());
         }
     }
+
     std::set<std::string> nodes;
     std::vector<std::string> intersection_nodes;
     std::set<std::string> verify_hashes;
@@ -1307,6 +1821,7 @@ int SyncBlock::GetSyncBlockHashNode(const std::vector<std::string> &send_node_id
         }
         if (sync_block_hash.second.size() >= verify_num)
         {
+
             if (DBStatus::DB_NOT_FOUND == res)
             {
                 verify_hashes.insert(sync_block_hash.first);
@@ -1331,11 +1846,25 @@ int SyncBlock::GetSyncBlockHashNode(const std::vector<std::string> &send_node_id
                 if (block.height() < chain_height - 10)
                 {
                     AddBlockToMap(block, rollback_block_data);
+                    continue;
                 }
             }
+
+            if(self_node_height - block.height() > 10)
+            {
+                uint64_t curtime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
+                if(curtime - block.time() > 100000000) //100s
+                {
+                    if(sync_send_new_sync_num < MagicSingleton<PeerNode>::GetInstance()->get_nodelist_size())
+                    {
+                        return -4;
+                    }
+                    AddBlockToMap(block, rollback_block_data);
+                }
+            }
+
         }
     }
-
 
     std::vector<std::string> v_diff;
     uint64_t end_height = end_sync_height > self_node_height ? self_node_height : end_sync_height;
@@ -1346,21 +1875,29 @@ int SyncBlock::GetSyncBlockHashNode(const std::vector<std::string> &send_node_id
         std::vector<std::string> block_hashes;
         if(DBStatus::DB_SUCCESS != db_reader.GetBlockHashesByBlockHeight(start_sync_height, end_height, block_hashes))
         {
-            ret = -4;
+            ret = -5;
             return ret;
         }
+        // for(const auto ss : block_hashes)
+        // {
+        //     fout << "shelf_block hash: " << ss << std::endl;
+        // }
         std::sort(block_hashes.begin(), block_hashes.end());
         std::sort(exits_hashes.begin(), exits_hashes.end());
         std::set_difference(block_hashes.begin(), block_hashes.end(), exits_hashes.begin(), exits_hashes.end(), std::back_inserter(v_diff));
+        // for(const auto ss : v_diff)
+        // {
+        //     fout << "v_diff block hash: " << ss << std::endl;
+        // }
     }
 
-    for (auto it = v_diff.cbegin(); it != v_diff.cend(); it++)
+    for (const auto & it : v_diff)
     {
 
         block.Clear();
         std::string().swap(strblock);
-        auto ret = db_reader.GetBlockByBlockHash(*it, strblock);
-        if (DBStatus::DB_SUCCESS != ret)
+        auto ret_status = db_reader.GetBlockByBlockHash(it, strblock);
+        if (DBStatus::DB_SUCCESS != ret_status)
         {
             continue;
         }
@@ -1371,24 +1908,55 @@ int SyncBlock::GetSyncBlockHashNode(const std::vector<std::string> &send_node_id
         if ((tmp_height < chain_height) && chain_height - tmp_height > 10)
         {
             AddBlockToMap(block, rollback_block_data);
+            continue;
+        }
+
+        if(self_node_height - tmp_height > 10)
+        {
+            uint64_t curtime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
+            if(curtime - block.time() > 100000000) //100s
+            {
+                if(sync_send_new_sync_num < MagicSingleton<PeerNode>::GetInstance()->get_nodelist_size())
+                {
+                    return -6;
+                }
+                AddBlockToMap(block, rollback_block_data);
+            }
         }
     }
+
     if(!rollback_block_data.empty())
     {
+        int peer_node_size = MagicSingleton<PeerNode>::GetInstance()->get_nodelist_size();
+        if(sync_send_new_sync_num < peer_node_size)
+        {
+            DEBUGLOG("sync_send_new_sync_num:{} < peer_node_size:{}", sync_send_new_sync_num, peer_node_size);
+            sync_send_new_sync_num = peer_node_size;
+            return -7;
+        }
         DEBUGLOG("==== new sync rollback ====");
+
+        // for(const auto& t : rollback_block_data)
+        // {
+        //     for(const auto & tt : t.second)
+        //     {
+        //         fout << "rollback_block: " << tt.hash() << std::endl;
+        //     }
+        // }
         MagicSingleton<BlockHelper>::GetInstance()->AddRollbackBlock(rollback_block_data);
-        return -5;
+        return -8;
     }
 
     if (verify_hashes.empty())
     {
         return 0;
     }
+
     req_hashes.assign(verify_hashes.cbegin(), verify_hashes.cend());
     ret_node_ids.assign(nodes.cbegin(), nodes.cend());
     if(ret_node_ids.empty())
     {
-        ret = -6;
+        ret = -9;
         return ret;
     }
     return 0;
@@ -1495,6 +2063,143 @@ bool SyncBlock::check_byzantine(int receive_count, int hit_count)
     return false;
 }
 
+bool SyncBlock::NeedByzantineAdjustment(uint64_t chain_height, const vector<std::string> &pledge_addr,
+                                        std::vector<std::string> &selected_addr)
+{
+    std::vector<Node> nodes = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
+    std::vector<std::string> qualifying_stake_nodes;
+    std::map<std::string, std::pair<uint64_t, std::vector<std::string>>> sum_hash;
+
+    return CheckRequirementAndFilterQualifyingNodes(chain_height, pledge_addr, nodes, qualifying_stake_nodes)
+            && GetSyncNodeSumhashInfo(nodes, qualifying_stake_nodes, sum_hash)
+            && GetSelectedAddr(sum_hash, selected_addr);
+}
+
+bool SyncBlock::GetSelectedAddr(map<std::string, std::pair<uint64_t, std::vector<std::string>>> &sum_hash,
+                                vector<std::string> &selected_addr)
+{
+    const static double filter_scale = 0.34;
+    auto receive_num = static_cast<double>(sum_hash.size());
+    DEBUGLOG("receive_num: {}", receive_num);
+
+    for (auto iter = sum_hash.begin(); iter !=  sum_hash.end();)
+    {
+        const auto& [hits, _] = iter->second;
+        double scale = static_cast<double>(hits) / receive_num;
+        if (scale < filter_scale)
+        {
+            DEBUGLOG("erase sum hash {} which scale is {}", iter->first.substr(0, 6), scale);
+            iter = sum_hash.erase(iter);
+        }
+        else
+        {
+            ++iter;
+        }
+    }
+
+    DEBUGLOG("sum_hash size: {}", sum_hash.size());
+    if (sum_hash.size() == 2)
+    {
+        auto& [first_hits, first_addrs] = sum_hash.begin()->second;
+        auto& [last_hits, last_addrs] = sum_hash.rbegin()->second;
+        DEBUGLOG("first hash {} hits {}; last hash {} hits {}",
+                 sum_hash.begin()->first.substr(0, 6), first_hits, sum_hash.rbegin()->first.substr(0, 6), last_hits);
+        if ((static_cast<double>(first_hits) / receive_num) >= (static_cast<double>(last_hits) / receive_num))
+        {
+            std::swap(selected_addr, first_addrs);
+        }
+        else
+        {
+            std::swap(selected_addr, last_addrs);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool SyncBlock::GetSyncNodeSumhashInfo(const vector<Node> &nodes, const vector<string> &qualifying_stake_nodes,
+                                       map<string, pair<uint64_t, vector<string>>> sum_hash)
+{
+    uint64_t byzantine_fail_tolerance = 5;
+    if (nodes.size() < global::ca::kNeed_node_threshold)
+    {
+        byzantine_fail_tolerance = 0;
+    }
+    uint64_t receive_requirement = qualifying_stake_nodes.size() - byzantine_fail_tolerance;
+    DEBUGLOG("receive_requirement size: {}", receive_requirement);
+
+    string msg_id;
+    if (!GLOBALDATAMGRPTR.CreateWait(60, receive_requirement, msg_id))
+    {
+        ERRORLOG("Create wait fail");
+        return false;
+    }
+    for (const auto& addr : qualifying_stake_nodes)
+    {
+        DEBUGLOG("get sync node hash from {}", addr);
+        SendSyncNodeHashReq(addr, msg_id);
+    }
+
+    vector<string> ret_datas;
+    if (!GLOBALDATAMGRPTR.WaitData(msg_id, ret_datas))
+    {
+        ERRORLOG("wait sync node hash time out send:{} recv:{}", qualifying_stake_nodes.size(), ret_datas.size());
+        return false;
+    }
+
+    SyncNodeHashAck ack;
+    for (const auto& ret_data : ret_datas)
+    {
+        ack.Clear();
+        if (!ack.ParseFromString(ret_data))
+        {
+            ERRORLOG("SyncNodeHashAck parse fail");
+            continue;
+        }
+        const auto& ret_hash = ack.hash();
+        if (sum_hash.find(ret_hash) == sum_hash.end())
+        {
+            sum_hash[ret_hash] = {0, vector<string>()};
+        }
+        auto& [hits, addrs] = sum_hash.at(ret_hash);
+        hits += 1;
+        addrs.push_back(ack.self_node_id());
+    }
+    return true;
+}
+
+bool SyncBlock::CheckRequirementAndFilterQualifyingNodes(uint64_t chain_height, const vector<std::string> &pledge_addr,
+                                                         const vector<Node> &nodes,
+                                                         vector<std::string> &qualifying_stake_nodes)
+{
+    const static uint32_t higher_than_chain_height_bar = 3;
+    uint32_t higher_than_chain_height_count = 0;
+
+    for (const auto& node : nodes)
+    {
+        if (node.height > chain_height)
+        {
+            higher_than_chain_height_count++;
+            if (higher_than_chain_height_count > higher_than_chain_height_bar)
+            {
+                DEBUGLOG("chain height isn't top hight in the network");
+                return false;
+            }
+        }
+        else if (node.height == chain_height)
+        {
+            const auto& node_addr = node.base58address;
+            if (find(pledge_addr.cbegin(), pledge_addr.cend(), node_addr) != pledge_addr.cend())
+            {
+                qualifying_stake_nodes.push_back(node_addr);
+            }
+        }
+    }
+    DEBUGLOG("qualifying_stake_nodes size: ", qualifying_stake_nodes.size());
+    return true;
+}
+
 void SendFastSyncGetHashReq(const std::string &node_id, const std::string &msg_id, uint64_t start_height, uint64_t end_height)
 {
     FastSyncGetHashReq req;
@@ -1526,7 +2231,6 @@ void SendFastSyncGetHashAck(const std::string &node_id, const std::string &msg_i
     }
     ack.set_node_block_height(node_block_height);
 
-    std::string hash;
     std::vector<FastSyncBlockHashs> block_height_hashes;
     if (GetHeightBlockHash(start_height, end_height, block_height_hashes))
     {
@@ -1567,7 +2271,7 @@ void SendFastSyncGetBlockAck(const std::string &node_id, const std::string &msg_
     ack.set_msg_id(msg_id);
     DBReader db_reader;
     std::vector<std::string> block_hashes;
-    for(auto height_hashs : request_hashs)
+    for(const auto& height_hashs : request_hashs)
     {
         std::vector<std::string> db_hashs;
         if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashsByBlockHeight(height_hashs.height(), db_hashs))
@@ -1751,7 +2455,9 @@ void SendSyncGetHeightHashAck(SyncGetHeightHashAck& ack,const std::string &node_
         ack.set_code(-5);
         return;
     }
-    for (auto hash : block_hashes)
+    
+    std::sort(block_hashes.begin(), block_hashes.end());
+    for (const auto& hash : block_hashes)
     {
         ack.add_block_hashes(hash);
     }
@@ -1763,7 +2469,7 @@ void SendSyncGetBlockReq(const std::string &node_id, const std::string &msg_id, 
     SyncGetBlockReq req;
     req.set_self_node_id(net_get_self_node_id());
     req.set_msg_id(msg_id);
-    for (auto hash : req_hashes)
+    for (const auto& hash : req_hashes)
     {
         req.add_block_hashes(hash);
     }
@@ -1821,7 +2527,7 @@ int HandleSyncGetHeightHashAck(const std::shared_ptr<SyncGetHeightHashAck> &msg,
 int HandleSyncGetBlockReq(const std::shared_ptr<SyncGetBlockReq> &msg, const MsgData &msgdata)
 {
     std::vector<std::string> req_hashes;
-    for (auto hash : msg->block_hashes())
+    for (const auto& hash : msg->block_hashes())
     {
         req_hashes.push_back(hash);
     }
@@ -1835,7 +2541,7 @@ int HandleSyncGetBlockAck(const std::shared_ptr<SyncGetBlockAck> &msg, const Msg
     return 0;
 }
 
-void SendFromZeroSyncGetSumHashReq(const std::string &node_id, const std::string &msg_id, std::vector<uint64_t> heights)
+void SendFromZeroSyncGetSumHashReq(const std::string &node_id, const std::string &msg_id, const std::vector<uint64_t>& heights)
 {
     SyncFromZeroGetSumHashReq req;
     req.set_self_node_id(net_get_self_node_id());
@@ -1847,9 +2553,9 @@ void SendFromZeroSyncGetSumHashReq(const std::string &node_id, const std::string
     net_send_message<SyncFromZeroGetSumHashReq>(node_id, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
 }
 
-void SendFromZeroSyncGetSumHashAck(const std::string &node_id, const std::string &msg_id, std::vector<uint64_t> heights)
+void SendFromZeroSyncGetSumHashAck(const std::string &node_id, const std::string &msg_id, const std::vector<uint64_t>& heights)
 {
-    DEBUGLOG("handle FromZeroSyncGetSumHashAck");
+    DEBUGLOG("handle FromZeroSyncGetSumHashAck from {}", node_id);
     SyncFromZeroGetSumHashAck ack;
     DBReader db_reader;
     
@@ -1950,6 +2656,51 @@ int HandleFromZeroSyncGetBlockReq(const std::shared_ptr<SyncFromZeroGetBlockReq>
 }
 
 int HandleFromZeroSyncGetBlockAck(const std::shared_ptr<SyncFromZeroGetBlockAck> &msg, const MsgData &msgdata)
+{
+    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
+    return 0;
+}
+
+void SendSyncNodeHashReq(const string &node_id, const string &msg_id)
+{
+    SyncNodeHashReq req;
+    req.set_self_node_id(net_get_self_node_id());
+    req.set_msg_id(msg_id);
+    net_send_message<SyncNodeHashReq>(node_id, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+}
+
+void SendSyncNodeHashAck(const string &node_id, const string &msg_id)
+{
+    DEBUGLOG("handle SendSyncNodeHashAck from {}", node_id);
+    SyncNodeHashAck ack;
+    ack.set_self_node_id(net_get_self_node_id());
+    ack.set_msg_id(msg_id);
+
+    DBReadWriter reader;
+    uint64_t node_block_height = 0;
+    if (DBStatus::DB_SUCCESS != reader.GetBlockTop(node_block_height))
+    {
+        ERRORLOG("GetBlockTop error");
+        return;
+    }
+    std::string sum_hash;
+    if (!ca_algorithm::CalculateHeightSumHash(node_block_height - sync_height_cnt_, node_block_height, reader, sum_hash))
+    {
+        ERRORLOG("CalculateHeightSumHash error");
+        return;
+    }
+    ack.set_hash(sum_hash);
+    net_send_message<SyncNodeHashAck>(node_id, ack, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+
+}
+
+int HandleSyncNodeHashReq(const shared_ptr<SyncNodeHashReq> &msg, const MsgData &msgdata)
+{
+    SendSyncNodeHashAck(msg->self_node_id(), msg->msg_id());
+    return 0;
+}
+
+int HandleSyncNodeHashAck(const shared_ptr<SyncNodeHashAck> &msg, const MsgData &msgdata)
 {
     GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
     return 0;

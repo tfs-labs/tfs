@@ -7,6 +7,7 @@
 #include "net_api.h"
 #include "net.pb.h"
 #include "handle_event.h"
+#include "../utils/time_util.h"
 
 UnregisterNode::UnregisterNode()
 {
@@ -242,7 +243,7 @@ bool UnregisterNode::StartSyncNode()
     }
     SyncNodeAck syncNodeAck;
     std::map<uint32_t, Node> node_map;
-
+    std::vector<Node> sync_nodes;
     for (auto &ret_data : ret_datas)
     {
         syncNodeAck.Clear();
@@ -262,53 +263,115 @@ bool UnregisterNode::StartSyncNode()
             node.listen_port = SERVERMAINPORT;
             node.public_ip = nodeinfo.public_ip();
             node.base58address = nodeinfo.base58addr();
+            node.time_stamp = nodeinfo.time_stamp();
+            node.height = nodeinfo.height();
 
             if(node_map.find(node.public_ip) == node_map.end())
             {
                 node_map[nodeinfo.public_ip()] = node;
             }
+            //Add the nodes brought back by synchronizing the nodes to the array
+            sync_nodes.push_back(node);
+
         }
+    }
+
+    //Count the number of IPs and the number of times they correspond to IPs
+    {
+        std::map<Node,int, NodeCompare> sync_node_count;
+        for(auto it = sync_nodes.begin(); it != sync_nodes.end(); ++it)
+        {
+            sync_node_count[*it]++;
+        }
+        AddConsensusNode(sync_node_count);
+        sync_nodes.clear();
+        sync_node_count.clear();
+    }
+
+    //Only the latest elements are stored in the maintenance map map
+    if(consensus_node_list.size() == 2)
+    {
+        ClearConsensusNodeList();
     }
     Register(node_map);
     return true;
 }
 
- bool UnregisterNode::tool_connect(const std::string & ip,int port){
-     //Create a socket
-    int cfd = socket(AF_INET, SOCK_STREAM, 0);
-    
-    //If the return value is - 1, the creation fails
-    if (cfd == -1)
+void UnregisterNode::getIpMap(std::map<uint64_t, std::map<Node, int, NodeCompare>> & m1)
+{
+    std::shared_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
+    m1 = consensus_node_list;
+}
+
+void UnregisterNode::AddConsensusNode(const std::map<Node, int, NodeCompare>  sync_node_count)
+{
+    std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
+    uint64_t current_time = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
+    consensus_node_list[current_time] = sync_node_count;
+}
+
+void UnregisterNode::ClearConsensusNodeList()
+{
+    std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
+    auto it = consensus_node_list.begin();
+    consensus_node_list.erase(it);
+}
+
+std::vector<Node> UnregisterNode::GetConsensusNodeList()
+{
+    std::shared_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
+    std::vector<Node> nodes;
+    for(auto item = consensus_node_list.begin(); item != consensus_node_list.end(); ++item)
     {
-        ERRORLOG("create socket err" );
-        close(cfd);
-        return false;
+        //Evaluate outliers
+        uint64_t quarter_num = item->second.size() * 0.25;
+        uint64_t three_quarter_num = item->second.size() * 0.75;
+        if (quarter_num == three_quarter_num)
+        {
+            return nodes;
+        }
+
+        //Remove the IP address of the abnormal number of times
+        std::vector<uint64_t> sign_cnt;
+        for (auto &i : item->second)
+        {
+            sign_cnt.push_back(i.second);
+        }
+        std::sort(sign_cnt.begin(), sign_cnt.end());
+
+        uint64_t quarter_num_value = sign_cnt.at(quarter_num);
+        uint64_t three_quarter_num_value = sign_cnt.at(three_quarter_num);
+        int64_t slower_limit_value = quarter_num_value -
+                                            ((three_quarter_num_value - quarter_num_value) * 1.5);
+
+        //Delete all abnormal IPs
+        if(slower_limit_value >= 0)
+        {
+            for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
+            {
+                if (iter->second < slower_limit_value)
+                {
+                    continue;
+                }
+
+                nodes.push_back(iter->first);
+            }
+        }
     }
 
-    sockaddr_in server_addr;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(ip.c_str());
-
-    //Set socket options
-    struct timeval timeout; 
-    timeout.tv_sec = 30; 
-    // Timeout time of 30 seconds 
-    timeout.tv_usec = 0; 
-    if (setsockopt(cfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) 
-    { 
-       std::cerr << "setsockopt error: " << std::strerror(errno) << std::endl; 
-       return false; 
-    }
-
-    //socket Connect the socket of the corresponding address
-    if (connect(cfd, (sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+    //Update the height
+    std::vector<Node> node_list = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
+    for(auto & node : node_list)
     {
-        ERRORLOG("Connection timeout IP : {} ",ip);
-        close(cfd);
-        return false;
+        for(auto & iter : nodes)
+        {
+            //Find the same base58 to update the height in the Node struct
+            if(node.base58address == iter.base58address)
+            {
+                iter.height = node.height;
+            }
+        }
     }
-    close(cfd);
-    return true;
 
- }
+    return nodes;
+}

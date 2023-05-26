@@ -147,7 +147,7 @@ public:
     static void GetInitiatorType(const std::vector<std::string> &fromaddr, TxHelper::vrfAgentType &type);
 
 
-     static std::string ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
+    static std::string ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
 									const std::map<std::string, int64_t> & toAddr, void* ack);
 
     static std::string ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stake_amount,  int32_t pledgeType, void* ack);
@@ -176,7 +176,6 @@ public:
     static std::string GetEligibleNodes();
     
 };
-
 
 #endif
 

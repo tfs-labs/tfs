@@ -5,14 +5,11 @@
 
 #include "db/db_api.h"
 
-
-//caMenu
 void gen_key();
 void rollback();
 void GetStakeList();
 int GetBounsAddrInfo();
 
-//netMenu
 void send_message_to_user();
 void show_my_k_bucket();
 void kick_out_node();
@@ -24,11 +21,10 @@ void print_req_and_ack();
 void menu_blockinfo();
 void get_tx_block_info(uint64_t& top);
 
-//testMenu
 void gen_mnemonic();
 void get_balance_by_utxo();
 int imitate_create_tx_struct();
-// void get_stake();
+
 void multi_tx();
 
 void get_all_pledge_addr();
@@ -39,7 +35,7 @@ void Create_multi_thread_automatic_stake_transaction();
 void Auto_investment();
 void print_verify_node();
 
-void get_utxo();
+
 void get_tx_hash_by_height();
 void get_investedNodeBlance();
 void print_database_block();

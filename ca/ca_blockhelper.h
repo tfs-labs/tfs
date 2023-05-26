@@ -51,12 +51,22 @@ struct MissingBlock
 	}
 };
 
+enum class doubleSpendType
+{
+    repeatenDoubleSpend,
+    newDoubleSpend,
+    oldDoubleSpend,
+    invalidDoubleSpend,
+    err
+};
+
 class BlockHelper
 {
     public:
         BlockHelper();
 
-        int VerifyFlowedBlock(const CBlock& block);
+        int VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus = nullptr);
+        // int SaveBlock(const CBlock& block, bool NeedVerify);
         int SaveBlock(const CBlock& block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean);
 
         void SetMissingPrehash();
@@ -68,15 +78,18 @@ class BlockHelper
 
         void Process();  
         void SeekBlockThread();
-        void AddBroadcastBlock(const CBlock& block);
+        void AddBroadcastBlock(const CBlock& block, bool status = false);
         void AddSyncBlock(const std::map<uint64_t, std::set<CBlock, CBlockCompare>> &sync_block_data, global::ca::SaveType type);
         void AddFastSyncBlock(const std::map<uint64_t, std::set<CBlock, CBlockCompare>> &sync_block_data, global::ca::SaveType type);
         void AddRollbackBlock(const std::map<uint64_t, std::set<CBlock, CBlockCompare>> &sync_block_data);
         void AddMissingBlock(const CBlock& block);
         void AddSeekBlock(std::vector<std::pair<CBlock,std::string>>& seek_blocks);
 
-        int DealDoubleSpend(const CBlock& block, const CTransaction& tx, const std::string& missing_utxo);
+        std::pair<doubleSpendType, CBlock> DealDoubleSpend(const CBlock& block, const CTransaction& tx, const std::string& missing_utxo);
         void rollback_test();
+
+        void makeTxStatusMsg(const CBlock &oldBlock, const CBlock &newBlock);
+        void checkDoubleBlooming(const std::pair<doubleSpendType, CBlock>& doubleSpendInfo, const CBlock &block);
 
     private:
         bool VerifyHeight(const CBlock& block, uint64_t ownblockHeight);
@@ -90,6 +103,7 @@ class BlockHelper
         std::mutex helper_mutex;
         std::mutex helper_mutex_low1;
         std::atomic<bool> missing_prehash;
+        std::mutex missing_utxos_mutex;
         std::stack<std::string> missing_utxos;
 
         std::set<CBlock, compator::BlockTimeAscending> broadcast_blocks; //Polling of blocks to be added after broadcasting
@@ -101,8 +115,8 @@ class BlockHelper
         std::vector<CBlock> utxo_missing_blocks; //Poll the block found by finding the protocol of utxo
         std::mutex seek_mutex_;
         std::set<MissingBlock> missing_blocks; // Wait for the hash polling to trigger the block finding protocol
-        std::set<std::string> DoubleSpend_blocks;
-
+        std::map<std::string, CBlock> DoubleSpend_blocks;
+        std::map<std::string, std::pair<bool, uint64_t>> DuplicateChecker;
         const static int max_missing_block_size = 10;
         const static int max_missing_uxto_size = 10;
         const static int sync_save_fail_tolerance = 2;

@@ -1,7 +1,7 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 #include <string>
-
+#include <atomic>
 namespace global{
 
     enum class BuildType
@@ -21,9 +21,9 @@ namespace global{
     #endif
 
     // version
-    static const std::string kNetVersion = "22";
-    static const std::string kLinuxCompatible = "0.22.2";
-    static const std::string kWindowsCompatible = "0.22.2";
+    static const std::string kNetVersion = "25";
+    static const std::string kLinuxCompatible = "0.25.0";
+    static const std::string kWindowsCompatible = "0.25.0";
     static const std::string kIOSCompatible = "4.0.4";
     static const std::string kAndroidCompatible = "3.1.0";
 
@@ -53,7 +53,6 @@ namespace global{
 
     static const int block_thread_number = 100;
     static const int work_thread_number = 200;
-
 }
 
 #endif // !_GLOBAL_H

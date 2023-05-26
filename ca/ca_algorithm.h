@@ -27,10 +27,14 @@ int MemVerifyTransactionTx(const CTransaction &tx);
 //Verification transaction
 int VerifyTransactionTx(const CTransaction &tx, uint64_t tx_height, bool turn_on_missing_block_protocol = false, bool verify_abnormal = true);
 
+int VerifyPreSaveBlock(const CBlock &block);
+
 //Check block
-int MemVerifyBlock(const CBlock& block, bool isVerify = true);
+int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* blockStatus = nullptr);
+
 //Check block
-int VerifyBlock(const CBlock &block, bool turn_on_missing_block_protocol = false, bool verify_abnormal = true, bool isVerify = true);
+int VerifyBlock(const CBlock &block, bool turn_on_missing_block_protocol = false, bool verify_abnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr);
+// int VerifyBlock(const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean, bool verify_abnormal = true);
 int SaveBlock(DBReadWriter &db_writer, const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean);
 int DeleteBlock(DBReadWriter &db_writer, const std::string &block_hash);
 
@@ -54,6 +58,8 @@ uint64_t GetSumHashCeilingHeight(uint64_t height);
 uint64_t GetSumHashFloorHeight(uint64_t height);
 
 int CalcHeightsSumHash(uint64_t block_height, DBReadWriter &db_writer);
+
+bool CalculateHeightSumHash(uint64_t start_height, uint64_t end_height, DBReadWriter &db_writer, std::string &sum_hash);
 }; // namespace ca_algorithm
 
 #endif

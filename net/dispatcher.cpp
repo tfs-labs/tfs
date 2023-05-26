@@ -11,7 +11,8 @@
 #include "common/global.h"
 #include "logging.h"
 #include "common/task_pool.h"
-
+#include "net_interface.h"
+#include "ca_transaction.h"
 int ProtobufDispatcher::handle(const MsgData &data)
 {
     CommonMsg common_msg;
@@ -152,6 +153,24 @@ void ProtobufDispatcher::registerAll()
     broadcast_registerCallback<BuildBlockBroadcastMsg>(handleBroadcastMsg);
 }
 
+void ProtobufDispatcher::CRegisterStopTxForSync()
+{
+    broadcast_register_callback<BuildBlockBroadcastMsg>(handleBroadcastMsg);
+    tx_register_callback<TxMsgReq>(HandleTx); 
+    saveBlock_register_callback<BuildBlockBroadcastMsg>(HandleBuildBlockBroadcastMsg); 
+    block_register_callback<BlockMsg>(HandleBlock);   
+    block_register_callback<BuildBlockBroadcastMsgAck>(HandleAddBlockAck);
+
+}
+void ProtobufDispatcher::CUnRegisterStopTxForSync()
+{
+    broadcast_unregister_callback<BuildBlockBroadcastMsg>();
+    saveBlock_unregister_callback<BuildBlockBroadcastMsg>();
+    tx_unregister_callback<TxMsgReq>();
+    block_unregister_callback<BlockMsg>();   
+    block_unregister_callback<BuildBlockBroadcastMsgAck>();
+
+}
 void ProtobufDispatcher::task_info(std::ostringstream& oss)
 {
     auto task_pool = MagicSingleton<taskPool>::GetInstance();

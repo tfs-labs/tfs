@@ -7,7 +7,6 @@
 #include "utils/CTimer.hpp"
 
 
-
 namespace global{
 
     namespace ca{
@@ -29,6 +28,7 @@ namespace global{
         // mutex
         extern std::mutex kBonusMutex;
         extern std::mutex kInvestMutex;
+        extern std::mutex kBurnMutex;
 
         // ca
         extern const uint64_t kDecimalNum ;
@@ -54,6 +54,9 @@ namespace global{
         extern const uint64_t KPackNodeThreshold;
 
         extern const double KBonusPumping;
+
+        extern const uint32_t KVerifyFailThreshold;
+
         enum class StakeType
         {
             kStakeType_Unknown = 0,
@@ -91,7 +94,13 @@ namespace global{
             ByPreHash,
             ByUtxo
         };
+
         extern const uint64_t sum_hash_range;
+
+        namespace DoubleSpend {
+            const int SingleBlock = -66;
+            const int DoubleBlock = -99;
+        };
 
         // contract
         enum VmType {

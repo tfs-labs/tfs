@@ -155,6 +155,17 @@ int BuildBlock(std::vector<TransactionEntity>& txs, bool build_first)
         Vrf *vrfinfo  = blockmsg.add_vrfinfo();
         vrfinfo ->CopyFrom(vrf.second);
 
+        if(!MagicSingleton<VRF>::GetInstance()->getTxVrfInfo(tx_hash, vrf))
+        {
+            ERRORLOG("getTxVrfInfo failed!");
+            return -4000;
+        }
+
+        auto vrfJson = nlohmann::json::parse(vrf.second.data());
+		vrfJson["txhash"] = tx_hash;
+        vrf.second.set_data(vrfJson.dump());
+
+        blockmsg.add_txvrfinfo()->CopyFrom(vrf.second);
     }
     
     auto msg = make_shared<BlockMsg>(blockmsg);
@@ -179,6 +190,11 @@ CtransactionCache::CtransactionCache()
 int CtransactionCache::add_cache(const CTransaction& transaction, const TxMsgReq& sendTxMsg)
 {
     std::unique_lock<mutex> locker(cache_mutex_);
+    if(check_conflict(transaction))
+    {
+        DEBUGLOG("DoubleSpentTransactions, txHash:{}", transaction.hash());
+        return -1;
+    }
     uint64_t height = sendTxMsg.txmsginfo().height() + 1;
 
     auto find = cache_.find(height); 
@@ -206,6 +222,10 @@ bool CtransactionCache::process()
     return true;
 }
 
+bool CtransactionCache::check_conflict(const CTransaction& transaction)
+{
+    return Checker::CheckConflict(transaction, cache_);
+}
 
 void CtransactionCache::processing_func()
 {

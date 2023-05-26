@@ -370,7 +370,36 @@ struct GetBlockByHashAckDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetBlockByHashAckDefaultTypeInternal _GetBlockByHashAck_default_instance_;
-static ::_pb::Metadata file_level_metadata_sync_5fblock_2eproto[23];
+PROTOBUF_CONSTEXPR SyncNodeHashReq::SyncNodeHashReq(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.self_node_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct SyncNodeHashReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SyncNodeHashReqDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SyncNodeHashReqDefaultTypeInternal() {}
+  union {
+    SyncNodeHashReq _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SyncNodeHashReqDefaultTypeInternal _SyncNodeHashReq_default_instance_;
+PROTOBUF_CONSTEXPR SyncNodeHashAck::SyncNodeHashAck(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.self_node_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.hash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct SyncNodeHashAckDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SyncNodeHashAckDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SyncNodeHashAckDefaultTypeInternal() {}
+  union {
+    SyncNodeHashAck _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SyncNodeHashAckDefaultTypeInternal _SyncNodeHashAck_default_instance_;
+static ::_pb::Metadata file_level_metadata_sync_5fblock_2eproto[25];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_sync_5fblock_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_sync_5fblock_2eproto = nullptr;
 
@@ -586,6 +615,23 @@ const uint32_t TableStruct_sync_5fblock_2eproto::offsets[] PROTOBUF_SECTION_VARI
   PROTOBUF_FIELD_OFFSET(::GetBlockByHashAck, _impl_.addr_),
   PROTOBUF_FIELD_OFFSET(::GetBlockByHashAck, _impl_.blocks_),
   PROTOBUF_FIELD_OFFSET(::GetBlockByHashAck, _impl_.msg_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashReq, _impl_.self_node_id_),
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashReq, _impl_.msg_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _impl_.self_node_id_),
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _impl_.msg_id_),
+  PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _impl_.hash_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::FastSyncGetHashReq)},
@@ -611,6 +657,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 184, -1, -1, sizeof(::HashType)},
   { 193, -1, -1, sizeof(::GetBlockByHashReq)},
   { 202, -1, -1, sizeof(::GetBlockByHashAck)},
+  { 211, -1, -1, sizeof(::SyncNodeHashReq)},
+  { 219, -1, -1, sizeof(::SyncNodeHashAck)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -637,6 +685,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::_HashType_default_instance_._instance,
   &::_GetBlockByHashReq_default_instance_._instance,
   &::_GetBlockByHashAck_default_instance_._instance,
+  &::_SyncNodeHashReq_default_instance_._instance,
+  &::_SyncNodeHashAck_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_sync_5fblock_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -688,14 +738,17 @@ const char descriptor_table_protodef_sync_5fblock_2eproto[] PROTOBUF_SECTION_VAR
   "etBlockByHashReq\022\014\n\004addr\030\001 \001(\t\022\037\n\014missin"
   "gHashs\030\002 \003(\0132\t.HashType\022\016\n\006msg_id\030\003 \001(\t\""
   "L\n\021GetBlockByHashAck\022\014\n\004addr\030\001 \001(\t\022\031\n\006bl"
-  "ocks\030\002 \003(\0132\t.HashType\022\016\n\006msg_id\030\003 \001(\tb\006p"
-  "roto3"
+  "ocks\030\002 \003(\0132\t.HashType\022\016\n\006msg_id\030\003 \001(\t\"7\n"
+  "\017SyncNodeHashReq\022\024\n\014self_node_id\030\001 \001(\t\022\016"
+  "\n\006msg_id\030\002 \001(\t\"E\n\017SyncNodeHashAck\022\024\n\014sel"
+  "f_node_id\030\001 \001(\t\022\016\n\006msg_id\030\002 \001(\t\022\014\n\004hash\030"
+  "\003 \001(\tb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_sync_5fblock_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_sync_5fblock_2eproto = {
-    false, false, 1965, descriptor_table_protodef_sync_5fblock_2eproto,
+    false, false, 2093, descriptor_table_protodef_sync_5fblock_2eproto,
     "sync_block.proto",
-    &descriptor_table_sync_5fblock_2eproto_once, nullptr, 0, 23,
+    &descriptor_table_sync_5fblock_2eproto_once, nullptr, 0, 25,
     schemas, file_default_instances, TableStruct_sync_5fblock_2eproto::offsets,
     file_level_metadata_sync_5fblock_2eproto, file_level_enum_descriptors_sync_5fblock_2eproto,
     file_level_service_descriptors_sync_5fblock_2eproto,
@@ -7271,6 +7324,562 @@ void GetBlockByHashAck::InternalSwap(GetBlockByHashAck* other) {
       file_level_metadata_sync_5fblock_2eproto[22]);
 }
 
+// ===================================================================
+
+class SyncNodeHashReq::_Internal {
+ public:
+};
+
+SyncNodeHashReq::SyncNodeHashReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:SyncNodeHashReq)
+}
+SyncNodeHashReq::SyncNodeHashReq(const SyncNodeHashReq& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  SyncNodeHashReq* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.msg_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_self_node_id().empty()) {
+    _this->_impl_.self_node_id_.Set(from._internal_self_node_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_msg_id().empty()) {
+    _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:SyncNodeHashReq)
+}
+
+inline void SyncNodeHashReq::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.msg_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+SyncNodeHashReq::~SyncNodeHashReq() {
+  // @@protoc_insertion_point(destructor:SyncNodeHashReq)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void SyncNodeHashReq::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.self_node_id_.Destroy();
+  _impl_.msg_id_.Destroy();
+}
+
+void SyncNodeHashReq::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void SyncNodeHashReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:SyncNodeHashReq)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.self_node_id_.ClearToEmpty();
+  _impl_.msg_id_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* SyncNodeHashReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string self_node_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_self_node_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "SyncNodeHashReq.self_node_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string msg_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_msg_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "SyncNodeHashReq.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* SyncNodeHashReq::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:SyncNodeHashReq)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string self_node_id = 1;
+  if (!this->_internal_self_node_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_self_node_id().data(), static_cast<int>(this->_internal_self_node_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "SyncNodeHashReq.self_node_id");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_self_node_id(), target);
+  }
+
+  // string msg_id = 2;
+  if (!this->_internal_msg_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "SyncNodeHashReq.msg_id");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_msg_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:SyncNodeHashReq)
+  return target;
+}
+
+size_t SyncNodeHashReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:SyncNodeHashReq)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string self_node_id = 1;
+  if (!this->_internal_self_node_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_self_node_id());
+  }
+
+  // string msg_id = 2;
+  if (!this->_internal_msg_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_msg_id());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData SyncNodeHashReq::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    SyncNodeHashReq::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SyncNodeHashReq::GetClassData() const { return &_class_data_; }
+
+
+void SyncNodeHashReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<SyncNodeHashReq*>(&to_msg);
+  auto& from = static_cast<const SyncNodeHashReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:SyncNodeHashReq)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_self_node_id().empty()) {
+    _this->_internal_set_self_node_id(from._internal_self_node_id());
+  }
+  if (!from._internal_msg_id().empty()) {
+    _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SyncNodeHashReq::CopyFrom(const SyncNodeHashReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:SyncNodeHashReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SyncNodeHashReq::IsInitialized() const {
+  return true;
+}
+
+void SyncNodeHashReq::InternalSwap(SyncNodeHashReq* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.self_node_id_, lhs_arena,
+      &other->_impl_.self_node_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.msg_id_, lhs_arena,
+      &other->_impl_.msg_id_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata SyncNodeHashReq::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_sync_5fblock_2eproto_getter, &descriptor_table_sync_5fblock_2eproto_once,
+      file_level_metadata_sync_5fblock_2eproto[23]);
+}
+
+// ===================================================================
+
+class SyncNodeHashAck::_Internal {
+ public:
+};
+
+SyncNodeHashAck::SyncNodeHashAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:SyncNodeHashAck)
+}
+SyncNodeHashAck::SyncNodeHashAck(const SyncNodeHashAck& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  SyncNodeHashAck* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.hash_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_self_node_id().empty()) {
+    _this->_impl_.self_node_id_.Set(from._internal_self_node_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_msg_id().empty()) {
+    _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.hash_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.hash_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_hash().empty()) {
+    _this->_impl_.hash_.Set(from._internal_hash(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:SyncNodeHashAck)
+}
+
+inline void SyncNodeHashAck::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.hash_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.hash_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.hash_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+SyncNodeHashAck::~SyncNodeHashAck() {
+  // @@protoc_insertion_point(destructor:SyncNodeHashAck)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void SyncNodeHashAck::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.self_node_id_.Destroy();
+  _impl_.msg_id_.Destroy();
+  _impl_.hash_.Destroy();
+}
+
+void SyncNodeHashAck::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void SyncNodeHashAck::Clear() {
+// @@protoc_insertion_point(message_clear_start:SyncNodeHashAck)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.self_node_id_.ClearToEmpty();
+  _impl_.msg_id_.ClearToEmpty();
+  _impl_.hash_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* SyncNodeHashAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string self_node_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_self_node_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "SyncNodeHashAck.self_node_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string msg_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_msg_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "SyncNodeHashAck.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string hash = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_hash();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "SyncNodeHashAck.hash"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* SyncNodeHashAck::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:SyncNodeHashAck)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string self_node_id = 1;
+  if (!this->_internal_self_node_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_self_node_id().data(), static_cast<int>(this->_internal_self_node_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "SyncNodeHashAck.self_node_id");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_self_node_id(), target);
+  }
+
+  // string msg_id = 2;
+  if (!this->_internal_msg_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "SyncNodeHashAck.msg_id");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_msg_id(), target);
+  }
+
+  // string hash = 3;
+  if (!this->_internal_hash().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_hash().data(), static_cast<int>(this->_internal_hash().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "SyncNodeHashAck.hash");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_hash(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:SyncNodeHashAck)
+  return target;
+}
+
+size_t SyncNodeHashAck::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:SyncNodeHashAck)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string self_node_id = 1;
+  if (!this->_internal_self_node_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_self_node_id());
+  }
+
+  // string msg_id = 2;
+  if (!this->_internal_msg_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_msg_id());
+  }
+
+  // string hash = 3;
+  if (!this->_internal_hash().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_hash());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData SyncNodeHashAck::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    SyncNodeHashAck::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SyncNodeHashAck::GetClassData() const { return &_class_data_; }
+
+
+void SyncNodeHashAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<SyncNodeHashAck*>(&to_msg);
+  auto& from = static_cast<const SyncNodeHashAck&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:SyncNodeHashAck)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_self_node_id().empty()) {
+    _this->_internal_set_self_node_id(from._internal_self_node_id());
+  }
+  if (!from._internal_msg_id().empty()) {
+    _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  if (!from._internal_hash().empty()) {
+    _this->_internal_set_hash(from._internal_hash());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SyncNodeHashAck::CopyFrom(const SyncNodeHashAck& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:SyncNodeHashAck)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool SyncNodeHashAck::IsInitialized() const {
+  return true;
+}
+
+void SyncNodeHashAck::InternalSwap(SyncNodeHashAck* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.self_node_id_, lhs_arena,
+      &other->_impl_.self_node_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.msg_id_, lhs_arena,
+      &other->_impl_.msg_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.hash_, lhs_arena,
+      &other->_impl_.hash_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata SyncNodeHashAck::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_sync_5fblock_2eproto_getter, &descriptor_table_sync_5fblock_2eproto_once,
+      file_level_metadata_sync_5fblock_2eproto[24]);
+}
+
 // @@protoc_insertion_point(namespace_scope)
 PROTOBUF_NAMESPACE_OPEN
 template<> PROTOBUF_NOINLINE ::FastSyncGetHashReq*
@@ -7364,6 +7973,14 @@ Arena::CreateMaybeMessage< ::GetBlockByHashReq >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::GetBlockByHashAck*
 Arena::CreateMaybeMessage< ::GetBlockByHashAck >(Arena* arena) {
   return Arena::CreateMessageInternal< ::GetBlockByHashAck >(arena);
+}
+template<> PROTOBUF_NOINLINE ::SyncNodeHashReq*
+Arena::CreateMaybeMessage< ::SyncNodeHashReq >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::SyncNodeHashReq >(arena);
+}
+template<> PROTOBUF_NOINLINE ::SyncNodeHashAck*
+Arena::CreateMaybeMessage< ::SyncNodeHashAck >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::SyncNodeHashAck >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

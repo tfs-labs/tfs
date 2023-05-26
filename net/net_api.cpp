@@ -472,14 +472,14 @@ bool net_com::net_init()
 	INFOLOG("The Intranet ip is not empty");
 	
 	Account acc;
-	EVP_PKEY_free(acc.pkey);
+	EVP_PKEY_free(acc.GetKey());
 	if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
 		return false;
 	}
 
-	MagicSingleton<PeerNode>::GetInstance()->set_self_id(acc.base58Addr);
-	MagicSingleton<PeerNode>::GetInstance()->set_self_identity(acc.pubStr);
+	MagicSingleton<PeerNode>::GetInstance()->set_self_id(acc.GetBase58());
+	MagicSingleton<PeerNode>::GetInstance()->set_self_identity(acc.GetPubStr());
 	MagicSingleton<PeerNode>::GetInstance()->set_self_height();
 	
 	MagicSingleton<PeerNode>::GetInstance()->set_self_ip_l(IpPort::ipnum(global::local_ip.c_str()));
@@ -689,21 +689,21 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msg_id, bool get_nodel
 	// sign
 	std::string signature;
 	Account acc;
-	EVP_PKEY_free(acc.pkey);
+	EVP_PKEY_free(acc.GetKey());
 	if(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
 		return -4;
 	}
-	if (selfNode.base58address != acc.base58Addr)
+	if (selfNode.base58address != acc.GetBase58())
 	{
 		return -5;
 	}
-	if(!acc.Sign(getsha256hash(acc.base58Addr), signature))
+	if(!acc.Sign(getsha256hash(acc.GetBase58()), signature))
 	{
 		return -6;
 	}
 
-	mynode->set_identity(acc.pubStr);
+	mynode->set_identity(acc.GetPubStr());
 	mynode->set_sign(signature);
 
 	// connect
@@ -810,16 +810,18 @@ void net_com::SendNodeHeightChanged()
 	}
 	CSign * sign = heightChangeReq.mutable_sign();
 	sign->set_sign(signature);
-	sign->set_pub(defaultEd.pubStr);
+	sign->set_pub(defaultEd.GetPubStr());
 
 
 	auto selfNode = MagicSingleton<PeerNode>::GetInstance()->get_self_node();
 	std::vector<Node> publicNodes = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 	for (auto& node : publicNodes)
 	{
+		// DEBUGLOG("send node height {} to {}", chainHeight, node.base58address);
 		net_com::send_message(node, heightChangeReq, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
 	}
 }
+
 
 namespace net_callback
 {
@@ -839,7 +841,7 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 	const std::vector<Node>&& publicNodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 	if(global::kBuildType == global::BuildType::kBuildType_Dev)
 	{
-		std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
+		std::cout << "Total number of public nodelists:" << publicNodeList.size() << std::endl;
 	}
 	if(publicNodeList.empty())
 	{
@@ -900,17 +902,16 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 	};
 
 	std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
-
+	std::set<std::string> addrs;
 	if(block.height() < 500)
 	{
 		if(nodelist.size() <= global::broadcast_threshold)
 		{
 			BuildBlockMsg.set_type(2);//Set the number of broadcasts to two
-			
 			for(auto & node:nodelist){
 				net_com::send_message(node.base58address, BuildBlockMsg);
+				addrs.insert(node.base58address);
 			}
-
 
 		}else{
 			std::set<std::string> addrs = getTargetIndexs(global::broadcast_threshold,nodelist.size(),nodelist);
@@ -943,8 +944,7 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 		{//2500 m+m^2=nodelist.size();
 			int m = getRootOfEquation(nodelist.size());
 			int threshold = eligibleAddress.size() > m ? m : eligibleAddress.size();
-
-			std::set<std::string> addrs = getTargetIndexs(threshold, eligibleAddress.size(), eligibleAddress);
+			addrs = getTargetIndexs(threshold, eligibleAddress.size(), eligibleAddress);
 			
 			BuildBlockMsg.set_type(1);//Set the number of broadcasts to 1
 			for(auto &addr:addrs)
@@ -971,11 +971,15 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 
 			for(auto & addr : addrs)
 			{
-				DEBUGLOG("Level 1 broadcasting address {} , block hash : {}", addr,block.hash().substr(0,6));
+				//DEBUGLOG("Level 1 broadcasting address {} , block hash : {}", addr,block.hash().substr(0,6));
 				net_com::send_message(addr, BuildBlockMsg);
 			}
 		}
 	}
-
+	for(auto & addr : addrs)
+	{
+		DEBUGLOG("Level 1 broadcasting address {} , block hash : {}", addr,block.hash().substr(0,6));
+	}
+	MagicSingleton<BlockStroage>::GetInstance()->AddBlockStatus(block.hash(), block, addrs);
 	return true;
 }

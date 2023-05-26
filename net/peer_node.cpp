@@ -241,6 +241,14 @@ void PeerNode::get_nodelist(std::map<std::string, bool>& NodeAddrs, NodeType typ
 	}
 	return;
 }
+
+uint64_t PeerNode::get_nodelist_size()
+{
+	std::shared_lock<std::shared_mutex> lck(mutex_for_nodes_);
+	return node_map_.size();
+}
+
+
 // Refresh threads
 extern atomic<int> nodelist_refresh_time;
 bool PeerNode::nodelist_refresh_thread_init()

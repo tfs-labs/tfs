@@ -31,8 +31,22 @@ message BlockMsg
   uint64    time               = 4;
   bytes     block              = 5;
   repeated  Vrf  vrfInfo       = 6;
+  repeated  Vrf  txvrfInfo       = 7;
 }
 
+message TxStatus
+{
+  string  txHash      = 1;
+  int32   status      = 2;
+}
+
+message BlockStatus
+{
+  string              blockHash   = 1;
+  int32               status      = 2;
+  repeated TxStatus   txStatus    = 3;
+  string              id          = 4;
+}
 
 message SeekPreHashByHightReq
 {

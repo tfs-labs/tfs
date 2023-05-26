@@ -50,8 +50,16 @@ class CtransactionCache
         //  Start the packaging block building thread  // ca_ini ca_init call
         bool process();
 
+        // Check for conflicting (overloaded) block pool calls
+        bool check_conflict(const CTransaction& transaction);
         // Get the transaction cache
         void get_cache(std::map<uint64_t, std::list<TransactionEntity>>& cache); 
+        // Query the cache for the existence of a transaction
+        bool exist_in_cache(const std::string& hash);
+        // Delete the pending transaction cache
+        bool remove_pending_transaction(const std::string& tx_hash);
+        //  Delete the double spend transaction of cache
+        bool remove_cache_transaction(const std::string& tx_hash);
 
     private:
         // Threading functions

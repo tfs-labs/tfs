@@ -3,6 +3,7 @@
 
 #include "ca_txhelper.h"
 #include "utils/base58.h"
+#include "utils/Cycliclist.hpp"
 #include "ca_global.h"
 #include "proto/block.pb.h"
 #include "proto/transaction.pb.h"
@@ -23,6 +24,7 @@
 
 #include "../include/net_interface.h"
 #include "ca/ca_blockstroage.h"
+
 #include "ca_blockmonitor.h"
 #include "ca/ca_txhelper.h"
 
@@ -52,6 +54,7 @@ int GetBlockPackager(std::string &packager,const std::string & hash,Vrf & info);
 
 int SearchStake(const std::string &address, uint64_t &stakeamount,  global::ca::StakeType stakeType);
 
+int IsVrfVerifyNode(const CTransaction& tx, const Vrf& vrfInfo);
 int IsVrfVerifyNode(const std::string identity, const std::shared_ptr<TxMsgReq> &msg);
 
 TxHelper::vrfAgentType IsNeedAgent(const CTransaction & tx);
@@ -75,13 +78,15 @@ int IsQualifiedToDisinvest(const std::string& fromAddr,
 						const std::string& utxo_hash, 
 						uint64_t& invested_amount);
 
+int VerifyTxTimeOut(const CTransaction &tx);
+
 bool IsMoreThan30DaysForUnstake(const std::string& utxo);
 bool IsMoreThan1DayForDivest(const std::string& utxo);
 int VerifyBonusAddr(const std::string & BonusAddr);
 int GetInvestmentAmountAndDuration(const std::string & bonusAddr,const uint64_t &cur_time,const uint64_t &zero_time,std::map<std::string, std::pair<uint64_t,uint64_t>> &mpInvestAddr2Amount);
 int GetTotalCirculationYesterday(const uint64_t &cur_time, uint64_t &TotalCirculation);
 int GetTotalInvestmentYesterday(const uint64_t &cur_time, uint64_t &Totalinvest);
-
+int GetTotalBurnYesterday(const uint64_t &cur_time, uint64_t &TotalBrun);
 void NotifyNodeHeightChange();
 
 int HandleMultiSignTxReq(const std::shared_ptr<MultiSignTxReq>& msg, const MsgData &msgdata );
@@ -105,4 +110,6 @@ void setVrf(Vrf & dest,const std::string & proof, const std::string & pub,const 
 int getVrfdata(const Vrf & vrf,std::string & hash, int & range);
 
 static void filterNodeList(const CTransaction & tx, std::vector<Node> &outAddrs);
+static int filterSendList(int & end_pos,Cycliclist<std::string> &list, std::vector<std::string> &target_addrs);
+
 #endif

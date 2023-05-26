@@ -1,21 +1,23 @@
 #include "api/http_api.h"
+#include "../net/unregister_node.h"
 #include "api/interface/RSA_TEXT.h"
 #include "api/interface/base64.h"
 #include "api/interface/evm.h"
+#include "api/interface/sig.h"
 #include "api/interface/tx.h"
 #include "ca/ca.h"
 #include "ca/ca_AdvancedMenu.h"
 #include "ca_global.h"
-#include "ca_interface.h"
 #include "ca_transaction.h"
 #include "ca_txhelper.h"
+#include "common/global.h"
 #include "db/cache.h"
 #include "db/db_api.h"
-#include "google/protobuf/util/json_util.h"
 #include "utils/AccountManager.h"
 #include "utils/MagicSingleton.h"
 #include "utils/tmplog.h"
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -27,18 +29,74 @@
 
 #include <chrono>
 #include <ctime>
+#include <netdb.h>
+
 
 #include <iomanip>
 
+#include "ca_interface.h"
 #include <cstdio>
 #include <cstring>
 #include <dirent.h>
+#include <google/protobuf/util/json_util.h>
 #include <map>
 #include <sstream>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <vector>
+
+void ca_register_http_callbacks() {
+#ifndef NDEBUG // The debug build compiles these functions
+    HttpServer::registerCallback("/", api_jsonrpc);
+    HttpServer::registerCallback("/block", api_print_block);
+    HttpServer::registerCallback("/info", api_info);
+    HttpServer::registerCallback("/get_block", api_get_block);
+    HttpServer::registerCallback("/log", api_get_log_line);
+    HttpServer::registerCallback("/system_info", get_all_system_info);
+    HttpServer::registerCallback("/bandwidth", api_get_real_bandwidth);
+    HttpServer::registerCallback("/block_info", api_get_block_info);
+    HttpServer::registerCallback("/get_tx_info", api_get_tx_info);
+
+    HttpServer::registerCallback("/pub", api_pub);
+    HttpServer::registerCallback("/startautotx", api_start_autotx);
+    HttpServer::registerCallback("/endautotx", api_end_autotx);
+    HttpServer::registerCallback("/autotxstatus", api_status_autotx);
+    HttpServer::registerCallback("/filterheight", api_filter_height);
+#endif // #ifndef NDEBUG
+    HttpServer::registerCallback("/ip", api_ip);
+    HttpServer::registerCallback("/normal", api_normal);
+
+    HttpServer::registerCallback("/get_height", jsonrpc_get_height);
+    HttpServer::registerCallback("/get_balance", jsonrpc_get_balance);
+
+    HttpServer::registerCallback("/deploy_contract_req", deploy_contract);
+    HttpServer::registerCallback("/call_contract_req", call_contract);
+
+    HttpServer::registerCallback("/get_transaction_req", get_transaction);
+    HttpServer::registerCallback("/get_stakeutxo_req", get_stakeutxo);
+    HttpServer::registerCallback("/get_disinvestutxo_req", get_disinvestutxo);
+    HttpServer::registerCallback("/get_stake_req", get_stake);
+    HttpServer::registerCallback("/get_unstake_req", get_unstake);
+    HttpServer::registerCallback("/get_invest_req", get_invest);
+    HttpServer::registerCallback("/get_disinvest_req", get_disinvest);
+
+    HttpServer::registerCallback("/get_bonus_req", get_bonus);
+    HttpServer::registerCallback("/send_message", send_message);
+
+    HttpServer::registerCallback("/get_rsa_pub_req", get_rsa_pub);
+
+    HttpServer::registerCallback("/get_isonchain", get_isonchain);
+
+    HttpServer::registerCallback("/deployers_req", get_deployer);
+
+    HttpServer::registerCallback("/deploy_utxo_req", get_deployerutxo);
+
+    HttpServer::registerCallback("/get_restinverst_req", get_restinvest);
+
+    // Start the http service
+    HttpServer::start();
+}
 
 static bool flag = true;
 static bool autotx_flag = true;
@@ -164,7 +222,7 @@ static std::map<int, ProcessInfo> get_all_processes_info() {
 
     DIR *proc_dir = opendir("/proc");
     if (!proc_dir) {
-        std::cerr << "Error opening /proc directory." << std::endl;
+
         return processes_info;
     }
 
@@ -305,7 +363,7 @@ static std::string format_speed(double speed) {
 static std::string get_mac_address(const std::string &interface) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-        std::cerr << "Error creating socket" << std::endl;
+
         return "";
     }
 
@@ -314,7 +372,7 @@ static std::string get_mac_address(const std::string &interface) {
     strncpy(ifr.ifr_name, interface.c_str(), IFNAMSIZ - 1);
 
     if (ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
-        std::cerr << "Error getting MAC address" << std::endl;
+
         close(sock);
         return "";
     }
@@ -336,7 +394,7 @@ static std::string get_network_interface_model(const std::string &interface) {
     std::string model_path = "/sys/class/net/" + interface + "/device/modalias";
     std::ifstream model_file(model_path);
     if (!model_file.is_open()) {
-        std::cerr << "Error opening model file: " << model_path << std::endl;
+
         return "";
     }
 
@@ -424,56 +482,28 @@ int getFileLine() {
     return count;
 }
 
-void ca_register_http_callbacks() {
-    HttpServer::registerCallback("/", api_jsonrpc);
-    HttpServer::registerCallback("/block", api_print_block);
-    HttpServer::registerCallback("/info", api_info);
-    HttpServer::registerCallback("/get_block", api_get_block);
-    HttpServer::registerCallback("/log", api_get_log_line);
-    HttpServer::registerCallback("/system_info", get_all_system_info);
-    HttpServer::registerCallback("/bandwidth", api_get_real_bandwidth);
-    HttpServer::registerCallback("/block_info", api_get_block_info);
-    HttpServer::registerCallback("/get_tx_info", api_get_tx_info);
-
-    HttpServer::registerCallback("/pub", api_pub);
-    HttpServer::registerCallback("/startautotx", api_start_autotx);
-    HttpServer::registerCallback("/endautotx", api_end_autotx);
-    HttpServer::registerCallback("/autotxstatus", api_status_autotx);
-    HttpServer::registerCallback("/filterheight", api_filter_height);
-
-    HttpServer::registerCallback("/get_height", jsonrpc_get_height);
-    HttpServer::registerCallback("/get_balance", jsonrpc_get_balance);
-
-    HttpServer::registerCallback("/deploy_contract_req", deploy_contract);
-    HttpServer::registerCallback("/call_contract_req", call_contract);
-
-    HttpServer::registerCallback("/get_transaction_req", get_transaction);
-    HttpServer::registerCallback("/get_stakeutxo_req", get_stakeutxo);
-    HttpServer::registerCallback("/get_disinvestutxo_req", get_disinvestutxo);
-    HttpServer::registerCallback("/get_stake_req", get_stake);
-    HttpServer::registerCallback("/get_unstake_req", get_unstake);
-    HttpServer::registerCallback("/get_invest_req", get_invest);
-    HttpServer::registerCallback("/get_disinvest_req", get_disinvest);
-
-    HttpServer::registerCallback("/get_bonus_req", get_bonus);
-    HttpServer::registerCallback("/send_message", send_message);
-
-    HttpServer::registerCallback("/get_rsa_pub_req", get_rsa_pub);
-
-    HttpServer::registerCallback("/get_isonchain", get_isonchain);
-
-    HttpServer::registerCallback("/deployers_req", get_deployer);
-
-    HttpServer::registerCallback("/deploy_utxo_req", get_deployerutxo);
-
-    HttpServer::registerCallback("/get_restinverst_req", get_restinvest);
-
-    // Start the http service
-    HttpServer::start();
-}
-
 void api_pub(const Request &req, Response &res) {
     std::ostringstream oss;
+    const int MaxInformationSize = 256;
+    char buff[MaxInformationSize] = {};
+    FILE *f = fopen("/proc/self/cmdline", "r");
+    if (f == NULL) {
+        DEBUGLOG("Failed to obtain main information ");
+    } else {
+        char readc;
+        int i = 0;
+        while (((readc = fgetc(f)) != EOF)) {
+            if (readc == '\0') {
+                buff[i++] = ' ';
+            } else {
+                buff[i++] = readc;
+            }
+        }
+        fclose(f);
+        char *filename = strtok(buff, "\n");
+        oss << "file_name:" << filename << std::endl;
+        oss << "==================================" << std::endl;
+    }
     MagicSingleton<ProtobufDispatcher>::GetInstance()->task_info(oss);
     oss << "queue_read:" << global::queue_read.msg_queue_.size() << std::endl;
     oss << "queue_work:" << global::queue_work.msg_queue_.size() << std::endl;
@@ -551,6 +581,80 @@ void api_jsonrpc(const Request &req, Response &res) {
     res.set_content(ret.dump(4), "application/json");
 }
 
+void api_ip(const Request &req, Response &res) {
+    std::ostringstream oss;
+    std::map<uint64_t,
+             std::map<Node, int, UnregisterNode::NodeCompare>>
+        result;
+    MagicSingleton<UnregisterNode>::GetInstance()->getIpMap(result);
+    oss << "size: " << result.size() << std::endl;
+    for (auto &item : result) {
+        oss << "---------------------------------------------------------------"
+               "----------------------"
+            << std::endl;
+        oss << MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(
+                   item.first)
+            << std::endl;
+        for (auto i : item.second) {
+            oss << "IP: " << IpPort::ipsz(i.first.public_ip)
+                << "  Count: " << i.second << std::endl;
+        }
+    }
+
+    res.set_content(oss.str(), "text/plain");
+}
+
+void api_normal(const Request &req, Response &res) {
+    std::ostringstream oss;
+    std::map<uint64_t ,
+             std::map<Node, int , UnregisterNode::NodeCompare>>
+        result;
+    MagicSingleton<UnregisterNode>::GetInstance()->getIpMap(result);
+    oss << "Remove the IP address of the abnormal number of times : "
+        << std::endl;
+    for (auto item = result.begin(); item != result.end(); ++item) {
+        oss << "---------------------------------------------------------------"
+               "----------------------"
+            << std::endl;
+        oss << MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(
+                   item->first)
+            << std::endl;
+
+        // Evaluate outliers
+        uint64_t quarter_num = item->second.size() * 0.25;
+        uint64_t three_quarter_num = item->second.size() * 0.75;
+        if (quarter_num == three_quarter_num) {
+            std::cout << "quarter_num == three_quarter_num " << std::endl;
+            return;
+        }
+
+        // Remove the IP address of the abnormal number of times
+        std::vector<uint64_t> sign_cnt;
+        for (auto &i : item->second) {
+            sign_cnt.push_back(i.second);
+        }
+        std::sort(sign_cnt.begin(), sign_cnt.end());
+
+        uint64_t quarter_num_value = sign_cnt.at(quarter_num);
+        uint64_t three_quarter_num_value = sign_cnt.at(three_quarter_num);
+        int64_t slower_limit_value =
+            quarter_num_value -
+            ((three_quarter_num_value - quarter_num_value) * 1.5);
+
+        // Delete all abnormal IPs
+        if (slower_limit_value >= 0) {
+            for (auto iter = item->second.begin(); iter != item->second.end();
+                 ++iter) {
+                if (iter->second < slower_limit_value) {
+                    continue;
+                }
+                oss << "IP: " << IpPort::ipsz(iter->first.public_ip)
+                    << "  Count: " << iter->second << std::endl;
+            }
+        }
+    }
+    res.set_content(oss.str(), "text/plain");
+}
 void api_print_block(const Request &req, Response &res) {
     int num = 100;
     if (req.has_param("num")) {
@@ -931,7 +1035,9 @@ void get_all_system_info(const Request &req, Response &res) {
     out_put += api_get_cpu_info() + "\n";
     out_put += get_net_rate() + "\n";
     out_put += api_get_system_info() + "\n";
+    out_put += api_time() + "\n";
     out_put += get_process_info() + "\n";
+    
 
     res.set_content(out_put, "text/plain");
 }
@@ -1024,475 +1130,462 @@ void api_get_block_info(const Request &req, Response &res) {
     }
 
     std::ostringstream ss;
-    printBlock(block, true, ss);
+    printBlock(block, false, ss);
 
     res.set_content(ss.str(), "text/plain");
 }
 
-
-
-
 void api_get_tx_info(const Request &req, Response &res) {
 
-  get_tx_info_req req_t;
-  get_tx_info_ack ack_t;
-  req_t.paseFromJson(req.body);
+    get_tx_info_req req_t;
+    get_tx_info_ack ack_t;
+    req_t.paseFromJson(req.body);
 
-  DBReader db_reader;
-  std::string BlockHash;
-  std::string strHeader;
-  unsigned int BlockHeight;
-  if (DBStatus::DB_SUCCESS !=
-      db_reader.GetTransactionByHash(req_t.txhash, strHeader)) {
-    ack_t.ErrorCode = "-1";
-    ack_t.ErrorMessage = "txhash error";
+    DBReader db_reader;
+    std::string BlockHash;
+    std::string strHeader;
+    unsigned int BlockHeight;
+    if (DBStatus::DB_SUCCESS !=
+        db_reader.GetTransactionByHash(req_t.txhash, strHeader)) {
+        ack_t.ErrorCode = "-1";
+        ack_t.ErrorMessage = "txhash error";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+
+    if (DBStatus::DB_SUCCESS !=
+        db_reader.GetBlockHashByTransactionHash(req_t.txhash, BlockHash)) {
+        ack_t.ErrorCode = "-2";
+        ack_t.ErrorMessage = "Block error";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+
+    if (DBStatus::DB_SUCCESS !=
+        db_reader.GetBlockHeightByBlockHash(BlockHash, BlockHeight)) {
+        ack_t.ErrorCode = "-3";
+        ack_t.ErrorMessage = "Block error";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+
+    CTransaction tx;
+    if (!tx.ParseFromString(strHeader)) {
+        ack_t.ErrorCode = "-4";
+        ack_t.ErrorMessage = "tx ParseFromString error";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+
+    std::string txStr;
+    google::protobuf::util::Status status =
+        google::protobuf::util::MessageToJsonString(tx, &txStr);
+    ack_t.tx = txStr;
+    ack_t.blockhash = BlockHash;
+    ack_t.blockheight = BlockHeight;
     res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-
-  if (DBStatus::DB_SUCCESS !=
-      db_reader.GetBlockHashByTransactionHash(req_t.txhash, BlockHash)) {
-    ack_t.ErrorCode = "-2";
-    ack_t.ErrorMessage = "Block error";
-    res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-
-  if (DBStatus::DB_SUCCESS !=
-      db_reader.GetBlockHeightByBlockHash(BlockHash, BlockHeight)) {
-    ack_t.ErrorCode = "-3";
-    ack_t.ErrorMessage = "Block error";
-    res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-
-  CTransaction tx;
-  if (!tx.ParseFromString(strHeader)) {
-    ack_t.ErrorCode = "-4";
-    ack_t.ErrorMessage = "tx ParseFromString error";
-    res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-
-  std::string txStr;
-  google::protobuf::util::Status status =
-      google::protobuf::util::MessageToJsonString(tx, &txStr);
-  ack_t.tx = txStr;
-  ack_t.blockhash = BlockHash;
-  ack_t.blockheight = BlockHeight;
-  res.set_content(ack_t.paseToString(), "application/json");
 }
 
 bool tool_DeCode(const std::string &source, std::string &dest,
                  std::string &pubstr) {
-  std::shared_ptr<envelop> enve = MagicSingleton<envelop>::GetInstance();
-  bool bret = RSADeCode(source, enve.get(), pubstr, dest);
-  if (bret == false) {
-    return false;
-  }
-  return true;
+    std::shared_ptr<envelop> enve = MagicSingleton<envelop>::GetInstance();
+    bool bret = RSADeCode(source, enve.get(), pubstr, dest);
+    if (bret == false) {
+        return false;
+    }
+    return true;
 }
 
-
 void jsonrpc_get_height(const Request &req, Response &res) {
-  the_top ack_t;
-  DBReader db_reader;
-  uint64_t top = 0;
-  db_reader.GetBlockTop(top);
-  ack_t.top = std::to_string(top);
+    the_top ack_t;
+    DBReader db_reader;
+    uint64_t top = 0;
+    db_reader.GetBlockTop(top);
+    ack_t.top = std::to_string(top);
 
-  res.set_content(ack_t.paseToString(), "application/json");
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void jsonrpc_get_balance(const Request &req, Response &res) {
-  balance_req req_t;
-  balance_ack ack_t;
-  req_t.paseFromJson(req.body);
-  std::string address = req_t.addr;
+    balance_req req_t;
+    balance_ack ack_t;
+    req_t.paseFromJson(req.body);
+    std::string address = req_t.addr;
 
-  if (!CheckBase58Addr(address)) {
-    ack_t.ErrorCode = "-1";
-    ack_t.ErrorMessage = "address is invalid ";
-  }
+    if (!CheckBase58Addr(address)) {
+        ack_t.ErrorCode = "-1";
+        ack_t.ErrorMessage = "address is invalid ";
+    }
 
-  uint64_t balance = 0;
-  if (GetBalanceByUtxo(address.c_str(), balance) != 0) {
+    uint64_t balance = 0;
+    if (GetBalanceByUtxo(address.c_str(), balance) != 0) {
 
-    ack_t.ErrorCode = "-2";
-    ack_t.ErrorMessage = "search balance failed";
-  }
-  ack_t.balance = std::to_string(balance);
-  res.set_content(ack_t.paseToString(), "application/json");
+        ack_t.ErrorCode = "-2";
+        ack_t.ErrorMessage = "search balance failed";
+    }
+    ack_t.balance = std::to_string(balance);
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void deploy_contract(const Request &req, Response &res) {
-  deploy_contract_req req_t;
-  tx_ack ack_t;
-  bool ret_ = req_t.paseFromJson(req.body);
-  if (ret_ == false) {
-    return;
-  }
+    deploy_contract_req req_t;
+    tx_ack ack_t;
+    bool ret_ = req_t.paseFromJson(req.body);
+    if (ret_ == false) {
+        return;
+    }
 
-  std::string ret = handle__deploy_contract_rpc((void *)&req_t,&ack_t);
-  if(ret!="0"){
-     ack_t.ErrorCode="-1";
-     ack_t.ErrorMessage=ret;
-  }
-   res.set_content(ack_t.paseToString(), "application/json");
+    std::string ret = handle__deploy_contract_rpc((void *)&req_t, &ack_t);
+    if (ret != "0") {
+        ack_t.ErrorCode = "-1";
+        ack_t.ErrorMessage = ret;
+    }
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_stakeutxo(const Request &req, Response &res) {
-  get_stakeutxo_ack ack_t;
-  get_stakeutxo_req req_t;
-  
+    get_stakeutxo_ack ack_t;
+    get_stakeutxo_req req_t;
 
-  ack_t.ErrorCode = "0";
+    ack_t.ErrorCode = "0";
 
-  if (!req_t.paseFromJson(req.body)) {
-    errorL("bad error pase fail");
-    ack_t.ErrorCode = "-1";
-    ack_t.ErrorMessage = "bad error pase fail";
-    res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-
-  DBReader db_reader;
-  std::vector<string> utxos;
-  db_reader.GetStakeAddressUtxo(req_t.fromAddr, utxos);
-  std::reverse(utxos.begin(), utxos.end());
-  std::map<std::string, uint64_t> output;
-
-  for (auto &utxo : utxos) {
-    std::string txRaw;
-    db_reader.GetTransactionByHash(utxo, txRaw);
-    CTransaction tx;
-    tx.ParseFromString(txRaw);
-    uint64_t value = 0;
-    for (auto &vout : tx.utxo().vout()) {
-      if (vout.addr() == global::ca::kVirtualStakeAddr) {
-        value = vout.value();
-      }
-      output[utxo] = value;
+    if (!req_t.paseFromJson(req.body)) {
+        errorL("bad error pase fail");
+        ack_t.ErrorCode = "-1";
+        ack_t.ErrorMessage = "bad error pase fail";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
     }
-  }
-  ack_t.utxos = output;
-  res.set_content(ack_t.paseToString(), "application/json");
-  debugL(ack_t.paseToString());
+
+    DBReader db_reader;
+    std::vector<string> utxos;
+    db_reader.GetStakeAddressUtxo(req_t.fromAddr, utxos);
+    std::reverse(utxos.begin(), utxos.end());
+    std::map<std::string, uint64_t> output;
+
+    for (auto &utxo : utxos) {
+        std::string txRaw;
+        db_reader.GetTransactionByHash(utxo, txRaw);
+        CTransaction tx;
+        tx.ParseFromString(txRaw);
+        uint64_t value = 0;
+        for (auto &vout : tx.utxo().vout()) {
+            if (vout.addr() == global::ca::kVirtualStakeAddr) {
+                value = vout.value();
+            }
+            output[utxo] = value;
+        }
+    }
+    ack_t.utxos = output;
+    res.set_content(ack_t.paseToString(), "application/json");
+    debugL(ack_t.paseToString());
 }
 
 void get_disinvestutxo(const Request &req, Response &res) {
-  get_disinvestutxo_ack ack_t;
-  get_disinvestutxo_req req_t;
-  
+    get_disinvestutxo_ack ack_t;
+    get_disinvestutxo_req req_t;
 
-  ack_t.ErrorCode = "0";
+    ack_t.ErrorCode = "0";
 
-  if (!req_t.paseFromJson(req.body)) {
-    errorL("bad error pase fail");
-    ack_t.ErrorCode = "-1";
-    ack_t.ErrorMessage = "bad error pase fail";
+    if (!req_t.paseFromJson(req.body)) {
+        errorL("bad error pase fail");
+        ack_t.ErrorCode = "-1";
+        ack_t.ErrorMessage = "bad error pase fail";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+
+    DBReader db_reader;
+    std::vector<string> vecUtxos;
+    db_reader.GetBonusAddrInvestUtxosByBonusAddr(req_t.toAddr, req_t.fromAddr,
+                                                 vecUtxos);
+    std::reverse(vecUtxos.begin(), vecUtxos.end());
+    ack_t.utxos = vecUtxos;
     res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-
-  DBReader db_reader;
-  std::vector<string> vecUtxos;
-  db_reader.GetBonusAddrInvestUtxosByBonusAddr(req_t.toAddr, req_t.fromAddr,
-                                               vecUtxos);
-  std::reverse(vecUtxos.begin(), vecUtxos.end());
-  ack_t.utxos = vecUtxos;
-  res.set_content(ack_t.paseToString(), "application/json");
-  debugL(ack_t.paseToString());
+    debugL(ack_t.paseToString());
 }
 
 void get_transaction(const Request &req, Response &res) {
-  tx_ack ack_t;
-  tx_req req_t;
-  ack_t.ErrorCode = "0";
-  debugL(req.body);
-  bool bret = req_t.paseFromJson(req.body);
-  if (bret == false) {
-    errorL("bad error pase fail");
-    ack_t.ErrorCode = "-1";
-    ack_t.ErrorMessage = "bad error pase fail";
+    tx_ack ack_t;
+    tx_req req_t;
+    ack_t.ErrorCode = "0";
+    // debugL(req.body);
+    bool bret = req_t.paseFromJson(req.body);
+    if (bret == false) {
+        errorL("bad error pase fail");
+        ack_t.ErrorCode = "-1";
+        ack_t.ErrorMessage = "bad error pase fail";
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+    std::map<std::string, int64_t> toAddr;
+
+    for (auto iter = req_t.toAddr.begin(); iter != req_t.toAddr.end(); iter++) {
+        // toAddr[iter->first] = std::stold(iter->second) *
+        // global::ca::kDecimalNum;
+
+        toAddr[iter->first] =
+            (std::stod(iter->second) + global::ca::kFixDoubleMinPrecision) *
+            global::ca::kDecimalNum;
+    }
+
+    std::string strError =
+        TxHelper::ReplaceCreateTxTransaction(req_t.fromAddr, toAddr, &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-5";
+    }
+  
     res.set_content(ack_t.paseToString(), "application/json");
-    return;
-  }
-  std::map<std::string, int64_t> toAddr;
-
-  for (auto iter = req_t.toAddr.begin(); iter != req_t.toAddr.end(); iter++) {
-   // toAddr[iter->first] = std::stold(iter->second) * global::ca::kDecimalNum;
-    long double value=std::stold(iter->second)* 10000;
-    value= value * 10000;
-    toAddr[iter->first]=value;
-    debugL(value);
-  }
-
-  std::string strError =TxHelper::ReplaceCreateTxTransaction(req_t.fromAddr, toAddr, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-5";
-  }
-  debugL(ack_t.paseToString());
-  res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_stake(const Request &req, Response &res) {
-  get_stake_req req_t;
-  tx_ack ack_t;
+    get_stake_req req_t;
+    tx_ack ack_t;
 
-  req_t.paseFromJson(req.body);
-  debugL("req:" << req.body);
+    req_t.paseFromJson(req.body);
+  
 
-  std::string fromAddr = req_t.fromAddr;
- long double value=std::stold(req_t.stake_amount)* 10000;
-    value= value * 10000;
-  uint64_t stake_amount = value;
-  int32_t PledgeType = std::stoll(req_t.PledgeType);
+    std::string fromAddr = req_t.fromAddr;
 
-  ack_t.type = "getStake_ack";
-  ack_t.ErrorCode = "0";
+    uint64_t stake_amount =
+        (std::stod(req_t.stake_amount) + global::ca::kFixDoubleMinPrecision) *
+        global::ca::kDecimalNum;
+    int32_t PledgeType = std::stoll(req_t.PledgeType);
 
-  std::string strError =
-      TxHelper::ReplaceCreateStakeTransaction(
-          fromAddr, stake_amount, PledgeType, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-1";
-  }
+    ack_t.type = "getStake_ack";
+    ack_t.ErrorCode = "0";
 
-  res.set_content(ack_t.paseToString(), "application/json");
+    std::string strError = TxHelper::ReplaceCreateStakeTransaction(
+        fromAddr, stake_amount, PledgeType, &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-1";
+    }
+
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_unstake(const Request &req, Response &res) {
-  get_unstake_req req_t;
-  tx_ack ack_t;
+    get_unstake_req req_t;
+    tx_ack ack_t;
 
-  req_t.paseFromJson(req.body);
-  debugL("req:" << req.body);
+    req_t.paseFromJson(req.body);
+  
 
-  std::string fromAddr = req_t.fromAddr;
-  std::string utxo_hash = req_t.utxo_hash;
+    std::string fromAddr = req_t.fromAddr;
+    std::string utxo_hash = req_t.utxo_hash;
 
-  ack_t.type = "getUnstake_ack";
-  ack_t.ErrorCode = "0";
+    ack_t.type = "getUnstake_ack";
+    ack_t.ErrorCode = "0";
 
-  std::string strError =
-      TxHelper::ReplaceCreatUnstakeTransaction(
-          fromAddr, utxo_hash, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-1";
-  }
+    std::string strError =
+        TxHelper::ReplaceCreatUnstakeTransaction(fromAddr, utxo_hash, &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-1";
+    }
 
-  res.set_content(ack_t.paseToString(), "application/json");
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_invest(const Request &req, Response &res) {
-  get_invest_req req_t;
-  tx_ack ack_t;
+    get_invest_req req_t;
+    tx_ack ack_t;
 
-  req_t.paseFromJson(req.body);
-  debugL("req:" << req.body);
+    req_t.paseFromJson(req.body);
+   
+    std::string fromAddr = req_t.fromAddr;
+    std::string toAddr = req_t.toAddr;
+    long double value = std::stold(req_t.invest_amount) * 10000;
+    value = value * 10000;
+    uint64_t invest_amout =
+        (std::stod(req_t.invest_amount) + global::ca::kFixDoubleMinPrecision) *
+        global::ca::kDecimalNum;
+    int32_t investType = std::stoll(req_t.investType);
 
-  std::string fromAddr = req_t.fromAddr;
-  std::string toAddr = req_t.toAddr;
-   long double value=std::stold(req_t.invest_amount)* 10000;
-    value= value * 10000;
-  uint64_t invest_amout = value;
-  int32_t investType = std::stoll(req_t.investType);
+    ack_t.type = "getInvest_ack";
+    ack_t.ErrorCode = "0";
 
-  ack_t.type = "getInvest_ack";
-  ack_t.ErrorCode = "0";
+    std::string strError = TxHelper::ReplaceCreateInvestTransaction(
+        fromAddr, toAddr, invest_amout, investType, &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-1";
+    }
 
-  std::string strError =
-      TxHelper::ReplaceCreateInvestTransaction(
-          fromAddr, toAddr, invest_amout, investType, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-1";
-  }
-
-  res.set_content(ack_t.paseToString(), "application/json");
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_disinvest(const Request &req, Response &res) {
-  get_disinvest_req req_t;
-  tx_ack ack_t;
+    get_disinvest_req req_t;
+    tx_ack ack_t;
 
-  req_t.paseFromJson(req.body);
+    req_t.paseFromJson(req.body);
 
-  std::string fromAddr = req_t.fromAddr;
-  std::string toAddr = req_t.toAddr;
-  std::string utxo_hash = req_t.utxo_hash;
+    std::string fromAddr = req_t.fromAddr;
+    std::string toAddr = req_t.toAddr;
+    std::string utxo_hash = req_t.utxo_hash;
 
-  ack_t.type = "getDisInvest_ack";
-  ack_t.ErrorCode = "0";
+    ack_t.type = "getDisInvest_ack";
+    ack_t.ErrorCode = "0";
 
-  std::string strError =
-      TxHelper::ReplaceCreateDisinvestTransaction(fromAddr, toAddr, utxo_hash, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-1";
-  }
+    std::string strError = TxHelper::ReplaceCreateDisinvestTransaction(
+        fromAddr, toAddr, utxo_hash, &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-1";
+    }
 
-  res.set_content(ack_t.paseToString(), "application/json");
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_declare(const Request &req, Response &res) {
-  get_declare_req req_t;
-  tx_ack ack_t;
+    get_declare_req req_t;
+    tx_ack ack_t;
 
-  req_t.paseFromJson(req.body);
-  debugL("req:" << req.body);
+    req_t.paseFromJson(req.body);
+   
+    std::string fromAddr = req_t.fromAddr;
+    std::string toAddr = req_t.toAddr;
+    uint64_t amount = std::stoll(req_t.amount) * global::ca::kDecimalNum;
 
-  std::string fromAddr = req_t.fromAddr;
-  std::string toAddr = req_t.toAddr;
-  uint64_t amount = std::stoll(req_t.amount) * global::ca::kDecimalNum;
+    std::string multiSignPub;
+    Base64 base_;
+    multiSignPub = base_.Decode((const char *)req_t.multiSignPub.c_str(),
+                                req_t.multiSignPub.size());
 
-  std::string multiSignPub;
-  Base64 base_;
-  multiSignPub = base_.Decode((const char *)req_t.multiSignPub.c_str(),
-                              req_t.multiSignPub.size());
+    std::vector<std::string> signAddrList = req_t.signAddrList;
+    uint64_t signThreshold = std::stoll(req_t.signThreshold);
 
-  std::vector<std::string> signAddrList = req_t.signAddrList;
-  uint64_t signThreshold = std::stoll(req_t.signThreshold);
+    ack_t.type = "get_declare_req";
+    ack_t.ErrorCode = "0";
 
-  ack_t.type = "get_declare_req";
-  ack_t.ErrorCode = "0";
+    std::string strError = TxHelper::ReplaceCreateDeclareTransaction(
+        fromAddr, toAddr, amount, multiSignPub, signAddrList, signThreshold,
+        &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-1";
+    }
 
-  std::string strError =
-      TxHelper::ReplaceCreateDeclareTransaction(
-          fromAddr, toAddr, amount, multiSignPub, signAddrList, signThreshold, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-1";
-  }
-
-  res.set_content(ack_t.paseToString(), "application/json");
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_bonus(const Request &req, Response &res) {
-  get_bonus_req req_t;
-  tx_ack ack_t;
+    get_bonus_req req_t;
+    tx_ack ack_t;
 
-  req_t.paseFromJson(req.body);
-  debugL("req:" << req.body);
+    req_t.paseFromJson(req.body);
+  
+    std::string Addr = req_t.Addr;
 
-  std::string Addr = req_t.Addr;
+    ack_t.type = "getDisInvest_ack";
+    ack_t.ErrorCode = "0";
 
-  ack_t.type = "getDisInvest_ack";
-  ack_t.ErrorCode = "0";
+    std::string strError =
+        TxHelper::ReplaceCreateBonusTransaction(Addr, &ack_t);
+    if (strError != "0") {
+        ack_t.ErrorMessage = strError;
+        ack_t.ErrorCode = "-1";
+    }
 
-  std::string strError =
-      TxHelper::ReplaceCreateBonusTransaction(
-          Addr, &ack_t);
-  if (strError != "0") {
-    ack_t.ErrorMessage = strError;
-    ack_t.ErrorCode = "-1";
-  }
-
-  res.set_content(ack_t.paseToString(), "application/json");
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void call_contract(const Request &req, Response &res) {
-  call_contract_req req_t;
-  tx_ack ack_t;
-  bool ret = req_t.paseFromJson(req.body);
-  if (ret == false) {
-    return;
-  }
-  std::string ret_ = handle__call_contract_rpc((void *)&req_t,&ack_t);
-   if (ret_ != "0") {
-    ack_t.ErrorMessage = ret_;
-    ack_t.ErrorCode = "-1";
-  }
-   res.set_content(ack_t.paseToString(), "application/json");
+    call_contract_req req_t;
+    tx_ack ack_t;
+    bool ret = req_t.paseFromJson(req.body);
+    if (ret == false) {
+        return;
+    }
+    std::string ret_ = handle__call_contract_rpc((void *)&req_t, &ack_t);
+    if (ret_ != "0") {
+        ack_t.ErrorMessage = ret_;
+        ack_t.ErrorCode = "-1";
+    }
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void get_rsa_pub(const Request &req, Response &res) {
-  rsa_pubstr_ack ack_t;
-  std::shared_ptr<envelop> enve = MagicSingleton<envelop>::GetInstance();
-  std::string pubstr = enve->getPubstr();
-  Base64 base_;
-  ack_t.rsa_pubstr =
-      base_.Encode((const unsigned char *)pubstr.c_str(), pubstr.size());
-  res.set_content(ack_t.paseToString(), "application/json");
+    rsa_pubstr_ack ack_t;
+    std::shared_ptr<envelop> enve = MagicSingleton<envelop>::GetInstance();
+    std::string pubstr = enve->getPubstr();
+    Base64 base_;
+    ack_t.rsa_pubstr =
+        base_.Encode((const unsigned char *)pubstr.c_str(), pubstr.size());
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
-
-void send_message(const Request & req, Response & res)
-{
+void send_message(const Request &req, Response &res) {
     rpc_ack ack_back;
     tx_ack ack_t;
-    
+
     ack_t.paseFromJson(req.body);
- 
-    debugL(req.body);
+
+  
     CTransaction tx;
     Vrf info;
     int height;
     TxHelper::vrfAgentType type;
-    google::protobuf::util::Status status=google::protobuf::util::JsonStringToMessage(ack_t.txJson,&tx);
-    status=google::protobuf::util::JsonStringToMessage(ack_t.vrfJson,&info);
-    height=std::stoi(ack_t.height);
-    type=(TxHelper::vrfAgentType)std::stoi(ack_t.txType);
+    google::protobuf::util::Status status =
+        google::protobuf::util::JsonStringToMessage(ack_t.txJson, &tx);
+    status = google::protobuf::util::JsonStringToMessage(ack_t.vrfJson, &info);
+    height = std::stoi(ack_t.height);
+    type = (TxHelper::vrfAgentType)std::stoi(ack_t.txType);
     std::string txHash = getsha256hash(tx.SerializeAsString());
     ack_back.txhash = txHash;
-    int ret= TxHelper::sendMessage(tx, height, info, type);
-    ack_back.ErrorCode=std::to_string(ret);
- 
-    std::string back=ack_back.paseToString();
-  
-    res.set_content(back,"application/json");
+    int ret = TxHelper::sendMessage(tx, height, info, type);
+    ack_back.ErrorCode = std::to_string(ret);
 
+    std::string back = ack_back.paseToString();
+
+    res.set_content(back, "application/json");
 }
 
-void get_isonchain(const Request & req, Response & res){
+void get_isonchain(const Request &req, Response &res) {
     get_isonchain_req req_j;
     req_j.paseFromJson(req.body);
-   IsOnChainAck ack;
-   std::shared_ptr<IsOnChainReq> req_t=std::make_shared<IsOnChainReq>() ;
+    IsOnChainAck ack;
+    std::shared_ptr<IsOnChainReq> req_t = std::make_shared<IsOnChainReq>();
     req_t->add_txhash(req_j.txhash);
     req_t->set_version(global::kVersion);
-    auto current_time=MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
+    auto current_time =
+        MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
     req_t->set_time(current_time);
 
-   int ret=0;
+    int ret = 0;
     ret = SendCheckTxReq(req_t, ack);
     std::string debug_value;
-     google::protobuf::util::Status status=google::protobuf::util::MessageToJsonString(ack,&debug_value);
+    google::protobuf::util::Status status =
+        google::protobuf::util::MessageToJsonString(ack, &debug_value);
     debugL(debug_value);
     get_isonchain_ack ack_t;
-    auto sus=ack.percentage();
-    auto rate= sus.at(0);
-    ack_t.txhash=rate.hash();
-    ack_t.pro=std::to_string(rate.rate());
-    ack_t.ErrorCode=std::to_string(ret);
-     res.set_content(ack_t.paseToString(),"application/json");
+    auto sus = ack.percentage();
+    auto rate = sus.at(0);
+    ack_t.txhash = rate.hash();
+    ack_t.pro = std::to_string(rate.rate());
+    ack_t.ErrorCode = std::to_string(ret);
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
-
-
-void get_deployer(const Request & req, Response & res){
-  deployers_ack ack_t;
-  DBReader data_reader;
-  std::vector<std::string> vecDeployers;
-  data_reader.GetAllDeployerAddr(vecDeployers);
-    std::cout << "=====================deployers=====================" << std::endl;
-    for(auto& deployer : vecDeployers)
-    {
+void get_deployer(const Request &req, Response &res) {
+    deployers_ack ack_t;
+    DBReader data_reader;
+    std::vector<std::string> vecDeployers;
+    data_reader.GetAllDeployerAddr(vecDeployers);
+    std::cout << "=====================deployers====================="
+              << std::endl;
+    for (auto &deployer : vecDeployers) {
         std::cout << "deployer: " << deployer << std::endl;
     }
-    ack_t.deployers=vecDeployers;
+    ack_t.deployers = vecDeployers;
 
-   res.set_content(ack_t.paseToString(),"application/json");
-
-
-
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
-void get_deployerutxo(const Request & req, Response & res){
+void get_deployerutxo(const Request &req, Response &res) {
     deploy_utxo_req req_t;
     deploy_utxo_ack ack_t;
     req_t.paseFromJson(req.body);
@@ -1500,28 +1593,77 @@ void get_deployerutxo(const Request & req, Response & res){
     DBReader data_reader;
     std::vector<std::string> vecDeployUtxos;
     data_reader.GetDeployUtxoByDeployerAddr(req_t.addr, vecDeployUtxos);
-    std::cout << "=====================deployed utxos=====================" << std::endl;
-    for(auto& deploy_utxo : vecDeployUtxos)
-    {
+    std::cout << "=====================deployed utxos====================="
+              << std::endl;
+    for (auto &deploy_utxo : vecDeployUtxos) {
         std::cout << "deployed utxo: " << deploy_utxo << std::endl;
     }
-    std::cout << "=====================deployed utxos=====================" << std::endl;
-    ack_t.utxos=vecDeployUtxos;
-    res.set_content(ack_t.paseToString(),"application/json");
+    std::cout << "=====================deployed utxos====================="
+              << std::endl;
+    ack_t.utxos = vecDeployUtxos;
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
-void get_restinvest(const Request & req, Response & res){
-   GetRestInvestAmountAck ack;
-   get_restinverst_req req_c;
-   req_c.paseFromJson(req.body);
-  std::shared_ptr<GetRestInvestAmountReq> req_t=std::make_shared<GetRestInvestAmountReq>();
-  req_t->set_base58(req_c.addr);
-  req_t->set_version(global::kVersion);
-   int ret = GetRestInvestAmountReqImpl(req_t,ack);
-   get_restinverst_ack ack_t;
-   ack_t.addr=ack.base58();
-   ack_t.amount=std::to_string(ack.amount());
-   debugL(ack_t.paseToString());
-   res.set_content(ack_t.paseToString(),"application/json");
+void get_restinvest(const Request &req, Response &res) {
+    GetRestInvestAmountAck ack;
+    get_restinverst_req req_c;
+    req_c.paseFromJson(req.body);
+    std::shared_ptr<GetRestInvestAmountReq> req_t =
+        std::make_shared<GetRestInvestAmountReq>();
+    req_t->set_base58(req_c.addr);
+    req_t->set_version(global::kVersion);
+    int ret = GetRestInvestAmountReqImpl(req_t, ack);
+    get_restinverst_ack ack_t;
+    ack_t.addr = ack.base58();
+    ack_t.amount = std::to_string(ack.amount());
 
+    res.set_content(ack_t.paseToString(), "application/json");
+}
+
+
+std::string api_time()
+{
+    std::string str;
+	auto now = std::time(0);
+    str += std::ctime(&now);	
+   	auto now1 = std::chrono::system_clock::now();
+    auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(now1.time_since_epoch()).count();
+    auto stamp= std::to_string(now_us) ;
+    str  += stamp +"\n";
+
+    addrinfo hints;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    addrinfo *result;
+    getaddrinfo(NULL, "0", &hints, &result);
+    sockaddr_in *addr = (sockaddr_in *)result->ai_addr;
+    // addr->sin_port htons(0);
+
+    auto time_ms = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string nettime = std::to_string(time_ms) ; 
+    str += nettime + "\n";
+
+    if(time_ms >1000 + now_us)
+    {
+        std::string cache = std::to_string(time_ms - now_us); 
+        str +=cache +"microsecond"+"slow" + "\n" ;
+    }
+
+    if(now_us  > 1000 + time_ms)
+    {
+        std::string cache = std::to_string(time_ms - now_us);
+        str +=cache +"microsecond"+"fast" +"\n";
+    }
+    else 
+    {
+        str +="normal";
+        str +="\n";
+    }
+    str +="time check======================" ;
+    str +="\n";
+    return str;
 }

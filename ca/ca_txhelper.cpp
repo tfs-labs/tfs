@@ -1,7 +1,5 @@
 #include "ca_txhelper.h"
 
-#include "api/interface/tx.h"
-#include "google/protobuf/util/json_util.h"
 #include "include/logging.h"
 #include "db/db_api.h"
 #include "utils/MagicSingleton.h"
@@ -20,6 +18,12 @@
 #include "ca/ca_evmone.h"
 #include "utils/TFSbenchmark.h"
 #include "db/cache.h"
+#include "api/interface/sig.h"
+#include "api/interface/tx.h"
+#include <google/protobuf/util/json_util.h>
+#include <string>
+#include"ca_DoubleSpendCache.h"
+
 
 std::vector<std::string> TxHelper::GetTxOwner(const CTransaction& tx)
 {
@@ -347,6 +351,45 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		return -6;
 	}
 
+	//```
+	std::vector<std::string> addrutxos;
+
+	for(auto & addr : fromAddr)
+	{
+		std::set<std::string> useUtxos;
+		for (auto & utxo : setOutUtxos)
+		{
+			if(utxo.addr == addr)
+			{
+				useUtxos.insert(utxo.hash);
+			}
+		}
+
+		std::string utxo_hash;
+		auto iter = useUtxos.begin();
+		for(;iter != useUtxos.end(); iter ++)
+		{
+			utxo_hash += *iter + "_";
+		}
+
+		if(utxo_hash[utxo_hash.length()-1] == '_')
+		{
+			utxo_hash = utxo_hash.substr(0,utxo_hash.length()-1);
+		}
+
+		std::string addr_Utxo = addr + "_" + utxo_hash;
+		//std::cout << "addr_Utxo = " << addr_Utxo << std::endl;
+		addrutxos.push_back(addr_Utxo);
+		
+	}
+
+	if(MagicSingleton<DoubleSpendCache>::GetInstance()->AddFromAddr(addrutxos))
+	{
+		std::cout << "utxo is using!" << std::endl;
+		return -12;
+	}
+	
+	//```
 	uint32_t n = 0;
 	for (auto & owner : setTxowners)
 	{
@@ -490,8 +533,6 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	
 	std::string txHash = getsha256hash(outTx.SerializeAsString());
 	outTx.set_hash(txHash);
-	
-	DEBUGLOG("111111111 txhash = {}", txHash);
 
 	INFOLOG( "Transaction Start Time = {}");
 	return 0;
@@ -1780,7 +1821,7 @@ int TxHelper::Sign(const std::string & addr,
 	}
 
 	Account account;
-	EVP_PKEY_free(account.pkey);
+	EVP_PKEY_free(account.GetKey());
 	if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(addr ,account) != 0)
 	{
 		ERRORLOG("account {} doesn't exist", addr);
@@ -1792,7 +1833,7 @@ int TxHelper::Sign(const std::string & addr,
 		return -3;
 	}
 
-	pub = account.pubStr;
+	pub = account.GetPubStr();
 	return 0;
 }
 
@@ -1938,7 +1979,7 @@ void TxHelper::GetTxStartIdentity(const std::vector<std::string> &fromaddr,const
 	{//Beyond 30 seconds
 
 		//Conditional power generation beyond 50 altitude
-		GetInitiatorType(fromaddr,type);
+		type=vrfAgentType_defalut;
 		return;
 	}
 	else
@@ -3693,4 +3734,3 @@ int TxHelper::sendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vr
 	//return result_node;
 
  }
-

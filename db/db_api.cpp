@@ -35,10 +35,12 @@ const std::string kInvestUtxoKey = "Investutxo_";
 
 
 const std::string kM2 = "M2_";
+const std::string kDM = "DM_"; //Deflationary Mechanism
 const std::string kTotalInvestAmount = "totalinvestamount_";
 const std::string kInitVersionKey = "initVer_";
 const std::string kSignNumberKey = "signnumber_";
 const std::string kSignAddrKey = "signAddr_";
+const std::string kburnAmountKey = "burnamount_";
 
 const std::string kAllDeployerAddr = "alldeployeraddr_";
 const std::string kDeployerAddr2DeployUtxo = "deployeraddr2deployutxo_";
@@ -404,6 +406,28 @@ DBStatus DBReader::GetSignAddrByPeriod(const uint64_t &Period, std::vector<std::
     if (DBStatus::DB_SUCCESS == ret)
     {
         StringUtil::SplitString(value, "_", SignAddrs);
+    }
+    return ret;
+}
+
+DBStatus DBReader::GetburnAmountByPeriod(const uint64_t &Period, uint64_t &burnAmount)
+{
+    std::string value;
+    auto ret = ReadData(kburnAmountKey + std::to_string(Period), value);
+    if (DBStatus::DB_SUCCESS == ret)
+    {
+        burnAmount = std::stoull(value);
+    }
+    return ret;
+}
+
+DBStatus DBReader::GetDM(uint64_t &Totalburn)
+{
+    std::string value;
+    auto ret = ReadData(kDM, value);
+    if (DBStatus::DB_SUCCESS == ret)
+    {
+        Totalburn = std::stoull(value);
     }
     return ret;
 }
@@ -1001,6 +1025,20 @@ DBStatus DBReadWriter::SetSignAddrByPeriod(const uint64_t &Period, const std::st
 DBStatus DBReadWriter::RemoveSignAddrberByPeriod(const uint64_t &Period, const std::string &addr)
 {
     return RemoveMergeValue(kSignAddrKey + std::to_string(Period), addr);
+}
+
+DBStatus DBReadWriter::SetburnAmountByPeriod(const uint64_t &Period, const uint64_t &burnAmount)
+{
+    return WriteData(kburnAmountKey + std::to_string(Period), std::to_string(burnAmount));
+}
+DBStatus DBReadWriter::RemoveburnAmountByPeriod(const uint64_t &Period, const uint64_t &burnAmount)
+{
+    return DeleteData(kburnAmountKey + std::to_string(Period));
+}
+
+DBStatus DBReadWriter::SetDM(uint64_t &Totalburn)
+{
+    return WriteData(kDM, std::to_string(Totalburn));
 }
 
 

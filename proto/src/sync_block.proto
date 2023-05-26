@@ -175,3 +175,16 @@ message GetBlockByHashAck
     repeated HashType                blocks              = 2;
     string                           msg_id              = 3;
 }
+
+message SyncNodeHashReq
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+}
+
+message SyncNodeHashAck
+{
+    string                 self_node_id       = 1;
+    string                 msg_id             = 2;
+    string                 hash               = 3;
+}

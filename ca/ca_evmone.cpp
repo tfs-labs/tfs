@@ -547,6 +547,6 @@ void test_address_mapping()
 {
     Account defaultAccount;
     MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultAccount);
-    std::cout<< "strFromAddr:" << defaultAccount.base58Addr <<std::endl;
-    std::cout<< "EvmAddress:" << evm_utils::getEvmAddr(defaultAccount.pubStr) << std::endl;
+    std::cout<< "strFromAddr:" << defaultAccount.GetBase58() <<std::endl;
+    std::cout<< "EvmAddress:" << evm_utils::getEvmAddr(defaultAccount.GetPubStr()) << std::endl;
 }

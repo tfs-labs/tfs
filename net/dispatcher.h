@@ -35,8 +35,23 @@ public:
 
     template <typename T>
     void ca_unRegisterCallback();
+    template <typename T>
+    void net_unRegisterCallback();
+    template <typename T>
+    void broadcast_unRegisterCallback();
+    template <typename T>
+    void tx_unRegisterCallback();
+    template <typename T>
+    void syncBlock_unRegisterCallback();
+    template <typename T>
+    void saveBlock_unRegisterCallback();
+    template <typename T>
+    void block_unRegisterCallback();
 
     void registerAll();
+
+    void CRegisterStopTxForSync();
+    void CUnRegisterStopTxForSync();
 
     void task_info(std::ostringstream& oss);
 private:
@@ -119,5 +134,39 @@ void ProtobufDispatcher::ca_unRegisterCallback()
 {
     ca_protocbs_.erase(T::descriptor()->name());
 }
+template <typename T>
+void ProtobufDispatcher::net_unRegisterCallback()
+{
+    net_protocbs_.erase(T::descriptor()->name());
+}
 
+template <typename T>
+void ProtobufDispatcher::broadcast_unRegisterCallback()
+{
+    broadcast_protocbs_.erase(T::descriptor()->name());
+}
+
+template <typename T>
+void ProtobufDispatcher::tx_unRegisterCallback()
+{
+    tx_protocbs_.erase(T::descriptor()->name());
+}
+
+template <typename T>
+void ProtobufDispatcher::syncBlock_unRegisterCallback()
+{
+    syncBlock_protocbs_.erase(T::descriptor()->name());
+}
+
+template <typename T>
+void ProtobufDispatcher::saveBlock_unRegisterCallback()
+{
+    saveBlock_protocbs_.erase(T::descriptor()->name());
+}
+
+template <typename T>
+void ProtobufDispatcher::block_unRegisterCallback()
+{
+    block_protocbs_.erase(T::descriptor()->name());
+}
 #endif

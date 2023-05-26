@@ -21,6 +21,13 @@
 #include "ca/ca_block_http_callback.h"
 
 
+
+
+
+
+
+
+
 void menu()
 {
 	ca_print_basic_info();
@@ -176,7 +183,10 @@ bool InitRocksDb()
 		std::string serBlock = Hex2Str(str_block0);
 
         CBlock block;
-        block.ParseFromString(serBlock);
+        if(!block.ParseFromString(serBlock))
+		{
+			return false;
+		}
         
         if (block.txs_size() == 0)
         {

@@ -87,10 +87,15 @@ public:
     DBStatus GetSignNumberByPeriod(const uint64_t &Period, const std::string &address, uint64_t &SignNumber);
     // Set Addr of signatures By Period
     DBStatus GetSignAddrByPeriod(const uint64_t &Period, std::vector<std::string> &SignAddrs);
+    // Set Addr of tburnAmount By Period
+    DBStatus GetburnAmountByPeriod(const uint64_t &Period, uint64_t &burnAmount);
+
     //Obtain the total amount of stake
     DBStatus GetTotalInvestAmount(uint64_t &Total);
     //Obtain total circulation
     DBStatus GetM2(uint64_t &Total);
+
+    DBStatus GetDM(uint64_t &Totalburn);
 
     DBStatus GetAllDeployerAddr(std::vector<std::string> &DeployerAddr);
     DBStatus GetDeployUtxoByDeployerAddr(const std::string &DeployerAddr,std::vector<std::string> &DeployUtxo);
@@ -198,7 +203,7 @@ public:
     //Remove utxo from investment stake data
     DBStatus RemoveBonusAddrInvestAddrUtxoByBonusAddr(const std::string &addr,const std::string &address, const std::string &utxo);
 
-
+    DBStatus SetDM(uint64_t &Totalburn);
     //Set the total amount of entrusted stake
     DBStatus SetTotalInvestAmount(uint64_t &Totalinvest);
     //Set total circulation
@@ -227,6 +232,10 @@ public:
     DBStatus SetSignAddrByPeriod(const uint64_t &Period, const std::string &addr);
     // Remove Addr of signatures By Period
     DBStatus RemoveSignAddrberByPeriod(const uint64_t &Period, const std::string &addr);
+
+    DBStatus SetburnAmountByPeriod(const uint64_t &Period, const uint64_t &burnAmount);
+    DBStatus RemoveburnAmountByPeriod(const uint64_t &Period, const uint64_t &burnAmount);
+
 
     DBStatus SetDeployerAddr(const std::string &DeployerAddr);
     DBStatus RemoveDeployerAddr(const std::string &DeployerAddr);
