@@ -24,7 +24,6 @@
 #include <string>
 #include"ca_DoubleSpendCache.h"
 
-
 std::vector<std::string> TxHelper::GetTxOwner(const CTransaction& tx)
 {
 	std::vector<std::string> address;
@@ -42,7 +41,6 @@ std::vector<std::string> TxHelper::GetTxOwner(const CTransaction& tx)
 
 	return address;
 }
-
 
 int TxHelper::GetUtxos(const std::string & address, std::vector<TxHelper::Utxo>& utxos)
 {
@@ -79,7 +77,6 @@ int TxHelper::GetUtxos(const std::string & address, std::vector<TxHelper::Utxo>&
 				continue;
 			}
 			//	If I get the pledged utxo, I will use it together
-	
 			std::string underline = "_";
 			std::vector<std::string> utxo_values;
 
@@ -116,7 +113,6 @@ int TxHelper::Check(const std::vector<std::string>& fromAddr,
 		ERRORLOG("Fromaddr is empty!");		
 		return -1;
 	}
-
 	//  Fromaddr cannot have duplicate elements
 	std::vector<std::string> tempfromAddr = fromAddr;
 	std::sort(tempfromAddr.begin(),tempfromAddr.end());
@@ -128,7 +124,6 @@ int TxHelper::Check(const std::vector<std::string>& fromAddr,
 		return -2;
 	}
 
-	// CBlockDataApi data_reader;
 	DBReader db_reader;
 	std::map<std::string, std::vector<std::string>> identities;
 
@@ -208,7 +203,6 @@ int TxHelper::FindUtxo(const std::vector<std::string>& fromAddr,
 			}
 
 			//If I get the pledged utxo, I will use it together
-	
 			std::string underline = "_";
 			std::vector<std::string> utxo_values;
 
@@ -351,9 +345,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		return -6;
 	}
 
-	//```
 	std::vector<std::string> addrutxos;
-
 	for(auto & addr : fromAddr)
 	{
 		std::set<std::string> useUtxos;
@@ -378,7 +370,6 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		}
 
 		std::string addr_Utxo = addr + "_" + utxo_hash;
-		//std::cout << "addr_Utxo = " << addr_Utxo << std::endl;
 		addrutxos.push_back(addr_Utxo);
 		
 	}
@@ -389,7 +380,6 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		return -12;
 	}
 	
-	//```
 	uint32_t n = 0;
 	for (auto & owner : setTxowners)
 	{
@@ -433,7 +423,6 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		return -8;
 	}
 
-
 	auto current_time=MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
 
 	GetTxStartIdentity(fromAddr,height,current_time,type);
@@ -443,7 +432,6 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		ERRORLOG(" +++++++vrfAgentType_unknow +++++");
 		return -300;
 	}
-	
 	expend +=  gas;
 	
 	//Judge whether utxo is enough
@@ -477,24 +465,18 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 			return -10;
 		}
 	}
-	
 
 	outTx.set_time(current_time);
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeTx);
-
-
-
 	// Determine whether dropshipping is default or local dropshipping
-	
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
 		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
 	}
 	else
 	{
-
 		std::string allUtxos;
 		for(auto & utxo:setOutUtxos)
 		{
@@ -594,10 +576,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 		std::cout << "There has been a pledge transaction before !" << std::endl;
 		return -5;
 	}
-
-
 	uint64_t expend = stake_amount;
-
 	//  Find utxo
 	uint64_t total = 0;
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
@@ -616,9 +595,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	}
 
 	outTx.Clear();
-
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	
 	//  Fill Vin
 	std::set<string> setTxowners;
 	for (auto & utxo : setOutUtxos)
@@ -677,7 +654,6 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	toAddr.insert(std::make_pair(fromAddr, total - expend));
 	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
-	
 	if(GenerateGas(outTx, toAddr, gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
@@ -691,10 +667,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	// At this point, it indicates that the current node does not meet the pledge and investment requirements within 30 seconds beyond the height of 50. At this time, the pledge operation can be initiated
 		type = TxHelper::vrfAgentType_defalut;
 	}
-
 	expend += gas;
-
-
 	if(total < expend)
 	{
 		ERRORLOG("The total cost = {} is less than the cost = {}", total, expend);
@@ -721,13 +694,10 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 			return -11;
 		}
 	}
-
-
 	outTx.set_version(0);
 	outTx.set_time(current_time);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);
-
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
@@ -736,7 +706,6 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	}
 	else
 	{
-
 		// Select dropshippers
 		std::string allUtxos;
 		for(auto & utxo:setOutUtxos){
@@ -755,8 +724,6 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 
 	std::string txHash = getsha256hash(outTx.SerializeAsString());
 	outTx.set_hash(txHash);
-
-
 	return 0;
 
 }
@@ -882,7 +849,6 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 		vinSign->set_pub(pub);
 	}
 
-
 	nlohmann::json txInfo;
 	txInfo["UnstakeUtxo"] = utxo_hash;
 
@@ -955,7 +921,6 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeUnstake);
-
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
@@ -1041,7 +1006,6 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 		return -4;
 	}
 	
-	
 	//  Find utxo
 	uint64_t total = 0;
 	uint64_t expend = invest_amount;
@@ -1122,7 +1086,6 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	toAddrs.insert(std::make_pair(fromAddr, total - expend));
 	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
-	
 	if(GenerateGas(outTx, toAddrs, gas) != 0)
 	{
 		std::cout << "GenerateGas gas = " << gas << std::endl;
@@ -1136,7 +1099,6 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	{
 		type = TxHelper::vrfAgentType_defalut;
 	}
-
 
 	expend += gas;
 
@@ -1238,8 +1200,6 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 		return -3;
 	}
 
-	
-
 	//  Find utxo
 	uint64_t total = 0;
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
@@ -1296,7 +1256,6 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 		vinSign->set_sign(signature);
 		vinSign->set_pub(pub);
 	}
-
 
 	for (auto & owner : setTxowners)
 	{
@@ -1393,14 +1352,13 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDisinvest);
 
-
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
 		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
 	}
-	else{
-		
+	else
+	{	
 		// Select dropshippers
 		std::string allUtxos = utxo_hash;
 		for(auto & utxo:setOutUtxos){
@@ -1422,7 +1380,6 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 
 	return 0;
 }
-
 
 // 1. Circulation verification The claimed node cannot start with 3
 int TxHelper::CreateBonusTransaction(const std::string& Addr,
@@ -1482,12 +1439,8 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 		ERRORLOG("TxHelper CreatUnstakeTransaction: utxo is zero");
 		return -2;
 	}
-
 	outTx.Clear();
-
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
-
-
 	//  Fill Vin
 	std::set<string> setTxowners;
 	for (auto & utxo : setOutUtxos)
@@ -1528,9 +1481,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 		vinSign->set_sign(signature);
 		vinSign->set_pub(pub);
 	}
-
 	// Fill data
-
 	uint64_t tempCosto=0;
 	uint64_t tempNodeDividend=0;
 	uint64_t tempTotalClaim=0;
@@ -1588,9 +1539,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeBonus);
-
 	// Fill vout
-
 	uint64_t costo=0;
 	uint64_t NodeDividend=0;
 	uint64_t TotalClaim=0;
@@ -1634,7 +1583,6 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 		}
 	}
 
-
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
@@ -1656,10 +1604,8 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
     	}
 		outTx.set_identity(id);
 	}
-
 	std::string txHash = getsha256hash(outTx.SerializeAsString());
 	outTx.set_hash(txHash);
-
 
 	return 0;
 }
@@ -1706,7 +1652,6 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
                                                uint64_t height,
                                                CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_)
 {
-
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
@@ -1970,8 +1915,6 @@ void TxHelper::GetTxStartIdentity(const std::vector<std::string> &fromaddr,const
 
 	// If the initiating account and other accounts fail to meet the requirements of pledge and investment, there is no qualification for initiating the transaction
 
-
-
 	//	Previous height of the initiator
 	uint64_t pre_height = height -1;
 	
@@ -2030,14 +1973,7 @@ void TxHelper::GetInitiatorType(const std::vector<std::string> &fromaddr, TxHelp
 				return;
 			}
 		}
-
-
-
-
-
 }
-
-
 
 std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
 									const std::map<std::string, int64_t> & toAddr, void * ack)
@@ -2052,7 +1988,6 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
     {
         return "-1 db get top failed!!"; 
     }
-
 	//  Check parameters
 	height+=1;
 	int ret = Check(fromAddr, height);
@@ -2078,7 +2013,6 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 		{
 			if (addr.first == from)
 			{
-				//return "-5 From address and to address is equal!";
 				return "-72015";
 			}
 		}
@@ -2140,18 +2074,6 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 			}
 		}
 		vin->set_sequence(n++);
-
-		// std::string serVinHash = getsha256hash(vin->SerializeAsString());
-		// std::string signature;
-		// std::string pub;
-		// if(!jsonrpc_get_sigvalue(owner, serVinHash, signature, pub))
-		// {
-		// 	return "-10 sign fail";
-		// }
-
-		// CSign * vinSign = vin->mutable_vinsign();
-		// vinSign->set_sign(signature);
-		// vinSign->set_pub(pub);
 	}
 
 	outTx.set_data("");
@@ -2199,22 +2121,10 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
 	vout_burn->set_value(gas);
 
-	// std::string serUtxoHash = getsha256hash(txUtxo->SerializeAsString());
-	// for (auto & owner : setTxowners)
-	// {		
-	// 	if (AddMutilSign_rpc(owner, outTx) != 0)
-	// 	{
-	// 		return "-14 addd mutil sign fail";
-	// 	}
-	// }
-	
 	outTx.set_time(current_time);
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeTx);
-
-
-	
 	// Determine whether dropshipping is default or local dropshipping
 	Vrf info;
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
@@ -2223,12 +2133,10 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	}
 	else
 	{
- 
 		std::string allUtxos;
 		for(auto & utxo:setOutUtxos){
 			allUtxos+=utxo.hash;
 		}
-
 		// Candidate packers are selected based on all utxohashes
 		allUtxos += std::to_string(current_time);
 		
@@ -2244,9 +2152,6 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	}
 
 	DEBUGLOG("GetTxStartIdentity tx time = {}, package = {}", outTx.time(), outTx.identity());
-	
-	
-
 	std::string txJsonString;
 	std::string vrfJsonString;
 	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
@@ -2260,7 +2165,6 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 
 	return "0";
 }
-
 
 std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stake_amount, int32_t pledgeType, void* ack)
 {
@@ -2369,18 +2273,6 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 			}
 		}
 		vin->set_sequence(n++);
-
-		// std::string serVinHash = getsha256hash(vin->SerializeAsString());
-		// std::string signature;
-		// std::string pub;
-		// if(!jsonrpc_get_sigvalue(owner, serVinHash, signature, pub))
-		// {
-		// 	return "-11 sign fail";
-		// }
-
-		// CSign * vinSign = vin->mutable_vinsign();
-		// vinSign->set_sign(signature);
-		// vinSign->set_pub(pub);
 	}
 
 	nlohmann::json txInfo;
@@ -2437,21 +2329,10 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 	vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
 	vout_burn->set_value(gas);
 
-	// std::string serUtxoHash = getsha256hash(txUtxo->SerializeAsString());
-	// for (auto & owner : setTxowners)
-	// {	
-	// 	if (AddMutilSign_rpc(owner, outTx) != 0)
-	// 	{
-	// 		return "-14 AddMutilSign_rpc(owner, outTx) != 0";
-	// 	}
-	// }
 	outTx.set_version(0);
 	outTx.set_time(current_time);
 	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);
-
-
-	
+	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);	
 	//Determine whether dropshipping is default or local dropshipping
 	Vrf info;
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
@@ -2460,7 +2341,6 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 	}
 	else
 	{
-
 		// Select dropshippers
 		std::string allUtxos;
 		for(auto & utxo:setOutUtxos){
@@ -2479,8 +2359,6 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 		
 	}
 
-	
-
 	std::string txJsonString;
 	std::string vrfJsonString;
 	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
@@ -2494,8 +2372,6 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 
 	return "0";
 }
-
-
 
 std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr, const std::string& utxo_hash, void* ack)
 {
@@ -2522,7 +2398,6 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 	{
 		return "-3 FromAddr is not normal base58 addr.";
 	}
-
 
 	uint64_t stake_amount = 0;
 	ret = IsQualifiedToUnstake(fromAddr, utxo_hash, stake_amount);
@@ -2572,10 +2447,7 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 		CTxPrevOutput* prevout = txin->add_prevout();
 		prevout->set_hash(utxo_hash);
 		prevout->set_n(1);
-
-		
 	}
-
 
 	for (auto & owner : setTxowners)
 	{
@@ -2593,7 +2465,6 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 		}
 		vin->set_sequence(n++);
 
-		
 	}
 
 	nlohmann::json txInfo;
@@ -2656,30 +2527,19 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 	vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
 	vout_burn->set_value(gas);
 
-	// std::string serUtxoHash = getsha256hash(txUtxo->SerializeAsString());
-	// for (auto & owner : setTxowners)
-	// {	
-	// 	if (AddMutilSign_rpc(owner, outTx) != 0)
-	// 	{
-	// 		return "-12 AddMutilSign_rpc(owner, outTx) != 0";
-	// 	}
-	// }
-
 	outTx.set_time(current_time);
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeUnstake);
 
-	//
 	// Determine whether dropshipping is default or local dropshipping
 	Vrf info;
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
 		outTx.set_identity(TxHelper::GetEligibleNodes());
 	}
-	else{
-		
-		//
+	else
+	{
 		// Select dropshippers
 		std::string allUtxos = utxo_hash;
 		for(auto & utxo:setOutUtxos){
@@ -2697,33 +2557,6 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 		outTx.set_identity(id);
 	}
 
-	
-
-
-	// TxMsgReq txMsg;
-	// txMsg.set_version(global::kVersion);
-	// TxMsgInfo* txMsgInfo = txMsg.mutable_txmsginfo();
-	// txMsgInfo->set_type(0);
-	// txMsgInfo->set_tx(outTx.SerializeAsString());
-	// txMsgInfo->set_height(height-1);
-
-	// if (type == TxHelper::vrfAgentType::vrfAgentType_vrf) {
-	// 	Vrf* new_info = txMsg.mutable_vrfinfo();
-	// 	new_info->CopyFrom(info);
-		
-	// }
-	//  auto msg = make_shared<TxMsgReq>(txMsg);
-	// std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    // if (type == TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
-    // {
-
-    //     ret = DropshippingTx(msg, outTx);
-    // }
-    // else
-    // {
-    //     ret = DoHandleTx(msg, outTx);
-    // }
-
 	std::string txJsonString;
 	std::string vrfJsonString;
 	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
@@ -2737,7 +2570,6 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 
 	return "0";
 }
-
 
 std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAddr,
 								const std::string& toAddr,uint64_t invest_amount, int32_t investType, void* ack)
@@ -2844,8 +2676,6 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 			}
 		}
 		vin->set_sequence(n++);
-
-		
 	}
 
 	nlohmann::json txInfo;
@@ -2903,14 +2733,11 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	CTxOutput * vout_burn = txUtxo->add_vout();
 	vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
 	vout_burn->set_value(gas);
-
-	
 	
 	outTx.set_version(0);
 	outTx.set_time(current_time);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeInvest);
-
 
 	// Determine whether dropshipping is default or local dropshipping
 	Vrf info;
@@ -2918,8 +2745,8 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	{
 		outTx.set_identity(TxHelper::GetEligibleNodes());
 	}
-	else{
-		
+	else
+	{	
 		// Select dropshippers
 		std::string allUtxos;
 		for(auto & utxo:setOutUtxos){
@@ -2936,8 +2763,6 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
     	}
 		outTx.set_identity(id);
 	}
-
-	
 
 	std::string txJsonString;
 	std::string vrfJsonString;
@@ -2993,7 +2818,6 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	uint64_t invested_amount = 0;
 	if(IsQualifiedToDisinvest(fromAddr, toAddr, utxo_hash, invested_amount) != 0)
 	{
-		//return "-5 FromAddr is not qualified to divest!.";
 		return "-72015";
 	}
 	//  Find utxo
@@ -3032,8 +2856,6 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 		CTxPrevOutput* prevout = txin->add_prevout();
 		prevout->set_hash(utxo_hash);
 		prevout->set_n(1);
-
-		
 	}
 
 	for (auto & owner : setTxowners)
@@ -3051,8 +2873,6 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 			}
 		}
 		vin->set_sequence(n++);
-
-		
 	}
 
 	nlohmann::json txInfo;
@@ -3070,7 +2890,6 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	targetAddrs.insert(std::make_pair(global::ca::kVirtualStakeAddr, invested_amount));
 	targetAddrs.insert(std::make_pair(fromAddr, total ));
 	targetAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas ));
-	
 	
 	if(GenerateGas(outTx, targetAddrs, gas) != 0)
 	{
@@ -3107,21 +2926,18 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
 	vout_burn->set_value(gas);
 
-	
-
 	outTx.set_time(current_time);
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDisinvest);
-
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
 		outTx.set_identity(TxHelper::GetEligibleNodes());
 	}
-	else{
-		
+	else
+	{	
 		// Select dropshippers
 		std::string allUtxos = utxo_hash;
 		for(auto & utxo:setOutUtxos){
@@ -3137,10 +2953,6 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
     	}
 		outTx.set_identity(id);
 	}
-
-	// std::string txHash = getsha256hash(outTx.SerializeAsString());
-	// outTx.set_hash(txHash);
-
 
 	std::string txJsonString;
 	std::string vrfJsonString;
@@ -3302,8 +3114,6 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 			}
 		}
 		vin->set_sequence(n++);
-
-		
 	}
 
 	nlohmann::json txInfo;
@@ -3357,11 +3167,7 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 	vout_burn->set_addr(global::ca::kVirtualBurnGasAddr);
 	vout_burn->set_value(gas);
 
-
-	
-
 	outTx.set_time(current_time);
-
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
@@ -3389,33 +3195,7 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 	outTx.set_version(0);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDeclaration);
-	// std::string txHash = getsha256hash(outTx.SerializeAsString());
-	// outTx.set_hash(txHash);
 
-
-	// TxMsgReq txMsg;
-	// txMsg.set_version(global::kVersion);
-	// TxMsgInfo* txMsgInfo = txMsg.mutable_txmsginfo();
-	// txMsgInfo->set_type(0);
-	// txMsgInfo->set_tx(outTx.SerializeAsString());
-	// txMsgInfo->set_height(height-1);
-
-	// if (type == TxHelper::vrfAgentType::vrfAgentType_vrf) {
-	// 	Vrf* new_info = txMsg.mutable_vrfinfo();
-	// 	new_info->CopyFrom(info_);
-		
-	// }
-	// auto msg = make_shared<TxMsgReq>(txMsg);
-	// std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    // if (type == TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
-    // {
-
-    //     ret = DropshippingTx(msg, outTx);
-    // }
-    // else
-    // {
-    //     ret = DoHandleTx(msg, outTx);
-    // }
 	std::string txJsonString;
 	std::string vrfJsonString;
 	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
@@ -3429,9 +3209,6 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 
 	return "0";
 }
-
-
-
 
 std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, void* ack)
 {
@@ -3448,7 +3225,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
         return DSTR"db get top failed!!";
        
     }
-
 
 	std::vector<std::string> vecfromAddr;
 	vecfromAddr.push_back(Addr);
@@ -3469,7 +3245,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	if(ret != 0)
 	{
 		return DSTR "Not allowed to Bonus!"+std::to_string(ret);
-		
 	}
 
 	std::map<std::string, uint64_t> CompanyDividend;
@@ -3477,7 +3252,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	if(ret < 0)
 	{
 		return DSTR"Failed to obtain the amount claimed by the investor ret"+std::to_string(ret);
-
 	}
 
 	uint64_t expend = 0;
@@ -3487,7 +3261,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	if (ret != 0)
 	{
 		return DSTR"TxHelper CreatUnstakeTransaction: FindUtxo failed"+std::to_string(ret);
-		
 	}
 	if (setOutUtxos.empty())
 	{
@@ -3496,9 +3269,7 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	}
 
 	outTx.Clear();
-
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
-
 
 	//  Fill Vin
 	std::set<string> setTxowners;
@@ -3509,7 +3280,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	if (setTxowners.empty())
 	{
 		return DSTR"Tx owner is empty!" ;
-		
 	}
 
 	for (auto & owner : setTxowners)
@@ -3527,12 +3297,9 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 			}
 		}
 		vin->set_sequence(n++);
-
-		//hhhhh
 	}
 
 	// Fill data
-
 	uint64_t tempCosto=0;
 	uint64_t tempNodeDividend=0;
 	uint64_t tempTotalClaim=0;
@@ -3592,7 +3359,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeBonus);
 
 	// Fill vout
-
 	uint64_t costo=0;
 	uint64_t NodeDividend=0;
 	uint64_t TotalClaim=0;
@@ -3624,12 +3390,7 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	if(TotalClaim == 0)
 	{
 		return DSTR"The claim amount is 0";
-	
 	}
-
-	
-
-	
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
@@ -3667,7 +3428,6 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	return "0";
 }
 
-
 int TxHelper::sendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vrfAgentType type){
 	std::string txHash = getsha256hash(outTx.SerializeAsString());
 	outTx.set_hash(txHash);
@@ -3695,14 +3455,12 @@ int TxHelper::sendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vr
     }
     else
     {
-		//30 after
         ret = DropshippingTx(msg, outTx);
     }
 	return ret;
 }
 
-
-  std::string TxHelper::GetEligibleNodes(){
+std::string TxHelper::GetEligibleNodes(){
 	std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
     std::vector<std::string> result_node;
     for (const auto &node : nodelist)
@@ -3731,6 +3489,4 @@ int TxHelper::sendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vr
     debugL("rumdom :" << rumdom);
 
 	return result_node[rumdom];
-	//return result_node;
-
- }
+}

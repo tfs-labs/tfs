@@ -481,7 +481,6 @@ int handleEchoAck(const std::shared_ptr<EchoAck> &echoAck, const MsgData &from)
 	return 0;
 }
 
-
 int handleNetTestReq(const std::shared_ptr<TestNetReq> &testReq, const MsgData &from)
 {
 	TestNetAck testAck;
@@ -501,8 +500,6 @@ int handleNetTestReq(const std::shared_ptr<TestNetReq> &testReq, const MsgData &
 	return 0;
 }
 
-
-
 int handleNetTestAck(const std::shared_ptr<TestNetAck> &testAck, const MsgData &from)
 {
 	
@@ -513,8 +510,6 @@ int handleNetTestAck(const std::shared_ptr<TestNetAck> &testAck, const MsgData &
 	return 0;
 }
 
-
-// Create: handle node height, 20211129  Liu
 int handleNodeHeightChangedReq(const std::shared_ptr<NodeHeightChangedReq>& req, const MsgData& from)
 {
 	std::string id = req->id();
@@ -526,13 +521,9 @@ int handleNodeHeightChangedReq(const std::shared_ptr<NodeHeightChangedReq>& req,
 		node.set_height(height);
 		MagicSingleton<PeerNode>::GetInstance()->update(node);
 		DEBUGLOG("success update {}  to height {}", id, height);
-	}
-
-	
+	}	
 	return 0;
 }
-
-
 
 int handleCheckTxReq(const std::shared_ptr<CheckTxReq>& req, const MsgData& from)
 {
@@ -568,7 +559,6 @@ int handleCheckTxReq(const std::shared_ptr<CheckTxReq>& req, const MsgData& from
 	return 0;
 }
 
-
 int handleCheckTxAck(const std::shared_ptr<CheckTxAck>& ack, const MsgData& from)
 {
 	DEBUGLOG("handleCheckTxAck ------------------------------>");
@@ -582,12 +572,6 @@ int handleCheckTxAck(const std::shared_ptr<CheckTxAck>& ack, const MsgData& from
 
 	return 0;
 }
-
-
-
-
-
-
 
 int handleNodeBase58AddrChangedReq(const std::shared_ptr<NodeBase58AddrChangedReq>& req, const MsgData& from)
 {
@@ -632,9 +616,8 @@ int handleNodeBase58AddrChangedReq(const std::shared_ptr<NodeBase58AddrChangedRe
 	return ret;
 }
 
-int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, const MsgData& msgdata){
-
-	
+int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, const MsgData& msgdata)
+{	
 	DEBUGLOG("HandleBuildBlockBroadcastMsg begin");
 	//Determine if the version is compatible
 	if (0 != Util::IsVersionCompatible(msg->version()))
@@ -745,9 +728,6 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 	//Determine broadcast type
 	if(msg->type()==1)
 	{
-		//std::cout << "cast coming 1....." << std::endl;
-
-
 		std::vector<std::string> nodeListAddrs;
 		std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 		for(auto &n:nodelist){
@@ -780,7 +760,6 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 			cyc_node_list.push_back(addr);
 		}
 		msg->set_type(2);
-		//msg->clear_castaddrs();
 		for(;FindTimes < upAddr.size() && FindTimes < downAddr.size(); FindTimes++){
 			auto upIter = getUpIter(FindTimes,cyc_node_list);
 			auto downIter = getDownIter(FindTimes,cyc_node_list);
@@ -803,15 +782,10 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 			}
 		}
 
-	}else if(msg->type()==2){
-		//std::cout << "cast coming 2....." << std::endl;
 	}
 
 	return 0;
-
-
 }
-
 
 void netTest::netTestRegister()
 {

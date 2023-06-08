@@ -178,7 +178,7 @@ bool UnregisterNode::StartRegisterNode(std::map<std::string, int> &server_list)
             if(i == 0)
             {
                 //Determine if TCP is connected
-                if (MagicSingleton<BufferCrol>::GetInstance()->is_exists(ip, port) /* && node.is_established()*/)
+                if (MagicSingleton<BufferCrol>::GetInstance()->is_exists(ip, port))
                 {
                     DEBUGLOG("handleRegisterNodeAck--TRUE from.ip: {}", IpPort::ipsz(ip));
                     auto ret = VerifyRegisterNode(nodeinfo, ip, port);
@@ -323,28 +323,60 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
     std::vector<Node> nodes;
     for(auto item = consensus_node_list.begin(); item != consensus_node_list.end(); ++item)
     {
-        //Evaluate outliers
-        uint64_t quarter_num = item->second.size() * 0.25;
-        uint64_t three_quarter_num = item->second.size() * 0.75;
+
+        std::map<int,int> map_cnts; 
+        std::vector<uint64_t> counts;
+        for(auto iter : item->second)
+        {
+            counts.push_back(iter.second);
+            ++map_cnts[iter.second];
+        }
+    
+
+        int max_elem = 0, max_cnt = 0;
+        for(auto iter : map_cnts)
+        {
+            if(max_cnt <  iter.second)
+            {
+                max_elem = iter.first;
+                max_cnt = iter.second;
+            }
+        }
+
+        DEBUGLOG("GetConsensusNodeList : max_cnt = {} , item->second.size = {}, max_elem = {}", max_cnt, item->second.size(), max_elem);
+
+
+        counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
+        if(counts.size() < 2)
+        {
+            for(auto i : item->second)
+            {
+                if(i.second == max_elem)
+                {
+                    nodes.push_back(i.first);
+                }
+            }
+            break;
+        }
+
+
+        uint64_t quarter_num = counts.size() * 0.25;
+        uint64_t three_quarter_num = counts.size() * 0.75;
         if (quarter_num == three_quarter_num)
         {
+            ERRORLOG("Number of exceptions quarter_num = {}, three_quarter_num = {}", quarter_num, three_quarter_num);
             return nodes;
         }
 
-        //Remove the IP address of the abnormal number of times
-        std::vector<uint64_t> sign_cnt;
-        for (auto &i : item->second)
-        {
-            sign_cnt.push_back(i.second);
-        }
-        std::sort(sign_cnt.begin(), sign_cnt.end());
+        std::sort(counts.begin(), counts.end());
 
-        uint64_t quarter_num_value = sign_cnt.at(quarter_num);
-        uint64_t three_quarter_num_value = sign_cnt.at(three_quarter_num);
+
+        uint64_t quarter_num_value = counts.at(quarter_num);
+        uint64_t three_quarter_num_value = counts.at(three_quarter_num);
         int64_t slower_limit_value = quarter_num_value -
                                             ((three_quarter_num_value - quarter_num_value) * 1.5);
 
-        //Delete all abnormal IPs
+
         if(slower_limit_value >= 0)
         {
             for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
@@ -359,13 +391,13 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
         }
     }
 
-    //Update the height
+
     std::vector<Node> node_list = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
     for(auto & node : node_list)
     {
         for(auto & iter : nodes)
         {
-            //Find the same base58 to update the height in the Node struct
+
             if(node.base58address == iter.base58address)
             {
                 iter.height = node.height;
@@ -375,3 +407,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
 
     return nodes;
 }
+
+
+

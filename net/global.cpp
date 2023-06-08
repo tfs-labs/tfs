@@ -20,6 +20,5 @@ namespace global
     std::mutex g_mutex_req_cnt_map;
     std::map<std::string, std::pair<uint32_t, uint64_t>> reqCntMap;
 
-
     int broadcast_threshold= 15;
 }

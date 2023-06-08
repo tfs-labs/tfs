@@ -57,7 +57,6 @@ bool IpPort::get_localhost_ip(std::string & localhost_ip)
 	return false;
 }
 
-
 u32 IpPort::ipnum(const char* sz_ip)
 {
 	u32 num_ip = inet_addr(sz_ip);
@@ -69,7 +68,6 @@ u32 IpPort::ipnum(const string& sz_ip)
 	return num_ip;
 }
 
-
 const char* IpPort::ipsz(const u32 num_ip)
 {
 	struct in_addr addr = {0};
@@ -77,7 +75,6 @@ const char* IpPort::ipsz(const u32 num_ip)
 	const char* sz_ip = inet_ntoa(addr);
 	return sz_ip;
 }
-
 
 bool IpPort::is_valid_ip(std::string const& str_ip)
 {
@@ -94,7 +91,6 @@ bool IpPort::is_valid_ip(std::string const& str_ip)
 	}
 	return false;
 }
-
 
 bool IpPort::is_local_ip(std::string const& str_ip)
 {
@@ -115,13 +111,11 @@ bool IpPort::is_local_ip(std::string const& str_ip)
 	return false;
 }
 
-
 bool IpPort::is_local_ip(u32 u32_ip)
 {
 	string str_ip = ipsz(u32_ip);
 	return is_local_ip(str_ip);
 }
-
 
 bool IpPort::is_public_ip(std::string const& str_ip)
 {
@@ -131,13 +125,11 @@ bool IpPort::is_public_ip(std::string const& str_ip)
 	return false == is_local_ip(str_ip);
 }
 
-
 bool IpPort::is_public_ip(u32 u32_ip)
 {
 	string str_ip = ipsz(u32_ip);
 	return is_public_ip(str_ip);
 }
-
 
 bool IpPort::is_valid_port(u16 u16_port)
 {

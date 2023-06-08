@@ -9,9 +9,7 @@
 
 void FailedTransactionCache::Start_Timer()
 {
-
 	//Notifications for inspections at regular intervals
-	
 	_timer.AsyncLoop(2 * 1000, [this](){
         if(!is_empty())
         {

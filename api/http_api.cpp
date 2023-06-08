@@ -13,6 +13,7 @@
 #include "common/global.h"
 #include "db/cache.h"
 #include "db/db_api.h"
+#include "interface.pb.h"
 #include "utils/AccountManager.h"
 #include "utils/MagicSingleton.h"
 #include "utils/tmplog.h"
@@ -93,6 +94,7 @@ void ca_register_http_callbacks() {
     HttpServer::registerCallback("/deploy_utxo_req", get_deployerutxo);
 
     HttpServer::registerCallback("/get_restinverst_req", get_restinvest);
+    HttpServer::registerCallback("/get_all_stake_node_list_ack",get_all_stake_node_list_ack);
 
     // Start the http service
     HttpServer::start();
@@ -604,57 +606,76 @@ void api_ip(const Request &req, Response &res) {
     res.set_content(oss.str(), "text/plain");
 }
 
-void api_normal(const Request &req, Response &res) {
+void api_normal(const Request & req, Response & res)
+{
     std::ostringstream oss;
-    std::map<uint64_t ,
-             std::map<Node, int , UnregisterNode::NodeCompare>>
-        result;
+    std::map<uint64_t, std::map<Node,int,UnregisterNode::NodeCompare>> result;
     MagicSingleton<UnregisterNode>::GetInstance()->getIpMap(result);
-    oss << "Remove the IP address of the abnormal number of times : "
-        << std::endl;
-    for (auto item = result.begin(); item != result.end(); ++item) {
-        oss << "---------------------------------------------------------------"
-               "----------------------"
-            << std::endl;
-        oss << MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(
-                   item->first)
-            << std::endl;
+    oss << "Remove the IP address of the abnormal number of times : " << std::endl;
+    for(auto item = result.begin(); item != result.end(); ++item)
+    {
+        oss << "-------------------------------------------------------------------------------------" << std::endl;
+        oss << MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(item->first) << std::endl;
 
-        // Evaluate outliers
-        uint64_t quarter_num = item->second.size() * 0.25;
-        uint64_t three_quarter_num = item->second.size() * 0.75;
-        if (quarter_num == three_quarter_num) {
-            std::cout << "quarter_num == three_quarter_num " << std::endl;
-            return;
+        std::map<int,int> map_cnts;
+        std::vector<uint64_t> counts;
+        for(auto iter : item->second)
+        {
+            counts.push_back(iter.second);
+            ++map_cnts[iter.second];
         }
 
-        // Remove the IP address of the abnormal number of times
-        std::vector<uint64_t> sign_cnt;
-        for (auto &i : item->second) {
-            sign_cnt.push_back(i.second);
-        }
-        std::sort(sign_cnt.begin(), sign_cnt.end());
-
-        uint64_t quarter_num_value = sign_cnt.at(quarter_num);
-        uint64_t three_quarter_num_value = sign_cnt.at(three_quarter_num);
-        int64_t slower_limit_value =
-            quarter_num_value -
-            ((three_quarter_num_value - quarter_num_value) * 1.5);
-
-        // Delete all abnormal IPs
-        if (slower_limit_value >= 0) {
-            for (auto iter = item->second.begin(); iter != item->second.end();
-                 ++iter) {
-                if (iter->second < slower_limit_value) {
-                    continue;
-                }
-                oss << "IP: " << IpPort::ipsz(iter->first.public_ip)
-                    << "  Count: " << iter->second << std::endl;
+        int max_elem = 0, max_cnt = 0;
+        for(auto iter : map_cnts)
+        {
+            if(max_cnt <  iter.second)
+            {
+                max_elem = iter.first;
+                max_cnt = iter.second;
             }
         }
+
+        int64_t slower_limit_value = 0;
+
+        counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
+
+        if(counts.size() > 2)
+        {
+
+            uint64_t quarter_num = counts.size() * 0.25;
+            uint64_t three_quarter_num = counts.size() * 0.75;
+            if (quarter_num == three_quarter_num)
+            {
+                oss << "Number of exceptions quarter_num :" << quarter_num << " three_quarter_num: " << three_quarter_num << std::endl;
+                return; 
+            }
+
+            std::sort(counts.begin(), counts.end());
+
+            uint64_t quarter_num_value = counts.at(quarter_num);
+            uint64_t three_quarter_num_value = counts.at(three_quarter_num);
+            slower_limit_value = quarter_num_value -
+                                                ((three_quarter_num_value - quarter_num_value) * 1.5);
+        }
+        else
+        {
+            slower_limit_value = max_elem;
+        }
+
+
+        for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
+        {
+            if (iter->second < slower_limit_value)
+            {
+                continue;
+            }
+            oss << "IP: " << IpPort::ipsz(iter->first.public_ip) << "  Count: " << iter->second << std::endl;
+        }
+    
     }
     res.set_content(oss.str(), "text/plain");
 }
+
 void api_print_block(const Request &req, Response &res) {
     int num = 100;
     if (req.has_param("num")) {
@@ -1666,4 +1687,23 @@ std::string api_time()
     str +="time check======================" ;
     str +="\n";
     return str;
+}
+
+
+void get_all_stake_node_list_ack(const Request & req,Response & res){
+    int ret;
+   GetAllStakeNodeListAck ack;
+   std::shared_ptr<GetAllStakeNodeListReq> req_t;
+    ret = GetAllStakeNodeListReqImpl(req_t, ack);
+    if(ret!=0){
+        ack.set_code(ret);
+    }
+    std::string jsonstr;
+    google::protobuf::util::Status status =
+        google::protobuf::util::MessageToJsonString(ack, &jsonstr);
+       if(!status.ok()){
+            errorL("protobuff to json fail");
+            jsonstr="protobuff to json fail";
+       }
+    res.set_content(jsonstr.c_str(),"application/json");
 }

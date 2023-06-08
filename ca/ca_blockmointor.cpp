@@ -53,12 +53,8 @@ int BlockMonitor::SendBroadcastAddBlock(std::string strBlock, uint64_t blockHeig
 
 	std::random_device device;
 	std::mt19937 engine(device());
-
-
-
 	int send_size = std::min(list.size(),(size_t)SendSize);
 	MaxSendSize = send_size;
-
 
 	int count = 0;
 	while (count < send_size && !list.empty())
@@ -68,7 +64,6 @@ int BlockMonitor::SendBroadcastAddBlock(std::string strBlock, uint64_t blockHeig
 		++count;
 		list.erase(list.begin() + index);
 	}
-	
 
     bool isSucceed = net_com::BlockBroadcast_message(buildBlockBroadcastMsg);
 	if(isSucceed == false)
@@ -76,8 +71,6 @@ int BlockMonitor::SendBroadcastAddBlock(std::string strBlock, uint64_t blockHeig
         ERRORLOG("Broadcast BuildBlockBroadcastMsg failed!");
         return -1;
 	}
-
-
 
 	DEBUGLOG("***********net broadcast time{}",MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp());
 	std::map<std::string,std::string> temp;
@@ -169,7 +162,6 @@ int BlockMonitor::HandleBroadcastAddBlockAck(const BuildBlockBroadcastMsgAck & m
 		}
 	}
 
-
 	return 0;
  }
 
@@ -193,7 +185,6 @@ int BlockMonitor::HandleBroadcastAddBlockAck(const BuildBlockBroadcastMsgAck & m
 			DEBUGLOG("other node Send  Failed response time{}",MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp());	
 		}
 	}
-
 
 	return 0;
  }

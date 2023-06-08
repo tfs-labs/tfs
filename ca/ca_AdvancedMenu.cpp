@@ -42,6 +42,9 @@
 #include "utils/TFSbenchmark.h"
 #include "ca_blockhelper.h"
 
+
+ 
+
 void gen_key()
 {
     std::cout << "Please enter the number of accounts to be generated: ";
@@ -133,6 +136,7 @@ int GetBounsAddrInfo()
     }
     return 0;
 }
+
 
 void send_message_to_user()
 {
@@ -299,15 +303,12 @@ void get_tx_block_info(uint64_t &top)
     }
 }
 
+
 void gen_mnemonic()
 {
     char out[1024 * 10] = {0};
 
-    // g_AccountInfo.GetMnemonic(nullptr, out, sizeof(out));
-    // printf("Mnemonic_data: [%s]\n", out);
-
     std::string mnemonic;
-
     Account defaultEd;
     MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultEd);
     MagicSingleton<AccountManager>::GetInstance()->GetMnemonic(defaultEd.GetBase58(), mnemonic);
@@ -525,11 +526,8 @@ void printBenchmarkToFile()
             }
     );
     benchmark_automic_write_thread.detach();
-
-
     return;
 }
-
 
 void get_balance_by_utxo()
 {
@@ -1063,14 +1061,12 @@ void ThreadTest::TestCreateTx_2(const std::string &from, const std::string &to)
         return;
     }
     
-
     TxMsgReq txMsg;
     txMsg.set_version(global::kVersion);
     TxMsgInfo *txMsgInfo = txMsg.mutable_txmsginfo();
     txMsgInfo->set_type(0);
     txMsgInfo->set_tx(outTx.SerializeAsString());
     txMsgInfo->set_height(top);
-
 
     if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf){
         Vrf * new_info = txMsg.mutable_vrfinfo();
@@ -1079,7 +1075,6 @@ void ThreadTest::TestCreateTx_2(const std::string &from, const std::string &to)
     }
 
     auto msg = make_shared<TxMsgReq>(txMsg);
-
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
     if (isNeedAgent_flag == TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
     {
@@ -1129,14 +1124,10 @@ void ThreadTest::set_StopTx_flag(const bool &flag)
     bStopTx_2 = flag;
 }
 
-
-
 void ThreadTest::get_StopTx_flag(bool &flag)
 {
    flag =  bStopTx_2 ;
 }
-
-
 
 void ThreadTest::test_createTx(uint32_t tranNum, std::vector<std::string> addrs_,int timeout)
 {
@@ -1232,7 +1223,6 @@ void TestCreateStake_2(const std::string &from)
         return;
     }
 
-
     CTransaction outTx;
     TxHelper::vrfAgentType isNeedAgent_flag;
     Vrf info_;
@@ -1272,7 +1262,6 @@ void TestCreateStake_2(const std::string &from)
         ret -= 100;
     }
     DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
-    //MagicSingleton<TranMonitor>::GetInstance()->SetDoHandleTxStatus(outTx, ret);
 }
 
 
@@ -1298,12 +1287,9 @@ void Create_multi_thread_automatic_stake_transaction()
 
 void TestCreateInvestment(const std::string &strFromAddr, const std::string &strToAddr, const std::string &amountStr)
 {
-
     TxHelper::InvestType investType = TxHelper::InvestType::kInvestType_NetLicence;
-
     uint64_t invest_amount = std::stod(amountStr) * global::ca::kDecimalNum;
 
-    // DBReader db_reader;
     DBReader data_reader;
     uint64_t top = 0;
     if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
@@ -1323,7 +1309,6 @@ void TestCreateInvestment(const std::string &strFromAddr, const std::string &str
         ERRORLOG("Failed to create investment transaction! The error code is:{}", ret);
         return;
     }
-    //MagicSingleton<TranMonitor>::GetInstance()->AddTranMonitor(outTx);
     TxMsgReq txMsg;
     txMsg.set_version(global::kVersion);
     TxMsgInfo *txMsgInfo = txMsg.mutable_txmsginfo();
@@ -1351,7 +1336,6 @@ void TestCreateInvestment(const std::string &strFromAddr, const std::string &str
         ret = DoHandleTx(msg, outTx);
     }
 
-    //MagicSingleton<TranMonitor>::GetInstance()->SetDoHandleTxStatus(outTx, ret);
     std::cout << "=====Transaction initiator:" << strFromAddr << std::endl;
     std::cout << "=====Transaction recipient:" << strToAddr << std::endl;
     std::cout << "=====Transaction amount:" << amountStr << std::endl;
@@ -1489,7 +1473,7 @@ void GetRewardAmount()
         std::cout<< "input invalid" << std::endl;
         return ;
     } 
-    std::cout << "Please input the base58address:";
+    std::cout << "Please input the base58address：";
     std::cin >> addr;
     
     if(!CheckBase58Addr(addr))
@@ -1532,57 +1516,49 @@ void GetRewardAmount()
                    struct tm * gm_date;
                    gm_date = localtime(&s);
                    cout<< gm_date->tm_year + 1900 << "-" << gm_date->tm_mon + 1 << "-" << gm_date->tm_mday << " "  << gm_date->tm_hour << ":" << gm_date->tm_min << ":" << gm_date->tm_sec << "(" << time << ")"<< std::endl;
-                for(auto tx : block.txs())
-                {
-                    if((global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeBonus )
+                    for(auto tx : block.txs())
                     {
-                    std::map< std::string,uint64_t> kmap;
-                    try {
-                        nlohmann::json data_json = nlohmann::json::parse(tx.data());
-                        nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
-                        claim_amount = tx_info["BonusAmount"].get<uint64_t>();
-                        }
-                        catch(...)
+                        if((global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeBonus )
                         {
-                            ERRORLOG(RED "JSON failed to parse data field!" RESET);
-                            
-                        }                    
-                            for(auto & owner : tx.utxo().owner())   
+                            std::map< std::string,uint64_t> kmap;
+                            try 
                             {
+                                nlohmann::json data_json = nlohmann::json::parse(tx.data());
+                                nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
+                                claim_amount = tx_info["BonusAmount"].get<uint64_t>();
+                            }
+                            catch(...)
+                            {
+                                ERRORLOG(RED "JSON failed to parse data field!" RESET);
                                 
-                            if(owner != addr)
-                            {
-                            for(auto &vout : tx.utxo().vout())
+                            }                    
+                            for(auto & owner : tx.utxo().owner())   
                             { 
-                                if(vout.addr() != owner && vout.addr() != "VirtualBurnGas")
+                                if(owner != addr)
                                 {
-                                {
-                                 kmap[vout.addr()]=vout.value();
-                                 tx_totall += vout.value();
+                                    for(auto &vout : tx.utxo().vout())
+                                    { 
+                                        if(vout.addr() != owner && vout.addr() != "VirtualBurnGas")
+                                        {
+                                            kmap[vout.addr()]=vout.value();
+                                            tx_totall += vout.value();
+                                        }
+                                    }
                                 }
-                                }
                             }
+                            for(auto it = kmap.begin(); it != kmap.end();++it)
+                            {
+                                    std::cout << "reward addr:" << it->first << "reward amount" << it->second <<endl;   
                             }
-
+                            if(claim_amount!=0)
+                            {
+                                std::cout << "self node reward addr:" << addr <<"self node reward amount:" << claim_amount-tx_totall; 
+                                std::cout << "total reward amount"<< claim_amount;
                             }
-                            
-                            
-                    for(auto it = kmap.begin(); it != kmap.end();++it)
-                    {
-                            std::cout << "reward addr:" << it->first << "reward amount" << it->second <<endl;   
+                        }
                     }
-                    if(claim_amount!=0)
-                    {
-                        std::cout << "self node reward addr:" << addr <<"self node reward amount:" << claim_amount-tx_totall; 
-                        std::cout << "total reward amount"<< claim_amount;
-                    }
-                    }
-                }
                 }   
         }
-
-    
-
 }
 
 

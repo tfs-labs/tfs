@@ -248,7 +248,6 @@ uint64_t PeerNode::get_nodelist_size()
 	return node_map_.size();
 }
 
-
 // Refresh threads
 extern atomic<int> nodelist_refresh_time;
 bool PeerNode::nodelist_refresh_thread_init()

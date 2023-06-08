@@ -106,7 +106,6 @@ bool ca_init()
     return true;
 }
 
-
 int ca_endTimerTask()
 {
     global::ca::kDataBaseTimer.Cancel();
@@ -130,8 +129,6 @@ void ca_print_basic_info()
 
     uint64_t blockHeight = 0;
     db_reader.GetBlockTop(blockHeight);
-
-
 
     std::string ownID = net_get_self_node_id();
 
@@ -288,7 +285,6 @@ void handle_stake()
         ERRORLOG("db get top failed!!");
         return;
     }
-
 
     CTransaction outTx;
     std::vector<TxHelper::Utxo> outVin;
@@ -504,7 +500,6 @@ void handle_invest()
         ret -= 100;
     }
 
-
     DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
 }
 
@@ -567,7 +562,6 @@ void handle_disinvest()
         return;
     }
     
-
     TxMsgReq txMsg;
     txMsg.set_version(global::kVersion);
     TxMsgInfo *txMsgInfo = txMsg.mutable_txmsginfo();
@@ -623,7 +617,6 @@ void handle_bonus()
         return;
     }
 
-
     TxMsgReq txMsg;
     txMsg.set_version(global::kVersion);
     TxMsgInfo *txMsgInfo = txMsg.mutable_txmsginfo();
@@ -652,7 +645,6 @@ void handle_bonus()
     {
         ret -= 100;
     }
-
     DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
 }
 
@@ -808,6 +800,7 @@ void handle_SetdefaultAccount()
     }
     std::cout << "Set Default account success" << std::endl;
 }
+
 static string readFileIntoString(string filename)
 {
 	ifstream ifile(filename);
@@ -1775,9 +1768,6 @@ std::string handle__deploy_contract_rpc(void * arg,void *ack){
     {
         return "unknow error";
     }
-
-	
-
     return std::to_string(ret);
 }
 
@@ -1793,15 +1783,7 @@ std::string handle__call_contract_rpc(void * arg,void *ack){
         return DSTR"Input addr error!" ;
     }
 
-     DBReader data_reader;
-    // std::vector<std::string> vecDeployers;
-    // data_reader.GetAllDeployerAddr(vecDeployers);
-    // std::cout << "=====================deployers=====================" << std::endl;
-    // for(auto& deployer : vecDeployers)
-    // {
-    //     std::cout << "deployer: " << deployer << std::endl;
-    // }
-    // std::cout << "=====================deployers=====================" << std::endl;
+    DBReader data_reader;
     std::string strToAddr=ret_t->deployer;
     
     if(!CheckBase58Addr(strToAddr))
@@ -1810,17 +1792,7 @@ std::string handle__call_contract_rpc(void * arg,void *ack){
              
     }
 
-    // std::vector<std::string> vecDeployUtxos;
-    // data_reader.GetDeployUtxoByDeployerAddr(strToAddr, vecDeployUtxos);
-    // std::cout << "=====================deployed utxos=====================" << std::endl;
-    // for(auto& deploy_utxo : vecDeployUtxos)
-    // {
-    //     std::cout << "deployed utxo: " << deploy_utxo << std::endl;
-    // }
-    // std::cout << "=====================deployed utxos=====================" << std::endl;
     std::string strTxHash=ret_t->deployutxo;
-    
-    
     std::string strInput=ret_t->args;
     
     if(strInput.substr(0, 2) == "0x")
@@ -1835,21 +1807,18 @@ std::string handle__call_contract_rpc(void * arg,void *ack){
         
     }
 
-
     CTransaction outTx;
     CTransaction tx;
     std::string tx_raw;
     if (DBStatus::DB_SUCCESS != data_reader.GetTransactionByHash(strTxHash, tx_raw))
     {
         return DSTR"get contract transaction failed!!";
-        
     }
     if(!tx.ParseFromString(tx_raw))
     {
         return DSTR"contract transaction parse failed!!";
     }
     
-
     nlohmann::json data_json = nlohmann::json::parse(tx.data());
     nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
     int vm_type = tx_info["VmType"].get<int>();
@@ -1876,39 +1845,5 @@ std::string handle__call_contract_rpc(void * arg,void *ack){
     {
         return DSTR"unkown";
     }
-
-    // TxMsgReq txMsg;
-	// txMsg.set_version(global::kVersion);
-    // TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
-    // txMsgInfo->set_type(0);
-    // txMsgInfo->set_tx(outTx.SerializeAsString());
-    // txMsgInfo->set_height(top);
-
-    // if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf)
-    // {
-    //     Vrf * new_info=txMsg.mutable_vrfinfo();
-    //     new_info -> CopyFrom(info_);
-
-    // }
-
-    // if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf)
-    // {
-    //     Vrf * new_info=txMsg.mutable_vrfinfo();
-    //     new_info->CopyFrom(info_);
-
-    // }
-
-    // auto msg = make_shared<TxMsgReq>(txMsg);
-    // std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    // if(isNeedAgent_flag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
-    // {
-    //     ret = DropshippingTx(msg,outTx);
-    // }
-    // else
-    // {
-    //     ret = DoHandleTx(msg,outTx);
-    // }
-
-     return std::to_string(ret);
-
+    return std::to_string(ret);
 }

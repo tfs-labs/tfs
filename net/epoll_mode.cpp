@@ -108,7 +108,7 @@ int EpollMode::epoll_loop()
 
                     MagicSingleton<BufferCrol>::GetInstance()->add_buffer(u32_ip, u16_port, connfd);
                     MagicSingleton<EpollMode>::GetInstance()->add_epoll_event(connfd, EPOLLIN | EPOLLOUT | EPOLLET);
-                } //while
+                }
                 if (connfd == -1)
                 {
                     if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR)

@@ -19,7 +19,7 @@ bool RocksDBReadWriter::TransactionInit()
     txn_ = rocksdb_->db_->BeginTransaction(write_options_);
     if (nullptr == txn_)
     {
-        ERRORLOG("{} rocksdb begintransaction fail", txn_name_);
+        // ERRORLOG("{} rocksdb begintransaction fail", txn_name_); 
         return false;
     }
     return true;

@@ -3,10 +3,6 @@
 #include "utils/util.h"
 #include "utils/console.h"
 
-// #define BOOST_STACKTRACE_USE_ADDR2LINE
-// #include <boost/stacktrace.hpp>
-
-
 std::unordered_map<int, std::unique_ptr<std::mutex>> fds_mutex;
 std::mutex mu;
 std::mutex& get_fd_mutex(int fd)
@@ -61,7 +57,6 @@ void SocketBuf::correct_cache()
         this->cache.clear();
     }
 }
-
 
 bool SocketBuf::add_data_to_read_buf(char *data, size_t len)
 {
@@ -140,7 +135,7 @@ void SocketBuf::printf_cache()
     DEBUGLOG("fd: {}", this->fd);
     DEBUGLOG("port_and_ip: {}", this->port_and_ip);
     DEBUGLOG("cache: {}", this->cache.c_str());
-    DEBUGLOG("send_cache: {}", this->send_cache.c_str());
+    DEBUGLOG("send_cache： {}", this->send_cache.c_str());
 }
 
 std::string SocketBuf::get_send_msg()
@@ -174,9 +169,6 @@ void SocketBuf::pop_n_send_msg(int n)
     }
 }
 
-
-
-
 std::string BufferCrol::get_write_buffer_queue(uint64_t port_and_ip)
 {
     auto itr = this->BufferMap.find(port_and_ip);
@@ -190,10 +182,6 @@ std::string BufferCrol::get_write_buffer_queue(uint64_t port_and_ip)
 bool BufferCrol::add_read_buffer_queue(uint64_t port_and_ip, char *buf, socklen_t len)
 {
     auto port_ip = net_data::apack_port_and_ip_to_str(port_and_ip);
-    // std::cout << "read data==========================" << std::endl;
-    // std::cout << "ip:" << port_ip.second << std::endl;
-    // std::cout << "port:" << port_ip.first << std::endl;
-    //DEBUGLOG("add_read_buffer_queue ip:({}),port:({})",port_ip.second,port_ip.first);
     if (buf == NULL || len == 0)
     {
         ERRORLOG("add_read_buffer_queue error buf == NULL or len == 0");
@@ -226,8 +214,6 @@ bool BufferCrol::add_buffer(uint64_t port_and_ip, const int fd)
 
     if (port_and_ip == 0 || fd <= 0)
     {
-        // ERRORLOG("add_buffer error port_and_ip == 0 or fd <= 0 port_and_ip: {}  fd: {}", port_and_ip, fd);
-        // std::cout << boost::stacktrace::stacktrace() << std::endl;   
         return false;
     }
 
@@ -236,10 +222,6 @@ bool BufferCrol::add_buffer(uint64_t port_and_ip, const int fd)
     auto itr = this->BufferMap.find(port_and_ip);
     if (itr != this->BufferMap.end())
     {
-        //std::shared_ptr<SocketBuf> sockbuf=itr->second;
-        //DEBUGLOG("++++++++++++++++++++add_buffer sockbuf->fd:({}) fd:({})++++++++++++",sockbuf->fd,fd);
-        //sockbuf->fd = fd;
-        //WARNLOG(" port_and_ip exist in map, port_and_ip: {}", port_and_ip);
         return false;
     }
     std::shared_ptr<SocketBuf> tmp(new SocketBuf());
@@ -252,8 +234,6 @@ bool BufferCrol::add_buffer(uint64_t port_and_ip, const int fd)
 
 bool BufferCrol::add_buffer(uint32_t ip, uint16_t port, const int fd)
 {
-
-    //DEBUGLOG("add_buffer: ip:({}) port:({}) fd:({})",IpPort::ipsz(ip),port,fd);
     uint64_t port_and_ip = net_data::pack_port_and_ip(port, ip);
     return this->add_buffer(port_and_ip, fd);
 }

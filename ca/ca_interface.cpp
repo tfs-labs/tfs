@@ -11,13 +11,8 @@
 #include "ca/ca_algorithm.h"
 #include "utils/time_util.h"
 #include "ca_transaction.h"
-
-
 #include "utils/AccountManager.h"
 #include "common/global_data.h"
-
-
-//Get the block
 
 /*************************************SDK access block height, utxo, pledge list, investment list, block request*************************************/
 int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
@@ -207,9 +202,6 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
         }
     }
 
-    
-   
-
     std::cout<<"ack.pledgetx() size = "<<ack.pledgetx().size()<<std::endl;
     for(auto& BonusAddr : fromAddr)
     {
@@ -226,7 +218,6 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
         sdkbonusamout->set_invest_amount(invest_amount);
     }
     
-   
     std::vector<string> BonusAddr;
 	auto status = db_reader.GetBonusAddrByInvestAddr(fromAddr.at(0), BonusAddr);
 	if (status == DBStatus::DB_SUCCESS && !BonusAddr.empty())
@@ -459,9 +450,6 @@ int GetBlockReqImpl(const std::shared_ptr<GetBlockReq>& req, GetBlockAck & ack)
             blockitem->add_addr(GetBase58Addr(block.sign(i).pub())) ;
         }
     }
-    
-
-
     {
         std::vector<std::string> block_hashes;
         if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashesByBlockHeight(top, top, block_hashes))
@@ -522,10 +510,7 @@ int HandleGetBlockReq(const std::shared_ptr<GetBlockReq>& req, const MsgData & m
 
     return 0;
 }
-
-
 /*************************************Get the balance*************************************/
-
 int GetBalanceReqImpl(const std::shared_ptr<GetBalanceReq>& req, GetBalanceAck & ack)
 {
 	ack.set_version(global::kVersion);
@@ -630,7 +615,6 @@ int HandleGetBalanceReq(const std::shared_ptr<GetBalanceReq>& req, const MsgData
     return ret;    
 }
 /*************************************Get node information*************************************/
-
 int GetNodeInfoReqImpl(const std::shared_ptr<GetNodeInfoReq>& req, GetNodeInfoAck & ack)
 {
 	ack.set_version(global::kVersion);
@@ -692,10 +676,7 @@ int HandleGetNodeInfoReqReq(const std::shared_ptr<GetNodeInfoReq>& req, const Ms
 
     return ret;
 }
-
-
 /*************************************Stake list*************************************/
-
 int GetStakeListReqImpl(const std::shared_ptr<GetStakeListReq>& req, GetStakeListAck & ack)
 {
 	ack.set_version(global::kVersion);
@@ -848,9 +829,7 @@ int HandleGetStakeListReq(const std::shared_ptr<GetStakeListReq>& req, const Msg
 	return ret;
 }
 
-
 /*************************************List of investments*************************************/
-
 int GetInvestListReqImpl(const std::shared_ptr<GetInvestListReq>& req, GetInvestListAck & ack)
 {
 	ack.set_version(global::kVersion);
@@ -1016,8 +995,6 @@ int HandleGetInvestListReq(const std::shared_ptr<GetInvestListReq>& req, const M
 	}
 	return ret;
 }
-
-
 /*************************************Query UTXO*************************************/
 int GetUtxoReqImpl(const std::shared_ptr<GetUtxoReq>& req, GetUtxoAck & ack)
 {
@@ -1052,7 +1029,6 @@ int GetUtxoReqImpl(const std::shared_ptr<GetUtxoReq>& req, GetUtxoAck & ack)
     return 0;
 }
 
-
 std::map<int32_t, std::string> GetUtxoReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair( 0,  "Get Utxo Success"), 
@@ -1086,9 +1062,7 @@ int HandleGetUtxoReq(const std::shared_ptr<GetUtxoReq>& req, const MsgData & msg
     return 0;
 }
 
-
 /*************************************Query all investment accounts and amounts on the investee node*************************************/
-
 int GetAllInvestAddressReqImpl(const std::shared_ptr<GetAllInvestAddressReq>& req, GetAllInvestAddressAck & ack)
 {
     ack.set_version(global::kVersion);
@@ -1186,9 +1160,7 @@ int HandleGetAllInvestAddressReq(const std::shared_ptr<GetAllInvestAddressReq>& 
     return 0;
 }
 
-
 /*************************************Get all investable nodes*************************************/
-
 int GetAllStakeNodeListReqImpl(const std::shared_ptr<GetAllStakeNodeListReq>& req, GetAllStakeNodeListAck & ack)
 {
     ack.set_version(global::kVersion);
@@ -1253,9 +1225,7 @@ int HandleGetAllStakeNodeListReq(const std::shared_ptr<GetAllStakeNodeListReq>& 
     return 0;
 }
 
-
 /*************************************Get a list of signatures*************************************/
-
 int GetSignCountListReqImpl(const std::shared_ptr<GetSignCountListReq>& req, GetSignCountListAck & ack)
 {
     ack.set_version(global::kVersion);
@@ -1327,9 +1297,7 @@ int HandleGetSignCountListReq(const std::shared_ptr<GetSignCountListReq>& req, c
     return 0;
 }
 
-
 /*************************************Calculate the commission*************************************/
-
 int GetHeightReqImpl(const std::shared_ptr<GetHeightReq>& req, GetHeightAck & ack)
 {
     ack.set_version(global::kVersion);
@@ -1376,9 +1344,7 @@ int HandleGetHeightReq(const std::shared_ptr<GetHeightReq>& req, const MsgData &
     return 0;
 }
 
-
 /*************************************Check the current claim amount*************************************/
-
 int GetBonusListReqImpl(const std::shared_ptr<GetBonusListReq> & req, GetBonusListAck & ack)
 {
     ack.set_version(global::kVersion);
@@ -1469,7 +1435,6 @@ int HandleGetBonusListReq(const std::shared_ptr<GetBonusListReq>& req, const Msg
     return 0;
 }
 
-
 std::map<int32_t, std::string> GetReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get  List Success"), 
@@ -1477,7 +1442,6 @@ std::map<int32_t, std::string> GetReqCode()
 												};
 	return errInfo;												
 }
-
 
 int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack)
 {
@@ -1563,7 +1527,6 @@ int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack
     return 0;
 }
 
-
 std::map<int32_t, std::string> GetOnChianReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get  List Success"), 
@@ -1571,7 +1534,6 @@ std::map<int32_t, std::string> GetOnChianReqCode()
 												};
 	return errInfo;												
 }
-
 
 int HandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& req, const MsgData & msgdata)
 {
@@ -1669,7 +1631,6 @@ std::map<int32_t, std::string> GetRestInvestAmountReqCode()
 	return errInfo;												
 }
 
-
 int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& req, const MsgData & msgdata)
 {
     auto errInfo = GetRestInvestAmountReqCode();
@@ -1689,11 +1650,6 @@ int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& 
 
     return ret;
 }
-
-
-
-
-
 
 void RegisterInterface()
 {

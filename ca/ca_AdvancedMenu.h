@@ -5,10 +5,13 @@
 
 #include "db/db_api.h"
 
+
+
 void gen_key();
 void rollback();
 void GetStakeList();
 int GetBounsAddrInfo();
+
 
 void send_message_to_user();
 void show_my_k_bucket();
@@ -20,6 +23,7 @@ void print_req_and_ack();
 //blockinfoMenu
 void menu_blockinfo();
 void get_tx_block_info(uint64_t& top);
+
 
 void gen_mnemonic();
 void get_balance_by_utxo();

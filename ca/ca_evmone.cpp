@@ -481,16 +481,13 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
         }
     }
     outTx.set_time(current_time);
-
-
     //Determine whether dropshipping is default or local dropshipping
     if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
     {
         outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
     }
-    else{
-
-
+    else
+    {
         //Select dropshippers
         std::string allUtxos;
         for(auto & utxo:setOutUtxos){

@@ -53,8 +53,6 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 		ERRORLOG("sign  size != 2");
         return -1;
     }
-
-
 	for(auto &i : _BlockMap)
 	{
 		
@@ -67,7 +65,6 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 
 		if(i.second.size() == global::ca::kConsensus)
 		{
-
             //Combined into BlockMsg
 			composeEndBlockmsg(i.second);	
 		}
@@ -86,7 +83,6 @@ bool BlockStroage::isBlock(const std::string& blockHash)
         return false;
     }
     return true;
-    
 }
 
 void BlockStroage::BlockCheck()
@@ -103,13 +99,6 @@ void BlockStroage::BlockCheck()
 
         CBlock block;
         block.ParseFromString(copyendmsg_.block());
-        
-        // if(block.time() == 0 )
-        // {
-        //     INFOLOG("block.time == 0,time = {}",block.time());
-        //     continue;
-        // }
-
         if(block.hash() != i.first)
         {
             ERRORLOG("block.hash() != i.first blockHash:{}", block.hash());
@@ -144,7 +133,6 @@ void BlockStroage::BlockCheck()
                 verify_nodes.push_back(GetBase58Addr(item.pub()));
                 
             }
-
             //Compare whether the nodes in the two containers are consistent
             for(auto & sign_node : verify_nodes)
             {
@@ -218,10 +206,7 @@ void BlockStroage::composeEndBlockmsg(std::vector<BlockMsg> &msgvec)
 
         }    
     }        
-        
-	
 }
-
 
 void BlockStroage::Remove(const std::string &hash)
 {
@@ -238,7 +223,6 @@ void BlockStroage::Remove(const std::string &hash)
 		}
 	}
 }
-
 
 std::shared_future<RetType> BlockStroage::GetPrehash(const uint64_t height)
 {
@@ -281,7 +265,6 @@ void BlockStroage::commit_seek_task(uint64_t seek_height)
     auto task = std::make_shared<std::packaged_task<RetType()>>(std::bind(&BlockStroage::SeekPreHashThread, this, seek_height));
     try
     {
-        /* code */
         PreHashMap[seek_height] = task->get_future();
     }
     catch(const std::exception& e)
@@ -300,7 +283,6 @@ void BlockStroage::Force_commit_seek_task(uint64_t seek_height)
     auto task = std::make_shared<std::packaged_task<RetType()>>(std::bind(&BlockStroage::SeekPreHashThread, this, seek_height));
     try
     {
-        /* code */
         PreHashMap[seek_height] = task->get_future();
     }
     catch(const std::exception& e)
@@ -422,9 +404,7 @@ RetType BlockStroage::SeekPreHashByNode(
             {
                 seek_pre_hashes[seek_height][prehash]++;
             }
-        }
-            
-        
+        } 
     }
 
     std::set<std::string> verify_hashes;
@@ -635,7 +615,6 @@ void BlockStroage::newbuildBlockByBlockStatus(const std::string blockHash)
     newBlock.clear_hash();
 
     std::map<std::string, uint32> TxsStatus;
-    //std::map<int32, uint32> errorStatus;
     std::multimap<std::string, int> testMap;
     
     for(auto& iter : blockStatusMap[blockHash].BlockStatusList)
@@ -652,22 +631,12 @@ void BlockStroage::newbuildBlockByBlockStatus(const std::string blockHash)
             }
             testMap.insert({tx.txhash(), tx.status()});
         }
-        //errorStatus[iter.status()]++;
     }
 
     for(auto &it : testMap)
     {
         DEBUGLOG("AAAC txstatus , txHash:{}, err:{}",it.first, it.second);
     }
-
-    // for(auto& iter : errorStatus)
-    // {
-    //     if(iter.first < 0 && iter.second >= FailThreshold)
-    //     {
-    //         DEBUGLOG("AAAC block fail, ret:{}", iter.first);
-    //         break;
-    //     }
-    // }
 
     BlockMsg blockmsg;
     for(auto &tx : oldBlock.txs())

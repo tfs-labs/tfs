@@ -295,7 +295,6 @@ int net_com::connect_init(u32 u32_ip, u16 u16_port, u16 &connect_port)
 	return confd;
 }
 
-
 bool net_com::send_one_message(const Node &to, const net_pack &pack)
 {
 	auto msg = Pack::packag_to_str(pack);
@@ -331,7 +330,6 @@ bool net_com::send_one_message(const MsgData& to, const net_pack &pack)
 	bool bRet = global::queue_write.push(send_data);
 	return bRet;
 }
-
 
 uint64_t net_data::pack_port_and_ip(uint16_t port, uint32_t ip)
 {
@@ -413,7 +411,6 @@ bool net_com::is_need_send_trans_message(const Node & to)
 	}
 }
 
-
 void handle_pipe(int sig)
 {
 	// Do nothing
@@ -494,8 +491,6 @@ bool net_com::net_init()
 	MagicSingleton<PeerNode>::GetInstance()->set_self_logo(  info.logo );
 
 	MagicSingleton<PeerNode>::GetInstance()->set_self_ver(global::kVersion);
-		
-	
 
 	// Work thread pool start
 	MagicSingleton<WorkThreads>::GetInstance()->start();
@@ -511,7 +506,6 @@ bool net_com::net_init()
 
 	// Start the heartbeat
 	global::heart_timer.AsyncLoop(HEART_INTVL * 1000, net_com::DealHeart);
-
 
 	return true;
 }
@@ -566,8 +560,6 @@ int net_com::input_send_one_message()
 	return bl ? 0 : -1;
 }
 
-
-
 //Test the broadcast information
 int net_com::test_broadcast_message()
 {
@@ -584,7 +576,6 @@ int net_com::test_broadcast_message()
     }
 	return 0;
 }
-
 
 bool net_com::test_send_big_data()
 {
@@ -632,7 +623,6 @@ bool net_com::test_send_big_data()
 	tmp_data.push_back('z');
 	tmp_data.push_back('z');
 
-
 	net_com::SendPrintMsgReq(tmp_node, tmp_data, 1);
 	return true;
 }
@@ -654,7 +644,6 @@ bool net_com::SendPrintMsgReq(const std::string & id, const std::string data, in
 	net_com::send_message(id, printMsgReq);
 	return true;
 }
-
 
 int net_com::SendRegisterNodeReq(Node& dest, std::string &msg_id, bool get_nodelist)
 {
@@ -817,11 +806,9 @@ void net_com::SendNodeHeightChanged()
 	std::vector<Node> publicNodes = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 	for (auto& node : publicNodes)
 	{
-		// DEBUGLOG("send node height {} to {}", chainHeight, node.base58address);
 		net_com::send_message(node, heightChangeReq, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
 	}
 }
-
 
 namespace net_callback
 {
@@ -833,15 +820,13 @@ void net_callback::register_chain_height_callback(std::function<int(uint32_t &)>
 	net_callback::chain_height_callback = callback;
 }
 
-
-
 bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, const net_com::Compress isCompress, const net_com::Encrypt isEncrypt, const net_com::Priority priority)
 {	
 
 	const std::vector<Node>&& publicNodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 	if(global::kBuildType == global::BuildType::kBuildType_Dev)
 	{
-		std::cout << "Total number of public nodelists:" << publicNodeList.size() << std::endl;
+		std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
 	}
 	if(publicNodeList.empty())
 	{
@@ -971,7 +956,6 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 
 			for(auto & addr : addrs)
 			{
-				//DEBUGLOG("Level 1 broadcasting address {} , block hash : {}", addr,block.hash().substr(0,6));
 				net_com::send_message(addr, BuildBlockMsg);
 			}
 		}

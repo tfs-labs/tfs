@@ -264,5 +264,22 @@ uint64_t blockheight;
 std::string blockhash;
 UCTE
 
+UCTS_REQ(stake_node_list)
+
+std::string addr; 
+std::string name; 
+std::string ip; 
+std::string identity; 
+std::string logo; 
+std::string height;
+std::string version; 
+UCTE
+
+UCTS_ACK(get_all_stake_node_list_ack)
+std::string version;
+std::string code;
+std::string message ;
+std::vector<stake_node_list> list;
+UCTE
 
 #endif

@@ -1,6 +1,7 @@
 #include "../net/http_server.h"
 #include "ca_test.h"
 #include "../net/unregister_node.h"
+#include "net/httplib.h"
 
 void ca_register_http_callbacks();
 
@@ -62,3 +63,5 @@ void get_deployerutxo(const Request & req, Response & res);
 void get_restinvest(const Request & req, Response & res);
 void api_ip(const Request &req, Response & res);
 void api_normal(const Request & req, Response & res);
+
+void get_all_stake_node_list_ack(const Request & req,Response & res);

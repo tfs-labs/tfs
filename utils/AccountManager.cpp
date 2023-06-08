@@ -73,7 +73,7 @@ Account::Account(const std::string &bs58Addr)
     pkey = PEM_read_bio_PrivateKey(priBioFile, NULL, 0, NULL);
     if (!pkey)  
     {
-        printf("Error:PEM_write_bio_EC_PUBKEY err\n");
+        printf("Error：PEM_write_bio_EC_PUBKEY err\n");
         return ;
     }
     if(priBioFile != NULL) BIO_free(priBioFile);
@@ -360,13 +360,13 @@ int AccountManager::SavePrivateKeyToFile(const std::string & base58Addr)
 
     if (!priBioFile)
     {
-        printf("Error:pBioFile err \n");
+        printf("Error：pBioFile err \n");
         return -2;
     }
 
     if (!PEM_write_bio_PrivateKey(priBioFile, account.GetKey(), NULL, NULL, 0, NULL, NULL))  //Write to the private key
     {
-        printf("Error:PEM_write_bio_ECPrivateKey err\n");
+        printf("Error：PEM_write_bio_ECPrivateKey err\n");
         return -3;
     }
 

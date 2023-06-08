@@ -294,7 +294,7 @@ int SendBlockByHashAck(const std::map<std::string, bool> &missingHashs, const st
     for(const auto& it : missingHashs)
     {
         std::string strBlockHash = "";
-        if(it.second) //true is utxo
+        if(it.second)
         {
             if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashByTransactionHash(it.first, strBlockHash))
             {
@@ -383,13 +383,6 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
         ERRORLOG("VerifyHeight fail!!,block_height:{}, node_height:{}, isVerify:{}",block_height, node_height, isVerify);
 		return -5;
 	}
-    //CCC
-	// if(!VerifyHeight(block, node_height))
-	// {
-	// 	ERRORLOG("VerifyHeight fail!!,block_height:{}, node_height:{}",block_height, node_height);
-	// 	return -6;
-	// } 
-    //CCC
 
     uint64_t chain_height = 0;
     if(!obtain_chain_height(chain_height))
@@ -456,8 +449,6 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
         DEBUGLOG("DoubleSpentTransactions block --> {}", test_str);
         return -13;
     }
-    //CCC
-    //TimeReport t5("Verify_5:");
     auto start_t5 = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
     DEBUGLOG("verifying block {} , isVerify:{}", block_hash.substr(0, 6), isVerify);
 	auto ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus);
@@ -507,8 +498,6 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         return ret;
     }
     DEBUGLOG("PreSaveProcess doubleSpendCheck ret:{}", ret);
-    // 1 2 delete newBlock  
-    // 3 delete oldBlock
     if(ret == 1 || ret == 2) //doubleSpend error
     {
         return 0;
@@ -519,21 +508,6 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
     ret = ca_algorithm::SaveBlock(*db_writer_ptr, block, saveType, obtainMean);
     if (0 != ret)
     {
-        // DBReader db_reader;
-        // uint64_t node_height = 0;
-        // if (DBStatus::DB_SUCCESS != db_reader.GetBlockTop(node_height))
-        // {
-        //     ERRORLOG("GetBlockTop fail!!!");
-        // }
-        // if(node_height >= block_height)
-        // {
-        //     std::cout << "self height: " << node_height << "\terror heitht: " << block_height << std::endl;
-        //     if(saveType == global::ca::SaveType::SyncFromZero)
-        //     {
-        //         SyncBlock::SetFastSync(block_height);            
-        //     }
-        // }
-
         delete db_writer_ptr;
         db_writer_ptr = nullptr;
         ERRORLOG("save block ret:{}:{}:{}", ret, block_height, block_hash);
@@ -554,16 +528,8 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
     {        
         INFOLOG("save block ret:{}:{}:{}", ret, block_height, block_hash);
         auto startTime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
-        if (saveType == global::ca::SaveType::Broadcast)
-        {
-            //DEBUGLOG("SAVETEST hash: {} , commit start: {}", block.hash(), startTime);
-        }
         PostSaveProcess(block);
         auto endTime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp(); 
-        if (saveType == global::ca::SaveType::Broadcast)
-        {
-            //DEBUGLOG("SAVETEST hash: {} , commit end: {}", block.hash(), endTime);
-        }
         postCommitCost += (endTime - startTime);
         postCommitCount++;
     }
@@ -858,7 +824,6 @@ void BlockHelper::PostTransactionProcess(const CBlock &block)
         if (GetTransactionType(tx) == kTransactionType_Tx)
         {
             MagicSingleton<VRF>::GetInstance()->removeVrfInfo(tx.hash());
-            //DEBUGLOG("removeVrfInfo delete txHash:{}", tx.hash());
         }
     }
     MagicSingleton<VRF>::GetInstance()->removeVrfInfo(block.hash());
@@ -898,27 +863,7 @@ int BlockHelper::RollbackBlocks()
     {
         return 0;
     }
-
-    // std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-    // for(auto t : rollback_blocks)
-    // {
-    //     std::cout << "num: " << t.first << std::endl;
-    //     for(auto tt : t.second)
-    //     {
-    //         std::cout << "rollbackBlocks height: " << tt.height() << std::endl;
-    //     }
-    //     std::cout << "------------------------------------------------" << std::endl;
-    // }
-    // std::cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl << std::endl;
-
     auto rollback_top = (--rollback_blocks.end())->first;
-    // DEBUGLOG("roll back to height {}", rollback_top);
-    // int ret = ca_algorithm::RollBackToHeight(rollback_top);
-    // if(ret != 0)
-    // {
-    //     ERRORLOG("rollback to height {} fail, ret: ", rollback_top, ret);
-    //     return -1;
-    // }
     int ret = 0;
     for (auto it = rollback_blocks.rbegin(); it != rollback_blocks.rend(); ++it)
     {
@@ -1057,7 +1002,6 @@ void BlockHelper::Process()
         {
             if(now_time >= iter->second.second + 60 * 1000000)
             {
-                //DEBUGLOG("AAAC DuplicateChecker deleteBlockHash:{}", iter->first);
                 DuplicateChecker.erase(iter++);
             }
             else
@@ -1065,9 +1009,6 @@ void BlockHelper::Process()
                 ++iter;
             }
         }
-
-        // DEBUGLOG("BlockHelper::Process End, cost: {}, count: {}", postCommitCost, postCommitCount);
-        // BlockPoolEndTime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
     };
 
 
@@ -1131,8 +1072,6 @@ void BlockHelper::Process()
             break;
         }
     }
-    
-
     for(const auto& block : utxo_missing_blocks)
     {
         DEBUGLOG("utxo_missing_blocks SaveBlock Hash: {}, height: {}, PreHash:{}", block.hash().substr(0, 6), block.height(), block.prevhash().substr(0, 6));
@@ -1404,7 +1343,7 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
                 if(status)
                 {
                     MagicSingleton<taskPool>::GetInstance()->commit_ca_task(std::bind(&BlockHelper::makeTxStatusMsg, this, curr_block, block));
-                }  //makeTxStatusMsg(curr_block, block);//Feedback block failed
+                } 
                 INFOLOG("block {} has conflict, discard!", block.hash().substr(0,6));
                 return;
             }
@@ -1414,7 +1353,7 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
                 if(result != DuplicateChecker.end() && result->second.first)
                 {
                     MagicSingleton<taskPool>::GetInstance()->commit_ca_task(std::bind(&BlockHelper::makeTxStatusMsg, this, block, curr_block));
-                }  //makeTxStatusMsg(block, curr_block);//Feedback block failed
+                }
                 INFOLOG("blockHash:{}, deleteBlockHash:{}", block.hash().substr(0,6), curr_block.hash().substr(0,6));
                 it = broadcast_blocks.erase(it);
                 break;
@@ -1482,7 +1421,6 @@ void BlockHelper::AddSyncBlock(const std::map<uint64_t, std::set<CBlock, CBlockC
         for (auto sit = it->second.begin(); sit != it->second.end(); ++sit)
         {
             MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(sit->hash());
-            // sync_blocks.insert(*sit);
             sync_blocks.insert(std::move(*sit));
         }
     }

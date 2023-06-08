@@ -270,7 +270,6 @@ public:
 
         if (old.value == value)
         {
-
             //The & & value exists in both the database and storage and has not been modified
             return EVMC_STORAGE_UNCHANGED;
         }
