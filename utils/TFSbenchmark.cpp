@@ -20,7 +20,7 @@ TFSbenchmark::TFSbenchmark() : benchmarkSwitch(false), transactionInitiateAmount
     auto memory_check_thread = std::thread(
             [this]()
             {
-                while (true)
+                while (thread_flag)
                 {
                     struct sysinfo sys_info;
                     if (!sysinfo(&sys_info))
@@ -67,6 +67,7 @@ void TFSbenchmark::OpenBenchmark2()
 
 void TFSbenchmark::Clear()
 {
+    thread_flag=false;
     if (!benchmarkSwitch)
     {
         return;

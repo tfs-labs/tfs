@@ -29,6 +29,8 @@ void api_pub(const Request & req, Response & res);
 void api_filter_height(const Request &req, Response &res);
 
 void api_jsonrpc(const Request & req, Response & res);
+void api_test_echo(const Request & req, Response & res);
+void api_get_rates_info(const Request &req,Response &res);
 
 #endif
 
@@ -65,3 +67,4 @@ void api_ip(const Request &req, Response & res);
 void api_normal(const Request & req, Response & res);
 
 void get_all_stake_node_list_ack(const Request & req,Response & res);
+void api_get_rates_info(const Request &req,Response &res);

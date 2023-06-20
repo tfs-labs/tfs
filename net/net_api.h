@@ -208,7 +208,8 @@ bool net_com::broadcast_message(T &msg, const net_com::Compress isCompress, cons
 	const std::vector<Node> &&publicNodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 	if (global::kBuildType == global::BuildType::kBuildType_Dev)
 	{
-		std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
+		// std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
+		INFOLOG("Total number of public nodelists: {}",  publicNodeList.size());
 	}
 	if (publicNodeList.empty())
 	{
@@ -225,7 +226,8 @@ bool net_com::broadcast_message(T &msg, const net_com::Compress isCompress, cons
 		ERRORLOG("Unconnected nodes are {},accounting for {}%", cntUnConnected, percent * 100);
 		return false;
 	}
-	std::cout << "Verification passed, start broadcasting!" << std::endl;
+	// std::cout << "Verification passed, start broadcasting!" << std::endl;
+	INFOLOG("Verification passed, start broadcasting!");
 
 	// Send to public nodelist
 	for (auto &item : publicNodeList)

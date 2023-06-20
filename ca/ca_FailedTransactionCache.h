@@ -26,6 +26,7 @@ public:
 
 public:
 	int Add(uint64_t height,const TxMsgReq& msg);
+    void stop_Timer() { _timer.Cancel(); }
 private:
 	void Start_Timer();
     bool is_empty();

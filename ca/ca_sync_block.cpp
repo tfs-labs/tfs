@@ -159,6 +159,11 @@ static bool GetHeightBlockHash(uint64_t start_height, uint64_t end_height, std::
     return true;
 }
 
+void  SyncBlock::ThreadStop(){
+
+    sync_thread_runing=false;
+}
+
 void SyncBlock::ThreadStart()
 {
     if(sync_height_cnt_ > sync_bound)
@@ -349,6 +354,8 @@ void SyncBlock::ThreadStart()
         });
     sync_thread_.detach();
 }
+
+
 
 
 bool SyncBlock::RunFastSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t start_sync_height, uint64_t end_sync_height)

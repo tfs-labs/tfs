@@ -12,7 +12,6 @@ void rollback();
 void GetStakeList();
 int GetBounsAddrInfo();
 
-
 void send_message_to_user();
 void show_my_k_bucket();
 void kick_out_node();

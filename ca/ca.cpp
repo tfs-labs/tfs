@@ -56,6 +56,9 @@
 #include "api/interface/evm.h"
 #include "utils/tmplog.h"
 #include "ca_DoubleSpendCache.h"
+#include "../net/epoll_mode.h"
+#include "ca/ca_FailedTransactionCache.h"
+#include "db/cache.h"
 
 bool bStopTx = false;
 bool bIsCreateTx = false;
@@ -109,12 +112,28 @@ bool ca_init()
 int ca_endTimerTask()
 {
     global::ca::kDataBaseTimer.Cancel();
+    global::ca::kBlockPoolTimer.Cancel();
+    global::ca::kSeekBlockTimer.Cancel();
     return 0;
 }
 
 void ca_cleanup()
 {
     ca_endTimerTask();
+    
+    MagicSingleton<DBCache>::GetInstance()->StopTimer();
+    MagicSingleton<FailedTransactionCache>::GetInstance()->stop_Timer();
+    MagicSingleton<BlockHelper>::GetInstance()->stopSaveBlock();
+    MagicSingleton<TFSbenchmark>::GetInstance()->Clear();
+    MagicSingleton<CtransactionCache>::GetInstance()->Stop();
+    MagicSingleton<SyncBlock>::GetInstance()->ThreadStop();
+    MagicSingleton<BlockStroage>::GetInstance()->StopTimer();
+    MagicSingleton<DoubleSpendCache>::GetInstance()->StopTimer();
+    MagicSingleton<EpollMode>::GetInstance()->stop();
+    MagicSingleton<CBlockHttpCallback>::GetInstance()->Stop();
+    MagicSingleton<PeerNode>::GetInstance()->stop_nodes_swap();
+
+    sleep(5);
     DBDestory();
 }
 

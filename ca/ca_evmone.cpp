@@ -35,7 +35,7 @@ ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &host,
     {
         return vm.execute(host, rev, msg, code, code_size);
     };
-    std::future<evmc::result> future_result = std::async(std::launch::async, async_execute, std::ref(host), EVMC_LATEST_STABLE_REVISION, std::ref(msg), code.data(), code.size());
+    std::future<evmc::result> future_result = std::async(std::launch::async, async_execute, std::ref(host), EVMC_MAX_REVISION, std::ref(msg), code.data(), code.size());
 
     std::future_status status = future_result.wait_for(std::chrono::seconds(10));
     if (status == std::future_status::timeout)

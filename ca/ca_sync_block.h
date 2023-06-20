@@ -29,6 +29,7 @@ public:
     SyncBlock &operator=(const SyncBlock &) = delete;
 
     void ThreadStart();
+    void ThreadStop();
 
     static int GetSyncNodeSimplify(uint32_t num, uint64_t chain_height, const std::vector<std::string> &pledge_addr,
                             std::vector<std::string> &send_node_ids);
@@ -77,7 +78,7 @@ private:
                                 vector<std::string> &selected_addr);
 
     std::thread sync_thread_; 
-    bool sync_thread_runing{};
+    std::atomic<bool> sync_thread_runing;
     std::mutex sync_thread_runing_mutex;
     std::condition_variable sync_thread_runing_condition;
 

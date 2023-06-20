@@ -156,7 +156,7 @@ std::map<std::string, string> net_get_node_ids_and_base58address();
 //Find the ID by IP
 std::string net_get_ID_by_ip(std::string ip);
 
-// Send node which was changed, 20211129  Liu
+// Send node which was changed
 void net_send_node_height_changed();
 
 //Returns the percentage of nodes on the connection

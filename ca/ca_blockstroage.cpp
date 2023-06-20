@@ -90,7 +90,7 @@ void BlockStroage::BlockCheck()
     std::unique_lock<std::shared_mutex> lck(_block_mutex_);
 
     int64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
-    const int64_t kTenSecond = (int64_t)1000000 * 10; // TODO::10s
+    const int64_t kTenSecond = (int64_t)1000000 * 10;
 
 	std::vector<std::string> hashKey;
 	for(auto &i : _BlockMap)

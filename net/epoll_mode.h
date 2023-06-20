@@ -30,6 +30,7 @@ public:
     bool init_listen();
     static void work(EpollMode *epmd);
     bool start();
+    void stop() { halt_listening = false; }
 
     EpollMode();
     ~EpollMode();
@@ -39,6 +40,7 @@ public:
 
 private:
     int fd_ser_main;
+    std::atomic<bool> halt_listening = true;
 };
 
 #endif

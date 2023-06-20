@@ -77,7 +77,9 @@ void PeerNode::delete_node(std::string base58addr)
 		if(!MagicSingleton<BufferCrol>::GetInstance()->delete_buffer(ip, port))
 		{
 			ERRORLOG(RED "delete_buffer ERROR ip:({}), port:({}) " RESET, IpPort::ipsz(ip), port);
-		}				
+		}
+
+		MagicSingleton<UnregisterNode>::GetInstance()->deleteConsensusNode(nodeIt->first);			
 		nodeIt = node_map_.erase(nodeIt);
 	}
 	else
@@ -106,7 +108,9 @@ void PeerNode::delete_by_fd(int fd)
 		if(!MagicSingleton<BufferCrol>::GetInstance()->delete_buffer(ip, port))
 		{
 			ERRORLOG(RED "delete_buffer ERROR ip:({}), port:({})" RESET, IpPort::ipsz(ip), port);
-		}		
+		}
+
+		MagicSingleton<UnregisterNode>::GetInstance()->deleteConsensusNode(nodeIt->first);		
 		nodeIt = node_map_.erase(nodeIt);
 	}
 	else
@@ -270,8 +274,20 @@ void PeerNode::nodelist_switch_thread_fun()
 	do
 	{
 		sleep(global::nodelist_refresh_time);
-		MagicSingleton<UnregisterNode>::GetInstance()->StartSyncNode();
-		
+		if(!nodes_swap_end)
+		{
+			return;
+		}
+		std::vector<Node> NodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
+		if(NodeList.size() == 0)
+		{
+			PeerNode::nodelist_refresh_thread_fun();
+		}
+		else
+		{
+			MagicSingleton<UnregisterNode>::GetInstance()->StartSyncNode();
+		}	
+
 	} while (true);
 }
 

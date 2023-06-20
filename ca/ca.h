@@ -31,7 +31,7 @@ void ca_cleanup();
 
 /**
  * @description: Related implementation functions used in the main menu
- * @create: 20201104   LiuMingLiang
+ * @create:
  */
 void ca_print_basic_info();
 void handle_transaction();

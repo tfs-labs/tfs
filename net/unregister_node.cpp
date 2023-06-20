@@ -310,6 +310,29 @@ void UnregisterNode::AddConsensusNode(const std::map<Node, int, NodeCompare>  sy
     consensus_node_list[current_time] = sync_node_count;
 }
 
+void UnregisterNode::deleteConsensusNode(const std::string & base58)
+{
+    std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
+    auto iter1 = consensus_node_list.begin();
+    if(consensus_node_list.empty() || iter1->second.empty() )
+    {
+        ERRORLOG("consensus_node_list is empty");
+        return;
+    }
+
+    for(auto & [_ , iter]: consensus_node_list)
+    {
+        for(auto iter2 = iter.begin(); iter2 != iter.end(); ++iter2)
+        {
+            if(iter2->first.base58address == base58)
+            {
+                iter2 = iter.erase(iter2);
+                return;
+            }
+        }
+    }
+}
+
 void UnregisterNode::ClearConsensusNodeList()
 {
     std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
@@ -331,7 +354,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
             counts.push_back(iter.second);
             ++map_cnts[iter.second];
         }
-    
 
         int max_elem = 0, max_cnt = 0;
         for(auto iter : map_cnts)
@@ -344,7 +366,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
         }
 
         DEBUGLOG("GetConsensusNodeList : max_cnt = {} , item->second.size = {}, max_elem = {}", max_cnt, item->second.size(), max_elem);
-
 
         counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
         if(counts.size() < 2)
@@ -359,7 +380,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
             break;
         }
 
-
         uint64_t quarter_num = counts.size() * 0.25;
         uint64_t three_quarter_num = counts.size() * 0.75;
         if (quarter_num == three_quarter_num)
@@ -370,19 +390,17 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
 
         std::sort(counts.begin(), counts.end());
 
-
         uint64_t quarter_num_value = counts.at(quarter_num);
         uint64_t three_quarter_num_value = counts.at(three_quarter_num);
         int64_t slower_limit_value = quarter_num_value -
                                             ((three_quarter_num_value - quarter_num_value) * 1.5);
-
-
         if(slower_limit_value >= 0)
         {
             for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
             {
                 if (iter->second < slower_limit_value)
                 {
+                    DEBUGLOG("slower_limit_value : {}, iter->second", slower_limit_value, iter->second);
                     continue;
                 }
 
@@ -390,7 +408,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
             }
         }
     }
-
 
     std::vector<Node> node_list = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
     for(auto & node : node_list)

@@ -50,6 +50,7 @@ private:
     std::vector<std::pair<uint64_t, uint64_t>> transactionInitiateMap;
     std::map<uint64_t, std::pair<double, double>> transactionInitiateCache;
     void CaculateTransactionInitiateAmountPerSecond();
+    std::atomic<bool> thread_flag=true;
 
     struct verify_time_record
     {

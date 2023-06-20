@@ -40,19 +40,19 @@ private:
 
 public:
 	SocketBuf() : fd(0), port_and_ip(0), is_sending_(false) {};
-    ~SocketBuf()
-    {
-        std::lock_guard<std::mutex> lck(mutex_for_read_);
-        if (!this->cache.empty())
-        {
-            INFOLOG("SocketBuf is not empty!!");
-            INFOLOG("SocketBuf.fd: {}", fd);
-            INFOLOG("SocketBuf.port_and_ip: {}", port_and_ip);
-            INFOLOG("SocketBuf.cache: {}", cache.c_str());
-        }
-        if(!this->send_cache.empty())
-            DEBUGLOG("send_cache: {}", this->send_cache.c_str());
-    };
+    // ~SocketBuf()
+    // {
+    //     std::lock_guard<std::mutex> lck(mutex_for_read_);
+    //     if (!this->cache.empty())
+    //     {
+    //         INFOLOG("SocketBuf is not empty!!");
+    //         INFOLOG("SocketBuf.fd: {}", fd);
+    //         INFOLOG("SocketBuf.port_and_ip: {}", port_and_ip);
+    //         INFOLOG("SocketBuf.cache: {}", cache.c_str());
+    //     }
+    //     if(!this->send_cache.empty())
+    //         DEBUGLOG("send_cache: {}", this->send_cache.c_str());
+    // };
 /*API*/
     bool add_data_to_read_buf(char *data, size_t len);
     void printf_cache();

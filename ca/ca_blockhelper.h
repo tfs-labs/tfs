@@ -90,6 +90,7 @@ class BlockHelper
 
         void makeTxStatusMsg(const CBlock &oldBlock, const CBlock &newBlock);
         void checkDoubleBlooming(const std::pair<doubleSpendType, CBlock>& doubleSpendInfo, const CBlock &block);
+        void stopSaveBlock() { stop_blocking = false; }
 
     private:
         bool VerifyHeight(const CBlock& block, uint64_t ownblockHeight);
@@ -120,6 +121,7 @@ class BlockHelper
         const static int max_missing_block_size = 10;
         const static int max_missing_uxto_size = 10;
         const static int sync_save_fail_tolerance = 2;
+        std::atomic<bool> stop_blocking = true;
 
         uint64_t postCommitCost = 0;
         uint64_t postCommitCount = 0;

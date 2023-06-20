@@ -1,4 +1,3 @@
-// Time report.  create 20211215  Liu
 #ifndef __TIME_REPORT_H__
 #define __TIME_REPORT_H__
 

@@ -50,6 +50,8 @@ class CtransactionCache
         //  Start the packaging block building thread  // ca_ini ca_init call
         bool process();
 
+        void Stop();
+
         // Check for conflicting (overloaded) block pool calls
         bool check_conflict(const CTransaction& transaction);
         // Get the transaction cache
@@ -70,6 +72,8 @@ class CtransactionCache
         // Return value: Whether there are still transactions at that height
         bool remove_processed_transaction(const  std::list<tx_entities_iter>& tx_entities_iter, const bool build_success, std::list<TransactionEntity>& tx_entities);
 
+
+        std::atomic<bool> thread_run=true;
         // Clean up functions
         void tear_down(const  std::list<tx_entities_iter>& tx_entities_iters, const bool build_success, std::vector<cache_iter>& empty_height_cache , cache_iter cache_entity);
 };

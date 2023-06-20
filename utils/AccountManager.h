@@ -14,6 +14,7 @@
 #include "../include/logging.h"
 #include "utils/json.hpp"
 #include "utils/bip39.h"
+#include "include/ScopeGuard.h"
 
 #include "../openssl/include/openssl/evp.h"
 #include "../openssl/include/openssl/ec.h"
@@ -27,6 +28,7 @@ class Account
         Account(Base58Ver ver);
         Account(const std::string &bs58Addr);
         ~Account() = default;
+    
 
         bool Sign(const std::string &message, std::string &signature);
         bool Verify(const std::string &message, std::string &signature);
@@ -89,7 +91,7 @@ class AccountManager
         AccountManager();
         ~AccountManager() = default;
 
-        int AddAccount(Account & account);
+        int AddAccount(Account &account);
         void PrintAllAccount() const;
         void DeleteAccount(const std::string& base58addr);
         void SetDefaultBase58Addr(const std::string & bs58Addr);

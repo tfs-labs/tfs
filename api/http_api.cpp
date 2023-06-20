@@ -41,11 +41,35 @@
 #include <dirent.h>
 #include <google/protobuf/util/json_util.h>
 #include <map>
-#include <sstream>
+
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <unistd.h>
-#include <vector>
+#include "ca/ca_algorithm.h"
+#include "../include/ScopeGuard.h"
+#include "../include/net_interface.h"
+#include "../net/global.h"
+#include "../net/httplib.h"
+#include "../net/net_api.h"
+#include "../net/peer_node.h"
+#include "../utils/json.hpp"
+#include "../utils/string_util.h"
+#include "./interface/tx.h"
+#include "block.pb.h"
+#include "ca_protomsg.pb.h"
+#include "google/protobuf/stubs/status.h"
+#include "transaction.pb.h"
+#include "utils/Envelop.h"
+#include <boost/math/constants/constants.hpp>
+#include <boost/multiprecision/cpp_bin_float.hpp>
+#include <boost/numeric/conversion/cast.hpp>
+#include <cctype> //toupper/tolower
+#include "ca/ca_interface.h"
+#include <boost/multiprecision/cpp_dec_float.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <sys/types.h>
+#include "net/net_test.hpp"
+
 
 void ca_register_http_callbacks() {
 #ifndef NDEBUG // The debug build compiles these functions
@@ -64,6 +88,7 @@ void ca_register_http_callbacks() {
     HttpServer::registerCallback("/endautotx", api_end_autotx);
     HttpServer::registerCallback("/autotxstatus", api_status_autotx);
     HttpServer::registerCallback("/filterheight", api_filter_height);
+    HttpServer::registerCallback("/echo", api_test_echo);
 #endif // #ifndef NDEBUG
     HttpServer::registerCallback("/ip", api_ip);
     HttpServer::registerCallback("/normal", api_normal);
@@ -81,6 +106,7 @@ void ca_register_http_callbacks() {
     HttpServer::registerCallback("/get_unstake_req", get_unstake);
     HttpServer::registerCallback("/get_invest_req", get_invest);
     HttpServer::registerCallback("/get_disinvest_req", get_disinvest);
+    HttpServer::registerCallback("/get_rates_info", api_get_rates_info);
 
     HttpServer::registerCallback("/get_bonus_req", get_bonus);
     HttpServer::registerCallback("/send_message", send_message);
@@ -617,7 +643,7 @@ void api_normal(const Request & req, Response & res)
         oss << "-------------------------------------------------------------------------------------" << std::endl;
         oss << MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(item->first) << std::endl;
 
-        std::map<int,int> map_cnts;
+        std::map<int,int> map_cnts; 
         std::vector<uint64_t> counts;
         for(auto iter : item->second)
         {
@@ -636,12 +662,10 @@ void api_normal(const Request & req, Response & res)
         }
 
         int64_t slower_limit_value = 0;
-
         counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
 
         if(counts.size() > 2)
         {
-
             uint64_t quarter_num = counts.size() * 0.25;
             uint64_t three_quarter_num = counts.size() * 0.75;
             if (quarter_num == three_quarter_num)
@@ -661,7 +685,6 @@ void api_normal(const Request & req, Response & res)
         {
             slower_limit_value = max_elem;
         }
-
 
         for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
         {
@@ -1706,4 +1729,207 @@ void get_all_stake_node_list_ack(const Request & req,Response & res){
             jsonstr="protobuff to json fail";
        }
     res.set_content(jsonstr.c_str(),"application/json");
+}
+
+
+void api_test_echo(const Request & req, Response & res)
+{
+    std::string order;
+    if (req.has_param("order")) {
+        order = req.get_param_value("order").c_str();
+    }
+
+    if(order == "send")
+    {
+        std::string message = std::to_string(MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp());
+
+        EchoReq echoReq;
+        echoReq.set_id(MagicSingleton<PeerNode>::GetInstance()->get_self_id());
+        echoReq.set_message(message);
+        bool isSucceed = net_com::broadcast_message(echoReq, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_Low_0);
+        if (isSucceed == false)
+        {
+            res.set_content(":broadcast EchoReq failed!", "text/plain");
+            return;
+        }
+
+        res.set_content("EchoReq success!", "text/plain");
+        return;
+    }
+
+    if(order == "print")
+    {
+        std::map<std::string, std::vector<std::string>>  echo_catch = MagicSingleton<echoTest>::GetInstance()->get_echo_catch();
+        std::ostringstream oss;
+        for(const auto& echo: echo_catch)
+        {
+
+            oss << "time: " << echo.first << "\tnum: " << echo.second.size() << std::endl;
+            for(const auto& ip: echo.second)
+            {
+                oss << "IP: " << ip << std::endl;
+            }
+            oss << "---------------------------------------------------------------------" << std::endl;
+        }
+        res.set_content(oss.str(), "text/plain");
+        return;
+    }
+
+    if(order == "clear")
+    {
+        uint64_t time = 0;
+        if (req.has_param("time")) {
+            time = atol(req.get_param_value("time").c_str());
+        }
+        
+        if(MagicSingleton<echoTest>::GetInstance()->delete_echo_catch(std::to_string(time)))
+        {
+            res.set_content("delete success", "text/plain");
+            return;
+        }
+
+        res.set_content("time error", "text/plain");
+        return;
+    }
+
+    if(order == "all_clear")
+    {
+        MagicSingleton<echoTest>::GetInstance()->all_clear();
+        res.set_content("all_clear success", "text/plain");
+    }
+
+    return;
+}
+
+uint64_t get_circulation_before_yesterday(uint64_t cur_time) {
+  DBReadWriter db_writer;
+  std::vector<std::string> utxos;
+  std::string strTx;
+  CTransaction tx;
+  {
+    uint64_t Period =
+        MagicSingleton<TimeUtil>::GetInstance()->getPeriod(cur_time);
+    auto ret = db_writer.GetBonusUtxoByPeriod(Period, utxos);
+    if (DBStatus::DB_SUCCESS != ret && DBStatus::DB_NOT_FOUND != ret) {
+      return -2;
+    }
+  }
+  uint64_t Claim_Vout_amount = 0;
+  uint64_t TotalClaimDay = 0;
+  for (auto utxo = utxos.rbegin(); utxo != utxos.rend(); utxo++) {
+    if (db_writer.GetTransactionByHash(*utxo, strTx) != DBStatus::DB_SUCCESS) {
+      return -3;
+    }
+    if (!tx.ParseFromString(strTx)) {
+      return -4;
+    }
+    uint64_t claim_amount = 0;
+    if ((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx) {
+      nlohmann::json data_json = nlohmann::json::parse(tx.data());
+      nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
+      tx_info["BonusAmount"].get_to(claim_amount);
+      TotalClaimDay += claim_amount;
+    }
+  }
+
+  return TotalClaimDay;
+}
+
+void api_get_rates_info(const Request &req, Response &res) {
+  typedef boost::multiprecision::cpp_bin_float_50 cpp_bin_float;
+  uint64_t cur_time =
+      MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
+  uint64_t TotalCirculationYesterday = 0;
+  uint64_t TotalinvestYesterday = 0;
+  uint64_t TotalCirculationBeforeYesterday = 0;
+  uint64_t TotalCirculation = 0;
+  DBReadWriter db_writer;
+  nlohmann::json jsObject;
+  int ret = 0;
+
+  do {
+    ret = GetTotalCirculationYesterday(cur_time, TotalCirculationYesterday);
+    if (ret < 0) {
+      jsObject["Code"] = std::to_string(ret -= 100);
+      jsObject["Message"] = "GetTotalCirculationYesterday error";
+      break;
+    }
+
+    const uint64_t all_day = 86400000000; // 24  *60 * 60 * 1000000
+
+    uint64_t Yesterday = cur_time - all_day;
+
+    uint64_t TotalBrunYesterday = 0;
+    ret = GetTotalBurnYesterday(cur_time, TotalBrunYesterday);
+    if (ret < 0) {
+      jsObject["Code"] = std::to_string(ret -= 200);
+      jsObject["Message"] = "GetTotalBurnYesterday error";
+      break;
+    }
+
+    TotalCirculationYesterday = TotalCirculationYesterday - TotalBrunYesterday;
+    uint64_t ClaimReward = get_circulation_before_yesterday(Yesterday);
+    jsObject["ClaimReward"] = std::to_string(ClaimReward);
+    jsObject["CirculatingSupply"] = std::to_string(TotalCirculationYesterday);
+    jsObject["TotalBurnYesterday"] = std::to_string(TotalBrunYesterday);
+    ret = GetTotalInvestmentYesterday(cur_time, TotalinvestYesterday);
+    if (ret < 0) {
+      jsObject["Code"] = std::to_string(ret -= 400);
+      jsObject["Message"] = "GetTotalInvestmentYesterday error";
+      break;
+    }
+    jsObject["TotalStaked"] = std::to_string(TotalinvestYesterday);
+
+    uint64_t StakeRate =
+        ((double)TotalinvestYesterday / TotalCirculationYesterday + 0.005) *
+        100;
+    if (StakeRate <= 25) {
+      StakeRate = 25;
+    } else if (StakeRate >= 90) {
+      StakeRate = 90;
+    }
+
+    jsObject["StakingRate"] = std::to_string((double)TotalinvestYesterday /
+                                             TotalCirculationYesterday);
+
+    double InflationRate = .0f;
+    ret =
+        ca_algorithm::GetInflationRate(cur_time, StakeRate - 1, InflationRate);
+    if (ret < 0) {
+      jsObject["Code"] = std::to_string(ret -= 500);
+      jsObject["Message"] = "GetInflationRate error";
+      break;
+    }
+
+    std::stringstream ss;
+    ss << std::setprecision(8) << InflationRate;
+    std::string InflationRateStr = ss.str();
+    ss.str(std::string());
+    ss.clear();
+    ss << std::setprecision(2) << (StakeRate / 100.0);
+    std::string StakeRateStr = ss.str();
+    cpp_bin_float EarningRate0 =
+        static_cast<cpp_bin_float>(std::to_string(global::ca::kDecimalNum)) *
+        (static_cast<cpp_bin_float>(InflationRateStr) /
+         static_cast<cpp_bin_float>(StakeRateStr));
+    ss.str(std::string());
+    ss.clear();
+    ss << std::setprecision(8) << EarningRate0;
+
+    uint64_t EarningRate1 = std::stoi(ss.str());
+
+    double EarningRate2 = (double)EarningRate1 / global::ca::kDecimalNum;
+    if (EarningRate2 > 0.34) {
+      jsObject["Code"] = std::to_string(-5);
+      jsObject["Message"] = "EarningRate2 error";
+      break;
+    }
+    jsObject["CurrentAPR"] = std::to_string(EarningRate2);
+
+    jsObject["Code"] = "0";
+    jsObject["Message"] = "";
+
+  } while (0);
+
+  res.set_content(jsObject.dump(), "application/json");
 }

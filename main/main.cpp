@@ -44,6 +44,7 @@ void menu()
 		std::cout << "8.Deploy contract"  << std::endl;
 		std::cout << "9.Call contract"  << std::endl;
 		std::cout << "10.Account Manager" << std::endl;
+		std::cout << "99.Advanced_Menu" << std::endl;
 		std::cout << "0.Exit" << std::endl;
 
 		std::string strKey;
@@ -61,7 +62,8 @@ void menu()
 			case 0:
 				std::cout << "Exiting, bye!" << std::endl;
 				ca_cleanup();
-				exit(0);			
+				exit(0);
+				return;		
 			case 1:
 				handle_transaction();
 				break;
@@ -203,8 +205,26 @@ bool InitRocksDb()
         db_read_writer.SetBlockByBlockHash(block.hash(), block.SerializeAsString());
         db_read_writer.SetBlockTop(0);
 
-        db_read_writer.SetUtxoHashsByAddress(tx.utxo().owner().at(0), tx.hash());
-		db_read_writer.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().owner().at(0), std::to_string(tx.utxo().vout(0).value()));
+		
+		for(int i = 0; i < tx.utxo().vout_size(); ++i)
+		{
+			if(!CheckBase58Addr(tx.utxo().vout(i).addr()))
+			{
+				continue;
+			}
+			db_read_writer.SetUtxoHashsByAddress(tx.utxo().vout(i).addr(), tx.hash());
+			if(tx.utxo().vout(i).addr() == global::ca::kInitAccountBase58Addr)
+			{
+				db_read_writer.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
+				db_read_writer.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
+			}
+			else
+			{
+				db_read_writer.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
+				db_read_writer.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
+			}
+		}
+
         db_read_writer.SetTransactionByHash(tx.hash(), tx.SerializeAsString());
         db_read_writer.SetBlockHashByTransactionHash(tx.hash(), block.hash());
 

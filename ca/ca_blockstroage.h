@@ -36,7 +36,10 @@ public:
     BlockStroage &operator=(BlockStroage&&) = delete;
     BlockStroage &operator=(const BlockStroage &) = delete;
 
+
+
 public:
+	void StopTimer(){_block_timer.Cancel();}
 	int AddBlock(const BlockMsg &msg);
 	int UpdateBlock(const BlockMsg &msg);
 	bool isBlock(const std::string& blockHash);

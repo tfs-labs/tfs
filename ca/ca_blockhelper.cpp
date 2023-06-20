@@ -1066,7 +1066,8 @@ void BlockHelper::Process()
         }
         DEBUGLOG("fast_sync_blocks SaveBlock Hash: {}, height: {}, PreHash:{}", block.hash().substr(0, 6), block.height(), block.prevhash().substr(0, 6));
         result = SaveBlock(block, sync_type, obtain_mean);
-        DEBUGLOG("fast_sync_blocks result: {}", result);
+        usleep(100000);
+        DEBUGLOG("fast_sync save block height: {}\tblock hash: {}\tresult: {}", block.height(), block.hash(), result);
         if(result != 0)
         {
             break;
@@ -1089,6 +1090,11 @@ void BlockHelper::Process()
 
     for(const auto& block : sync_blocks)
     {
+        if(!stop_blocking)
+        {
+            return;
+        }
+
         DEBUGLOG("chain height: {}, height: {}, sync type: {}", chain_height, block.height(), sync_type);
         DEBUGLOG("sync_blocks SaveBlock Hash: {}, height: {}, PreHash:{}", block.hash().substr(0, 6), block.height(), block.prevhash().substr(0, 6));
         result = SaveBlock(block, sync_type, global::ca::BlockObtainMean::Normal);
@@ -1416,12 +1422,12 @@ void BlockHelper::AddSyncBlock(const std::map<uint64_t, std::set<CBlock, CBlockC
 {
     DEBUGLOG("AddSyncBlock sync_block_data.size(): {}", sync_block_data.size());
     std::lock_guard<std::mutex> lock(helper_mutex);
-    for (auto it = sync_block_data.begin(); it != sync_block_data.end(); ++it)
+    for(const auto&[key,value]:sync_block_data)
     {
-        for (auto sit = it->second.begin(); sit != it->second.end(); ++sit)
+        for(const auto& sit: value)
         {
-            MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(sit->hash());
-            sync_blocks.insert(std::move(*sit));
+            MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(sit.hash());
+            sync_blocks.insert(std::move(sit));
         }
     }
     sync_type = type;

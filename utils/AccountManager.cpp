@@ -7,7 +7,6 @@ Account::Account()
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
     if(ctx == nullptr)
     {
-        EVP_PKEY_CTX_free(ctx);
         return;
     }
 
@@ -84,7 +83,6 @@ Account::Account(const std::string &bs58Addr)
     GeneratePriStr();
 }
 
-
 bool Account::Sign(const std::string &message, std::string &signature)
 {
     EVP_MD_CTX *mdctx = NULL;
@@ -92,6 +90,11 @@ bool Account::Sign(const std::string &message, std::string &signature)
 
     unsigned char *sig_value = NULL;
     size_t sig_len = strlen(sig_name);
+
+    ON_SCOPE_EXIT{
+        if(mdctx != NULL){EVP_MD_CTX_free(mdctx);}
+        if(sig_value != NULL){OPENSSL_free(sig_value);}
+    };
 
     // Create the Message Digest Context 
     if(!(mdctx = EVP_MD_CTX_new())) 
@@ -126,8 +129,6 @@ bool Account::Sign(const std::string &message, std::string &signature)
     std::string hashString((char*)sig_value, tmpMLen);
     signature = hashString;
 
-    OPENSSL_free(sig_value);
-    EVP_MD_CTX_free(mdctx);
     return true;
 }
 
@@ -199,7 +200,7 @@ AccountManager::AccountManager()
     _init();
 }
 
-int AccountManager::AddAccount(Account & account)
+int AccountManager::AddAccount(Account &account)
 {
     auto iter = _accountList.find(account.GetBase58());
     if(iter != _accountList.end())

@@ -28,6 +28,7 @@
 #include "utils/Cycliclist.hpp"
 #include "db/db_api.h"
 #include <iomanip>
+#include "net/net_test.hpp"
 
 int handlePrintMsgReq(const std::shared_ptr<PrintMsgReq> &printMsgReq, const MsgData &from)
 {
@@ -477,7 +478,14 @@ int handleEchoReq(const std::shared_ptr<EchoReq> &echoReq, const MsgData &from)
 
 int handleEchoAck(const std::shared_ptr<EchoAck> &echoAck, const MsgData &from)
 {
-	std::cout << "echo from id:" << echoAck->id() << endl;
+	std::string echo_ack =  echoAck->message();
+	if(-1 == echo_ack.find("_"))
+	{
+		MagicSingleton<echoTest>::GetInstance()->add_echo_catch(echo_ack, echoAck->id());
+		return 0;
+	}
+
+	printf("echo from id:%s\tmessage:%s\n",echoAck->id().c_str(), echo_ack.c_str());
 	return 0;
 }
 
@@ -527,7 +535,6 @@ int handleNodeHeightChangedReq(const std::shared_ptr<NodeHeightChangedReq>& req,
 
 int handleCheckTxReq(const std::shared_ptr<CheckTxReq>& req, const MsgData& from)
 {
-	DEBUGLOG("handleCheckTxReq ------------------------------>");
 	if (0 != Util::IsVersionCompatible(req->version()))
 	{
 		ERRORLOG("HandleBuildBlockBroadcastMsg IsVersionCompatible");
@@ -561,8 +568,6 @@ int handleCheckTxReq(const std::shared_ptr<CheckTxReq>& req, const MsgData& from
 
 int handleCheckTxAck(const std::shared_ptr<CheckTxAck>& ack, const MsgData& from)
 {
-	DEBUGLOG("handleCheckTxAck ------------------------------>");
-
 	if (0 != Util::IsVersionCompatible(ack->version()))
 	{
 		ERRORLOG("HandleBuildBlockBroadcastMsg IsVersionCompatible");
@@ -785,12 +790,4 @@ int handleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 	}
 
 	return 0;
-}
-
-void netTest::netTestRegister()
-{
-	mutex_time.lock();
-	signal = false;
-	mutex_time.unlock();
-	MagicSingleton<taskPool>::GetInstance()->commit_ca_task(std::bind(&netTest::isValue, this));
 }

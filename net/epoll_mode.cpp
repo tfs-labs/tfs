@@ -62,7 +62,7 @@ int EpollMode::epoll_loop()
         ERRORLOG("setrlimit error");
     }
     INFOLOG("epoll loop start success!");
-    while (1)
+    while (halt_listening)
     {
 
         //Wait for something to happen

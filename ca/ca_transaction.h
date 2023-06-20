@@ -48,7 +48,7 @@ int VerifyBlockSign(const CBlock &block);
 int DoHandleBlock(const std::shared_ptr<BlockMsg>& msg);
 int HandleBuildBlockBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, const MsgData& msgdata );
 
-int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg,  const int nodeNumber, std::set<std::string> & nextNodes);
+int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg,  const int & requiredNodeCount, std::set<std::string> & nextNodes);
 
 int GetBlockPackager(std::string &packager,const std::string & hash,Vrf & info);
 
@@ -95,7 +95,7 @@ bool IsMultiSign(const CTransaction & tx);
 
 int VerifyTxMsgReq(const TxMsgReq & msg);
 
-int VerifyTxFlowSignNode(const CTransaction &tx , const double & rand_num, const int & range);
+int VerifyTxFlowSignNode(const CTransaction &tx , const double & rand_num, const uint64_t & top, const std::string & target_addr);
 
 int VerifyTxTimeOut(const CTransaction &tx);
 
@@ -108,8 +108,9 @@ int GenerateGas(const CTransaction &tx, const std::map<std::string, int64_t> & t
 
 void setVrf(Vrf & dest,const std::string & proof, const std::string & pub,const std::string & data);
 int getVrfdata(const Vrf & vrf,std::string & hash, int & range);
+int getVrfdata(const Vrf &vrf, std::string &hash, std::string &targetAddr);
 
-static void filterNodeList(const CTransaction & tx, std::vector<Node> &outAddrs);
+static void filterConsensusNodeList(const CTransaction & tx, std::vector<Node> &outAddrs);
 static int filterSendList(int & end_pos,Cycliclist<std::string> &list, std::vector<std::string> &target_addrs);
 
 #endif

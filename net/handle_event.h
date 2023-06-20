@@ -33,60 +33,6 @@ int handleCheckTxAck(const std::shared_ptr<CheckTxAck>& ack, const MsgData& from
 
 
 
-class netTest
-{
-    
-public:
-    netTest():netTestTime(-1),signal(true),flag(false) {}
 
-    void setTime(double t)
-    {
-        std::unique_lock<std::mutex> lock(mutex_time);
-        flag = true;
-        netTestTime = t;
-    }
-
-    void isValue()
-    {
-        int i = 0;
-        for(; i < 20; i++)
-        {
-            if(netTestTime == -1)
-            {
-                sleep(1);
-                continue;
-            }
-            break;
-        }
-
-        std::unique_lock<std::mutex> lock(mutex_time);
-        signal = true;
-    }
-
-    double getTime()
-    {
-        std::unique_lock<std::mutex> lock(mutex_time);
-        double t = netTestTime;
-        netTestTime = -1;
-        flag = false;
-        return t;
-    }
-
-    bool getSignal()
-    {
-        return signal;
-    }
-    bool getflag()
-    {
-        return flag;
-    }
-
-    void netTestRegister();
-private:
-    double netTestTime;
-    bool signal;
-    bool flag;
-    std::mutex mutex_time;
-};
 
 #endif

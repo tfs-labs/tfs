@@ -784,6 +784,7 @@ void net_com::SendNodeHeightChanged()
 	heightChangeReq.set_height(chainHeight);
 
 	Account defaultEd;
+	EVP_PKEY_free(defaultEd.GetKey());
 	MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultEd);
 
 	std::stringstream base58Height;
@@ -826,7 +827,8 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 	const std::vector<Node>&& publicNodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 	if(global::kBuildType == global::BuildType::kBuildType_Dev)
 	{
-		std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
+		// std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
+		INFOLOG("Total number of public nodelists: {}",  publicNodeList.size());
 	}
 	if(publicNodeList.empty())
 	{
@@ -842,7 +844,8 @@ bool net_com::BlockBroadcast_message( BuildBlockBroadcastMsg& BuildBlockMsg, con
 		ERRORLOG("Unconnected nodes are {},accounting for {}%", cntUnConnected, percent * 100);
 		return false;
 	}
-	std::cout << "Verification passed, start broadcasting!" << std::endl;
+	// std::cout << "Verification passed, start broadcasting!" << std::endl;
+	INFOLOG("Verification passed, start broadcasting!");
 
 	CBlock block;
     block.ParseFromString(BuildBlockMsg.blockraw());

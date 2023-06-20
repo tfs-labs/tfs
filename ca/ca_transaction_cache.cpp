@@ -226,10 +226,13 @@ bool CtransactionCache::check_conflict(const CTransaction& transaction)
 {
     return Checker::CheckConflict(transaction, cache_);
 }
+void CtransactionCache::Stop(){
+    thread_run=false;
+}
 
 void CtransactionCache::processing_func()
 {
-    while (true)
+    while (thread_run)
     {
         std::unique_lock<mutex> locker(cache_mutex_);
         auto S_Pending = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();

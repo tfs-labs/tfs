@@ -1,6 +1,7 @@
 #ifndef _PEER_NODE_H_
 #define _PEER_NODE_H_
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <list>
@@ -85,6 +86,8 @@ public:
 	const std::string get_base58addr();
     int update_base58Addr(const string &oldpub, const std::string & newpub);
 
+	void stop_nodes_swap() {nodes_swap_end = false;}
+
 	
 private:
 
@@ -97,6 +100,8 @@ private:
 
 	std::thread refresh_thread;
 	std::thread node_switch_thread;
+
+	std::atomic<bool> nodes_swap_end = true;
 };
 
 #endif

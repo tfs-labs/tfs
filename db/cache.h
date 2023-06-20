@@ -31,7 +31,7 @@ class DBCache
 {
 public:
     DBCache();
-    ~DBCache();
+    // ~DBCache();
     DBCache(DBCache &&) = delete;
     DBCache(const DBCache &) = delete;
     DBCache &operator=(DBCache &&) = delete;
@@ -41,6 +41,7 @@ public:
     bool DeleteData(const std::string &key);
     bool AddData(const std::map<std::string, std::string> &add_data);
     bool DeleteData(const std::set<std::string> &keys);
+    void StopTimer() { timer_.Cancel(); }
 
 private:
     uint64_t GetDateSize();

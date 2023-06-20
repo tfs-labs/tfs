@@ -502,7 +502,7 @@ public:
         }
         evmc::VM vm{pvm};
         
-        evmc::result re = vm.execute(*this, EVMC_LATEST_STABLE_REVISION, msg, code.data(), code.size());
+        evmc::result re = vm.execute(*this, EVMC_MAX_REVISION, msg, code.data(), code.size());
         DEBUGLOG("ContractAddress: {} , Result: {}",ContractAddress, re.status_code);
         if (re.status_code != EVMC_SUCCESS)
         {

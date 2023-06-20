@@ -117,10 +117,10 @@ DBCache::DBCache()
     });
 }
 
-DBCache::~DBCache()
-{
-    timer_.Cancel();
-}
+// DBCache::~DBCache()
+// {
+//     timer_.Cancel();
+// }
 
 bool DBCache::GetData(const std::string &key, std::string &value)
 {

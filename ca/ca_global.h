@@ -20,6 +20,8 @@ namespace global{
 
         // consensus
         extern const int kConsensus;
+        extern const int KRandomNodeGroup;
+
 
         // timer
         extern CTimer kBlockPoolTimer;

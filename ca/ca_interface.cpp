@@ -1445,7 +1445,6 @@ std::map<int32_t, std::string> GetReqCode()
 
 int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack)
 {
-    DEBUGLOG("SendCheckTxReq ------------------");
     std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
 
     std::string msg_id;
@@ -1518,7 +1517,7 @@ int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack
 
         alsuc->set_hash(success.first);
         double rate = (double)success.second / (double)(send_num * 0.8);
-        DEBUGLOG("+++++++++++++++++++++++ = {} , == {}, rate = ", success.second, send_num, rate);
+        DEBUGLOG("SendCheckTxReq = {} , == {}, rate = ", success.second, send_num, rate);
         alsuc->set_rate(rate);
 
     }

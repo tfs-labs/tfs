@@ -34,6 +34,7 @@ public:
     void getIpMap(std::map<uint64_t, std::map<Node,int, NodeCompare>> & m1); 
     std::vector<Node> GetConsensusNodeList();
     
+    void deleteConsensusNode(const std::string & base58);
     void AddConsensusNode(const std::map<Node, int, NodeCompare>  sync_node_count);
     void ClearConsensusNodeList();
 

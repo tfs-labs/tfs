@@ -26,6 +26,7 @@ public:
     };
     ~DoubleSpendCache() = default;
 public:
+    void StopTimer(){_timer.Cancel();}
     int AddFromAddr(const std::vector<std::string> &addrUtxo);
     void CheckLoop();
 private:
