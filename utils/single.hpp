@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <sys/file.h>
  
-#define MY_PID_FILE     "/tmp/my_pid_file"
+#define MY_PID_FILE     "/tmp/tfs_pid_file"
 #define BUF_LEN_FOR_PID 64
  
  
