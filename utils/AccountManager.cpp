@@ -1,38 +1,45 @@
 #include "AccountManager.h"
 
-
-Account::Account()
+Account::Account() : _pkey(nullptr, &EVP_PKEY_free)
 {
-    pkey = nullptr;
+    _pkey = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(EVP_PKEY_new(), &EVP_PKEY_free);
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
     if(ctx == nullptr)
     {
+        std::cout << "EVP_PKEY_CTX_new_id failed" << std::endl;
         return;
     }
 
     if(EVP_PKEY_keygen_init(ctx) <= 0)
     {
+        unsigned long err = ERR_get_error();
+        char errbuf[256];
+        ERR_error_string(err, errbuf);
+        std::cout << "EVP_PKEY_keygen_init failed: " << errbuf << std::endl;
         EVP_PKEY_CTX_free(ctx);
-        std::cout << "keygen init fail" << std::endl;
         return;
     }
 
-    if(EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    EVP_PKEY * raw_pkey = _pkey.get();
+    if(EVP_PKEY_keygen(ctx, &raw_pkey) <= 0)
     {
+        unsigned long err = ERR_get_error();
+        char errbuf[256];
+        ERR_error_string(err, errbuf);
+        std::cout << "EVP_PKEY_keygen failed: " << errbuf << std::endl;
         EVP_PKEY_CTX_free(ctx);
-        std::cout << "keygen fail\n" << std::endl;
         return;
     }
 
     GeneratePubStr();
     GeneratePriStr();
     GenerateBase58Addr(Base58Ver::kBase58Ver_Normal);
+
     EVP_PKEY_CTX_free(ctx);
 }
-
-Account::Account(Base58Ver ver)
+Account::Account(Base58Ver ver) : _pkey(nullptr, &EVP_PKEY_free)
 {
-    pkey = nullptr;
+    _pkey = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(EVP_PKEY_new(), &EVP_PKEY_free);
     EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
     if(ctx == nullptr)
     {
@@ -42,15 +49,22 @@ Account::Account(Base58Ver ver)
 
     if(EVP_PKEY_keygen_init(ctx) <= 0)
     {
+        unsigned long err = ERR_get_error();
+        char errbuf[256];
+        ERR_error_string(err, errbuf);
+        std::cout << "EVP_PKEY_keygen_init failed: " << errbuf << std::endl;
         EVP_PKEY_CTX_free(ctx);
-        std::cout << "keygen init fail" << std::endl;
         return;
     }
 
-    if(EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    EVP_PKEY * raw_pkey = _pkey.get();
+    if(EVP_PKEY_keygen(ctx, &raw_pkey) <= 0)
     {
+        unsigned long err = ERR_get_error();
+        char errbuf[256];
+        ERR_error_string(err, errbuf);
+        std::cout << "EVP_PKEY_keygen failed: " << errbuf << std::endl;
         EVP_PKEY_CTX_free(ctx);
-        std::cout << "keygen fail\n" << std::endl;
         return;
     }
 
@@ -61,18 +75,19 @@ Account::Account(Base58Ver ver)
 }
 
 static const std::string EDCertPath = "./cert/";
-Account::Account(const std::string &bs58Addr)
+Account::Account(const std::string &bs58Addr) : _pkey(nullptr, &EVP_PKEY_free)
 {
+    _pkey = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(EVP_PKEY_new(), &EVP_PKEY_free);
     std::string priFileFormat = EDCertPath + bs58Addr + ".private";
     const char * priPath = priFileFormat.c_str();
 
     //Read public key from PEM file
     BIO* priBioFile = BIO_new_file(priPath, "rb");
 
-    pkey = PEM_read_bio_PrivateKey(priBioFile, NULL, 0, NULL);
-    if (!pkey)  
+    _pkey.reset(PEM_read_bio_PrivateKey(priBioFile, NULL, 0, NULL));
+    if (!_pkey.get())  
     {
-        printf("Error：PEM_write_bio_EC_PUBKEY err\n");
+        printf("Error:PEM_write_bio_EC_PUBKEY err\n");
         return ;
     }
     if(priBioFile != NULL) BIO_free(priBioFile);
@@ -81,6 +96,54 @@ Account::Account(const std::string &bs58Addr)
 
     GeneratePubStr();
     GeneratePriStr();
+}
+
+Account::Account(const Account& other):
+    _pkey(nullptr, &EVP_PKEY_free),
+    pubStr(other.pubStr),
+    priStr(other.priStr),
+    base58Addr(other.base58Addr)
+{
+    if (other._pkey) {
+        EVP_PKEY *pkey_dup = EVP_PKEY_dup(other._pkey.get());
+        _pkey = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(pkey_dup, &EVP_PKEY_free);
+    }
+}
+
+Account::Account(Account&& other) noexcept :
+    _pkey(std::move(other._pkey)),
+    pubStr(std::move(other.pubStr)),
+    priStr(std::move(other.priStr)),
+    base58Addr(std::move(other.base58Addr))
+{
+}
+
+Account& Account::operator=(const Account& other)
+{
+    if (this != &other) {
+        pubStr = other.pubStr;
+        priStr = other.priStr;
+        base58Addr = other.base58Addr;
+        if (other._pkey) {
+            EVP_PKEY *pkey_dup = EVP_PKEY_dup(other._pkey.get());
+            _pkey = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)>(pkey_dup, &EVP_PKEY_free);
+        } else {
+            _pkey.reset();
+        }
+    }
+    return *this;
+}
+
+Account& Account::operator=(Account&& other) noexcept
+{
+    if (this == &other) {
+        return *this;
+    }
+    _pkey = std::move(other._pkey);
+    pubStr = std::move(other.pubStr);
+    priStr = std::move(other.priStr);
+    base58Addr = std::move(other.base58Addr);
+    return *this;
 }
 
 bool Account::Sign(const std::string &message, std::string &signature)
@@ -102,13 +165,13 @@ bool Account::Sign(const std::string &message, std::string &signature)
         return false;
     }
 
-    if(pkey == NULL)
+    if(_pkey.get() == nullptr)
     {
         return false;
     }
     
     // Initialise the DigestSign operation
-    if(1 != EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pkey)) 
+    if(1 != EVP_DigestSignInit(mdctx, NULL, NULL, NULL, _pkey.get())) 
     {
         return false;
     }
@@ -146,7 +209,7 @@ bool Account::Verify(const std::string &message, std::string &signature)
     }
 
     /* Initialize `key` with a public key */
-    if(1 != EVP_DigestVerifyInit(mdctx, NULL, NULL, NULL, pkey)) 
+    if(1 != EVP_DigestVerifyInit(mdctx, NULL, NULL, NULL, _pkey.get())) 
     {
         EVP_MD_CTX_free(mdctx);
         return false;
@@ -165,22 +228,27 @@ bool Account::Verify(const std::string &message, std::string &signature)
 void Account::GeneratePubStr()
 {
     //The binary of the resulting public key is stored in a string serialized
+    if(!_pkey)
+    {
+        return;
+    }
     unsigned char *pkey_der = NULL;
-    int publen = i2d_PUBKEY(pkey ,&pkey_der);
+    int publen = i2d_PUBKEY(_pkey.get() ,&pkey_der);
 
     for(int i = 0; i < publen; ++i)
     {
         pubStr += pkey_der[i];
     }
-
-    delete pkey_der;
+    
+    //delete pkey_der;
+    OPENSSL_free(pkey_der);
 }
 
 void Account::GeneratePriStr()
 {
     size_t len = 80;
     char pkey_data[80] = {0};
-    if( EVP_PKEY_get_raw_private_key(pkey, (unsigned char *)pkey_data, &len) == 0)
+    if( EVP_PKEY_get_raw_private_key(_pkey.get(), (unsigned char *)pkey_data, &len) == 0)
     {
         return;
     }
@@ -209,7 +277,7 @@ int AccountManager::AddAccount(Account &account)
         return -1;
     }
 
-    _accountList.insert(make_pair(account.GetBase58(), account));
+    _accountList.emplace(account.GetBase58(), std::make_shared<Account>(account));
     return 0;
 }
 
@@ -245,7 +313,6 @@ void AccountManager::DeleteAccount(const std::string& base58addr)
         return;
     }
 
-    EVP_PKEY_free(_accountList.at(base58addr).GetKey());
     _accountList.erase(iter);
     
     std::filesystem::path filename = EDCertPath + base58addr + ".private";
@@ -315,7 +382,7 @@ int AccountManager::FindAccount(const std::string & bs58Addr, Account & account)
         ERRORLOG("not found bs58Addr {} in the _accountList ",bs58Addr);
         return -1;
     }
-    account = iter->second;
+    account = *iter->second;
 
     return 0;
 }
@@ -328,7 +395,7 @@ int AccountManager::GetDefaultAccount(Account & account)
         ERRORLOG("not found DefaultKeyBs58Addr {} in the _accountList ", defaultBase58Addr);
         return -1;
     }
-    account = iter->second;
+    account = *iter->second;
 
     return 0;
 }
@@ -343,13 +410,37 @@ void AccountManager::GetAccountList(std::vector<std::string> & base58_list)
     }
 }
 
+
+bool AccountManager::GetAccountPubByBytes(const std::string &pubStr, Account &account)
+{
+    unsigned char* buf_ptr = (unsigned char *)pubStr.data();
+    const unsigned char *pk_str = buf_ptr;
+    int len_ptr = pubStr.size();
+    
+    if(len_ptr == 0)
+    {
+        ERRORLOG("public key Binary is empty");
+        return false;
+    }
+
+    EVP_PKEY *peer_pub_key = d2i_PUBKEY(NULL, &pk_str, len_ptr);
+
+    if(peer_pub_key == nullptr)
+    {
+        return false;
+    }
+    account.SetKey(peer_pub_key);
+
+    return true;
+}
+
+
 int AccountManager::SavePrivateKeyToFile(const std::string & base58Addr)
 {
     std::string priFileFormat = EDCertPath + base58Addr +".private";
     const char * path =  priFileFormat.c_str();
 
     Account account;
-    EVP_PKEY_free(account.GetKey());
     if(FindAccount(base58Addr, account) != 0)
     {
         ERRORLOG("SavePrivateKeyToFile find account fail: {}", base58Addr);
@@ -361,13 +452,13 @@ int AccountManager::SavePrivateKeyToFile(const std::string & base58Addr)
 
     if (!priBioFile)
     {
-        printf("Error：pBioFile err \n");
+        printf("Error:pBioFile err \n");
         return -2;
     }
 
     if (!PEM_write_bio_PrivateKey(priBioFile, account.GetKey(), NULL, NULL, 0, NULL, NULL))  //Write to the private key
     {
-        printf("Error：PEM_write_bio_ECPrivateKey err\n");
+        printf("Error:PEM_write_bio_ECPrivateKey err\n");
         return -3;
     }
 
@@ -443,10 +534,7 @@ int AccountManager::GetPrivateKeyHex(const std::string & bs58Addr, std::string &
     }
 	
     std::string strPriHex = Str2Hex(account.GetPriStr());
-    privateKeyHex = strPriHex;
-    EVP_PKEY_free(account.GetKey());
-    EVP_PKEY_free(defaultAccount.GetKey());
-    
+    privateKeyHex = strPriHex;    
     return 0;
 }
 
@@ -480,7 +568,6 @@ int AccountManager::ImportPrivateKeyHex(const std::string & privateKeyHex)
 
     std::string base58Addr = GetBase58Addr(pubStr_, Base58Ver::kBase58Ver_Normal);
     Account acc;
-    EVP_PKEY_free(acc.GetKey());
     acc.SetKey(pkey);
     acc.SetPubStr(pubStr_);
     acc.SetPriStr(priStr_); 
@@ -581,14 +668,15 @@ int AccountManager::_init()
     if(_accountList.size() == 0)
     {
         Account account;
+        std::string base58Addr = account.GetBase58();
         if(AddAccount(account) != 0)
         {
             return -6;
         }
 
-        SetDefaultAccount(account.GetBase58());
+        SetDefaultAccount(base58Addr);
 
-        if(SavePrivateKeyToFile(account.GetBase58()) != 0)
+        if(SavePrivateKeyToFile(base58Addr) != 0)
         {
             return -7;
         }
@@ -657,18 +745,15 @@ void testEDFunction()
     EVP_PKEY* eckey = nullptr;
     if(GetEDPubKeyByBytes(account.GetPubStr(), eckey) == false)
     {
-        EVP_PKEY_free(eckey);
         return;
     }
 
     if(ED25519VerifyMessage(sig_name, eckey, signature) == false)
     {
-        EVP_PKEY_free(eckey);
         return;
     }
 
     Account e1;
-    EVP_PKEY_free(e1.GetKey());
     MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(e1);
     if(ED25519SignMessage(sig_name, e1.GetKey(), signature) == false)
     {

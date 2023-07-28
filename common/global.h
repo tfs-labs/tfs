@@ -21,9 +21,9 @@ namespace global{
     #endif
 
     // version
-    static const std::string kNetVersion = "28";
-    static const std::string kLinuxCompatible = "0.28.0";
-    static const std::string kWindowsCompatible = "0.28.0";
+    static const std::string kNetVersion = "30";
+    static const std::string kLinuxCompatible = "0.30.0";
+    static const std::string kWindowsCompatible = "0.30.0";
     static const std::string kIOSCompatible = "4.0.4";
     static const std::string kAndroidCompatible = "3.1.0";
 
@@ -44,15 +44,15 @@ namespace global{
     #endif
 
     //thread pool 
-    static const int ca_thread_number = 50;
-    static const int net_thread_number = 50;
-    static const int broadcast_thread_number = 18;
-    static const int tx_thread_number = 512;
-    static const int syncBlock_thread_number = 100;
-    static const int saveBlock_thread_number = 512;
+    static const int ca_thread_number = 15;
+    static const int net_thread_number = 15;
+    static const int broadcast_thread_number = 10;
+    static const int tx_thread_number = 50;
+    static const int syncBlock_thread_number = 25;
+    static const int saveBlock_thread_number = 50;
 
-    static const int block_thread_number = 100;
-    static const int work_thread_number = 200;
+    static const int block_thread_number = 50;
+    static const int work_thread_number = 50;
 }
 
 #endif // !_GLOBAL_H

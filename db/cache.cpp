@@ -92,29 +92,29 @@ void BounsAddrCache::is_dirty(const std::string& BounsAddr, bool dirty)
 
 DBCache::DBCache()
 {
-    save_time_ = 24 * 60 * 60;
-    save_key_num_ = 500000;
-    struct sysinfo info;
-    int ret = sysinfo(&info);
-    if(0 == ret)
-    {
-        int num = info.totalram >> 30;
-        num -= 4;
-        if(num > 1)
-        {
-            save_key_num_ *= num;
-        }
-    }
-
-    cache_size_ = 500 * 1024 * 1024;
-    SetCacheSize();
-
-    timer_.AsyncLoop(10 * 1000, [this](){
-        if(GetDateSize() >= cache_size_)
-        {
-           ClearExpireData();
-        }
-    });
+//    save_time_ = 24 * 60 * 60;
+//    save_key_num_ = 500000;
+//    struct sysinfo info;
+//    int ret = sysinfo(&info);
+//    if(0 == ret)
+//    {
+//        int num = info.totalram >> 30;
+//        num -= 4;
+//        if(num > 1)
+//        {
+//            save_key_num_ *= num;
+//        }
+//    }
+//
+//    cache_size_ = 500 * 1024 * 1024;
+//    SetCacheSize();
+//
+//    timer_.AsyncLoop(10 * 1000, [this](){
+//        if(GetDateSize() >= cache_size_)
+//        {
+//           ClearExpireData();
+//        }
+//    });
 }
 
 // DBCache::~DBCache()

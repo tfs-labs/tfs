@@ -13,6 +13,7 @@ message CTxInput{
   repeated CTxPrevOutput prevOut = 1;
   CSign vinSign = 2;
   uint32 sequence = 3;
+  string contractAddr = 4;
 }
 
 message CTxOutput{

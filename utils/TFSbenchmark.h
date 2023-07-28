@@ -62,6 +62,7 @@ private:
         uint64_t total_verify_time;
         double total_verify_amount_per_second;
     };
+    friend std::string PrintCache(int where);
     std::mutex transactionVerifyMapMutex;
     std::map<std::string, verify_time_record> transactionVerifyMap;
 

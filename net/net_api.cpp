@@ -469,7 +469,6 @@ bool net_com::net_init()
 	INFOLOG("The Intranet ip is not empty");
 	
 	Account acc;
-	EVP_PKEY_free(acc.GetKey());
 	if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
 		return false;
@@ -678,7 +677,6 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msg_id, bool get_nodel
 	// sign
 	std::string signature;
 	Account acc;
-	EVP_PKEY_free(acc.GetKey());
 	if(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
 		return -4;
@@ -784,7 +782,6 @@ void net_com::SendNodeHeightChanged()
 	heightChangeReq.set_height(chainHeight);
 
 	Account defaultEd;
-	EVP_PKEY_free(defaultEd.GetKey());
 	MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultEd);
 
 	std::stringstream base58Height;

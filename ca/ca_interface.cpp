@@ -285,7 +285,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
     ack.set_totalinvest(Totalinvest);
 
 
-    std::vector<std::string> abnormal_addr_list;
+    std::map<std::string, uint64_t> abnormal_addr_list;
     std::unordered_map<std::string, uint64_t> addr_sign_cnt;
     uint64_t cur_time = req->time();
     auto ret = ca_algorithm::GetAbnormalSignAddrListByPeriod(cur_time, abnormal_addr_list, addr_sign_cnt);
@@ -1236,11 +1236,11 @@ int GetSignCountListReqImpl(const std::shared_ptr<GetSignCountListReq>& req, Get
         return -1;
     }
 
-    std::vector<std::string> abnormal_addr_list;
+    std::map<std::string, uint64_t> abnormal_addr_list;
     std::unordered_map<std::string, uint64_t> addr_sign_cnt;
     uint64_t cur_time = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
     ca_algorithm::GetAbnormalSignAddrListByPeriod(cur_time, abnormal_addr_list, addr_sign_cnt);
-    if(std::find(abnormal_addr_list.begin(), abnormal_addr_list.end(), defaultAddr) != abnormal_addr_list.end())
+    if(abnormal_addr_list.find(defaultAddr) != abnormal_addr_list.end())
     {
         return -2;
     }

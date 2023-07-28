@@ -43,6 +43,7 @@ public:
     ~CBlockCache() = default;
 
 private:
+    friend std::string PrintCache(int where);
     std::map<uint64_t, std::set<CBlock, CBlockCompare>> cache;
     std::mutex cache_mutex;
     bool construct_success;

@@ -17,7 +17,7 @@
 
 extern std::unordered_map<int, std::unique_ptr<std::mutex>> fds_mutex;
 std::mutex& get_fd_mutex(int fd);
-
+int GetMutexSize();
 
 
 /* Message length is the first 4 bytes of the message and does not contain these 4 bytes */
@@ -73,6 +73,7 @@ public:
     ~BufferCrol() = default;
 
 private:
+    friend std::string PrintCache(int where);
 	std::mutex mutex_;
     std::map<uint64_t,std::shared_ptr<SocketBuf>> BufferMap;
 

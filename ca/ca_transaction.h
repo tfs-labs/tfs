@@ -104,11 +104,15 @@ int HandleAddBlockAck(const std::shared_ptr<BuildBlockBroadcastMsgAck>& msg, con
 int DropshippingTx(const std::shared_ptr<TxMsgReq> & txMsg,const CTransaction &tx);
 
 int CalculateGas(const CTransaction &tx , uint64_t &gas );
-int GenerateGas(const CTransaction &tx, const std::map<std::string, int64_t> & toAddr, uint64_t &gas );
+// int GenerateGas(const CTransaction &tx, uint64_t voutSize, uint64_t &gas );
+int GenerateGas(const CTransaction &tx, const uint64_t voutSize, uint64_t &gas);
+
 
 void setVrf(Vrf & dest,const std::string & proof, const std::string & pub,const std::string & data);
 int getVrfdata(const Vrf & vrf,std::string & hash, int & range);
 int getVrfdata(const Vrf &vrf, std::string &hash, std::string &targetAddr);
+
+void ClearVRF(const CBlock &block);
 
 static void filterConsensusNodeList(const CTransaction & tx, std::vector<Node> &outAddrs);
 static int filterSendList(int & end_pos,Cycliclist<std::string> &list, std::vector<std::string> &target_addrs);

@@ -14,4 +14,5 @@ std::string printBlocks(int num = 0, bool pre_hash_flag = false);
 std::string printBlocksHash(int num = 0, bool pre_hash_flag = false);
 std::string printRangeBlocks(int startNum = 0,int num = 0, bool pre_hash_flag = false);
 void BlockInvert(const std::string & strHeader, nlohmann::json &blocks);
+std::string PrintCache(int where);
 #endif

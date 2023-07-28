@@ -8,7 +8,7 @@ CTimer::CTimer(const std::string sTimerName):m_bExpired(true), m_bTryExpired(fal
 
 CTimer::~CTimer()
 {
-    m_bTryExpired = true;   //Try to expire the task
+    CTimer::Cancel();   //Try to expire the task
 }
 
 bool CTimer::Start(unsigned int msTime, std::function<void()> task, bool bLoop, bool async)
@@ -20,7 +20,7 @@ bool CTimer::Start(unsigned int msTime, std::function<void()> task, bool bLoop, 
 
     if (async) {
         DeleteThread();
-        m_Thread = new std::thread([this, msTime, task]() {
+        m_Thread.reset(new std::thread([this, msTime, task]() {
             if (!m_sName.empty()) {
 #if (defined(__ANDROID__) || defined(ANDROID))      //Android Compatible with Android
                 pthread_setname_np(pthread_self(), m_sName.c_str());
@@ -43,7 +43,7 @@ bool CTimer::Start(unsigned int msTime, std::function<void()> task, bool bLoop, 
             
             m_bExpired = true;      // Task execution completed (indicates that an existing task has expired)
             m_bTryExpired = false;  // In order to load the task again next time
-        });
+        }));
     } else {
         std::this_thread::sleep_for(std::chrono::milliseconds(msTime));
         if (!m_bTryExpired) {
@@ -63,6 +63,14 @@ void CTimer::Cancel()
     }
     
     m_bTryExpired = true;
+    std::thread::native_handle_type handle = m_Thread->native_handle();
+    
+#if defined(__unix__) || defined(__APPLE__) || defined(__ANDROID__)
+    pthread_cancel(handle);        // Unix/Linux/MacOS//Android  pthread_cancel 
+#endif
+    
+    m_ThreadCon.notify_all();      
+    m_Thread->join();              
 }
 
 void CTimer::DeleteThread()
@@ -70,8 +78,7 @@ void CTimer::DeleteThread()
     if (m_Thread) {
         m_ThreadCon.notify_all();   //Wake from sleep
         m_Thread->join();           //Wait for the thread to exit
-        delete m_Thread;
-        m_Thread = nullptr;
+        m_Thread.reset();           
     }
 }
 

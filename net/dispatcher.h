@@ -55,6 +55,7 @@ public:
 
     void task_info(std::ostringstream& oss);
 private:
+    friend std::string PrintCache(int where);
     std::map<const std::string, ProtoCallBack> ca_protocbs_;
     std::map<const std::string, ProtoCallBack> net_protocbs_;
     std::map<const std::string, ProtoCallBack> broadcast_protocbs_;

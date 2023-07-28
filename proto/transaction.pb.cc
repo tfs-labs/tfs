@@ -37,6 +37,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR CTxInput::CTxInput(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.prevout_)*/{}
+  , /*decltype(_impl_.contractaddr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.vinsign_)*/nullptr
   , /*decltype(_impl_.sequence_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
@@ -127,6 +128,7 @@ const uint32_t TableStruct_transaction_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::CTxInput, _impl_.prevout_),
   PROTOBUF_FIELD_OFFSET(::CTxInput, _impl_.vinsign_),
   PROTOBUF_FIELD_OFFSET(::CTxInput, _impl_.sequence_),
+  PROTOBUF_FIELD_OFFSET(::CTxInput, _impl_.contractaddr_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::CTxOutput, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -169,9 +171,9 @@ const uint32_t TableStruct_transaction_2eproto::offsets[] PROTOBUF_SECTION_VARIA
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::CTxPrevOutput)},
   { 8, -1, -1, sizeof(::CTxInput)},
-  { 17, -1, -1, sizeof(::CTxOutput)},
-  { 25, -1, -1, sizeof(::CTxUtxo)},
-  { 35, -1, -1, sizeof(::CTransaction)},
+  { 18, -1, -1, sizeof(::CTxOutput)},
+  { 26, -1, -1, sizeof(::CTxUtxo)},
+  { 36, -1, -1, sizeof(::CTransaction)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -184,27 +186,27 @@ static const ::_pb::Message* const file_default_instances[] = {
 
 const char descriptor_table_protodef_transaction_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\021transaction.proto\032\nsign.proto\"(\n\rCTxPr"
-  "evOutput\022\014\n\004hash\030\001 \001(\t\022\t\n\001n\030\002 \001(\r\"V\n\010CTx"
+  "evOutput\022\014\n\004hash\030\001 \001(\t\022\t\n\001n\030\002 \001(\r\"l\n\010CTx"
   "Input\022\037\n\007prevOut\030\001 \003(\0132\016.CTxPrevOutput\022\027"
   "\n\007vinSign\030\002 \001(\0132\006.CSign\022\020\n\010sequence\030\003 \001("
-  "\r\"(\n\tCTxOutput\022\r\n\005value\030\001 \001(\003\022\014\n\004addr\030\002 "
-  "\001(\t\"e\n\007CTxUtxo\022\r\n\005owner\030\001 \003(\t\022\026\n\003vin\030\002 \003"
-  "(\0132\t.CTxInput\022\030\n\004vout\030\003 \003(\0132\n.CTxOutput\022"
-  "\031\n\tmultiSign\030\004 \003(\0132\006.CSign\"\375\001\n\014CTransact"
-  "ion\022\017\n\007version\030\001 \001(\r\022\014\n\004time\030\002 \001(\004\022\t\n\001n\030"
-  "\003 \001(\r\022\020\n\010identity\030\004 \001(\t\022\014\n\004hash\030\005 \001(\t\022\026\n"
-  "\004utxo\030\006 \001(\0132\010.CTxUtxo\022\014\n\004type\030\007 \001(\t\022\021\n\tc"
-  "onsensus\030\010 \001(\r\022\016\n\006txType\030\t \001(\r\022\014\n\004data\030\n"
-  " \001(\t\022\014\n\004info\030\013 \001(\t\022\032\n\nverifySign\030\014 \003(\0132\006"
-  ".CSign\022\020\n\010reserve0\030\r \001(\t\022\020\n\010reserve1\030\016 \001"
-  "(\tb\006proto3"
+  "\r\022\024\n\014contractAddr\030\004 \001(\t\"(\n\tCTxOutput\022\r\n\005"
+  "value\030\001 \001(\003\022\014\n\004addr\030\002 \001(\t\"e\n\007CTxUtxo\022\r\n\005"
+  "owner\030\001 \003(\t\022\026\n\003vin\030\002 \003(\0132\t.CTxInput\022\030\n\004v"
+  "out\030\003 \003(\0132\n.CTxOutput\022\031\n\tmultiSign\030\004 \003(\013"
+  "2\006.CSign\"\375\001\n\014CTransaction\022\017\n\007version\030\001 \001"
+  "(\r\022\014\n\004time\030\002 \001(\004\022\t\n\001n\030\003 \001(\r\022\020\n\010identity\030"
+  "\004 \001(\t\022\014\n\004hash\030\005 \001(\t\022\026\n\004utxo\030\006 \001(\0132\010.CTxU"
+  "txo\022\014\n\004type\030\007 \001(\t\022\021\n\tconsensus\030\010 \001(\r\022\016\n\006"
+  "txType\030\t \001(\r\022\014\n\004data\030\n \001(\t\022\014\n\004info\030\013 \001(\t"
+  "\022\032\n\nverifySign\030\014 \003(\0132\006.CSign\022\020\n\010reserve0"
+  "\030\r \001(\t\022\020\n\010reserve1\030\016 \001(\tb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_transaction_2eproto_deps[1] = {
   &::descriptor_table_sign_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_transaction_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_transaction_2eproto = {
-    false, false, 570, descriptor_table_protodef_transaction_2eproto,
+    false, false, 592, descriptor_table_protodef_transaction_2eproto,
     "transaction.proto",
     &descriptor_table_transaction_2eproto_once, descriptor_table_transaction_2eproto_deps, 1, 5,
     schemas, file_default_instances, TableStruct_transaction_2eproto::offsets,
@@ -476,11 +478,20 @@ CTxInput::CTxInput(const CTxInput& from)
   CTxInput* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.prevout_){from._impl_.prevout_}
+    , decltype(_impl_.contractaddr_){}
     , decltype(_impl_.vinsign_){nullptr}
     , decltype(_impl_.sequence_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.contractaddr_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.contractaddr_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_contractaddr().empty()) {
+    _this->_impl_.contractaddr_.Set(from._internal_contractaddr(), 
+      _this->GetArenaForAllocation());
+  }
   if (from._internal_has_vinsign()) {
     _this->_impl_.vinsign_ = new ::CSign(*from._impl_.vinsign_);
   }
@@ -494,10 +505,15 @@ inline void CTxInput::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.prevout_){arena}
+    , decltype(_impl_.contractaddr_){}
     , decltype(_impl_.vinsign_){nullptr}
     , decltype(_impl_.sequence_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
+  _impl_.contractaddr_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.contractaddr_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 CTxInput::~CTxInput() {
@@ -512,6 +528,7 @@ CTxInput::~CTxInput() {
 inline void CTxInput::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.prevout_.~RepeatedPtrField();
+  _impl_.contractaddr_.Destroy();
   if (this != internal_default_instance()) delete _impl_.vinsign_;
 }
 
@@ -526,6 +543,7 @@ void CTxInput::Clear() {
   (void) cached_has_bits;
 
   _impl_.prevout_.Clear();
+  _impl_.contractaddr_.ClearToEmpty();
   if (GetArenaForAllocation() == nullptr && _impl_.vinsign_ != nullptr) {
     delete _impl_.vinsign_;
   }
@@ -566,6 +584,16 @@ const char* CTxInput::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx)
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
           _impl_.sequence_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string contractAddr = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          auto str = _internal_mutable_contractaddr();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "CTxInput.contractAddr"));
         } else
           goto handle_unusual;
         continue;
@@ -619,6 +647,16 @@ uint8_t* CTxInput::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_sequence(), target);
   }
 
+  // string contractAddr = 4;
+  if (!this->_internal_contractaddr().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_contractaddr().data(), static_cast<int>(this->_internal_contractaddr().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "CTxInput.contractAddr");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_contractaddr(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -640,6 +678,13 @@ size_t CTxInput::ByteSizeLong() const {
   for (const auto& msg : this->_impl_.prevout_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string contractAddr = 4;
+  if (!this->_internal_contractaddr().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_contractaddr());
   }
 
   // .CSign vinSign = 2;
@@ -673,6 +718,9 @@ void CTxInput::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTO
   (void) cached_has_bits;
 
   _this->_impl_.prevout_.MergeFrom(from._impl_.prevout_);
+  if (!from._internal_contractaddr().empty()) {
+    _this->_internal_set_contractaddr(from._internal_contractaddr());
+  }
   if (from._internal_has_vinsign()) {
     _this->_internal_mutable_vinsign()->::CSign::MergeFrom(
         from._internal_vinsign());
@@ -696,8 +744,14 @@ bool CTxInput::IsInitialized() const {
 
 void CTxInput::InternalSwap(CTxInput* other) {
   using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.prevout_.InternalSwap(&other->_impl_.prevout_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.contractaddr_, lhs_arena,
+      &other->_impl_.contractaddr_, rhs_arena
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(CTxInput, _impl_.sequence_)
       + sizeof(CTxInput::_impl_.sequence_)

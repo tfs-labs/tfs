@@ -140,7 +140,7 @@ void Checker::CheckConflict(const CBlock &block, std::vector<CTransaction>& Doub
                 if(TransactionPool.find(utxo) != TransactionPool.end() 
                 && global::ca::TxType::kTxTypeUnstake == tx_type || global::ca::TxType::kTxTypeDisinvest == tx_type)
                 {
-                    if(prevout.n() == 1) continue;
+                    continue;
                 }          
                 TransactionPool[utxo].push_back(tx);
             }

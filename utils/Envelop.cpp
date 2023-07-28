@@ -251,19 +251,31 @@ int envelop::OpenEnvelope(const std::string& cipher_text, const std::string& out
         return -2;
     }
     
-    EVP_PKEY* rsa_key = nullptr;
-    if(GetEDPubKeyByBytes(pub_str, rsa_key) == false)
-    {
-        return -3; 
-    }
+    //TODO
+    Account account;
+	if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(pub_str, account) == false){
+		return -3;
+	}
+
+	std::string messageHash = getsha256hash(message);
+    std::string signature = out;
+	if(account.Verify(messageHash, signature) == false){
+		return -4;
+	}
+
+    // EVP_PKEY* rsa_key = nullptr;
+    // if(GetEDPubKeyByBytes(pub_str, rsa_key) == false)
+    // {
+    //     return -3; 
+    // }
     
-    std::string message256 = getsha256hash(message);
-    if(ED25519VerifyMessage(message256, rsa_key, out) == false)
-    {
-        return -4;
-    }
+    // std::string message256 = getsha256hash(message);
+    // if(ED25519VerifyMessage(message256, rsa_key, out) == false)
+    // {
+    //     return -4;
+    // }
     
-    EVP_PKEY_free(rsa_key);
+    // EVP_PKEY_free(rsa_key);
 
     return 0;
 }

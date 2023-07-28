@@ -32,6 +32,7 @@ private:
     bool is_empty();
 	void Check();
 private:
+   friend std::string PrintCache(int where);
     mutable std::shared_mutex txPending_mutex;
     std::map<uint64_t, std::vector<TxMsgReq>> txPending;
 	CTimer _timer;

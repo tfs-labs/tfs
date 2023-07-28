@@ -40,13 +40,15 @@ public:
     bool SetData(const std::string &key, const std::string &value);
     bool DeleteData(const std::string &key);
     bool AddData(const std::map<std::string, std::string> &add_data);
-    bool DeleteData(const std::set<std::string> &keys);
+
     void StopTimer() { timer_.Cancel(); }
 
 private:
     uint64_t GetDateSize();
     void SetCacheSize();
     void ClearExpireData();
+    bool DeleteData(const std::set<std::string> &keys);
+    friend std::string PrintCache(int where);
     std::mutex mutex_;
     std::unordered_map<std::string, std::pair<uint64_t, std::string>> data_;
     std::map<uint64_t, std::set<std::string>> time_data_;

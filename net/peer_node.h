@@ -90,7 +90,7 @@ public:
 
 	
 private:
-
+    friend std::string PrintCache(int where);
 	//List of public network nodes
 	std::shared_mutex mutex_for_nodes_;
 	std::map<std::string, Node> node_map_;

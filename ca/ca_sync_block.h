@@ -76,7 +76,7 @@ private:
 
     static bool GetSelectedAddr(map<std::string, std::pair<uint64_t, std::vector<std::string>>> &sum_hash,
                                 vector<std::string> &selected_addr);
-
+    friend std::string PrintCache(int where);
     std::thread sync_thread_; 
     std::atomic<bool> sync_thread_runing;
     std::mutex sync_thread_runing_mutex;

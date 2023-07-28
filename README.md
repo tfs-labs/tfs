@@ -1,5 +1,5 @@
 ![title](./wiki/img/title.png)
-The special architecture design of TFSC leads to the potential competition of node performance in the process of the continuous increase of TPS demand of the main network，The hardware performance of added nodes improves，The TPS of TFSC main network will also be continuously improved。
+The special architecture design of TFSC leads to the potential competition of node performance in the process of the continuous increase of TPS demand of the main network，The hardware performance of added nodes improves，The TPS of TFSC main network will also be continuously improved
 
 ## Installation
 

@@ -68,7 +68,7 @@ private:
 	RetType SeekPreHashByNode(
 		const std::vector<std::string> &send_node_ids, uint64_t seek_height, const uint64_t &self_node_height, const uint64_t &chain_height);
 private:
-
+    friend std::string PrintCache(int where);
 	CTimer _block_timer;
 	mutable std::shared_mutex _block_mutex_;
 	std::map<std::string, std::vector<BlockMsg>> _BlockMap;

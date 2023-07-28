@@ -17,6 +17,10 @@ std::mutex& get_fd_mutex(int fd)
     }
 }
 
+int GetMutexSize(){
+    return fds_mutex.size();
+}
+
 
 
 std::string g_emptystr;

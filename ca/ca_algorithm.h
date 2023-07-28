@@ -8,7 +8,7 @@
 namespace ca_algorithm
 {
 //Get the abnormal account number of the previous day
-int GetAbnormalSignAddrListByPeriod(uint64_t &cur_time, std::vector<std::string> &abnormal_addr_list, std::unordered_map<std::string, uint64_t> & addr_sign_cnt);
+int GetAbnormalSignAddrListByPeriod(uint64_t &cur_time, std::map<std::string, uint64_t> &abnormal_addr_list, std::unordered_map<std::string, uint64_t> & addr_sign_cnt);
 //Obtain the time (nanosecond) of pledge transaction with pledge limit of more than 500 according to the address
 //When the return value is less than 0, the function execution fails
 //Equal to 0 means no pledge
@@ -28,6 +28,8 @@ int MemVerifyTransactionTx(const CTransaction &tx);
 int VerifyTransactionTx(const CTransaction &tx, uint64_t tx_height, bool turn_on_missing_block_protocol = false, bool verify_abnormal = true);
 
 int VerifyPreSaveBlock(const CBlock &block);
+
+int VerifySign(const CSign & sign, const std::string & serHash);
 
 //Check block
 int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* blockStatus = nullptr);

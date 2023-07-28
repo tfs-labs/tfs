@@ -106,7 +106,8 @@ private:
     std::atomic_bool m_bTryExpired;    //Equipment expires loaded tasks (markers)
     std::atomic_bool m_bLoop;          //Whether to loop or not
     
-    std::thread *m_Thread = nullptr;
+    //std::thread *m_Thread = nullptr;
+    std::unique_ptr<std::thread> m_Thread;
     std::mutex m_ThreadLock;
     std::condition_variable_any m_ThreadCon;
 };

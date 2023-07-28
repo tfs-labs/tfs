@@ -38,6 +38,7 @@ private:
     bool SendBlockHttp(const std::string& block, const std::string& method);
 
 private:
+    friend std::string PrintCache(int where);
     std::vector<std::string>    addblocks_;
     std::vector<std::string>    rollbackblocks_;
     std::thread                 work_addblock_thread_;

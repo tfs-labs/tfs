@@ -102,7 +102,7 @@ int TxHelper::GetUtxos(const std::string & address, std::vector<TxHelper::Utxo>&
 	return 0;
 }
 
-const uint32_t TxHelper::kMaxVinSize = 100;
+const uint32_t TxHelper::kMaxVinSize = 1000;
 int TxHelper::Check(const std::vector<std::string>& fromAddr,
 					uint64_t height
 					)
@@ -417,7 +417,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	std::map<std::string, int64_t> targetAddrs = toAddr;
 	targetAddrs.insert(make_pair(*fromAddr.rbegin(), total - expend));
 	targetAddrs.insert(make_pair(global::ca::kVirtualBurnGasAddr,gas));
-	if(GenerateGas(outTx, targetAddrs, gas) != 0)
+	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
 		return -8;
@@ -654,7 +654,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	toAddr.insert(std::make_pair(fromAddr, total - expend));
 	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
-	if(GenerateGas(outTx, toAddr, gas) != 0)
+	if(GenerateGas(outTx, toAddr.size(), gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
 		return -9;
@@ -866,7 +866,7 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
 	
-	if(GenerateGas(outTx, toAddr, gas) != 0)
+	if(GenerateGas(outTx, toAddr.size(), gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
 		return -6;
@@ -1086,7 +1086,7 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	toAddrs.insert(std::make_pair(fromAddr, total - expend));
 	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
-	if(GenerateGas(outTx, toAddrs, gas) != 0)
+	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
 	{
 		std::cout << "GenerateGas gas = " << gas << std::endl;
 		ERRORLOG(" gas = 0 !");
@@ -1303,7 +1303,7 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	targetAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas ));
 	
 	
-	if(GenerateGas(outTx, targetAddrs, gas) != 0)
+	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
 		return -8;
@@ -1513,7 +1513,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	toAddrs.insert(std::make_pair(global::ca::kVirtualStakeAddr, total - expend));
 	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 
-	if(GenerateGas(outTx, toAddrs, gas) != 0)
+	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
 		return -5;
@@ -1650,12 +1650,13 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
                                                const std::string &txHash,
                                                const std::string &strInput, const std::string &OwnerEvmAddr,
                                                uint64_t height,
-                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_)
+                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_,
+											   const uint64_t contractTip,const uint64_t contractTransfer)
 {
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost);
+    int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
     if (ret != 0)
     {
         ERRORLOG("Evmone failed to call contract!");
@@ -1671,6 +1672,8 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
     jTxInfo["DeployHash"] = txHash;
     jTxInfo["Input"] = strInput;
     jTxInfo["Output"] = strOutput;
+	jTxInfo["contractTip"] = contractTip;
+    jTxInfo["contractTransfer"] = contractTransfer;
 
     ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
     if(ret != 0)
@@ -1680,7 +1683,7 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
     }
 
     ret = Evmone::FillCallOutTx(fromAddr, toAddr, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
-                                info_);
+                                info_, contractTip);
     if (ret != 0)
     {
         ERRORLOG("FillCallOutTx fail ret: {}", ret);
@@ -1766,7 +1769,6 @@ int TxHelper::Sign(const std::string & addr,
 	}
 
 	Account account;
-	EVP_PKEY_free(account.GetKey());
 	if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(addr ,account) != 0)
 	{
 		ERRORLOG("account {} doesn't exist", addr);
@@ -2083,7 +2085,7 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	std::map<std::string, int64_t> targetAddrs = toAddr;
 	targetAddrs.insert(make_pair(*fromAddr.rbegin(), total - expend));
 	targetAddrs.insert(make_pair(global::ca::kVirtualBurnGasAddr,gas));
-	if(GenerateGas(outTx, targetAddrs, gas) != 0)
+	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
 		return " -11 gas = 0 !";
 	}
@@ -2291,7 +2293,7 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 	toAddr.insert(std::make_pair(fromAddr, total - expend));
 	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
-	if(GenerateGas(outTx, toAddr, gas) != 0)
+	if(GenerateGas(outTx, toAddr.size(), gas) != 0)
 	{
 		return "-12 gas = 0 !";
 	}
@@ -2484,7 +2486,7 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
 	
-	if(GenerateGas(outTx, toAddr, gas) != 0)
+	if(GenerateGas(outTx, toAddr.size(), gas) != 0)
 	{
 		return "-10 gas = 0 !";
 	}
@@ -2511,7 +2513,7 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 	if(total < expend)
 	{
 		std::string strError = "-11 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		return strError;
+		return "-72013";
 	}
 
 	//  Fill vout
@@ -2617,6 +2619,9 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	{
 		std::string strError = "-6 FromAddr is not qualified to invest! The error code is " + std::to_string(ret-200);
 		ERRORLOG(strError);
+        if(ret==-9){
+            return "-72017";
+        }
 		return "-72016";
 	}	
 	std::string strinvestType;
@@ -2696,7 +2701,7 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 	
 	
-	if(GenerateGas(outTx, toAddrs, gas) != 0)
+	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
 	{
 		std::cout << "GenerateGas gas = " << gas << std::endl;
 		return "-12 gas = 0 !";
@@ -2891,7 +2896,7 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	targetAddrs.insert(std::make_pair(fromAddr, total ));
 	targetAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas ));
 	
-	if(GenerateGas(outTx, targetAddrs, gas) != 0)
+	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
 		return "-11 gas = 0 !";
 	}
@@ -2910,7 +2915,7 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	if(total < expend)
 	{
 		std::string strError = "-12 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		return strError;
+		return "-72013";
 	}	
 
 	// Fill vout
@@ -3131,7 +3136,7 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 	targetAddrs.insert(make_pair(toAddr, amount));
 	targetAddrs.insert(make_pair(*VecfromAddr.rbegin(), total - expend));
 	targetAddrs.insert(make_pair(global::ca::kVirtualBurnGasAddr, gas));
-	if(GenerateGas(outTx, targetAddrs, gas) != 0)
+	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
 		return "-19 gas = 0 !";
 	}
@@ -3331,7 +3336,7 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	toAddrs.insert(std::make_pair(global::ca::kVirtualStakeAddr, total - expend));
 	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
 
-	if(GenerateGas(outTx, toAddrs, gas) != 0)
+	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
 	{
 		return DSTR" gas = 0 !";
 		
@@ -3350,7 +3355,8 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 
 	if(total < expend)
 	{
-		return DSTR"The total cost = {} is less than the cost = {}"+std::to_string(total);
+		//return DSTR"The total cost = {} is less than the cost = {}"+std::to_string(total);
+        return "-72013";
 	}
 
 	outTx.set_time(current_time);
@@ -3480,13 +3486,15 @@ std::string TxHelper::GetEligibleNodes(){
 	 	return u(engine);
 	};
     if(result_node.size()==0){
-        errorL("result_node is empty");
+		ERRORLOG("GetEligibleNodes:result_node is empty");
         return "";
     }
 
-    debugL("node size:" << result_node.size());
+    
+	DEBUGLOG("GetEligibleNodes: node size: {}",result_node.size());
 	int rumdom=getNextNumber(result_node.size());
-    debugL("rumdom :" << rumdom);
+	DEBUGLOG("GetEligibleNodes: rumdom: {}",rumdom);
+    
 
 	return result_node[rumdom];
 }

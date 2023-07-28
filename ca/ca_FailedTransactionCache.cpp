@@ -40,41 +40,52 @@ void FailedTransactionCache::Check()
         ERRORLOG("db get top failed!!");
     }
     std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
-    std::map<uint64_t, uint64_t> heightMap;
-    for(auto &node : nodelist)
-    {
-        heightMap[node.height]++;
-    }
     auto begin = txPending.begin();
     std::vector<decltype(begin)> delete_txPending;
     std::unique_lock<std::shared_mutex> lock(txPending_mutex);
     for(auto iter = begin; iter != txPending.end(); iter++)
     {
         auto txHeight = iter->first;
-        if(heightMap.find(txHeight) != heightMap.end() && heightMap[txHeight] >= global::ca::kConsensus * 2 && top >= txHeight)
+        uint64_t nodeHeight = 0;
+        for(auto &node : nodelist)
         {
-            for(auto& txmsg : iter->second)
+            if(node.height >= txHeight)
             {
-                MagicSingleton<taskPool>::GetInstance()->commit_tx_task(
-                    [=](){
-                        CTransaction tx;
-                        int ret = DoHandleTx(std::make_shared<TxMsgReq>(txmsg), tx);
-
-                        tx.clear_hash();
-                        tx.clear_verifysign();
-                        tx.set_hash(getsha256hash(tx.SerializeAsString()));
-                        if (ret != 0)
-                        {
-                            DEBUGLOG("TTT tx verify <fail!!!> txhash:{}, ret:{}", tx.hash(), ret);
-                            return;
-                        }
-
-                        DEBUGLOG("TTT tx verify <success> txhash:{}", tx.hash());
-                    });
+                nodeHeight++;
             }
-            delete_txPending.push_back(iter);
         }
+
+        if(nodeHeight < global::ca::kConsensus * 2 || top < txHeight)
+        {
+            if(txHeight > top + 2)
+            {
+                delete_txPending.push_back(iter);
+            }
+            continue;
+        }
+
+        for(auto& txmsg : iter->second)
+        {
+            MagicSingleton<taskPool>::GetInstance()->commit_tx_task(
+                [=](){
+                    CTransaction tx;
+                    int ret = DoHandleTx(std::make_shared<TxMsgReq>(txmsg), tx);
+
+                    tx.clear_hash();
+                    tx.clear_verifysign();
+                    tx.set_hash(getsha256hash(tx.SerializeAsString()));
+                    if (ret != 0)
+                    {
+                        DEBUGLOG("TTT tx verify <fail!!!> txhash:{}, ret:{}", tx.hash(), ret);
+                        return;
+                    }
+
+                    DEBUGLOG("TTT tx verify <success> txhash:{}", tx.hash());
+                });
+        }
+        delete_txPending.push_back(iter);
     }
+
     for(auto& iter : delete_txPending)
     {
         txPending.erase(iter);

@@ -16,13 +16,13 @@ bool LogInit(const std::string &path, bool console_out = false, spdlog::level::l
 std::shared_ptr<spdlog::logger> GetSink(LOGSINK sink);
 void LogFini();
 
-#define LOGSINK(sink, level, format, ...)                                                 \
-    do {                                                                                \
-        auto sink_ptr = GetSink(sink);                                                       \
-        if(nullptr != sink_ptr){                                                               \
-            sink_ptr->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, level, format, ##__VA_ARGS__); \
+#define LOGSINK(sink, level, format, ...)                                                                       \
+    do {                                                                                                        \
+       auto sink_ptr = GetSink(sink);                                                                           \
+        if(nullptr != sink_ptr){                                                                                \
+            sink_ptr->log(spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION}, level, format, ##__VA_ARGS__);\
         }\
-    } while (0)
+   } while (0);
 
 #define TRACELOGSINK(sink, format, ...) LOGSINK(sink, spdlog::level::trace, format, ##__VA_ARGS__)
 #define DEBUGLOGSINK(sink, format, ...) LOGSINK(sink, spdlog::level::debug, format, ##__VA_ARGS__)

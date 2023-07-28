@@ -6,11 +6,11 @@
 #include "db/db_api.h"
 
 
-
 void gen_key();
 void rollback();
 void GetStakeList();
 int GetBounsAddrInfo();
+
 
 void send_message_to_user();
 void show_my_k_bucket();
@@ -19,7 +19,6 @@ void test_echo();
 void print_req_and_ack();
 
 #pragma region ThreeLevelMenu
-//blockinfoMenu
 void menu_blockinfo();
 void get_tx_block_info(uint64_t& top);
 
@@ -27,6 +26,7 @@ void get_tx_block_info(uint64_t& top);
 void gen_mnemonic();
 void get_balance_by_utxo();
 int imitate_create_tx_struct();
+void tests_handle_invest();
 
 void multi_tx();
 
@@ -39,7 +39,8 @@ void Auto_investment();
 void print_verify_node();
 
 
-void get_tx_hash_by_height();
+//void get_tx_hash_by_height();
+void tps_count();
 void get_investedNodeBlance();
 void print_database_block();
 //nodeMenu
@@ -47,6 +48,8 @@ void print_block_cache();
 void printTxdata();
 void multiTx();
 void evmAddrConversion();
+void evmAddrToBase58();
+void generateEvmAddr();
 void printBenchmarkToFile();
 void GetRewardAmount();
 

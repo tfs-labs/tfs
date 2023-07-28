@@ -20,7 +20,6 @@
 // The string of bytes.
 using bytes = std::basic_string<uint8_t>;
 using namespace evmc;
-#define PseudoInfinite 100000000000000000
 
 // Extended value (by dirty flag) for account storage.
 struct storage_value
@@ -99,6 +98,19 @@ struct TfsAccount
     }
 };
 
+struct transferInfo
+{
+    transferInfo(std::string from, std::string to, uint64_t amount)
+    {
+        this->from = from;
+        this->to = to;
+        this->amount = amount;
+    }
+    std::string from;
+    std::string to;
+    uint64_t amount;
+};
+
 // EVMC Host implementation.
 class TfsHost : public Host
 {
@@ -140,7 +152,7 @@ public:
     };
 
     // The set of all accounts in the Host, organized by their addresses.
-    std::unordered_map<address, TfsAccount> accounts;
+    mutable std::unordered_map<address, TfsAccount> accounts;
 
     // The EVMC transaction context to be returned by get_tx_context().
     evmc_tx_context tx_context = {};
@@ -174,8 +186,9 @@ public:
     // The record of all SELFDESTRUCTs from the selfdestruct() method.
     std::vector<selfdestruct_record> recorded_selfdestructs;
     
-    std::vector<std::pair<std::string, uint64_t>> coin_transferrings;
+    std::vector<transferInfo> coin_transferrings;
 
+    std::map<std::string, uint64_t> DBspendMap;
 private:
     // The copy of call inputs for the recorded_calls record.
     std::vector<bytes> m_recorded_calls_inputs;
@@ -189,6 +202,58 @@ private:
 
         if (recorded_account_accesses.size() < max_recorded_account_accesses)
             recorded_account_accesses.emplace_back(addr);
+
+        auto found = accounts.find(addr);
+        if(found != accounts.end())
+        {
+            if(!found->second.code.empty())
+            {
+                return;
+            }
+        }
+
+        DBReader db_reader;
+        std::string ContractAddress = evm_utils::EvmAddrToBase58(addr);
+        std::string deployHash;
+        if(db_reader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
+        {
+            DEBUGLOG("GetContractDeployUtxoByContractAddr failed!, failAddr:{}", ContractAddress);
+            return;
+        }
+
+        std::string txRaw;
+        if(db_reader.GetTransactionByHash(deployHash, txRaw) != DBStatus::DB_SUCCESS)
+        {
+            ERRORLOG("GetTransactionByHash failed!");
+            return;
+        }
+        CTransaction deployTx;
+        if(!deployTx.ParseFromString(txRaw))
+        {
+            ERRORLOG("Transaction Parse failed!");
+            return;
+        }
+
+        std::string strCode;
+        evmc::bytes code;
+        try
+        {
+            nlohmann::json data_json = nlohmann::json::parse(deployTx.data());
+            nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
+            strCode = tx_info["Output"].get<std::string>();
+            if(strCode.empty())
+            {
+                return;
+            }
+            code = evmc::from_hex(strCode);
+
+        }
+        catch(const std::exception& e)
+        {
+            ERRORLOG("can't parse deploy contract transaction");
+            return;
+        }
+        accounts[addr].set_code(code);
     }
 
 public:
@@ -199,7 +264,6 @@ public:
         return accounts.count(addr) != 0;
     }
 
-    // Get the account's storage value at the given key (EVMC Host method).
     bytes32 get_storage(const address& addr, const bytes32& key)const noexcept override
     {
         record_account_access(addr);
@@ -232,24 +296,18 @@ public:
         return {};
     }
 
-    // Set the account's storage value (EVMC Host method).
     evmc_storage_status set_storage(const address& addr,
                                     const bytes32& key,
                                     const bytes32& value) noexcept override
     {
         record_account_access(addr);
 
-        // Get the reference to the old value.
-        // This will create the account in case it was not present.
-        // This is convenient for unit testing and standalone EVM execution to preserve the
-        // storage values after the execution terminates.
         auto& old = accounts[addr].storage[key];
 
         evmc_storage_status status{};
         std::string mptk = evmc::hex({key.bytes,sizeof(key.bytes)});
         auto mptv = accounts[addr].StorageRoot->Get(mptk);
 
-        //There is a value in the database to initialize the storage in the memory
         if(!mptv.empty())
         {
             old.value = evmc::literals::internal::from_hex<evmc::bytes32>(mptv.c_str());
@@ -270,7 +328,6 @@ public:
 
         if (old.value == value)
         {
-            //The & & value exists in both the database and storage and has not been modified
             return EVMC_STORAGE_UNCHANGED;
         }
         if (!old.dirty)
@@ -290,33 +347,38 @@ public:
         return status;
     }
 
-    // Get the account's balance (EVMC Host method).
     uint256be get_balance(const address& addr) const noexcept override
     {
-        record_account_access(addr);
-
-        uint64_t balance64 = 0;
-        if (account_exists(addr))
-        {
-            balance64 = PseudoInfinite;
-            uint256be balance = uint256be{};
-            for (std::size_t i = 0; i < sizeof(balance64); ++i)
-                balance.bytes[sizeof(balance) - 1 - i] = static_cast<uint8_t>(balance64 >> (8 * i));            
-            return balance;    
-        }
+        record_account_access(addr);        
         
-        if(GetBalanceByUtxo(evm_utils::EvmAddrToBase58(addr),balance64) == 0)
+        uint64_t amount = 0;
+        auto base58Addr = evm_utils::EvmAddrToBase58(addr);
+        if(GetBalanceByUtxo(base58Addr, amount) != 0)
         {
-            uint256be balance = uint256be{};
-            for (std::size_t i = 0; i < sizeof(balance64); ++i)
-                balance.bytes[sizeof(balance) - 1 - i] = static_cast<uint8_t>(balance64 >> (8 * i));            
-            return balance;
+            amount = 0;
         }
 
-        return uint256be{};
+        for(auto& iter : coin_transferrings)
+        {
+            if(iter.to == base58Addr)
+            {
+                amount += iter.amount;
+            }
+        }
+
+        auto found = DBspendMap.find(base58Addr);
+        if(found != DBspendMap.end() && found->second <= amount)
+        {
+            amount -= found->second;
+        }
+
+        uint256be balance = uint256be{};
+        for (std::size_t i = 0; i < sizeof(amount); ++i)
+        balance.bytes[sizeof(balance) - 1 - i] = static_cast<uint8_t>(amount >> (8 * i));
+
+        return balance;
     }
 
-    // Get the account's code size (EVMC host method).
     size_t get_code_size(const address& addr) const noexcept override
     {
         record_account_access(addr);
@@ -326,7 +388,6 @@ public:
         return it->second.code.size();
     }
 
-    // Get the account's code hash (EVMC host method).
     bytes32 get_code_hash(const address& addr) const noexcept override
     {
         record_account_access(addr);
@@ -336,7 +397,6 @@ public:
         return it->second.codehash;
     }
 
-    // Copy the account's code to the given buffer (EVMC host method).
     size_t copy_code(const address& addr,
                      size_t code_offset,
                      uint8_t* buffer_data,
@@ -359,14 +419,34 @@ public:
         return n;
     }
 
-    // Selfdestruct the account (EVMC host method).
     void selfdestruct(const address& addr, const address& beneficiary) noexcept override
     {
         record_account_access(addr);
         recorded_selfdestructs.push_back({addr, beneficiary});
+
+        std::string fromAddr = evm_utils::EvmAddrToBase58(addr);
+        std::string toAddr = evm_utils::EvmAddrToBase58(beneficiary);
+
+        uint256be value = get_balance(addr);
+        dev::bytes by2(value.bytes, value.bytes + sizeof(value.bytes) / sizeof(uint8_t));
+        uint64_t amount = dev::toUint64(dev::fromBigEndian<dev::u256>(by2));
+
+        for(auto& iter : coin_transferrings) {
+            if (iter.amount == 0) {
+                continue;
+            }
+            //A B C
+            if (iter.to == fromAddr) {
+                amount -= iter.amount;
+//                iter.amount = 0;
+                iter.to = toAddr;
+            }
+        }
+
+        DEBUGLOG("fromAddr:{}, toAddr:{}, amount:{}", fromAddr, toAddr, amount);
+        coin_transferrings.push_back({fromAddr, toAddr, amount});
     }
 
-    // Call/create other contract (EVMC host method).
     result call(const evmc_message& msg) noexcept override
     {
         record_account_access(msg.recipient);
@@ -390,25 +470,90 @@ public:
 
         evmc_result r = evmc::make_result(EVMC_FAILURE, 0, nullptr, 0);
 
-        dev::bytes by2(msg.value.bytes, msg.value.bytes + sizeof(msg.value.bytes) / sizeof(uint8_t));
-        uint64_t value_ll = dev::toUint64(dev::fromBigEndian<dev::u256>(by2));
-        if(value_ll > 0)
+        auto found = std::find_if(recorded_selfdestructs.begin(), recorded_selfdestructs.end(), [msg](const selfdestruct_record& item){
+
+            if(item.selfdestructed == msg.code_address)
+            {
+                return true;
+            }
+            return false;
+        });
+        if(found != recorded_selfdestructs.end())
         {
-            coin_transferrings.emplace_back(evm_utils::EvmAddrToBase58(msg.code_address) , value_ll);
-            return result{call_result};
+            DEBUGLOG("Contract selfdestructs addr:{}", evm_utils::EvmAddrToBase58(found->selfdestructed));
+            return result{r};
         }
 
-        std::string input = evmc::hex({msg.input_data,msg.input_size});
+        dev::bytes by2(msg.value.bytes, msg.value.bytes + sizeof(msg.value.bytes) / sizeof(uint8_t));
+        uint64_t amount = dev::toUint64(dev::fromBigEndian<dev::u256>(by2));
+        std::string fromAddr = evm_utils::EvmAddrToBase58(msg.sender);
+        std::string toAddr = evm_utils::EvmAddrToBase58(msg.code_address);
 
+        std::vector<transferInfo> tmp_transferrings;
+        if(amount > 0)
+        {
+            // A -> B 10
+            for(auto& iter : coin_transferrings)
+            {
+                if(iter.amount == 0)
+                {
+                    continue;
+                }
+                //A B C
+                if(iter.to == fromAddr)
+                {
+                    if(iter.amount >= amount)
+                    {
+                        iter.amount = iter.amount - amount;
+                        tmp_transferrings.push_back({iter.from, toAddr, amount});
+                        amount = 0;
+                        break;
+                    }
+                    else
+                    {
+                        // A -> A 10
+                        if(iter.from != toAddr)
+                        {
+                            tmp_transferrings.push_back({iter.from, toAddr, iter.amount});
+                        }
+                        amount = amount - iter.amount;// amount = 10 = 20 - 10
+                        iter.amount = 0;
+                        uint64_t balance = 0;
+                        GetBalanceByUtxo(fromAddr, balance);
+                        DBspendMap[fromAddr] += amount;
+                        if(balance < DBspendMap[fromAddr])
+                        {
+                            ERRORLOG("fromAddr:{}, balance:{} < amount:{} failed!",fromAddr, balance, DBspendMap[fromAddr]);
+                            return result{r};
+                        }
+                    }
+                }
+            }
+            tmp_transferrings.push_back({fromAddr, toAddr, amount});// B -> A 10
+            //return result{call_result};
+        }
+
+        coin_transferrings.insert(coin_transferrings.end(), tmp_transferrings.begin(), tmp_transferrings.end());
+        
+        if(msg.input_size <= 0)
+        {
+            DEBUGLOG("empty input data, sender: {}, code_address: {}", fromAddr, toAddr);
+            return result{call_result};
+        }   
+        
         DBReader data_reader;
-        std::string ContractAddress = evmc::hex({msg.code_address.bytes,sizeof(msg.code_address.bytes)});
-
+        std::string ContractAddress = evm_utils::EvmAddrToBase58(evmc::hex({msg.code_address.bytes,sizeof(msg.code_address.bytes)}));
         std::string deployHash;
         if(data_reader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
         {
-            ERRORLOG("GetContractDeployUtxoByContractAddr failed!");
-            return result{r};
+            DEBUGLOG("GetContractDeployUtxoByContractAddr failed!, base58Addr:{}", ContractAddress);
+            return result{call_result};
         }
+
+
+
+        std::string input = evmc::hex({msg.input_data,msg.input_size});
+
         std::string txRaw;
         if(data_reader.GetTransactionByHash(deployHash, txRaw) != DBStatus::DB_SUCCESS)
         {
@@ -516,17 +661,14 @@ public:
         return re;
     }
 
-    // Get transaction context (EVMC host method).
     evmc_tx_context get_tx_context() const noexcept override { return tx_context; }
 
-    // Get the block header hash (EVMC host method).
     bytes32 get_block_hash(int64_t block_number) const noexcept override
     {
         recorded_blockhashes.emplace_back(block_number);
         return block_hash;
     }
 
-    // Emit LOG (EVMC host method).
     void emit_log(const address& addr,
                   const uint8_t* data,
                   size_t data_size,
@@ -536,33 +678,14 @@ public:
         recorded_logs.push_back({addr, {data, data_size}, {topics, topics + topics_count}});
     }
 
-    // Record an account access.
-    //
-    // This method is required by EIP-2929 introduced in ::EVMC_BERLIN. It will record the account
-    // access in MockedHost::recorded_account_accesses and return previous access status.
-    // This methods returns ::EVMC_ACCESS_WARM for known addresses of precompiles.
-    // The EIP-2929 specifies that evmc_message::sender and evmc_message::recipient are always
-    // ::EVMC_ACCESS_WARM. Therefore, you should init the MockedHost with:
-    //
-    //     mocked_host.access_account(msg.sender);
-    //     mocked_host.access_account(msg.recipient);
-    //
-    // The same way you can mock transaction access list (EIP-2930) for account addresses.
-    //
-    // @param addr  The address of the accessed account.
-    // @returns     The ::EVMC_ACCESS_WARM if the account has been accessed before,
-    //              the ::EVMC_ACCESS_COLD otherwise.
     evmc_access_status access_account(const address& addr) noexcept override
     {
-        // Check if the address have been already accessed.
-
         const auto already_accessed =
             std::find(recorded_account_accesses.begin(), recorded_account_accesses.end(), addr) !=
             recorded_account_accesses.end();
 
         record_account_access(addr);
 
-        // Accessing precompiled contracts is always warm.
         if (addr >= 0x0000000000000000000000000000000000000001_address &&
             addr <= 0x0000000000000000000000000000000000000009_address)
             return EVMC_ACCESS_WARM;
@@ -570,19 +693,6 @@ public:
         return already_accessed ? EVMC_ACCESS_WARM : EVMC_ACCESS_COLD;
     }
 
-    // Access the account's storage value at the given key.
-    //
-    // This method is required by EIP-2929 introduced in ::EVMC_BERLIN. In records that the given
-    // account's storage key has been access and returns the previous access status.
-    // To mock storage access list (EIP-2930), you can pre-init account's storage values with
-    // the ::EVMC_ACCESS_WARM flag:
-    //
-    //     mocked_host.accounts[msg.recipient].storage[key] = {value, EVMC_ACCESS_WARM};
-    //
-    // @param addr  The account address.
-    // @param key   The account's storage key.
-    // @return      The ::EVMC_ACCESS_WARM if the storage key has been accessed before,
-    //              the ::EVMC_ACCESS_COLD otherwise.
     evmc_access_status access_storage(const address& addr, const bytes32& key) noexcept override
     {
         auto& value = accounts[addr].storage[key];

@@ -25,6 +25,7 @@ class CtransactionCache
         typedef std::map<uint64_t, std::list<TransactionEntity>>::iterator cache_iter;
 
     private:
+       friend std::string PrintCache(int where);
         // Transaction container
         std::map<uint64_t ,std::list<TransactionEntity>> cache_;
         // The mutex of the transaction container

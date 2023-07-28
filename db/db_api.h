@@ -85,6 +85,8 @@ public:
     DBStatus GetInvestUtxoByPeriod(const uint64_t &Period, std::vector<std::string> &utxos);
     // Get Number of signatures By Period
     DBStatus GetSignNumberByPeriod(const uint64_t &Period, const std::string &address, uint64_t &SignNumber);
+    // Get Number of blocks By Period
+    DBStatus GetBlockNumberByPeriod(const uint64_t &Period, uint64_t &BlockNumber);
     // Set Addr of signatures By Period
     DBStatus GetSignAddrByPeriod(const uint64_t &Period, std::vector<std::string> &SignAddrs);
     // Set Addr of tburnAmount By Period
@@ -228,6 +230,11 @@ public:
     // Remove Number of signatures By Period
     DBStatus RemoveSignNumberByPeriod(const uint64_t &Period, const std::string &address);
 
+    //  Set Number of blocks By Period
+    DBStatus SetBlockNumberByPeriod(const uint64_t &Period, const uint64_t &BlockNumber);
+    //  Remove Number of blocks By Period
+    DBStatus RemoveBlockNumberByPeriod(const uint64_t &Period);
+
     // Set Addr of signatures By Period
     DBStatus SetSignAddrByPeriod(const uint64_t &Period, const std::string &addr);
     // Remove Addr of signatures By Period
@@ -263,7 +270,7 @@ private:
     DBStatus WriteData(const std::string &key, const std::string &value);
     DBStatus DeleteData(const std::string &key);
 
-    std::mutex key_mutex_;
+//    std::mutex key_mutex_;
     std::set<std::string> delete_keys_;
 
     RocksDBReadWriter db_read_writer_;

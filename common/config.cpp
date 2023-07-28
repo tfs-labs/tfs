@@ -120,6 +120,25 @@ int Config::verify(const Node& _node)
 
 int Config::verify()
 {
+    nlohmann::json _json = nlohmann::json::parse(global::ca::kConfigJson);
+    std::string genesis_file_version;
+
+    try
+    {
+        genesis_file_version = _json[kCfgKeyVersion].get<std::string>();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return -1;
+    }
+
+    if(genesis_file_version != _version)
+    {
+        std::cout << "The configuration file version is incorrect, regenerate the configuration file" << std::endl;
+		return -2;
+    }
+
     _verify_(_info,name,0,45,0,"^[\u4E00-\u9FA5A-Za-z0-9_]+$");
     _verify_(_info,logo,0,512,0,"^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/[^/][a-zA-Z0-9\\.\\,\?\'\\/\\+&%\\$#\\=~_\\-@]*)*$"); 
     return 0;

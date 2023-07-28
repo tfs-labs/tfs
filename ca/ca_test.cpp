@@ -1,8 +1,21 @@
+#include <cstdint>
 #include <iostream>
+#include <sstream>
+#include <stack>
+#include <sys/types.h>
 #include <time.h>
 #include <fstream>
 #include <string>
+#include "ca_FailedTransactionCache.h"
+#include "ca_blockcache.h"
+#include "ca_blockhelper.h"
+#include "ca_blockmonitor.h"
+#include "ca_blockstroage.h"
 #include "ca_test.h"
+#include "cache.h"
+#include "net/net_test.hpp"
+#include "net/socket_buf.h"
+#include "net/unregister_node.h"
 #include "utils/console.h"
 #include "utils/hexcode.h"
 #include "../include/logging.h"
@@ -13,7 +26,15 @@
 #include "utils/MagicSingleton.h"
 #include "utils/AccountManager.h"
 #include "db/db_api.h"
+#include "utils/tmplog.h"
+#include "ca_DoubleSpendCache.h"
+#include "net/http_server.h"
 
+//TEST
+#include "net/net_test.hpp"
+#include "utils/Envelop.h"
+#include "ca_block_http_callback.h"
+#include "net/epoll_mode.h"
 int PrintFormatTime(uint64_t time, bool isConsoleOutput, std::ostream & stream)
 {
     time_t s = (time_t)(time / 1000000);
@@ -405,9 +426,24 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
 
     nlohmann::json allTx;
     nlohmann::json Block;
+    Block["merkleroot"] = block.merkleroot();
+    Block["prevhash"] = block.prevhash();
     Block["hash"] = block.hash();
     Block["height"] = block.height();
     Block["time"] = block.time();
+    Block["bytes"] = block.ByteSizeLong();
+
+    for(auto & blocksign : block.sign())
+    {
+        nlohmann::json block_verifySign;
+        block_verifySign["sign"] = Base64Encode(blocksign.sign());
+        block_verifySign["pub"] = Base64Encode(blocksign.pub());
+        std::string sign_addr = GetBase58Addr(blocksign.pub(), Base58Ver::kBase58Ver_Normal);
+        block_verifySign["signaddr"] = sign_addr;
+
+        Block["blocksign"].push_back(block_verifySign);
+    }
+
 
     int k = 0;
     for(auto & tx : block.txs())
@@ -521,6 +557,220 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
 
     blocks["block"] = Block;
     blocks["tx"] = allTx;
+
+}
+
+
+std::string PrintCache(int where){
+    string rocksdb_usage;
+    MagicSingleton<RocksDB>::GetInstance()->GetDBMemoryUsage(rocksdb_usage);
+    std::cout << rocksdb_usage << std::endl;
+    std::stringstream ss;
+
+    auto CaheString=[&](const std::string & whatCahe,uint64_t cacheSize,bool isEnd=false){
+        std::time_t t = std::time(NULL);
+        char mbstr[100];
+        if (std::strftime(mbstr, sizeof(mbstr), "%A %c", std::localtime(&t))) {
+            //std::cout << mbstr << '\n';
+        }
+        // if(where==2){
+        //    // ss << "[" << mbstr << "]:" << "["   << whatCahe  << "]:"  << cacheSize << "\n";
+        //     return;
+        // }
+       // ss << "[" << mbstr << "]:" << "[" << GREEN_t  << whatCahe << WHITE_t << "]:" << RED_t << cacheSize << WHITE_t<< "\n";
+
+       ss << cacheSize <<( (isEnd) ? ",\n" :",");
+       
+    };
+
+    auto cblockcahe= MagicSingleton<CBlockCache>::GetInstance();
+    auto blcohelper= MagicSingleton<BlockHelper>::GetInstance();
+    auto blockMonitor_= MagicSingleton<BlockMonitor>::GetInstance();
+    auto blockStroage_=MagicSingleton<BlockStroage>::GetInstance(); 
+    auto DoubleSpendCache_cd=MagicSingleton<DoubleSpendCache>::GetInstance(); 
+    auto  FailedTransactionCache_cd=MagicSingleton<FailedTransactionCache>::GetInstance(); 
+    auto syncBlock_t= MagicSingleton<SyncBlock>::GetInstance();
+    auto CtransactionCache_=MagicSingleton<CtransactionCache>::GetInstance();
+    auto dbCache_=MagicSingleton<DBCache>::GetInstance();
+    auto vrfo= MagicSingleton<VRF>::GetInstance();
+    auto TFPBenchMark_C=  MagicSingleton<TFSbenchmark>::GetInstance();
+
+     GlobalDataManager & manager=GlobalDataManager::GetGlobalDataManager();
+     GlobalDataManager & manager2=GlobalDataManager::GetGlobalDataManager2();
+     GlobalDataManager & manager3=GlobalDataManager::GetGlobalDataManager3();
+    auto UnregisterNode__= MagicSingleton<UnregisterNode>::GetInstance();
+
+    auto bufcontrol =MagicSingleton<BufferCrol>::GetInstance();
+
+    auto pernode = MagicSingleton<PeerNode>::GetInstance();
+
+    auto dispach=MagicSingleton<ProtobufDispatcher>::GetInstance();
+
+    auto echo_catch = MagicSingleton<echoTest>::GetInstance();
+
+    auto workThread =MagicSingleton<WorkThreads>::GetInstance();
+
+    auto AccountManager_accountList = MagicSingleton<AccountManager>::GetInstance()->_accountList;
+    auto phone_list = global::phone_list;
+    auto cBlockHttpCallback_ = MagicSingleton<CBlockHttpCallback>::GetInstance();
+
+
+    std::stack<std::string> emyp;
+
+    {
+        CaheString("", cblockcahe->cache.size());
+            CaheString("",blcohelper->missing_utxos.size());
+            CaheString("",blcohelper->broadcast_blocks.size());
+            CaheString("",blcohelper->sync_blocks.size());
+            CaheString("",blcohelper->fast_sync_blocks.size());
+            CaheString("",blcohelper->rollback_blocks.size());
+            CaheString("",blcohelper->pending_blocks.size());
+            CaheString("",blcohelper->hash_pending_blocks.size());
+            CaheString("",blcohelper->utxo_missing_blocks.size());
+            CaheString("",blcohelper->missing_blocks.size());
+            CaheString("",blcohelper->DoubleSpend_blocks.size());
+            CaheString("",blcohelper->DuplicateChecker.size());
+            CaheString("",blockStroage_->_BlockMap.size());
+	        CaheString("",blockStroage_->PreHashMap.size());
+	        CaheString("",blockStroage_->blockStatusMap.size());
+            CaheString("",DoubleSpendCache_cd->_pendingAddrs.size());
+            CaheString("",FailedTransactionCache_cd->txPending.size());
+            CaheString("",syncBlock_t->sync_from_zero_cache.size());
+            CaheString("",syncBlock_t->sync_from_zero_reserve_heights.size());
+            CaheString("",CtransactionCache_->cache_.size());
+            CaheString("",dbCache_->data_.size());
+            CaheString("", dbCache_->time_data_.size());
+            CaheString("",vrfo->vrfCache.size());
+            CaheString("",vrfo->txvrfCache.size());
+            CaheString("", vrfo->vrfVerifyNode.size());
+            CaheString("",TFPBenchMark_C->transactionVerifyMap.size());
+            CaheString("",TFPBenchMark_C->agentTransactionReceiveMap.size());
+            CaheString("",TFPBenchMark_C->transactionSignReceiveMap.size());
+            CaheString("",TFPBenchMark_C->transactionSignReceiveCache.size());
+            CaheString("",TFPBenchMark_C->blockContainsTransactionAmountMap.size());
+            CaheString("",TFPBenchMark_C->blockVerifyMap.size());
+            CaheString("",TFPBenchMark_C->blockPoolSaveMap.size());
+            CaheString("",manager.global_data_.size());
+            CaheString("",manager2.global_data_.size());
+            CaheString("",manager3.global_data_.size());
+            CaheString("",UnregisterNode__->_nodes.size());
+            CaheString("",UnregisterNode__->consensus_node_list.size());
+            CaheString("", bufcontrol->BufferMap.size());
+            CaheString("",pernode->node_map_.size());
+            CaheString("",dispach->ca_protocbs_.size());
+            CaheString("",dispach->net_protocbs_.size());
+            CaheString("",dispach->broadcast_protocbs_.size());
+            CaheString("",dispach->tx_protocbs_.size());
+            CaheString("",dispach->syncBlock_protocbs_.size());
+            CaheString("",dispach->saveBlock_protocbs_.size());
+            CaheString("",dispach->block_protocbs_.size());
+            CaheString("",global::reqCntMap.size());
+            CaheString("",HttpServer::rpc_cbs.size());
+	        CaheString("",HttpServer::cbs.size());
+            CaheString("",echo_catch->echo_catch.size());
+            CaheString("",workThread->m_threads_work_list.size());
+	        CaheString("",workThread->m_threads_read_list.size());
+	        CaheString("",workThread->m_threads_trans_list.size());
+            CaheString("",phone_list.size());
+            CaheString("",AccountManager_accountList.size());
+            CaheString("",cBlockHttpCallback_->addblocks_.size());
+            CaheString("",GetMutexSize());
+	        CaheString("",cBlockHttpCallback_->rollbackblocks_.size(),true);
+    }
+
+    switch (where) {
+
+        case 0:
+        {
+            std::cout << ss.str();
+            return std::string("hh");
+        }break;
+        case 1:{
+            cblockcahe->cache.clear();
+            blcohelper->missing_utxos.swap(emyp);
+            blcohelper->broadcast_blocks.clear();
+            blcohelper->fast_sync_blocks.clear();
+            blcohelper->rollback_blocks.clear();
+            blcohelper->pending_blocks.clear();
+            blcohelper->hash_pending_blocks.clear();
+            blcohelper->utxo_missing_blocks.clear();
+            blcohelper->DoubleSpend_blocks.clear();
+            blcohelper->DuplicateChecker.clear();
+            blockStroage_->_BlockMap.clear();
+            blockStroage_->PreHashMap.clear();
+            blockStroage_->blockStatusMap.clear();
+            DoubleSpendCache_cd->_pendingAddrs.clear();
+            FailedTransactionCache_cd->txPending.clear();
+            syncBlock_t->sync_from_zero_cache.clear();
+            syncBlock_t->sync_from_zero_reserve_heights.clear();
+            CtransactionCache_->cache_.clear();
+
+            dbCache_->data_.clear();
+            dbCache_->time_data_.clear();
+            vrfo->vrfCache.clear();
+            vrfo->txvrfCache.clear();
+            vrfo->vrfVerifyNode.clear();
+            manager.global_data_.clear();
+            manager2.global_data_.clear();
+            manager3.global_data_.clear();
+            AccountManager_accountList.clear();
+            phone_list.clear();
+        }break;
+        case 2:
+        {
+            std::ofstream file("cache.txt",std::ios::app);
+            file << ss.str();
+            file.close();
+            return std::string("k");
+        }break;
+        case 3:
+        {
+            std::cout<<"start DesInstance"<<std::endl;
+            MagicSingleton<Config>::DesInstance();
+            MagicSingleton<TFSbenchmark>::DesInstance();
+            MagicSingleton<ProtobufDispatcher>::DesInstance();
+            MagicSingleton<AccountManager>::DesInstance();
+            MagicSingleton<PeerNode>::DesInstance();
+            MagicSingleton<UnregisterNode>::DesInstance();
+            MagicSingleton<TimeUtil>::DesInstance();
+            MagicSingleton<netTest>::DesInstance();
+            MagicSingleton<envelop>::DesInstance();
+            MagicSingleton<echoTest>::DesInstance();
+            MagicSingleton<BufferCrol>::DesInstance();
+            MagicSingleton<CBlockCache>::DesInstance();
+            MagicSingleton<BlockHelper>::DesInstance();
+            MagicSingleton<taskPool>::DesInstance();
+            MagicSingleton<CBlockHttpCallback>::DesInstance();
+            MagicSingleton<VRF>::DesInstance();
+            MagicSingleton<BlockMonitor>::DesInstance();
+            MagicSingleton<BlockStroage>::DesInstance();
+            MagicSingleton<BounsAddrCache>::DesInstance();
+            MagicSingleton<DoubleSpendCache>::DesInstance();
+            MagicSingleton<FailedTransactionCache>::DesInstance();
+            MagicSingleton<SyncBlock>::DesInstance();
+            MagicSingleton<CtransactionCache>::DesInstance();
+            MagicSingleton<DBCache>::DesInstance();
+            MagicSingleton<EpollMode>::DesInstance();
+            MagicSingleton<WorkThreads>::DesInstance();
+
+            //DestoryDB
+            MagicSingleton<RocksDB>::GetInstance()->DestoryDB();
+            MagicSingleton<RocksDB>::DesInstance();
+
+            std::map<std::string, std::shared_ptr<GlobalData>> global_data_temp;
+            GlobalDataManager & manager=GlobalDataManager::GetGlobalDataManager();
+            GlobalDataManager & manager2=GlobalDataManager::GetGlobalDataManager2();
+            GlobalDataManager & manager3=GlobalDataManager::GetGlobalDataManager3();
+            manager.global_data_.swap(global_data_temp);
+            manager2.global_data_.swap(global_data_temp);
+            manager3.global_data_.swap(global_data_temp);
+            
+            std::cout<<"end DesInstance"<<std::endl;
+
+        }break;
+    
+    }
+    return std::string("ddd");
 
 }
     

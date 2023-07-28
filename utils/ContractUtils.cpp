@@ -61,6 +61,11 @@ std::string evm_utils::generateEvmAddr(const std::string& pub)
     return md160;
 }
 
+std::string evm_utils::generateContractAddr(const std::string& input)
+{
+    return EvmAddrToBase58(generateEvmAddr(input));
+}
+
 std::string evm_utils::EvmAddrToBase58(const std::string& addr)
 {
     evmc_address evm_addr = stringToEvmAddr(addr);

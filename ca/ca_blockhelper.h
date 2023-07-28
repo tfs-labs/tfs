@@ -93,6 +93,7 @@ class BlockHelper
         void stopSaveBlock() { stop_blocking = false; }
 
     private:
+       friend std::string PrintCache(int where);
         bool VerifyHeight(const CBlock& block, uint64_t ownblockHeight);
         bool GetMissBlock();
         void PostMembershipCancellationProcess(const CBlock &block);

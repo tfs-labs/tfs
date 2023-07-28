@@ -356,6 +356,7 @@ class CTxInput final :
 
   enum : int {
     kPrevOutFieldNumber = 1,
+    kContractAddrFieldNumber = 4,
     kVinSignFieldNumber = 2,
     kSequenceFieldNumber = 3,
   };
@@ -376,6 +377,20 @@ class CTxInput final :
   ::CTxPrevOutput* add_prevout();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CTxPrevOutput >&
       prevout() const;
+
+  // string contractAddr = 4;
+  void clear_contractaddr();
+  const std::string& contractaddr() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_contractaddr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_contractaddr();
+  PROTOBUF_NODISCARD std::string* release_contractaddr();
+  void set_allocated_contractaddr(std::string* contractaddr);
+  private:
+  const std::string& _internal_contractaddr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_contractaddr(const std::string& value);
+  std::string* _internal_mutable_contractaddr();
+  public:
 
   // .CSign vinSign = 2;
   bool has_vinsign() const;
@@ -413,6 +428,7 @@ class CTxInput final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CTxPrevOutput > prevout_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr contractaddr_;
     ::CSign* vinsign_;
     uint32_t sequence_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -1379,6 +1395,56 @@ inline void CTxInput::_internal_set_sequence(uint32_t value) {
 inline void CTxInput::set_sequence(uint32_t value) {
   _internal_set_sequence(value);
   // @@protoc_insertion_point(field_set:CTxInput.sequence)
+}
+
+// string contractAddr = 4;
+inline void CTxInput::clear_contractaddr() {
+  _impl_.contractaddr_.ClearToEmpty();
+}
+inline const std::string& CTxInput::contractaddr() const {
+  // @@protoc_insertion_point(field_get:CTxInput.contractAddr)
+  return _internal_contractaddr();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CTxInput::set_contractaddr(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.contractaddr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:CTxInput.contractAddr)
+}
+inline std::string* CTxInput::mutable_contractaddr() {
+  std::string* _s = _internal_mutable_contractaddr();
+  // @@protoc_insertion_point(field_mutable:CTxInput.contractAddr)
+  return _s;
+}
+inline const std::string& CTxInput::_internal_contractaddr() const {
+  return _impl_.contractaddr_.Get();
+}
+inline void CTxInput::_internal_set_contractaddr(const std::string& value) {
+  
+  _impl_.contractaddr_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CTxInput::_internal_mutable_contractaddr() {
+  
+  return _impl_.contractaddr_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CTxInput::release_contractaddr() {
+  // @@protoc_insertion_point(field_release:CTxInput.contractAddr)
+  return _impl_.contractaddr_.Release();
+}
+inline void CTxInput::set_allocated_contractaddr(std::string* contractaddr) {
+  if (contractaddr != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.contractaddr_.SetAllocated(contractaddr, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.contractaddr_.IsDefault()) {
+    _impl_.contractaddr_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:CTxInput.contractAddr)
 }
 
 // -------------------------------------------------------------------

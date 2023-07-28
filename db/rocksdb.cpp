@@ -89,3 +89,30 @@ bool RocksDB::IsInitSuccess()
     std::lock_guard<std::mutex> lock(is_init_success_mutex_);
     return is_init_success_;
 }
+
+void RocksDB::GetDBMemoryUsage(std::string& info)
+{
+    std::string block_cache_usage;
+    if (db_->GetProperty("rocksdb.block-cache-usage", &block_cache_usage))
+    {
+        info.append("block_cache_usage: ").append(block_cache_usage).append("\n");
+    }
+
+    std::string estimate_table_readers_mem;
+    if (db_->GetProperty("rocksdb.estimate-table-readers-mem", &estimate_table_readers_mem))
+    {
+        info.append("estimate_table_readers_mem: ").append(estimate_table_readers_mem).append("\n");
+    }
+
+    std::string cur_size_all_mem_tables;
+    if (db_->GetProperty("rocksdb.cur-size-all-mem-tables", &cur_size_all_mem_tables))
+    {
+        info.append("cur_size_all_mem_tables: ").append(cur_size_all_mem_tables).append("\n");
+    }
+
+    std::string block_cache_pinned_usage;
+    if (db_->GetProperty("rocksdb.block-cache-pinned-usage", &block_cache_pinned_usage))
+    {
+        info.append("block_cache_pinned_usage: ").append(block_cache_pinned_usage).append("\n");
+    }
+}

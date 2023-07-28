@@ -31,6 +31,7 @@ public:
     void CheckLoop();
 private:
     CTimer _timer;
+    friend std::string PrintCache(int where);
 	std::mutex _double_spend_mutex_;
     std::map<std::vector<std::string>,uint64_t> _pendingAddrs;
 

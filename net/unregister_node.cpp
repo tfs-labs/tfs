@@ -344,42 +344,47 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
 {
     std::shared_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
     std::vector<Node> nodes;
-    for(auto item = consensus_node_list.begin(); item != consensus_node_list.end(); ++item)
+
+    if(consensus_node_list.empty())
     {
+        return nodes;
+    }
 
-        std::map<int,int> map_cnts; 
-        std::vector<uint64_t> counts;
-        for(auto iter : item->second)
+    auto item = consensus_node_list.begin();
+
+    std::map<int,int> map_cnts; 
+    std::vector<uint64_t> counts;
+    for(auto iter : item->second)
+    {
+        counts.push_back(iter.second);
+        ++map_cnts[iter.second];
+    }
+
+    int max_elem = 0, max_cnt = 0;
+    for(auto iter : map_cnts)
+    {
+        if(max_cnt <  iter.second)
         {
-            counts.push_back(iter.second);
-            ++map_cnts[iter.second];
+            max_elem = iter.first;
+            max_cnt = iter.second;
         }
+    }
 
-        int max_elem = 0, max_cnt = 0;
-        for(auto iter : map_cnts)
+    DEBUGLOG("GetConsensusNodeList : max_cnt = {} , item->second.size = {}, max_elem = {}", max_cnt, item->second.size(), max_elem);
+
+    counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
+    if(counts.size() < 2)
+    {
+        for(auto i : item->second)
         {
-            if(max_cnt <  iter.second)
+            if(i.second == max_elem)
             {
-                max_elem = iter.first;
-                max_cnt = iter.second;
+                nodes.push_back(i.first);
             }
         }
-
-        DEBUGLOG("GetConsensusNodeList : max_cnt = {} , item->second.size = {}, max_elem = {}", max_cnt, item->second.size(), max_elem);
-
-        counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
-        if(counts.size() < 2)
-        {
-            for(auto i : item->second)
-            {
-                if(i.second == max_elem)
-                {
-                    nodes.push_back(i.first);
-                }
-            }
-            break;
-        }
-
+    }
+    else
+    {
         uint64_t quarter_num = counts.size() * 0.25;
         uint64_t three_quarter_num = counts.size() * 0.75;
         if (quarter_num == three_quarter_num)
@@ -394,6 +399,13 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
         uint64_t three_quarter_num_value = counts.at(three_quarter_num);
         int64_t slower_limit_value = quarter_num_value -
                                             ((three_quarter_num_value - quarter_num_value) * 1.5);
+
+        if(slower_limit_value > max_elem)
+        {
+            DEBUGLOG("Modify the value of the number of exceptions : {} , slower_limit_value: {}", max_elem, slower_limit_value);
+            slower_limit_value = max_elem;
+        }
+
         if(slower_limit_value >= 0)
         {
             for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
@@ -414,7 +426,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
     {
         for(auto & iter : nodes)
         {
-
             if(node.base58address == iter.base58address)
             {
                 iter.height = node.height;

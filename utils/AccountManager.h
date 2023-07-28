@@ -16,10 +16,14 @@
 #include "utils/bip39.h"
 #include "include/ScopeGuard.h"
 
-#include "../openssl/include/openssl/evp.h"
-#include "../openssl/include/openssl/ec.h"
-#include "../openssl/include/openssl/pem.h"
-#include "../openssl/include/openssl/core_names.h"
+// #include "../openssl/include/openssl/evp.h"
+// #include "../openssl/include/openssl/ec.h"
+// #include "../openssl/include/openssl/pem.h"
+// #include "../openssl/include/openssl/core_names.h"
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/core_names.h>
 
 class Account
 {
@@ -27,20 +31,24 @@ class Account
         Account();
         Account(Base58Ver ver);
         Account(const std::string &bs58Addr);
-        ~Account() = default;
-    
+        Account(const Account& other);
+        Account(Account&& other) noexcept;
+        Account& operator=(const Account& other);
+        Account& operator=(Account&& other) noexcept;
+        ~Account(){ _pkey.reset(); };
 
         bool Sign(const std::string &message, std::string &signature);
         bool Verify(const std::string &message, std::string &signature);
+        
 
         EVP_PKEY * GetKey () const
         {
-            return pkey;
+            return _pkey.get();
         }
 
         void SetKey(EVP_PKEY * key)
         {
-            pkey = key;
+            _pkey.reset(key);
         }
         
         std::string GetPubStr() const
@@ -78,7 +86,8 @@ class Account
         void GeneratePriStr();
         void GenerateBase58Addr(Base58Ver ver);
     private:
-        EVP_PKEY *pkey;
+        std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> _pkey;
+
         std::string pubStr;
         std::string priStr;
         std::string base58Addr;
@@ -101,8 +110,9 @@ class AccountManager
         int FindAccount(const std::string & bs58Addr, Account & account);
         int GetDefaultAccount(Account & account);
         void GetAccountList(std::vector<std::string> & base58_list);
-        int SavePrivateKeyToFile(const std::string & base58Addr);
+        bool GetAccountPubByBytes(const std::string &pubStr, Account &account);
 
+        int SavePrivateKeyToFile(const std::string & base58Addr);
         int GetMnemonic(const std::string & bs58Addr, std::string & mnemonic);
         int ImportMnemonic(const std::string & mnemonic);
         
@@ -110,8 +120,9 @@ class AccountManager
         int ImportPrivateKeyHex(const std::string & privateKeyHex);
 
     private:
+        friend std::string PrintCache(int where);
         std::string defaultBase58Addr;
-        std::map<std::string /*base58addr*/,Account> _accountList;
+        std::map<std::string /*base58addr*/, std::shared_ptr<Account>> _accountList;
         
         int _init();
 };

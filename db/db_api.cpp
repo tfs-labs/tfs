@@ -39,6 +39,7 @@ const std::string kDM = "DM_"; //Deflationary Mechanism
 const std::string kTotalInvestAmount = "totalinvestamount_";
 const std::string kInitVersionKey = "initVer_";
 const std::string kSignNumberKey = "signnumber_";
+const std::string kBlockNumberKey = "blocknumber_";
 const std::string kSignAddrKey = "signAddr_";
 const std::string kburnAmountKey = "burnamount_";
 
@@ -398,6 +399,18 @@ DBStatus DBReader::GetSignNumberByPeriod(const uint64_t &Period, const std::stri
     return ret;
 }
 
+//  Get Number of blocks By Period
+DBStatus DBReader::GetBlockNumberByPeriod(const uint64_t &Period, uint64_t &BlockNumber)
+{
+    std::string value;
+    auto ret = ReadData(kBlockNumberKey + std::to_string(Period), value);
+    if (DBStatus::DB_SUCCESS == ret)
+    {
+        BlockNumber = std::stoull(value);
+    }
+    return ret;
+}
+
 //  Set Addr of signatures By Period
 DBStatus DBReader::GetSignAddrByPeriod(const uint64_t &Period, std::vector<std::string> &SignAddrs)
 {
@@ -502,26 +515,26 @@ DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vect
     {
         return DBStatus::DB_PARAM_NULL;
     }
-    auto cache = MagicSingleton<DBCache>::GetInstance();
+//    auto cache = MagicSingleton<DBCache>::GetInstance();
     std::vector<std::string> cache_values;
     std::vector<rocksdb::Slice> db_keys;
     std::string value;
     for (auto key : keys)
     {
-        if (cache->GetData(key, value))
-        {
-            cache_values.push_back(value);
-        }
-        else
+//        if (cache->GetData(key, value))
+//        {
+//            cache_values.push_back(value);
+//        }
+//        else
         {
             db_keys.push_back(key);
         }
     }
-    if (db_keys.empty())
-    {
-        values.swap(cache_values);
-        return DBStatus::DB_SUCCESS;
-    }
+//    if (db_keys.empty())
+//    {
+//        values.swap(cache_values);
+//        return DBStatus::DB_SUCCESS;
+//    }
     std::vector<rocksdb::Status> ret_status;
     if (db_reader_.MultiReadData(db_keys, values, ret_status))
     {
@@ -529,10 +542,10 @@ DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vect
         {
             return DBStatus::DB_ERROR;
         }
-        for (size_t i = 0; i < db_keys.size(); ++i)
-        {
-            cache->SetData(db_keys.at(i).data(), values.at(i));
-        }
+//        for (size_t i = 0; i < db_keys.size(); ++i)
+//        {
+//            cache->SetData(db_keys.at(i).data(), values.at(i));
+//        }
         values.insert(values.end(), cache_values.begin(), cache_values.end());
         return DBStatus::DB_SUCCESS;
     }
@@ -556,15 +569,15 @@ DBStatus DBReader::ReadData(const std::string &key, std::string &value)
         return DBStatus::DB_PARAM_NULL;
     }
 
-    auto cache = MagicSingleton<DBCache>::GetInstance();
-    if (cache->GetData(key, value))
-    {
-        return DBStatus::DB_SUCCESS;
-    }
+//    auto cache = MagicSingleton<DBCache>::GetInstance();
+//    if (cache->GetData(key, value))
+//    {
+//        return DBStatus::DB_SUCCESS;
+//    }
     rocksdb::Status ret_status;
     if (db_reader_.ReadData(key, value, ret_status))
     {
-        cache->SetData(key, value);
+//        cache->SetData(key, value);
         return DBStatus::DB_SUCCESS;
     }
     else if (ret_status.IsNotFound())
@@ -607,9 +620,9 @@ DBStatus DBReadWriter::TransactionCommit()
     if (db_read_writer_.TransactionCommit(ret_status))
     {
         auto_oper_trans = false;
-        std::lock_guard<std::mutex> lock(key_mutex_);
-        MagicSingleton<DBCache>::GetInstance()->DeleteData(delete_keys_);
-        delete_keys_.clear();
+//        std::lock_guard<std::mutex> lock(key_mutex_);
+//        MagicSingleton<DBCache>::GetInstance()->DeleteData(delete_keys_);
+//        delete_keys_.clear();
         return DBStatus::DB_SUCCESS;
     }
     ERRORLOG("TransactionCommit faild:{}:{}", ret_status.code(), ret_status.ToString());
@@ -1015,6 +1028,21 @@ DBStatus DBReadWriter::RemoveSignNumberByPeriod(const uint64_t &Period, const st
     return DeleteData(db_key);
 }
 
+//  Set Number of blocks By Period
+DBStatus DBReadWriter::SetBlockNumberByPeriod(const uint64_t &Period, const uint64_t &BlockNumber)
+{
+    std::string db_key = kBlockNumberKey + std::to_string(Period);
+    return WriteData(db_key, std::to_string(BlockNumber));
+}
+
+
+//  Remove Number of blocks By Period
+DBStatus DBReadWriter::RemoveBlockNumberByPeriod(const uint64_t &Period)
+{
+    std::string db_key = kBlockNumberKey + std::to_string(Period);
+    return DeleteData(db_key);
+}
+
 //  Set Addr of signatures By Period
 DBStatus DBReadWriter::SetSignAddrByPeriod(const uint64_t &Period, const std::string &addr)
 {
@@ -1131,8 +1159,8 @@ DBStatus DBReadWriter::MergeValue(const std::string &key, const std::string &val
     rocksdb::Status ret_status;
     if (db_read_writer_.MergeValue(key, value, ret_status, first_or_last))
     {
-        std::lock_guard<std::mutex> lock(key_mutex_);
-        delete_keys_.insert(key);
+//        std::lock_guard<std::mutex> lock(key_mutex_);
+//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;
@@ -1142,8 +1170,8 @@ DBStatus DBReadWriter::RemoveMergeValue(const std::string &key, const std::strin
     rocksdb::Status ret_status;
     if (db_read_writer_.RemoveMergeValue(key, value, ret_status))
     {
-        std::lock_guard<std::mutex> lock(key_mutex_);
-        delete_keys_.insert(key);
+//        std::lock_guard<std::mutex> lock(key_mutex_);
+//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;
@@ -1153,8 +1181,8 @@ DBStatus DBReadWriter::WriteData(const std::string &key, const std::string &valu
     rocksdb::Status ret_status;
     if (db_read_writer_.WriteData(key, value, ret_status))
     {
-        std::lock_guard<std::mutex> lock(key_mutex_);
-        delete_keys_.insert(key);
+//        std::lock_guard<std::mutex> lock(key_mutex_);
+//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;
@@ -1164,8 +1192,8 @@ DBStatus DBReadWriter::DeleteData(const std::string &key)
     rocksdb::Status ret_status;
     if (db_read_writer_.DeleteData(key, ret_status))
     {
-        std::lock_guard<std::mutex> lock(key_mutex_);
-        delete_keys_.insert(key);
+//        std::lock_guard<std::mutex> lock(key_mutex_);
+//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;

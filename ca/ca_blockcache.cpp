@@ -17,7 +17,7 @@
 
 CBlockCache::CBlockCache()
 {
-    construct_success = CacheInit();
+    construct_success = false;
 }
 
 bool CBlockCache::CacheInit()

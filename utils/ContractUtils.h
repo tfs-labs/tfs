@@ -19,6 +19,8 @@ namespace evm_utils
 
     std::string generateEvmAddr(const std::string& pub);
 
+    std::string generateContractAddr(const std::string& input);
+
     std::string EvmAddrToBase58(const std::string& addr);
 
     std::string getEvmAddr(const std::string& pub);

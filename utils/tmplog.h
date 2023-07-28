@@ -26,6 +26,7 @@ void write_tmplog(const std::string& content, OUTTYPE out = file, const std::str
 #define RED_t "\033[31m"
 #define YELLOW_t "\033[33m"
 #define GREEN_t "\033[32m"
+#define WHITE_t "\033[37m"
 
 #define errorL(msg) \
 	std::cout << RED_t <<"Error:["<< __FILE__  << ":"<< __LINE__ << "]:"<< msg << std::endl;

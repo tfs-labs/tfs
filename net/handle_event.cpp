@@ -115,7 +115,6 @@ int handleRegisterNodeReq(const std::shared_ptr<RegisterNodeReq> &registerNode, 
 			DEBUGLOG("register node failed and disconnect. ret:{}", ret);
 			MagicSingleton<PeerNode>::GetInstance()->disconnect_node(node);
 		}
-		EVP_PKEY_free(eckey);
 	};
 
 	std::string node_base58addr = nodeinfo->base58addr();
@@ -137,18 +136,31 @@ int handleRegisterNodeReq(const std::shared_ptr<RegisterNodeReq> &registerNode, 
 		ERRORLOG("public key is empty");
 		return ret -= 7;
 	}
-
-	if(GetEDPubKeyByBytes(nodeinfo->identity(), eckey) == false)
-	{
+	//TODO
+	Account account;
+	if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(nodeinfo->identity(), account) == false){
 		ERRORLOG(RED "Get public key from bytes failed!" RESET);
 		return ret -= 8;
 	}
 
-	if(ED25519VerifyMessage(getsha256hash(base58Addr), eckey, nodeinfo->sign()) == false)
+	std::string nodeInfo_signature = nodeinfo->sign();
+	if(account.Verify(getsha256hash(base58Addr), nodeInfo_signature) == false)
 	{
 		ERRORLOG(RED "Public key verify sign failed!" RESET);
 		return ret -= 9;
 	}
+
+	// if(GetEDPubKeyByBytes(nodeinfo->identity(), eckey) == false)
+	// {
+	// 	ERRORLOG(RED "Get public key from bytes failed!" RESET);
+	// 	return ret -= 8;
+	// }
+
+	// if(ED25519VerifyMessage(getsha256hash(base58Addr), eckey, nodeinfo->sign()) == false)
+	// {
+	// 	ERRORLOG(RED "Public key verify sign failed!" RESET);
+	// 	return ret -= 9;
+	// }
 	
 	Node tem_node;
 	auto find = MagicSingleton<PeerNode>::GetInstance()->find_node(node.base58address, tem_node);
@@ -192,7 +204,6 @@ int handleRegisterNodeReq(const std::shared_ptr<RegisterNodeReq> &registerNode, 
 	std::string signature;
 
 	Account acc;
-	EVP_PKEY_free(acc.GetKey());
 	if(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
 		return ret -= 10;
@@ -315,21 +326,35 @@ int VerifyRegisterNode(const NodeInfo &nodeinfo, uint32_t &from_ip, uint32_t &fr
 		return -3;
 	}
 	
-	EVP_PKEY* eckey = nullptr;
-	if(GetEDPubKeyByBytes(node.identity, eckey) == false)
-	{
-		EVP_PKEY_free(eckey);
+	//TODO
+	Account account;
+	if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(node.identity, account) == false){
 		ERRORLOG(RED "Get public key from bytes failed!" RESET);
 		return -4;
 	}
 
-	if(ED25519VerifyMessage(getsha256hash(base58Addr), eckey, node.sign) == false)
+	if(account.Verify(getsha256hash(base58Addr), node.sign) == false)
 	{
-		EVP_PKEY_free(eckey);
 		ERRORLOG(RED "Public key verify sign failed!" RESET);
 		return -5;
 	}
-	EVP_PKEY_free(eckey);
+
+
+	// EVP_PKEY* eckey = nullptr;
+	// if(GetEDPubKeyByBytes(node.identity, eckey) == false)
+	// {
+	// 	EVP_PKEY_free(eckey);
+	// 	ERRORLOG(RED "Get public key from bytes failed!" RESET);
+	// 	return -4;
+	// }
+
+	// if(ED25519VerifyMessage(getsha256hash(base58Addr), eckey, node.sign) == false)
+	// {
+	// 	EVP_PKEY_free(eckey);
+	// 	ERRORLOG(RED "Public key verify sign failed!" RESET);
+	// 	return -5;
+	// }
+	// EVP_PKEY_free(eckey);
 
 	if (node.base58address == MagicSingleton<PeerNode>::GetInstance()->get_self_id())
 	{
@@ -584,38 +609,65 @@ int handleNodeBase58AddrChangedReq(const std::shared_ptr<NodeBase58AddrChangedRe
 
 	const NodeSign &oldSign = req->oldsign();
 	const NodeSign &newSign = req->newsign();
-
-	EVP_PKEY* oldPublicKey = nullptr;
-	if(GetEDPubKeyByBytes(oldSign.pub(), oldPublicKey) == false)
-	{
+	//TODO
+	Account oldAccount;
+	if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(oldSign.pub(), oldAccount) == false){
 		ERRORLOG(RED "Get public key from bytes failed!" RESET);
 		return -1;
 	}
 
-	if(ED25519VerifyMessage(getsha256hash(GetBase58Addr(newSign.pub(), Base58Ver::kBase58Ver_Normal)), oldPublicKey, oldSign.sign()) == false)
+	std::string oldSignature = oldSign.sign();
+	if(oldAccount.Verify(getsha256hash(GetBase58Addr(newSign.pub())), oldSignature) == false)
 	{
 		ERRORLOG(RED "Public key verify sign failed!" RESET);
 		return -2;
 	}
 
-	EVP_PKEY* newPublicKey = nullptr;
-	if(GetEDPubKeyByBytes(newSign.pub(), newPublicKey) == false)
-	{
+	// EVP_PKEY* oldPublicKey = nullptr;
+	// if(GetEDPubKeyByBytes(oldSign.pub(), oldPublicKey) == false)
+	// {
+	// 	ERRORLOG(RED "Get public key from bytes failed!" RESET);
+	// 	return -1;
+	// }
+
+	// if(ED25519VerifyMessage(getsha256hash(GetBase58Addr(newSign.pub(), Base58Ver::kBase58Ver_Normal)), oldPublicKey, oldSign.sign()) == false)
+	// {
+	// 	ERRORLOG(RED "Public key verify sign failed!" RESET);
+	// 	return -2;
+	// }
+	
+	//TODO
+	Account newAccount;
+	if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(newSign.pub(), newAccount) == false){
 		ERRORLOG(RED "Get public key from bytes failed!" RESET);
 		return -3;
 	}
 
-	if(ED25519VerifyMessage(getsha256hash(GetBase58Addr(newSign.pub(), Base58Ver::kBase58Ver_Normal)), newPublicKey, newSign.sign()) == false)
+	std::string newSignature = newSign.sign();
+	if(newAccount.Verify(getsha256hash(GetBase58Addr(newSign.pub())), newSignature) == false)
 	{
 		ERRORLOG(RED "Public key verify sign failed!" RESET);
 		return -4;
 	}
 
-	ON_SCOPE_EXIT
-	{
-		EVP_PKEY_free(oldPublicKey);
-		EVP_PKEY_free(newPublicKey);
-	};
+	// EVP_PKEY* newPublicKey = nullptr;
+	// if(GetEDPubKeyByBytes(newSign.pub(), newPublicKey) == false)
+	// {
+	// 	ERRORLOG(RED "Get public key from bytes failed!" RESET);
+	// 	return -3;
+	// }
+
+	// if(ED25519VerifyMessage(getsha256hash(GetBase58Addr(newSign.pub(), Base58Ver::kBase58Ver_Normal)), newPublicKey, newSign.sign()) == false)
+	// {
+	// 	ERRORLOG(RED "Public key verify sign failed!" RESET);
+	// 	return -4;
+	// }
+
+	// ON_SCOPE_EXIT
+	// {
+	// 	EVP_PKEY_free(oldPublicKey);
+	// 	EVP_PKEY_free(newPublicKey);
+	// };
 
 	int ret = MagicSingleton<PeerNode>::GetInstance()->update_base58Addr(oldSign.pub(), newSign.pub());
 	return ret;

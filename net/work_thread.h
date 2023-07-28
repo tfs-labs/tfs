@@ -26,9 +26,8 @@ public:
 	static void work_read(int id);
 	static void work_write(int id);
 	void start();
-
-	
 private:
+    friend std::string PrintCache(int where);
 	std::vector<std::thread> m_threads_work_list;
 	std::vector<std::thread> m_threads_read_list;
 	std::vector<std::thread> m_threads_trans_list;

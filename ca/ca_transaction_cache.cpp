@@ -173,6 +173,13 @@ int BuildBlock(std::vector<TransactionEntity>& txs, bool build_first)
     if(ret != 0)
     {
         ERRORLOG("DoHandleBlock failed The error code is {}",ret);
+        CBlock cblock;
+	    if (!cblock.ParseFromString(msg->block()))
+	    {
+		    ERRORLOG("fail to serialization!!");
+		    return -3090;
+	    }
+        ClearVRF(cblock);
         return ret -4000;
     }
 

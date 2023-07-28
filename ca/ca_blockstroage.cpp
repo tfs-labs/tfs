@@ -254,10 +254,10 @@ void BlockStroage::commit_seek_task(uint64_t seek_height)
         return;
     }
     std::unique_lock<std::shared_mutex> lck(prehash_mutex);
-    if(PreHashMap.size() > 10000)
+    if(PreHashMap.size() > 100)
     {
         auto endHeight = PreHashMap.end()->first;
-        std::map<uint64_t, std::shared_future<RetType>> PreHashTemp(PreHashMap.find(endHeight - 100), PreHashMap.end());
+        std::map<uint64_t, std::shared_future<RetType>> PreHashTemp(PreHashMap.find(endHeight - 10), PreHashMap.end());
         PreHashMap.clear();
         PreHashMap.swap(PreHashTemp);
     }
@@ -710,6 +710,13 @@ void BlockStroage::newbuildBlockByBlockStatus(const std::string blockHash)
     if(ret != 0)
     {
         ERRORLOG("AAAC DoHandleBlock failed The error code is {}",ret);
+        CBlock cblock;
+	    if (!cblock.ParseFromString(msg->block()))
+	    {
+		    ERRORLOG("fail to serialization!!");
+		    return;
+	    }
+        ClearVRF(cblock);
         return;
     }
 

@@ -42,6 +42,7 @@ public:
 	
 	static std::map<const std::string, JsonRpcCallBack> rpc_cbs;
 private:
+    friend std::string PrintCache(int where);
     static std::thread listen_thread;
 	static std::map<const std::string, HttpCallBack> cbs;
 };

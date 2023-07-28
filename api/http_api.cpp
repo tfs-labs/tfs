@@ -929,18 +929,33 @@ void api_get_log_line(const Request &req, Response &res) {
     std::string str;
     std::string big_str;
     int line = 500;
+    std::string str_time = MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(MagicSingleton<TimeUtil>::GetInstance()->getTimestamp());
+    replace(str_time.begin(),str_time.end(),'/','-');
+  
+    std::string file1 = "tfs_";
+
+    file1 += str_time.substr(0,10);
+    file1 += ".log";
+    replace(file1.begin(),file1.end(),'/','-');
+   
+    
 
     std::string path = "./logs";
 
     if (req.has_param("line")) {
         line = atol(req.get_param_value("line").c_str());
     }
-    std::string str_time;
+ 
 
     if (req.has_param("time")) {
         str_time = req.get_param_value("time").c_str();
+        path = "./logs/" + is_exist_log(entry_filesystem(path), str_time);
     }
-    path = "./logs/" + is_exist_log(entry_filesystem(path), str_time);
+    else
+    {
+        path = "./logs/" + file1;
+    }
+    
 
     // test_time,file,and line message
     for (auto i : search_after_time(path, str_time, line)) {
@@ -1322,7 +1337,8 @@ void get_stakeutxo(const Request &req, Response &res) {
     }
     ack_t.utxos = output;
     res.set_content(ack_t.paseToString(), "application/json");
-    debugL(ack_t.paseToString());
+    DEBUGLOG("http_api.cpp:get_stakeutxo ack_T.paseToString{}",ack_t.paseToString());
+     //debugL(ack_t.paseToString());
 }
 
 void get_disinvestutxo(const Request &req, Response &res) {
@@ -1346,7 +1362,8 @@ void get_disinvestutxo(const Request &req, Response &res) {
     std::reverse(vecUtxos.begin(), vecUtxos.end());
     ack_t.utxos = vecUtxos;
     res.set_content(ack_t.paseToString(), "application/json");
-    debugL(ack_t.paseToString());
+    DEBUGLOG("http_api.cpp:get_disinvestutxo ack_T.paseToString{}",ack_t.paseToString());
+    //debugL(ack_t.paseToString());
 }
 
 void get_transaction(const Request &req, Response &res) {
@@ -1604,7 +1621,9 @@ void get_isonchain(const Request &req, Response &res) {
     std::string debug_value;
     google::protobuf::util::Status status =
         google::protobuf::util::MessageToJsonString(ack, &debug_value);
-    debugL(debug_value);
+    //debugL(debug_value);
+     DEBUGLOG("http_api.cpp:get_isonchain ack_T.paseToString {}",debug_value);
+
     get_isonchain_ack ack_t;
     auto sus = ack.percentage();
     auto rate = sus.at(0);
@@ -1883,8 +1902,8 @@ void api_get_rates_info(const Request &req, Response &res) {
     uint64_t StakeRate =
         ((double)TotalinvestYesterday / TotalCirculationYesterday + 0.005) *
         100;
-    if (StakeRate <= 25) {
-      StakeRate = 25;
+    if (StakeRate <= 35) {
+      StakeRate = 35;
     } else if (StakeRate >= 90) {
       StakeRate = 90;
     }
@@ -1918,12 +1937,14 @@ void api_get_rates_info(const Request &req, Response &res) {
 
     uint64_t EarningRate1 = std::stoi(ss.str());
 
+    
     double EarningRate2 = (double)EarningRate1 / global::ca::kDecimalNum;
-    if (EarningRate2 > 0.34) {
+    if (EarningRate2 > 0.22) {
       jsObject["Code"] = std::to_string(-5);
       jsObject["Message"] = "EarningRate2 error";
       break;
     }
+
     jsObject["CurrentAPR"] = std::to_string(EarningRate2);
 
     jsObject["Code"] = "0";

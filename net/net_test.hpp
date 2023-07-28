@@ -113,6 +113,7 @@ public:
         return echo_catch;
     }
 private:
+friend std::string PrintCache(int where);
 std::mutex m_mutex;
 std::map<std::string, std::vector<std::string>>  echo_catch;
 

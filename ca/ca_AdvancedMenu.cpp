@@ -1,5 +1,6 @@
 #include "ca_AdvancedMenu.h"
 
+#include <cstdint>
 #include <ostream>
 #include <string>
 #include <sys/time.h>
@@ -43,6 +44,8 @@
 #include "utils/Cycliclist.hpp"
 #include "utils/TFSbenchmark.h"
 #include "ca_blockhelper.h"
+#include "utils/tmplog.h"
+
 
 
 
@@ -140,10 +143,12 @@ int GetBounsAddrInfo()
 
 void send_message_to_user()
 {
-    if (net_com::input_send_one_message() == 0)
+    if (net_com::input_send_one_message() == 0){
         DEBUGLOG("send one msg Succ.");
-    else
+    }else{
         DEBUGLOG("send one msg Fail.");
+    }
+        
 }
 
 void show_my_k_bucket()
@@ -304,7 +309,6 @@ void get_tx_block_info(uint64_t &top)
         printRocksdb(start, end, true, filestream);
     }
 }
-
 
 void gen_mnemonic()
 {
@@ -496,7 +500,75 @@ void evmAddrConversion()
     std::cout << checksum_addr << std::endl;
 }
 
+void evmAddrToBase58()
+{
+    std::string strInput;
+    std::cout << "Please md160 addr:" << std::endl;
+    std::cin >> strInput;
+    if (strInput.substr(0, 2) == "0x")
+    {
+        strInput = strInput.substr(2);
+    }
 
+    std::string base58_addr = evm_utils::EvmAddrToBase58(strInput);
+
+
+    std::cout << base58_addr << std::endl;
+}
+
+void generateEvmAddr()
+{
+    std::cout << std::endl
+              << std::endl;
+
+    std::cout << "AddrList : " << std::endl;
+    MagicSingleton<AccountManager>::GetInstance()->PrintAllAccount();
+
+    std::string strFromAddr;
+    std::cout << "Please enter your addr:" << std::endl;
+    std::cin >> strFromAddr;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    DBReader data_reader;
+    std::vector<std::string> vecDeployers;
+    data_reader.GetAllDeployerAddr(vecDeployers);
+    std::cout << "=====================deployers=====================" << std::endl;
+    for(auto& deployer : vecDeployers)
+    {
+        std::cout << "deployer: " << deployer << std::endl;
+    }
+    std::cout << "=====================deployers=====================" << std::endl;
+    std::string strToAddr;
+    std::cout << "Please enter to addr:" << std::endl;
+    std::cin >> strToAddr;
+    if(!CheckBase58Addr(strToAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;        
+    }
+
+    std::vector<std::string> vecDeployUtxos;
+    data_reader.GetDeployUtxoByDeployerAddr(strToAddr, vecDeployUtxos);
+    std::cout << "=====================deployed utxos=====================" << std::endl;
+    for(auto& deploy_utxo : vecDeployUtxos)
+    {
+        std::cout << "deployed utxo: " << deploy_utxo << std::endl;
+    }
+    std::cout << "=====================deployed utxos=====================" << std::endl;
+    std::string strTxHash;
+    std::cout << "Please enter tx hash:" << std::endl;
+    std::cin >> strTxHash;
+
+
+    std::string addr = evm_utils::EvmAddrToChecksum(evm_utils::generateEvmAddr(strToAddr+strTxHash));
+
+
+    std::cout << addr << std::endl;
+}
 
 static bool benchmark_automic_write_switch = false;
 void printBenchmarkToFile()
@@ -592,7 +664,6 @@ void get_balance_by_utxo()
 int imitate_create_tx_struct()
 {
     Account acc;
-    EVP_PKEY_free(acc.GetKey());
     if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
     {
         return -1;
@@ -1125,26 +1196,24 @@ void get_blockinfo_by_txhash()
     std::cout << GREEN << "Block height : " << block.height() << RESET << std::endl;
 }
 
-void get_tx_hash_by_height()
+void get_tx_hash_by_height(int64_t start_,int64_t end_,std::ofstream& filestream)
 {
-    int64_t start = 0;
-    int64_t end = 0;
+    int64_t start = start_;
+    int64_t end = end_;
 
-    std::cout << "Please input start height:";
-    std::cin >> start;
+    // std::cout << "Please input start height:";
+    // std::cin >> start;
 
-    std::cout << "Please input end height:";
-    std::cin >> end;
+    // std::cout << "Please input end height:";
+    // std::cin >> end;
 
     if (end < start)
     {
         std::cout << "input invalid" << std::endl;
         return;
     }
+    
 
-    std::string fileName = "TPS_INFO_" + std::to_string(start) + "_" + std::to_string(end) + ".txt";
-    std::ofstream filestream;
-    filestream.open(fileName);
     if (!filestream)
     {
         std::cout << "Open file failed!" << std::endl;
@@ -1176,12 +1245,12 @@ void get_tx_hash_by_height()
         }
         tx_total += tx_hash_count;
         block_total += tmp_block_hashs.size();
-        filestream << GREEN << "height: " << i << " block: " << tmp_block_hashs.size() << " tx: " << tx_hash_count << RESET << std::endl;
+        filestream  << "height: " << i << " block: " << tmp_block_hashs.size() << " tx: " << tx_hash_count  << std::endl;
     }
 
-    filestream << GREEN << "block sum " << block_total << RESET << std::endl;
-    filestream << GREEN << "tx sum " << tx_total  << RESET << std::endl;
-
+    filestream  << "block sum " << block_total  << std::endl;
+    filestream  << "tx sum " << tx_total   << std::endl;
+    //debugL("..............");
     std::vector<std::string> start_hashes;
     if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashsByBlockHeight(start, start_hashes))
     {
@@ -1234,6 +1303,33 @@ void get_tx_hash_by_height()
     uint64_t tx_conut = tx_total ;
     uint64_t tps = tx_conut / time_diff;
     filestream << "TPS : " << tps << std::endl;
+}
+
+
+void tps_count(){
+    int64_t start = 0;
+    int64_t end = 0;
+    std::cout << "Please input start height:";
+    std::cin >> start;
+
+    std::cout << "Please input end height:";
+    std::cin >> end;
+
+    if (end < start)
+    {
+        std::cout << "input invalid" << std::endl;
+        return;
+    }
+    std::string StartW = std::to_string(start);
+    std::string EndW = std::to_string(end);
+    std::string fileName =  "TPS_INFO_" +StartW +"_"+ EndW+".txt";
+    std::ofstream filestream;
+    filestream.open(fileName,std::ios::app);
+    for(int i = start;i < end;){
+        get_tx_hash_by_height(i,i+100,filestream);
+        i+=100;
+    }
+     
 }
 
 void get_investedNodeBlance()
@@ -1537,7 +1633,7 @@ void Create_multi_thread_automatic_stake_transaction()
         addrs.erase(it);
     }
 
-    for (int i = 0; i <= addrs.size(); ++i)
+    for (int i = 0; i < addrs.size(); ++i)
     {
         std::thread th(TestCreateStake_2, addrs[i]);
         th.detach();
@@ -1700,22 +1796,22 @@ void print_verify_node()
 
 void print_block_cache()
 {
-    std::cout << "input height :";
-    int height;
-    std::cin >> height;
-    std::map<uint64_t, std::set<CBlock, CBlockCompare>> _cache;
-    MagicSingleton<CBlockCache>::GetInstance()->GetCache(_cache);
-    auto iter = _cache.begin();
-    for (; iter != _cache.end(); ++iter)
-    {
-        if (iter->first == height)
-        {
-            for (auto block : iter->second)
-            {
-                std::cout << block.hash() << std::endl;
-            }
-        }
-    }
+//    std::cout << "input height :";
+//    int height;
+//    std::cin >> height;
+//    std::map<uint64_t, std::set<CBlock, CBlockCompare>> _cache;
+//    MagicSingleton<CBlockCache>::GetInstance()->GetCache(_cache);
+//    auto iter = _cache.begin();
+//    for (; iter != _cache.end(); ++iter)
+//    {
+//        if (iter->first == height)
+//        {
+//            for (auto block : iter->second)
+//            {
+//                std::cout << block.hash() << std::endl;
+//            }
+//        }
+//    }
 }
 
 void GetRewardAmount()
@@ -1820,5 +1916,95 @@ void GetRewardAmount()
         }
 }
 
+void tests_handle_invest()
+{
+    std::cout << std::endl
+              << std::endl;
+    std::cout << "AddrList:" << std::endl;
+    MagicSingleton<AccountManager>::GetInstance()->PrintAllAccount();
 
- 
+    Account account;
+    MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(account);
+    std::string strFromAddr = account.GetBase58();
+
+    std::cout << "Please enter your addr:" << std::endl;
+    std::cout << strFromAddr << std::endl;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        ERRORLOG("Input addr error!");
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    // std::string strToAddr;
+    std::cout << "Please enter the addr you want to delegate to:" << std::endl;
+    std::cout << strFromAddr << std::endl;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        ERRORLOG("Input addr error!");
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    std::string strInvestFee = "10000";
+    std::cout << "Please enter the amount to delegate:" << std::endl;
+    std::cout << strInvestFee << std::endl;
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(strInvestFee, pattern))
+    {
+        ERRORLOG("Input invest fee error!");
+        std::cout << "Input delegate fee error!" << std::endl;
+        return;
+    }
+    
+    TxHelper::InvestType investType = TxHelper::InvestType::kInvestType_NetLicence;
+    uint64_t invest_amount = std::stod(strInvestFee) * global::ca::kDecimalNum;
+
+    DBReader db_reader;
+    uint64_t top = 0;
+    if (DBStatus::DB_SUCCESS != db_reader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return;
+    }
+
+    CTransaction outTx;
+    std::vector<TxHelper::Utxo> outVin;
+    TxHelper::vrfAgentType isNeedAgent_flag;
+    Vrf info_;
+    int ret = TxHelper::CreateInvestTransaction(strFromAddr, strFromAddr, invest_amount, top + 1,  investType, outTx, outVin,isNeedAgent_flag,info_);
+    if (ret != 0)
+    {
+        ERRORLOG("Failed to create investment transaction! The error code is:{}", ret);
+        return;
+    }
+
+    TxMsgReq txMsg;
+    txMsg.set_version(global::kVersion);
+    TxMsgInfo *txMsgInfo = txMsg.mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+    txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+
+    if(isNeedAgent_flag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * new_info=txMsg.mutable_vrfinfo();
+        new_info->CopyFrom(info_);
+
+    }
+
+    auto msg = std::make_shared<TxMsgReq>(txMsg);
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    if(isNeedAgent_flag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    {
+        ret=DropshippingTx(msg,outTx);
+    }else{
+        ret=DoHandleTx(msg,outTx);
+    }
+    if (ret != 0)
+    {
+        ret -= 100;
+    }
+
+    DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+}

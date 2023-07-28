@@ -28,6 +28,7 @@ private:
     GlobalDataManager &operator=(GlobalDataManager &&) = delete;
     GlobalDataManager &operator=(const GlobalDataManager &) = delete;
     std::mutex global_data_mutex_;
+    friend std::string PrintCache(int where);
     std::map<std::string, std::shared_ptr<GlobalData>> global_data_;
 };
 

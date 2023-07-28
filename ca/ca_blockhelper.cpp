@@ -535,6 +535,15 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
     }
     else
     {
+        for (int i = 0; i < block.txs_size(); i++)
+        {
+            CTransaction tx = block.txs(i);
+            if (GetTransactionType(tx) == kTransactionType_Tx)
+            {
+                MagicSingleton<VRF>::GetInstance()->removeVrfInfo(tx.hash());
+            }
+        }
+        MagicSingleton<VRF>::GetInstance()->removeVrfInfo(block.hash());
         ERRORLOG("Transaction commit fail");
         return -7;
     }
@@ -834,7 +843,6 @@ void BlockHelper::PostTransactionProcess(const CBlock &block)
     {
         MagicSingleton<CBlockHttpCallback>::GetInstance()->AddBlock(block);
     }
-    MagicSingleton<CBlockCache>::GetInstance()->Add(block);
 }
 
 void BlockHelper::PostSaveProcess(const CBlock &block)
@@ -969,11 +977,10 @@ void BlockHelper::Process()
         std::vector<decltype(begin)> delete_pending_block;
         for(auto iter = begin; iter != pending_blocks.end(); ++iter)
         {
-            if (newTop >= iter->first + 10000 )
+            if (newTop >= iter->first + 20)
             {
                 delete_pending_block.push_back(iter);
             }
-
         }
 
         for (auto pending_iter : delete_pending_block)
@@ -1068,6 +1075,14 @@ void BlockHelper::Process()
         result = SaveBlock(block, sync_type, obtain_mean);
         usleep(100000);
         DEBUGLOG("fast_sync save block height: {}\tblock hash: {}\tresult: {}", block.height(), block.hash(), result);
+
+        if (result == -2)
+        {
+            DEBUGLOG("next run fast sync, sync height: {}", block.height() - 1);
+            SyncBlock::SetFastSync(block.height() - 1);
+            return;
+        }
+
         if(result != 0)
         {
             break;
@@ -1113,16 +1128,16 @@ void BlockHelper::Process()
             continue;
         }
         DEBUGLOG("broadcast_blocks SaveBlock Hash: {}, height: {}, PreHash:{}", block.hash().substr(0, 6), block.height(), block.prevhash().substr(0, 6));
-        result = SaveBlock(block, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::Normal);
-        if(result == 0)
-        {
-            MagicSingleton<BlockMonitor>::GetInstance()->SendSuccessBlockSituationAck(block);
-        }
-        else if(result < 0)
-        {
-            MagicSingleton<BlockMonitor>::GetInstance()->SendFailedBlockSituationAck(block);
-            INFOLOG("broadcast_blocks SaveBlock fail!!! result:{} ,BlockHash:{}", result, block.hash().substr(0,6));
-        }
+        /*result =*/SaveBlock(block, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::Normal);
+        // if(result == 0)
+        // {
+        //     MagicSingleton<BlockMonitor>::GetInstance()->SendSuccessBlockSituationAck(block);
+        // }
+        // else if(result < 0)
+        // {
+        //     MagicSingleton<BlockMonitor>::GetInstance()->SendFailedBlockSituationAck(block);
+        //     INFOLOG("broadcast_blocks SaveBlock fail!!! result:{} ,BlockHash:{}", result, block.hash().substr(0,6));
+        // }
     }
 
     auto begin = hash_pending_blocks.begin();
@@ -1398,8 +1413,12 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
         }
         INFOLOG("pending_blocks height:{}, hash:{}, status:{}", block.height(), block.hash().substr(0,6), status);
         MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(block.hash());
-        pending_blocks[block_height].insert({block.prevhash(), block}); 
-
+        
+        if(pending_blocks.size() < 1000)
+        {
+            pending_blocks[block_height].insert({block.prevhash(), block}); 
+        }
+        
         uint64_t node_height = 0;
         if (DBStatus::DB_SUCCESS != db_reader.GetBlockTop(node_height))
         {

@@ -36,16 +36,25 @@ public:
 	}
 	ListIter& operator++(int)
 	{
+        if(Iter==nullptr){
+            return *this;
+        }
 		Iter = Iter->next();
 		return *this;
 	}
 	ListIter& operator--(int) {
+        if(Iter==nullptr){
+            return *this;
+        }
 		Iter = Iter->prev();
 		return *this;
 	}
 	ListIter operator+(int value) {
 
 		pointer newPointer = Iter;
+        if(Iter==nullptr){
+            return ListIter<T>(nullptr);
+        }
 		if (value > 0) {
 			for (int i = 0; i < value; i++) {
 				newPointer = newPointer->next();
@@ -63,6 +72,10 @@ public:
 	}
 	ListIter operator-(int value) {
 		pointer newPointer = Iter;
+        if(Iter==nullptr){
+            return ListIter<T>(nullptr);
+        }
+
 		if (value > 0) {
 			for (int i = 0; i < value; i++) {
 				newPointer = newPointer->prev();
@@ -97,7 +110,7 @@ public:
 		return Iter;
 	}
 private:
-	pointer Iter;
+	pointer Iter=nullptr;
 };
 
 

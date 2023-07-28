@@ -40,6 +40,7 @@ public:
 
 
 private:
+    friend std::string PrintCache(int where);
     std::shared_mutex _mutex_for_nodes;
     std::shared_mutex _mutex_consensus_nodes;
     std::map<std::string, Node> _nodes;

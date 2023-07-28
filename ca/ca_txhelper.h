@@ -122,7 +122,8 @@ public:
     static int
     CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr, const std::string &txHash,
                                      const std::string &strInput, const std::string &OwnerEvmAddr, uint64_t height,
-                                     CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_);
+                                     CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_,
+                                     const uint64_t contractTip,const uint64_t contractTransfer);
 
     static int AddMutilSign(const std::string & addr, CTransaction &tx);
 

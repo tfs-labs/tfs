@@ -62,6 +62,7 @@
 
 bool bStopTx = false;
 bool bIsCreateTx = false;
+const static uint64_t input_limit = 500000;
 
 int ca_startTimerTask()
 {
@@ -121,7 +122,7 @@ void ca_cleanup()
 {
     ca_endTimerTask();
     
-    MagicSingleton<DBCache>::GetInstance()->StopTimer();
+//    MagicSingleton<DBCache>::GetInstance()->StopTimer();
     MagicSingleton<FailedTransactionCache>::GetInstance()->stop_Timer();
     MagicSingleton<BlockHelper>::GetInstance()->stopSaveBlock();
     MagicSingleton<TFSbenchmark>::GetInstance()->Clear();
@@ -279,7 +280,6 @@ void handle_stake()
               << std::endl;
 
     Account account;
-    EVP_PKEY_free(account.GetKey());
     MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(account);
     std::string strFromAddr = account.GetBase58();
     std::cout << "stake addr: " << strFromAddr << std::endl;
@@ -676,7 +676,7 @@ void handle_AccountManger()
     while (true)
     {
         std::cout << "0.Exit" << std::endl;
-        std::cout << "1. Set Defalut Account" << std::endl;
+        std::cout << "1. Set Default Account" << std::endl;
         std::cout << "2. Add Account" << std::endl;
         std::cout << "3. Remove " << std::endl;
         std::cout << "4. Import PrivateKey" << std::endl;
@@ -761,7 +761,6 @@ void handle_SetdefaultAccount()
     }
 
     Account oldAccount;
-    EVP_PKEY_free(oldAccount.GetKey());
     if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(oldAccount) != 0)
     {
         ERRORLOG("not found DefaultKeyBs58Addr  in the _accountList");
@@ -775,7 +774,6 @@ void handle_SetdefaultAccount()
     }
 
     Account newAccount;
-    EVP_PKEY_free(newAccount.GetKey());
     if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(newAccount) != 0)
     {
         ERRORLOG("not found DefaultKeyBs58Addr  in the _accountList");
@@ -857,6 +855,11 @@ static int loop_read(const std::regex&& pattern, std::string_view input_name, st
             }
         }
     }
+    if(input.size() > input_limit)
+    {
+        std::cout << "Input cannot exceed " << input_limit << " characters" << std::endl;
+        return -2;
+    }
     return 0;
 }
 
@@ -901,6 +904,11 @@ static int loop_read_file(std::string& input, std::string& output, const std::fi
     }
 
     output = readFileIntoString(contract_path.string());
+    if(output.size() > input_limit)
+    {
+        std::cout << "Input cannot exceed " << input_limit << " characters" << std::endl;
+        return -2;
+    }
     return 0;
 }
 
@@ -949,6 +957,12 @@ static int generate_contract_info(nlohmann::json& contract_info)
     std::cout << "Please enter contract name: " << std::endl;
     std::cin >> nContractName;
 
+    if(nContractName.size() > input_limit)
+    {
+        std::cout << "Input cannot exceed " << input_limit << " characters" << std::endl;
+        return -1;
+    }
+
     uint32_t nContractLanguage;
     std::cout << "Please enter contract language: (0: Solidity) " << std::endl;
     std::cin >> nContractLanguage;
@@ -956,7 +970,7 @@ static int generate_contract_info(nlohmann::json& contract_info)
     if (nContractLanguage != 0)
     {
         std::cout << "error contract language choice" << std::endl;
-        ret = -1;
+        ret = -2;
         return ret;
     }
 
@@ -1004,7 +1018,7 @@ static int generate_contract_info(nlohmann::json& contract_info)
     ret = loop_read_file(nContractSource, source_code, "source.sol");
     if (ret < 0)
     {
-        return -1;
+        return -3;
     }
 
     std::string nContractABI;
@@ -1197,7 +1211,6 @@ void handle_deploy_contract()
             strInput = strInput.substr(2);
             code += strInput;
         }
-
         Account launchAccount;
         if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0)
         {
@@ -1289,6 +1302,12 @@ void handle_call_contract()
     std::cout << "=====================deployed utxos=====================" << std::endl;
     for(auto& deploy_utxo : vecDeployUtxos)
     {
+        std::string ContractAddress = evm_utils::generateContractAddr(strToAddr + deploy_utxo);
+        std::string deployHash;
+        if(data_reader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
+        {
+            continue;
+        }
         std::cout << "deployed utxo: " << deploy_utxo << std::endl;
     }
     std::cout << "=====================deployed utxos=====================" << std::endl;
@@ -1304,6 +1323,26 @@ void handle_call_contract()
         strInput = strInput.substr(2);
     }
 
+    std::string contractTipStr;
+    std::cout << "input contract tip amount :" << std::endl;
+    std::cin >> contractTipStr;
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(contractTipStr, pattern))
+    {
+        std::cout << "input contract tip error ! " << std::endl;
+        return;
+    }
+
+    std::string contractTransferStr;
+    std::cout << "input contract transfer amount :" << std::endl;
+    std::cin >> contractTransferStr;
+    if (!std::regex_match(contractTransferStr, pattern))
+    {
+        std::cout << "input contract transfer error ! " << std::endl;
+        return;
+    }
+    uint64_t contractTip = (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t contractTransfer = (std::stod(contractTransferStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
     uint64_t top = 0;
 	if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
     {
@@ -1345,7 +1384,7 @@ void handle_call_contract()
         std::string OwnerEvmAddr = evm_utils::generateEvmAddr(launchAccount.GetPubStr());
         ret = TxHelper::CreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
                                                          OwnerEvmAddr, top + 1,
-                                                         outTx, isNeedAgent_flag, info_);
+                                                         outTx, isNeedAgent_flag, info_, contractTip, contractTransfer);
         if(ret != 0)
         {
             ERRORLOG("Create call contract transaction failed! ret:{}", ret);        
@@ -1405,7 +1444,6 @@ void handle_export_private_key()
     std::cin >> addr;
 
     Account account;
-    EVP_PKEY_free(account.GetKey());
     MagicSingleton<AccountManager>::GetInstance()->FindAccount(addr, account);
 
     file << "Please use Courier New font to view" << std::endl

@@ -31,6 +31,7 @@ public:
     bool InitDB(rocksdb::Status &ret_status);
     void DestoryDB();
     bool IsInitSuccess();
+    void GetDBMemoryUsage(std::string& info);
 
 private:
     friend class BackgroundErrorListener;

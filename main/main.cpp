@@ -44,7 +44,6 @@ void menu()
 		std::cout << "8.Deploy contract"  << std::endl;
 		std::cout << "9.Call contract"  << std::endl;
 		std::cout << "10.Account Manager" << std::endl;
-		std::cout << "99.Advanced_Menu" << std::endl;
 		std::cout << "0.Exit" << std::endl;
 
 		std::string strKey;
@@ -278,7 +277,6 @@ bool Check()
 		std::cout << "The current version data is inconsistent with the new version !" << std::endl;
 		return false;
 	}
-
 
 	return true;
 }
