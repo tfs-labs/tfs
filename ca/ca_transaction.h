@@ -48,7 +48,7 @@ int VerifyBlockSign(const CBlock &block);
 int DoHandleBlock(const std::shared_ptr<BlockMsg>& msg);
 int HandleBuildBlockBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, const MsgData& msgdata );
 
-int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg,  const int & requiredNodeCount, std::set<std::string> & nextNodes);
+int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg, std::set<std::string> & nextNodes);
 
 int GetBlockPackager(std::string &packager,const std::string & hash,Vrf & info);
 
@@ -95,7 +95,7 @@ bool IsMultiSign(const CTransaction & tx);
 
 int VerifyTxMsgReq(const TxMsgReq & msg);
 
-int VerifyTxFlowSignNode(const CTransaction &tx , const double & rand_num, const uint64_t & top, const std::string & target_addr);
+int VerifyTxFlowSignNode(const CTransaction &tx , const double & rand_num, std::string & target_addr);
 
 int VerifyTxTimeOut(const CTransaction &tx);
 

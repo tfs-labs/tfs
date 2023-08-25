@@ -9,6 +9,7 @@
 #include "ca_blockcompare.h"
 #include "utils/CTimer.hpp"
 #include "utils/console.h"
+#include "ca_check_blocks.h"
 
 struct fast_sync_helper
 {
@@ -19,6 +20,7 @@ struct fast_sync_helper
 
 class SyncBlock
 {
+friend class CheckBlocks;
 public:
 
     SyncBlock() = default;
@@ -29,6 +31,7 @@ public:
     SyncBlock &operator=(const SyncBlock &) = delete;
 
     void ThreadStart();
+    void ThreadStart(bool start);
     void ThreadStop();
 
     static int GetSyncNodeSimplify(uint32_t num, uint64_t chain_height, const std::vector<std::string> &pledge_addr,
@@ -39,7 +42,7 @@ public:
 
 private:
     static bool RunFastSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t start_sync_height, uint64_t end_sync_height);
-    static int RunNewSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t self_node_height, uint64_t start_sync_height, uint64_t end_sync_height);
+    static int RunNewSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t self_node_height, uint64_t start_sync_height, uint64_t end_sync_height, uint64_t new_send_num = 0);
     int RunFromZeroSyncOnce(const std::vector<std::string> &pledge_addr, uint64_t chain_height, uint64_t self_node_height);
     /**********************************************************************************************************************************/
     static bool GetFastSyncSumHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height,
@@ -48,11 +51,11 @@ private:
 
     /**********************************************************************************************************************************/
     static int GetSyncSumHashNode(uint64_t pledge_addr_size, const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height,
-                            std::map<uint64_t, uint64_t> &need_sync_heights, std::vector<std::string> &ret_node_ids, uint64_t &chain_height);
+                            std::map<uint64_t, uint64_t> &need_sync_heights, std::vector<std::string> &ret_node_ids, uint64_t &chain_height, uint64_t new_sync_sned_num);
     // static int GetSyncBlockHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height, uint64_t self_node_height, uint64_t chain_height,
-    static int GetSyncBlockBySumHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height, uint64_t self_node_height, uint64_t chain_height);
+    static int GetSyncBlockBySumHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height, uint64_t self_node_height, uint64_t chain_height, uint64_t new_sync_sned_num);
     static int GetSyncBlockHashNode(const std::vector<std::string> &send_node_ids, uint64_t start_sync_height, uint64_t end_sync_height, uint64_t self_node_height, uint64_t chain_height,
-                            std::vector<std::string> &ret_node_ids, std::vector<std::string> &req_hashes);
+                            std::vector<std::string> &ret_node_ids, std::vector<std::string> &req_hashes, uint64_t new_sync_sned_num);
     static int GetSyncBlockData(const std::vector<std::string> &send_node_ids, const std::vector<std::string> &req_hashes, uint64_t chain_height);
     /**********************************************************************************************************************************/
     static int GetFromZeroSyncSumHashNode(const std::vector<std::string> &send_node_ids, const std::vector<uint64_t>& send_heights, uint64_t self_node_height, std::set<std::string> &ret_node_ids, std::map<uint64_t, std::string>& sum_hashs);

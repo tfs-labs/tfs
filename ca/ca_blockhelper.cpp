@@ -33,8 +33,16 @@ int GetUtxoFindNode(uint32_t num, uint64_t chain_height, const std::vector<std::
 
 int SendBlockByUtxoReq(const std::string &utxo)
 {
+    if(!MagicSingleton<BlockHelper>::GetInstance()->GetwhetherRunSendBlockByUtxoReq())
+    {
+        DEBUGLOG("RollbackPreviousBlocks is running");
+        return 0;
+    }
+    MagicSingleton<BlockHelper>::GetInstance()->SetwhetherRunSendBlockByUtxoReq(false);
+
     ON_SCOPE_EXIT{
         MagicSingleton<BlockHelper>::GetInstance()->PopMissUTXO();
+        MagicSingleton<BlockHelper>::GetInstance()->SetwhetherRunSendBlockByUtxoReq(true);
     };
 
     DEBUGLOG("begin get missing block utxo {}",utxo);
@@ -47,8 +55,8 @@ int SendBlockByUtxoReq(const std::string &utxo)
     }
     uint64_t self_node_height = 0;
     std::vector<std::string> pledge_addr;
+    DBReader db_reader;
     {
-        DBReader db_reader;
         auto status = db_reader.GetBlockTop(self_node_height);
         if (DBStatus::DB_SUCCESS != status)
         {
@@ -128,10 +136,88 @@ int SendBlockByUtxoReq(const std::string &utxo)
         ERRORLOG("block_raw parse fail!");
         return -9;
     }
-    
+
+    std::string strHeader;
+    if (DBStatus::DB_SUCCESS == db_reader.GetBlockByBlockHash(block.hash(), strHeader)) 
+    {
+        DEBUGLOG("SendBlockByUtxoReq error in blockHash:{} , now run RollbackPreviousBlocks to find utxo: {}",block.hash(), utxo);
+        MagicSingleton<SyncBlock>::GetInstance()->ThreadStop();
+        int ret = MagicSingleton<BlockHelper>::GetInstance()->RollbackPreviousBlocks(utxo, self_node_height, block.hash());
+        MagicSingleton<SyncBlock>::GetInstance()->ThreadStart(true);
+        if(ret != 0)
+        {
+            ERRORLOG("RollbackPreviousBlocks fail, fail num: {}", ret);
+            return -10 - ret;
+        }
+    }
+
+
     MagicSingleton<BlockHelper>::GetInstance()->AddMissingBlock(block);
     
     return 0;
+}
+
+int BlockHelper::RollbackPreviousBlocks(const std::string utxo, uint64_t shelf_height, const std::string block_hash)
+{
+
+    DEBUGLOG("running RollbackPreviousBlocks");
+    DBReader db_reader;
+    uint64_t chain_height = 0;
+    if(!MagicSingleton<BlockHelper>::GetInstance()->obtain_chain_height(chain_height))
+    {
+        ERRORLOG("obtain_chain_height error -1");
+        return -1;
+    }
+    if(chain_height < shelf_height + 50)
+    {
+        ERRORLOG("chain_height > shelf_height  -2");
+        return -2;
+    }
+    for(int i = shelf_height / 100 * 100; i > 0; --i)
+    {
+        std::vector<std::string> self_block_hashes;
+        if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashesByBlockHeight(i, i, self_block_hashes))
+        {
+            ERRORLOG("GetBlockHashesByBlockHeight error -3");
+            return -3;
+        }
+
+        CBlock temp_block;
+        for(const auto& self_block_hashe: self_block_hashes)
+        { 
+            string strblock;
+            auto res = db_reader.GetBlockByBlockHash(self_block_hashe, strblock);
+            if (DBStatus::DB_SUCCESS != res)
+            {
+                ERRORLOG("GetBlockByBlockHash failed -4");
+                return -4;
+            }
+
+            if(!temp_block.ParseFromString(strblock))
+            {
+                ERRORLOG("block_raw parse fail! -5");
+                return -5;
+            }
+
+            for(const auto& tx : temp_block.txs())
+            {     
+                for(const auto& vin: tx.utxo().vin())
+                {
+                    for(const auto& prevOutput: vin.prevout())
+                    {
+                        if(prevOutput.hash() == utxo && temp_block.hash() != block_hash)
+                        {
+                            DEBUGLOG("SetFastSync height: {}", temp_block.height());
+                            SyncBlock::SetFastSync(temp_block.height());
+                            return 0;
+                        }
+                    } 
+                }
+            }
+        }
+    }
+
+    return -6;
 }
 
 int SendBlockByUtxoAck(const std::string &utxo, const std::string &addr, const std::string &msg_id)

@@ -399,7 +399,39 @@ struct SyncNodeHashAckDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SyncNodeHashAckDefaultTypeInternal _SyncNodeHashAck_default_instance_;
-static ::_pb::Metadata file_level_metadata_sync_5fblock_2eproto[25];
+PROTOBUF_CONSTEXPR GetCheckSumHashReq::GetCheckSumHashReq(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.self_node_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.height_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct GetCheckSumHashReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetCheckSumHashReqDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetCheckSumHashReqDefaultTypeInternal() {}
+  union {
+    GetCheckSumHashReq _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetCheckSumHashReqDefaultTypeInternal _GetCheckSumHashReq_default_instance_;
+PROTOBUF_CONSTEXPR GetCheckSumHashAck::GetCheckSumHashAck(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.hash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.self_node_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.height_)*/uint64_t{0u}
+  , /*decltype(_impl_.success_)*/false
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct GetCheckSumHashAckDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetCheckSumHashAckDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetCheckSumHashAckDefaultTypeInternal() {}
+  union {
+    GetCheckSumHashAck _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetCheckSumHashAckDefaultTypeInternal _GetCheckSumHashAck_default_instance_;
+static ::_pb::Metadata file_level_metadata_sync_5fblock_2eproto[27];
 static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_sync_5fblock_2eproto = nullptr;
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_sync_5fblock_2eproto = nullptr;
 
@@ -632,6 +664,26 @@ const uint32_t TableStruct_sync_5fblock_2eproto::offsets[] PROTOBUF_SECTION_VARI
   PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _impl_.self_node_id_),
   PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _impl_.msg_id_),
   PROTOBUF_FIELD_OFFSET(::SyncNodeHashAck, _impl_.hash_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashReq, _impl_.height_),
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashReq, _impl_.msg_id_),
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashReq, _impl_.self_node_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashAck, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashAck, _impl_.height_),
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashAck, _impl_.hash_),
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashAck, _impl_.msg_id_),
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashAck, _impl_.success_),
+  PROTOBUF_FIELD_OFFSET(::GetCheckSumHashAck, _impl_.self_node_id_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::FastSyncGetHashReq)},
@@ -659,6 +711,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 202, -1, -1, sizeof(::GetBlockByHashAck)},
   { 211, -1, -1, sizeof(::SyncNodeHashReq)},
   { 219, -1, -1, sizeof(::SyncNodeHashAck)},
+  { 228, -1, -1, sizeof(::GetCheckSumHashReq)},
+  { 237, -1, -1, sizeof(::GetCheckSumHashAck)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -687,6 +741,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::_GetBlockByHashAck_default_instance_._instance,
   &::_SyncNodeHashReq_default_instance_._instance,
   &::_SyncNodeHashAck_default_instance_._instance,
+  &::_GetCheckSumHashReq_default_instance_._instance,
+  &::_GetCheckSumHashAck_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_sync_5fblock_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -742,13 +798,17 @@ const char descriptor_table_protodef_sync_5fblock_2eproto[] PROTOBUF_SECTION_VAR
   "\017SyncNodeHashReq\022\024\n\014self_node_id\030\001 \001(\t\022\016"
   "\n\006msg_id\030\002 \001(\t\"E\n\017SyncNodeHashAck\022\024\n\014sel"
   "f_node_id\030\001 \001(\t\022\016\n\006msg_id\030\002 \001(\t\022\014\n\004hash\030"
-  "\003 \001(\tb\006proto3"
+  "\003 \001(\t\"J\n\022GetCheckSumHashReq\022\016\n\006height\030\001 "
+  "\001(\004\022\016\n\006msg_id\030\002 \001(\t\022\024\n\014self_node_id\030\003 \001("
+  "\t\"i\n\022GetCheckSumHashAck\022\016\n\006height\030\001 \001(\004\022"
+  "\014\n\004hash\030\002 \001(\t\022\016\n\006msg_id\030\003 \001(\t\022\017\n\007success"
+  "\030\004 \001(\010\022\024\n\014self_node_id\030\005 \001(\tb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_sync_5fblock_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_sync_5fblock_2eproto = {
-    false, false, 2093, descriptor_table_protodef_sync_5fblock_2eproto,
+    false, false, 2276, descriptor_table_protodef_sync_5fblock_2eproto,
     "sync_block.proto",
-    &descriptor_table_sync_5fblock_2eproto_once, nullptr, 0, 25,
+    &descriptor_table_sync_5fblock_2eproto_once, nullptr, 0, 27,
     schemas, file_default_instances, TableStruct_sync_5fblock_2eproto::offsets,
     file_level_metadata_sync_5fblock_2eproto, file_level_enum_descriptors_sync_5fblock_2eproto,
     file_level_service_descriptors_sync_5fblock_2eproto,
@@ -7880,6 +7940,649 @@ void SyncNodeHashAck::InternalSwap(SyncNodeHashAck* other) {
       file_level_metadata_sync_5fblock_2eproto[24]);
 }
 
+// ===================================================================
+
+class GetCheckSumHashReq::_Internal {
+ public:
+};
+
+GetCheckSumHashReq::GetCheckSumHashReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:GetCheckSumHashReq)
+}
+GetCheckSumHashReq::GetCheckSumHashReq(const GetCheckSumHashReq& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  GetCheckSumHashReq* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.msg_id_){}
+    , decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.height_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_msg_id().empty()) {
+    _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_self_node_id().empty()) {
+    _this->_impl_.self_node_id_.Set(from._internal_self_node_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _this->_impl_.height_ = from._impl_.height_;
+  // @@protoc_insertion_point(copy_constructor:GetCheckSumHashReq)
+}
+
+inline void GetCheckSumHashReq::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.msg_id_){}
+    , decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.height_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+GetCheckSumHashReq::~GetCheckSumHashReq() {
+  // @@protoc_insertion_point(destructor:GetCheckSumHashReq)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void GetCheckSumHashReq::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.msg_id_.Destroy();
+  _impl_.self_node_id_.Destroy();
+}
+
+void GetCheckSumHashReq::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GetCheckSumHashReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:GetCheckSumHashReq)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.msg_id_.ClearToEmpty();
+  _impl_.self_node_id_.ClearToEmpty();
+  _impl_.height_ = uint64_t{0u};
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GetCheckSumHashReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint64 height = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.height_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string msg_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_msg_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetCheckSumHashReq.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string self_node_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_self_node_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetCheckSumHashReq.self_node_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GetCheckSumHashReq::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:GetCheckSumHashReq)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 height = 1;
+  if (this->_internal_height() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_height(), target);
+  }
+
+  // string msg_id = 2;
+  if (!this->_internal_msg_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetCheckSumHashReq.msg_id");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_msg_id(), target);
+  }
+
+  // string self_node_id = 3;
+  if (!this->_internal_self_node_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_self_node_id().data(), static_cast<int>(this->_internal_self_node_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetCheckSumHashReq.self_node_id");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_self_node_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:GetCheckSumHashReq)
+  return target;
+}
+
+size_t GetCheckSumHashReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:GetCheckSumHashReq)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string msg_id = 2;
+  if (!this->_internal_msg_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_msg_id());
+  }
+
+  // string self_node_id = 3;
+  if (!this->_internal_self_node_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_self_node_id());
+  }
+
+  // uint64 height = 1;
+  if (this->_internal_height() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_height());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetCheckSumHashReq::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GetCheckSumHashReq::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetCheckSumHashReq::GetClassData() const { return &_class_data_; }
+
+
+void GetCheckSumHashReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GetCheckSumHashReq*>(&to_msg);
+  auto& from = static_cast<const GetCheckSumHashReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:GetCheckSumHashReq)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_msg_id().empty()) {
+    _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  if (!from._internal_self_node_id().empty()) {
+    _this->_internal_set_self_node_id(from._internal_self_node_id());
+  }
+  if (from._internal_height() != 0) {
+    _this->_internal_set_height(from._internal_height());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GetCheckSumHashReq::CopyFrom(const GetCheckSumHashReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:GetCheckSumHashReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GetCheckSumHashReq::IsInitialized() const {
+  return true;
+}
+
+void GetCheckSumHashReq::InternalSwap(GetCheckSumHashReq* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.msg_id_, lhs_arena,
+      &other->_impl_.msg_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.self_node_id_, lhs_arena,
+      &other->_impl_.self_node_id_, rhs_arena
+  );
+  swap(_impl_.height_, other->_impl_.height_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata GetCheckSumHashReq::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_sync_5fblock_2eproto_getter, &descriptor_table_sync_5fblock_2eproto_once,
+      file_level_metadata_sync_5fblock_2eproto[25]);
+}
+
+// ===================================================================
+
+class GetCheckSumHashAck::_Internal {
+ public:
+};
+
+GetCheckSumHashAck::GetCheckSumHashAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:GetCheckSumHashAck)
+}
+GetCheckSumHashAck::GetCheckSumHashAck(const GetCheckSumHashAck& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  GetCheckSumHashAck* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hash_){}
+    , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.height_){}
+    , decltype(_impl_.success_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.hash_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.hash_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_hash().empty()) {
+    _this->_impl_.hash_.Set(from._internal_hash(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_msg_id().empty()) {
+    _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_self_node_id().empty()) {
+    _this->_impl_.self_node_id_.Set(from._internal_self_node_id(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.height_, &from._impl_.height_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.success_) -
+    reinterpret_cast<char*>(&_impl_.height_)) + sizeof(_impl_.success_));
+  // @@protoc_insertion_point(copy_constructor:GetCheckSumHashAck)
+}
+
+inline void GetCheckSumHashAck::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hash_){}
+    , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.self_node_id_){}
+    , decltype(_impl_.height_){uint64_t{0u}}
+    , decltype(_impl_.success_){false}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.hash_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.hash_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.self_node_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+GetCheckSumHashAck::~GetCheckSumHashAck() {
+  // @@protoc_insertion_point(destructor:GetCheckSumHashAck)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void GetCheckSumHashAck::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.hash_.Destroy();
+  _impl_.msg_id_.Destroy();
+  _impl_.self_node_id_.Destroy();
+}
+
+void GetCheckSumHashAck::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GetCheckSumHashAck::Clear() {
+// @@protoc_insertion_point(message_clear_start:GetCheckSumHashAck)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.hash_.ClearToEmpty();
+  _impl_.msg_id_.ClearToEmpty();
+  _impl_.self_node_id_.ClearToEmpty();
+  ::memset(&_impl_.height_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.success_) -
+      reinterpret_cast<char*>(&_impl_.height_)) + sizeof(_impl_.success_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GetCheckSumHashAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint64 height = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.height_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string hash = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_hash();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetCheckSumHashAck.hash"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string msg_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_msg_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetCheckSumHashAck.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // bool success = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.success_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string self_node_id = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          auto str = _internal_mutable_self_node_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetCheckSumHashAck.self_node_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GetCheckSumHashAck::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:GetCheckSumHashAck)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 height = 1;
+  if (this->_internal_height() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_height(), target);
+  }
+
+  // string hash = 2;
+  if (!this->_internal_hash().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_hash().data(), static_cast<int>(this->_internal_hash().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetCheckSumHashAck.hash");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_hash(), target);
+  }
+
+  // string msg_id = 3;
+  if (!this->_internal_msg_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetCheckSumHashAck.msg_id");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_msg_id(), target);
+  }
+
+  // bool success = 4;
+  if (this->_internal_success() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(4, this->_internal_success(), target);
+  }
+
+  // string self_node_id = 5;
+  if (!this->_internal_self_node_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_self_node_id().data(), static_cast<int>(this->_internal_self_node_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetCheckSumHashAck.self_node_id");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_self_node_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:GetCheckSumHashAck)
+  return target;
+}
+
+size_t GetCheckSumHashAck::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:GetCheckSumHashAck)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string hash = 2;
+  if (!this->_internal_hash().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_hash());
+  }
+
+  // string msg_id = 3;
+  if (!this->_internal_msg_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_msg_id());
+  }
+
+  // string self_node_id = 5;
+  if (!this->_internal_self_node_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_self_node_id());
+  }
+
+  // uint64 height = 1;
+  if (this->_internal_height() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_height());
+  }
+
+  // bool success = 4;
+  if (this->_internal_success() != 0) {
+    total_size += 1 + 1;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetCheckSumHashAck::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GetCheckSumHashAck::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetCheckSumHashAck::GetClassData() const { return &_class_data_; }
+
+
+void GetCheckSumHashAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GetCheckSumHashAck*>(&to_msg);
+  auto& from = static_cast<const GetCheckSumHashAck&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:GetCheckSumHashAck)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_hash().empty()) {
+    _this->_internal_set_hash(from._internal_hash());
+  }
+  if (!from._internal_msg_id().empty()) {
+    _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  if (!from._internal_self_node_id().empty()) {
+    _this->_internal_set_self_node_id(from._internal_self_node_id());
+  }
+  if (from._internal_height() != 0) {
+    _this->_internal_set_height(from._internal_height());
+  }
+  if (from._internal_success() != 0) {
+    _this->_internal_set_success(from._internal_success());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GetCheckSumHashAck::CopyFrom(const GetCheckSumHashAck& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:GetCheckSumHashAck)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GetCheckSumHashAck::IsInitialized() const {
+  return true;
+}
+
+void GetCheckSumHashAck::InternalSwap(GetCheckSumHashAck* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.hash_, lhs_arena,
+      &other->_impl_.hash_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.msg_id_, lhs_arena,
+      &other->_impl_.msg_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.self_node_id_, lhs_arena,
+      &other->_impl_.self_node_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(GetCheckSumHashAck, _impl_.success_)
+      + sizeof(GetCheckSumHashAck::_impl_.success_)
+      - PROTOBUF_FIELD_OFFSET(GetCheckSumHashAck, _impl_.height_)>(
+          reinterpret_cast<char*>(&_impl_.height_),
+          reinterpret_cast<char*>(&other->_impl_.height_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata GetCheckSumHashAck::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_sync_5fblock_2eproto_getter, &descriptor_table_sync_5fblock_2eproto_once,
+      file_level_metadata_sync_5fblock_2eproto[26]);
+}
+
 // @@protoc_insertion_point(namespace_scope)
 PROTOBUF_NAMESPACE_OPEN
 template<> PROTOBUF_NOINLINE ::FastSyncGetHashReq*
@@ -7981,6 +8684,14 @@ Arena::CreateMaybeMessage< ::SyncNodeHashReq >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::SyncNodeHashAck*
 Arena::CreateMaybeMessage< ::SyncNodeHashAck >(Arena* arena) {
   return Arena::CreateMessageInternal< ::SyncNodeHashAck >(arena);
+}
+template<> PROTOBUF_NOINLINE ::GetCheckSumHashReq*
+Arena::CreateMaybeMessage< ::GetCheckSumHashReq >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::GetCheckSumHashReq >(arena);
+}
+template<> PROTOBUF_NOINLINE ::GetCheckSumHashAck*
+Arena::CreateMaybeMessage< ::GetCheckSumHashAck >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::GetCheckSumHashAck >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

@@ -21,7 +21,7 @@ class VRF
                     
                     for (; v1Iter != vrfCache.end();) {
                         if ((time_ - v1Iter->second.second) > 40000000) {
-                            //debugL(String::Format("time_:%s,remove VRF hash:%s,time:%s" ,time_,v1Iter->first,v1Iter->second.second));
+                         
                             v1Iter= vrfCache.erase(v1Iter);
                         } else {
                             v1Iter++;
@@ -30,7 +30,7 @@ class VRF
                     auto v2Iter = txvrfCache.begin();
                     for (; v2Iter != txvrfCache.end();) {
                         if ((time_ - v2Iter->second.second) > 40000000) {
-                           // debugL(String::Format("time_:%s,remove txVRF hash:%s,time:%s" ,time_,v2Iter->first,v2Iter->second.second));
+                           
                            v2Iter= txvrfCache.erase(v2Iter);
                         } else {
                             v2Iter++;
@@ -43,7 +43,7 @@ class VRF
                     auto v3Iter = vrfVerifyNode.begin();
                     for(;v3Iter!=vrfVerifyNode.end();){
                     if((time_ - v3Iter->second.second ) > 40000000 ){
-                       // debugL(String::Format("time_:%s,remove vrfVerifyNode: %s,time: %s" ,time_, v3Iter->first,v3Iter->second.second));
+                     
                        v3Iter= vrfVerifyNode.erase(v3Iter);
                     }else{
                        v3Iter++;

@@ -19,8 +19,8 @@ To meet the above requirements, TFSC focuses on the following core concepts:
 ###Setting up the development environment
 The following software packages need to be installed：
 
-- gcc （v9.3）
-- cmake（v3.21）
+- gcc (v9.3)
+- cmake(v3.21)
 - git 
 - unzip 
 - zip
@@ -482,7 +482,7 @@ The Raindrop Protocol avoids the free competition of bookkeeping rights in the t
 In traditional blockchain, due to the slow speed of block generation and the limitation of block size, the upchain speed of blocks is slow. In the TFSC, there can be unlimited transactions in a block. On the premise of ensuring data security and distribution, the upchain speed of TFSC can be as fast as 0.1 seconds. We set the recognition rate of the whole network as 75%, which is the ratio of the best speed to the best success rate after verification and practice. If the broadcast fails to reach the lower limit set by the whole network,nodes that have updated the data status will verify and roll back these failed transactions in the synchronization mechanism.
 ## DAG structure
 
-DAG (Directed Acyclic Graph), is proposed again as a new underlying ledger structure. "Directed" refers to directional, "Acyclic" refers tonot cyclic，no return.
+DAG (Directed Acyclic Graph), is proposed again as a new underlying ledger structure. "Directed" refers to directional, "Acyclic" refers tonot cyclic,no return.
 ### DAG model
 
 ![GAG1](img/DAG0.jpg)
@@ -624,7 +624,7 @@ Note: The minimum value of IR is 0.02. If it is less than 0.02, it is calculated
 | ...... | 0.02(Note: The minimum IR is 0.02) |
 
 individual current staking amount (N)=individual total staking amount - individual staking amount on the same day
-Individual claimable amount（S）
+Individual claimable amount(S)
 
 Note: staking (investment)
 

@@ -61,6 +61,8 @@ uint64_t GetSumHashFloorHeight(uint64_t height);
 
 int CalcHeightsSumHash(uint64_t block_height, DBReadWriter &db_writer);
 
+int Calc1000HeightsSumHash(uint64_t block_height, DBReadWriter &db_writer, std::string& back_hask);
+
 bool CalculateHeightSumHash(uint64_t start_height, uint64_t end_height, DBReadWriter &db_writer, std::string &sum_hash);
 }; // namespace ca_algorithm
 

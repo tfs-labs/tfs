@@ -22,7 +22,7 @@ bool RSAEnCode(const std::string& data, envelop* enve,const std::string& rsa_pub
     ret = enve->EncapsulatEnvelope(data, rsa_pubstr, strEncTxt, cipher_text, sign_message);
     if (ret != 0) {
 
-        errorL("EncapsulatEnvelope error" << ret);
+        errorL("EncapsulatEnvelope error:%s",ret);
         return false;
     }
  
@@ -53,7 +53,7 @@ bool RSADeCode(const std::string& data, envelop* enve,std::string & rsa_pubstr, 
         base_.Decode(code.strpub.c_str(), code.strpub.size()), message);
 
     if (ret != 0) {
-        errorL("OpenEnvelope error:" << ret);
+        errorL("OpenEnvelope error:%s", ret);
         return false;
     }
 

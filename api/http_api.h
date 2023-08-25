@@ -31,6 +31,9 @@ void api_filter_height(const Request &req, Response &res);
 void api_jsonrpc(const Request & req, Response & res);
 void api_test_echo(const Request & req, Response & res);
 void api_get_rates_info(const Request &req,Response &res);
+void api_print_all_blocks(const Request &req,Response &res);
+void api_print_Calc1000SumHash(const Request &req,Response &res);
+void api_set_Calc1000TopHeight(const Request &req,Response &res);
 
 #endif
 
@@ -60,6 +63,10 @@ void get_isonchain(const Request & req, Response & res);
 void get_deployer(const Request & req, Response & res);
 
 void get_deployerutxo(const Request & req, Response & res);
+
+
+void get_base58_from_evm(const Request & req, Response & res);
+void get_evmaddr_from_pubstr(const Request & req,Response & res);
 
 
 void get_restinvest(const Request & req, Response & res);

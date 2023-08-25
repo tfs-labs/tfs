@@ -293,7 +293,25 @@ bool UnregisterNode::StartSyncNode()
     {
         ClearConsensusNodeList();
     }
-    Register(node_map);
+
+    if(node_map.empty())
+    {
+        auto config_server_list = MagicSingleton<Config>::GetInstance()->GetServer();
+        int port = MagicSingleton<Config>::GetInstance()->GetServerPort();
+        
+        std::map<std::string, int> server_list;
+        for (auto & config_server_ip: config_server_list)
+        {
+            server_list.insert(std::make_pair(config_server_ip, port));
+        }
+
+        MagicSingleton<UnregisterNode>::GetInstance()->StartRegisterNode(server_list);
+    }
+    else
+    {
+        Register(node_map);
+    }
+
     return true;
 }
 
@@ -340,7 +358,7 @@ void UnregisterNode::ClearConsensusNodeList()
     consensus_node_list.erase(it);
 }
 
-std::vector<Node> UnregisterNode::GetConsensusNodeList()
+std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeList)
 {
     std::shared_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
     std::vector<Node> nodes;
@@ -359,6 +377,7 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
         counts.push_back(iter.second);
         ++map_cnts[iter.second];
     }
+
 
     int max_elem = 0, max_cnt = 0;
     for(auto iter : map_cnts)
@@ -385,6 +404,7 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
     }
     else
     {
+
         uint64_t quarter_num = counts.size() * 0.25;
         uint64_t three_quarter_num = counts.size() * 0.75;
         if (quarter_num == three_quarter_num)
@@ -395,16 +415,19 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
 
         std::sort(counts.begin(), counts.end());
 
+
         uint64_t quarter_num_value = counts.at(quarter_num);
         uint64_t three_quarter_num_value = counts.at(three_quarter_num);
         int64_t slower_limit_value = quarter_num_value -
                                             ((three_quarter_num_value - quarter_num_value) * 1.5);
+
 
         if(slower_limit_value > max_elem)
         {
             DEBUGLOG("Modify the value of the number of exceptions : {} , slower_limit_value: {}", max_elem, slower_limit_value);
             slower_limit_value = max_elem;
         }
+
 
         if(slower_limit_value >= 0)
         {
@@ -421,11 +444,12 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList()
         }
     }
 
-    std::vector<Node> node_list = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
-    for(auto & node : node_list)
+
+    for(auto & node : nodeList)
     {
         for(auto & iter : nodes)
         {
+
             if(node.base58address == iter.base58address)
             {
                 iter.height = node.height;

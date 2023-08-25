@@ -1,6 +1,7 @@
 #include "compress.h"
 #include <zlib.h>
 #include <string.h>
+#include "include/logging.h"	
 using namespace std;
 
 void Compress::compressFunc()
@@ -9,7 +10,8 @@ void Compress::compressFunc()
     char * pressdata = new char[datalen]{0};
     int err = compress((Bytef *)pressdata, &datalen, (const Bytef *)m_raw_data.c_str(), m_raw_data.size());
     if (err != Z_OK) {
-        cerr << "compress error:" << err << endl;
+        //cerr << "compress error:" << err << endl;
+        ERRORLOG("compress error: ", err);
         return;
     }
     string tmp(pressdata, datalen);
@@ -22,7 +24,8 @@ void Compress::uncompressFunc()
     char * uncompressData= new char[m_uncompress_len]{0};
     int err = uncompress((Bytef *)uncompressData, &m_uncompress_len,(const Bytef *)m_compress_data.c_str(), m_compress_data.size());
     if (err != Z_OK) {
-        cerr << "uncompress error:" << err << endl;
+        //cerr << "uncompress error:" << err << endl;
+        ERRORLOG("compress error: ", err);
         return;
     }
     string tmp(uncompressData, m_uncompress_len);

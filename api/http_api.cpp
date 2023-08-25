@@ -2,7 +2,6 @@
 #include "../net/unregister_node.h"
 #include "api/interface/RSA_TEXT.h"
 #include "api/interface/base64.h"
-#include "api/interface/evm.h"
 #include "api/interface/sig.h"
 #include "api/interface/tx.h"
 #include "ca/ca.h"
@@ -18,6 +17,7 @@
 #include "utils/MagicSingleton.h"
 #include "utils/tmplog.h"
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -69,6 +69,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <sys/types.h>
 #include "net/net_test.hpp"
+#include <utils/ContractUtils.h>
 
 
 void ca_register_http_callbacks() {
@@ -89,6 +90,10 @@ void ca_register_http_callbacks() {
     HttpServer::registerCallback("/autotxstatus", api_status_autotx);
     HttpServer::registerCallback("/filterheight", api_filter_height);
     HttpServer::registerCallback("/echo", api_test_echo);
+    HttpServer::registerCallback("/printblock", api_print_all_blocks);
+    HttpServer::registerCallback("/printCalcHash", api_print_Calc1000SumHash);
+    HttpServer::registerCallback("/setCalcTopHeight", api_set_Calc1000TopHeight);
+
 #endif // #ifndef NDEBUG
     HttpServer::registerCallback("/ip", api_ip);
     HttpServer::registerCallback("/normal", api_normal);
@@ -122,6 +127,8 @@ void ca_register_http_callbacks() {
     HttpServer::registerCallback("/get_restinverst_req", get_restinvest);
     HttpServer::registerCallback("/get_all_stake_node_list_ack",get_all_stake_node_list_ack);
 
+   HttpServer::registerCallback("/get_base58_from_evm",get_base58_from_evm);
+    HttpServer::registerCallback("/get_evmaddr_from_pubstr",get_evmaddr_from_pubstr);
     // Start the http service
     HttpServer::start();
 }
@@ -643,6 +650,8 @@ void api_normal(const Request & req, Response & res)
         oss << "-------------------------------------------------------------------------------------" << std::endl;
         oss << MagicSingleton<TimeUtil>::GetInstance()->formatUTCTimestamp(item->first) << std::endl;
 
+       
+    
         std::map<int,int> map_cnts; 
         std::vector<uint64_t> counts;
         for(auto iter : item->second)
@@ -666,6 +675,7 @@ void api_normal(const Request & req, Response & res)
 
         if(counts.size() > 2)
         {
+
             uint64_t quarter_num = counts.size() * 0.25;
             uint64_t three_quarter_num = counts.size() * 0.75;
             if (quarter_num == three_quarter_num)
@@ -1294,7 +1304,7 @@ void deploy_contract(const Request &req, Response &res) {
         return;
     }
 
-    std::string ret = handle__deploy_contract_rpc((void *)&req_t, &ack_t);
+    std::string ret = rpc_deploy_contract((void *)&req_t, &ack_t);
     if (ret != "0") {
         ack_t.ErrorCode = "-1";
         ack_t.ErrorMessage = ret;
@@ -1561,7 +1571,7 @@ void call_contract(const Request &req, Response &res) {
     if (ret == false) {
         return;
     }
-    std::string ret_ = handle__call_contract_rpc((void *)&req_t, &ack_t);
+    std::string ret_ = rpc_call_contract((void *)&req_t, &ack_t);
     if (ret_ != "0") {
         ack_t.ErrorMessage = ret_;
         ack_t.ErrorCode = "-1";
@@ -1593,6 +1603,8 @@ void send_message(const Request &req, Response &res) {
     google::protobuf::util::Status status =
         google::protobuf::util::JsonStringToMessage(ack_t.txJson, &tx);
     status = google::protobuf::util::JsonStringToMessage(ack_t.vrfJson, &info);
+   
+
     height = std::stoi(ack_t.height);
     type = (TxHelper::vrfAgentType)std::stoi(ack_t.txType);
     std::string txHash = getsha256hash(tx.SerializeAsString());
@@ -1953,4 +1965,197 @@ void api_get_rates_info(const Request &req, Response &res) {
   } while (0);
 
   res.set_content(jsObject.dump(), "application/json");
+}
+
+void get_base58_from_evm(const Request & req, Response & res){
+    evm_to_base58_req req_t;
+    if(!req_t.paseFromJson(req.body)){
+        res.set_content(Sutil::Format("{\"ErrorMessage\":\"%s\"}", "pase fail"), "application/json");
+        return;
+    }
+    std::string ret= evm_utils::EvmAddrToBase58(req_t.addr);
+    res.set_content(Sutil::Format("{\"base58\":\"%s\"}", ret), "application/json");
+}
+
+void get_evmaddr_from_pubstr(const Request & req,Response & res){
+    pubstr_to_evm_req req_t;
+     if(!req_t.paseFromJson(req.body)){
+        res.set_content(Sutil::Format("{\"ErrorMessage\":\"%s\"}", "pase fail"), "application/json");
+        return;
+    }
+    Base64 _base;
+    auto evm_addr_s= evm_utils::pubStrToEvmAddr(_base.Decode(req_t.pubstr.c_str(), req_t.pubstr.size()));
+
+    auto rets=evm_utils::EvmAddrToString(evm_addr_s);
+
+    res.set_content(Sutil::Format("{\"evmaddr\":\"%s\"}", rets),"application/json");
+    
+}
+void api_print_all_blocks(const Request &req,Response &res)
+{
+    int startHeight = 1;
+    if (req.has_param("startHeight")) {
+        startHeight = atol(req.get_param_value("startHeight").c_str());
+    }
+    if(startHeight <= 0)
+    {
+        res.set_content("error startHeight <= 0", "text/plain");
+        return;
+    }
+
+    int endHeight = 0;
+    if (req.has_param("endHeight")) {
+        endHeight = atol(req.get_param_value("endHeight").c_str());
+    }
+
+    uint64_t self_node_height = 0;
+    DBReader db_reader;
+    auto status = db_reader.GetBlockTop(self_node_height);
+    if (DBStatus::DB_SUCCESS != status)
+    {
+        res.set_content("GetBlockTop error", "text/plain");
+        return;
+    }
+
+    if(endHeight > self_node_height)
+    {
+        res.set_content("endHeight > self_node_height", "text/plain");
+        return;
+    }
+
+    std::stringstream oss;
+    oss << "block_hash_" << startHeight << "_" << endHeight << ".txt";
+    ofstream fout(oss.str(), std::ios::out);
+    for(int i = startHeight; i <= endHeight; ++i)
+    {
+        std::vector<std::string> self_block_hashes;
+        if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashesByBlockHeight(i, i, self_block_hashes))
+        {
+            res.set_content("GetBlockHashesByBlockHeight error", "text/plain");
+            return;
+        }
+        std::sort(self_block_hashes.begin(), self_block_hashes.end());
+        fout << "block height: " << i << "\tblock size: " << self_block_hashes.size() << std::endl; 
+        for(const auto& hash: self_block_hashes)
+        {
+            std::string strHeader;
+            if (DBStatus::DB_SUCCESS != db_reader.GetBlockByBlockHash(hash, strHeader)) 
+            {
+                res.set_content("GetBlockByBlockHash error", "text/plain");
+                return;
+            }
+
+            CBlock block;
+            if(!block.ParseFromString(strHeader))
+            {
+                res.set_content("ParseFromString error", "text/plain");
+                return;
+            }
+            fout << block.hash() << std::endl;
+        }
+        fout << "==============================================\n\n";
+
+    }
+
+    res.set_content("print success", "text/plain");
+
+}
+
+void api_print_Calc1000SumHash(const Request &req,Response &res)
+{
+    int startHeight = 1000;
+    if (req.has_param("startHeight")) {
+        startHeight = atol(req.get_param_value("startHeight").c_str());
+    }
+    if(startHeight <= 0 || startHeight % 1000 != 0)
+    {
+        res.set_content("startHeight error", "text/plain");
+        return;
+    }
+
+    int endHeight = 0;
+    if (req.has_param("endHeight")) {
+        endHeight = atol(req.get_param_value("endHeight").c_str());
+    }
+
+    if(endHeight < startHeight || endHeight % 1000 != 0)
+    {
+        res.set_content("endHeight error", "text/plain");
+        return;
+    }
+
+    uint64_t max_height = 0;
+    DBReader db_reader;
+    if(DBStatus::DB_SUCCESS != db_reader.GetBlockComHashHeight(max_height))
+    {
+        res.set_content("GetBlockComHashHeight error", "text/plain");
+        return;
+    }
+
+    std::ostringstream oss;
+    if(max_height < endHeight)
+    {
+        endHeight = max_height;
+        oss << "max_height = " << max_height << std::endl;
+    }
+
+
+    for(int i = startHeight; i <= endHeight; i += 1000)
+    {
+        std::string sumHash;
+        auto ret = db_reader.GetCheckBlockHashsByBlockHeight(i, sumHash);
+        if(ret == DBStatus::DB_SUCCESS)
+        {
+            oss << "blockHeight: " << i << "\t sumHash: " << sumHash << std::endl;
+        }
+        else 
+        {
+            oss << "GetCheckBlockHashsByBlockHeight error" << std::endl;
+        }
+        
+    }
+
+
+    res.set_content(oss.str(), "text/plain");
+
+}
+
+
+void api_set_Calc1000TopHeight(const Request &req,Response &res)
+{
+    int topHeight = 0;
+    if (req.has_param("topHeight")) {
+        topHeight = atol(req.get_param_value("topHeight").c_str());
+    }
+
+    DBReadWriter db_reader_write;
+
+    uint64_t self_node_height = 0;
+    auto status = db_reader_write.GetBlockTop(self_node_height);
+    if (DBStatus::DB_SUCCESS != status)
+    {
+        res.set_content("GetBlockTop error", "text/plain");
+        return;
+    }
+
+    if(topHeight % 1000 != 0 || topHeight < 0 || topHeight > self_node_height)
+    {
+        res.set_content("topHeight error", "text/plain");
+        return;
+    }
+
+    if (DBStatus::DB_SUCCESS != db_reader_write.SetBlockComHashHeight(topHeight))
+    {
+        res.set_content("SetBlockComHashHeight error", "text/plain");
+        return;
+    }
+
+    if (DBStatus::DB_SUCCESS != db_reader_write.TransactionCommit())
+    {
+        res.set_content("TransactionCommit error", "text/plain");
+        return;
+    }
+
+    res.set_content("SetBlockComHashHeight success", "text/plain");
+
 }

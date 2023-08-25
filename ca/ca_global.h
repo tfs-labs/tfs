@@ -12,12 +12,12 @@ namespace global{
 
     namespace ca{
 
-        // data
+
         extern const std::string kInitAccountBase58Addr ;
         extern const std::string kGenesisBlockRaw ;
         extern const uint64_t kGenesisTime ;
-        extern const std::string kConfigJson ;
-        
+        extern const std::string kConfigJson;
+
         // consensus
         extern const int kConsensus ;
         extern const int KRandomNodeGroup ;
@@ -36,25 +36,25 @@ namespace global{
         extern const double   kFixDoubleMinPrecision ;
         extern const uint64_t kM2 ;
 
-        extern const uint64_t kMinStakeAmt ;
-        extern const uint64_t kMinInvestAmt ;
+        extern const uint64_t kMinStakeAmt;
+        extern const uint64_t kMinInvestAmt;
         extern const std::string kGenesisSign ;
         extern const std::string kTxSign ;
         extern const std::string kVirtualStakeAddr ;
         extern const std::string kVirtualInvestAddr ;
         extern const std::string kVirtualBurnGasAddr ;
-        extern const std::string kStakeTypeNet ;
+        extern const std::string kStakeTypeNet;
         extern const std::string kInvestTypeNormal ;
-        extern const uint64_t kMinUnstakeHeight;
+        extern const uint64_t kMinUnstakeHeight ;
         extern const std::string kVirtualDeployContractAddr ;
 
         extern const int KSign_node_threshold ;
         extern const int kNeed_node_threshold ;
-        extern const int TxTimeoutMin;
+        extern const int TxTimeoutMin ;
 
-        extern const uint64_t KPackNodeThreshold;
+        extern const uint64_t KPackNodeThreshold ;
 
-        extern const double KBonusPumping ;
+        extern const double KBonusPumping;
 
         extern const uint32_t KVerifyFailThreshold ;
         enum class StakeType
@@ -95,6 +95,7 @@ namespace global{
             ByUtxo
         };
         extern const uint64_t sum_hash_range ;
+        extern const uint64_t thousand_sum_hash_range;
 
         namespace DoubleSpend {
             const int SingleBlock = -66;
@@ -107,7 +108,7 @@ namespace global{
             WASM
         };
         //test
-        extern std::atomic<uint64_t> TxNumber;
+        extern std::atomic<uint64_t> TxNumber ;
     }
 }
 

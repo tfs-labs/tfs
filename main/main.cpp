@@ -106,14 +106,17 @@ bool init()
 {
 	// Initialize the random number seed
 	srand(MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp());
-
+	
 	// Initialize configuration
-	if (!InitConfig())
+	// if (!InitConfig())
+
+	if(!InitConfig())
 	{
-		ERRORLOG("Failed to initialize config!");
-		std::cout << "Failed to initialize config!" << std::endl;
+		ERRORLOG("Failed to initialize log!");
+		std::cout << "Failed to initialize log!" << std::endl;
 		return false;
 	}
+
 
 	// Initialize log
 	if (!InitLog())

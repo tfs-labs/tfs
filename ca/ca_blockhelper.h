@@ -1,6 +1,7 @@
 #ifndef _CA_BLOCKHELPER_H
 #define _CA_BLOCKHELPER_H
 
+#include <cstdint>
 #include <stack>
 #include <mutex>
 #include <string>
@@ -84,6 +85,9 @@ class BlockHelper
         void AddRollbackBlock(const std::map<uint64_t, std::set<CBlock, CBlockCompare>> &sync_block_data);
         void AddMissingBlock(const CBlock& block);
         void AddSeekBlock(std::vector<std::pair<CBlock,std::string>>& seek_blocks);
+        int RollbackPreviousBlocks(const std::string utxo, uint64_t shelf_height, const std::string block_hash);
+        bool GetwhetherRunSendBlockByUtxoReq() { return whether_run_SendBlockByUtxoReq; };
+        void SetwhetherRunSendBlockByUtxoReq(bool flag) {whether_run_SendBlockByUtxoReq = flag;};
 
         std::pair<doubleSpendType, CBlock> DealDoubleSpend(const CBlock& block, const CTransaction& tx, const std::string& missing_utxo);
         void rollback_test();
@@ -123,6 +127,7 @@ class BlockHelper
         const static int max_missing_uxto_size = 10;
         const static int sync_save_fail_tolerance = 2;
         std::atomic<bool> stop_blocking = true;
+        std::atomic<bool> whether_run_SendBlockByUtxoReq = true;
 
         uint64_t postCommitCost = 0;
         uint64_t postCommitCount = 0;

@@ -5,10 +5,11 @@
 #include <vector>
 #include <map>
 #include "./base64.h"
+#include "utils/json.hpp"
 
-#define PAUSE bool paseFromJson(std::string json);
+#define PAUSE bool paseFromJson(const std::string& json);
 #define DOUMP std::string paseToString();
-
+#define TOJSONOBJ nlohmann::json paseToJsonObj(const std::string & json_str);
 #define UCTS_ACK(name)\
 	struct name{\
 	PAUSE\
@@ -31,7 +32,7 @@ struct the_top {
 	std::string top;
 	std::string ErrorCode;
 	std::string ErrorMessage;
-	bool paseFromJson(std::string json);
+	bool paseFromJson(const std::string& json);
 	std::string paseToString();
 };
 
@@ -39,23 +40,12 @@ struct the_top {
 
 
 
-UCTS_REQ(getsigvalue_req)
-std::string addr;
-std::string message;
-UCTE
-
-UCTS_ACK(getsigvalue_ack)
-std::string signature;
-std::string pub;
-UCTE
 
 
 
 
 UCTS_REQ(balance_req)
 std::string addr;
-
-
 UCTE
 
 
@@ -66,6 +56,7 @@ UCTE
 
 
 UCTS_REQ(contract_info)
+TOJSONOBJ
 std::string name;
 std::string language;
 std::string languageVersion;
@@ -115,6 +106,8 @@ std::string deployer;
 std::string deployutxo;
 std::string args;
 std::string pubstr;
+std::string tip;
+std::string money;
 UCTE
 
 
@@ -198,17 +191,10 @@ UCTS_ACK(get_stakeutxo_ack)
 std::map<std::string,uint64_t> utxos;
 UCTE
 
-// UCTS_ACK(rpc_ack)
-// std::string txhash;
-// UCTE
-struct rpc_ack {
-  bool paseFromJson(std ::string json);
-  std ::string paseToString();
-  std ::string type;
-  std ::string ErrorCode;
-  std ::string ErrorMessage;
-  std::string txhash;
-};
+UCTS_ACK(rpc_ack)
+std::string txhash;
+UCTE
+
 
 UCTS_REQ(rsa_code)
 std::string isEcode;
@@ -281,5 +267,13 @@ std::string code;
 std::string message ;
 std::vector<stake_node_list> list;
 UCTE
+
+UCTS_REQ(evm_to_base58_req)
+std::string addr;
+UCTE
+
+UCTS_REQ(pubstr_to_evm_req)
+std::string pubstr;
+UCTE 
 
 #endif

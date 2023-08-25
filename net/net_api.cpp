@@ -656,13 +656,13 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msg_id, bool get_nodel
 
 	if (dest.fd > 0)
 	{
-		return -1;
+		return 0;
 	}
 
 	if(!CheckBase58Addr(selfNode.base58address, Base58Ver::kBase58Ver_Normal))
 	{
 		ERRORLOG(" SendRegisterNodeReq selfNode.base58address {} error",selfNode.base58address);
-		return -3;
+		return -1;
 	}
 
     mynode->set_base58addr(selfNode.base58address);
@@ -679,15 +679,18 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msg_id, bool get_nodel
 	Account acc;
 	if(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
 	{
-		return -4;
+		ERRORLOG("The default account does not exist");
+		return -2;
 	}
 	if (selfNode.base58address != acc.GetBase58())
 	{
-		return -5;
+		ERRORLOG("The account address is incorrect : {} , : {}", selfNode.base58address, acc.GetBase58());
+		return -3;
 	}
 	if(!acc.Sign(getsha256hash(acc.GetBase58()), signature))
 	{
-		return -6;
+		ERRORLOG("sign fail , address : {}", acc.GetBase58());
+		return -4;
 	}
 
 	mynode->set_identity(acc.GetPubStr());
@@ -697,7 +700,7 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msg_id, bool get_nodel
 	if (MagicSingleton<PeerNode>::GetInstance()->connect_node(dest) != 0)
 	{
 		ERRORLOG(" connect_node error ip:{}", IpPort::ipsz(dest.public_ip));
-		return -7;
+		return -5;
 	}
  
 	net_com::send_message(dest, getNodes, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);

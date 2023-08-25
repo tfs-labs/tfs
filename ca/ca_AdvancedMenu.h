@@ -6,6 +6,7 @@
 #include "db/db_api.h"
 
 
+
 void gen_key();
 void rollback();
 void GetStakeList();

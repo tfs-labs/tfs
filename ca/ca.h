@@ -52,7 +52,9 @@ int checkNtpTime();
 
 int get_chain_height(unsigned int & chainHeight);
 
-std::string handle__deploy_contract_rpc(void * arg,void *ack);
-std::string handle__call_contract_rpc(void * arg,void *ack);
+
+
+std::string rpc_call_contract(void * arg,void *ack);
+std::string rpc_deploy_contract(void * arg,void *ack);
 
 #endif

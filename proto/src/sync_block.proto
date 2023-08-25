@@ -188,3 +188,22 @@ message SyncNodeHashAck
     string                 msg_id             = 2;
     string                 hash               = 3;
 }
+
+
+/*************************************New GetCheckSumHash*************************************/
+message GetCheckSumHashReq
+{
+    uint64                 height             = 1;
+    string                 msg_id             = 2;
+    string                 self_node_id       = 3;
+}
+
+message GetCheckSumHashAck
+{
+    uint64                  height            = 1;
+    string                  hash              = 2;
+    string                  msg_id            = 3;
+    bool                    success           = 4;
+    string                  self_node_id       = 5;
+
+}

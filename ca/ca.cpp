@@ -1,6 +1,7 @@
 #include "ca.h"
 
 #include "api/interface/base64.h"
+#include "google/protobuf/util/json_util.h"
 #include "unistd.h"
 
 #include <iostream>
@@ -23,6 +24,7 @@
 #include "include/net_interface.h"
 #include "net/net_api.h"
 #include "net/ip_port.h"
+#include "utils/json.hpp"
 #include "utils/qrcode.h"
 #include "utils/string_util.h"
 #include "utils/util.h"
@@ -53,12 +55,12 @@
 #include "utils/AccountManager.h"
 #include "ca_evmone.h"
 #include "api/interface/tx.h"
-#include "api/interface/evm.h"
 #include "utils/tmplog.h"
 #include "ca_DoubleSpendCache.h"
 #include "../net/epoll_mode.h"
 #include "ca/ca_FailedTransactionCache.h"
 #include "db/cache.h"
+#include "api/interface/evm.h"
 
 bool bStopTx = false;
 bool bIsCreateTx = false;
@@ -77,6 +79,7 @@ int ca_startTimerTask()
 
     // Block synchronization thread
     MagicSingleton<SyncBlock>::GetInstance()->ThreadStart();
+    MagicSingleton<CheckBlocks>::GetInstance()->StartTimer();
 
     MagicSingleton<BlockStroage>::GetInstance();
 
@@ -133,6 +136,7 @@ void ca_cleanup()
     MagicSingleton<EpollMode>::GetInstance()->stop();
     MagicSingleton<CBlockHttpCallback>::GetInstance()->Stop();
     MagicSingleton<PeerNode>::GetInstance()->stop_nodes_swap();
+    MagicSingleton<CheckBlocks>::GetInstance()->StopTimer();
 
     sleep(5);
     DBDestory();
@@ -1560,6 +1564,9 @@ void RegisterCallback()
     syncBlock_register_callback<SeekPreHashByHightReq>(HandleSeekGetPreHashReq);
     syncBlock_register_callback<SeekPreHashByHightAck>(HandleSeekGetPreHashAck);
 
+    syncBlock_register_callback<GetCheckSumHashReq>(HandleGetCheckSumHashReq);
+    syncBlock_register_callback<GetCheckSumHashAck>(HandleGetCheckSumHashAck);
+
     // PCEnd correlation
     tx_register_callback<TxMsgReq>(HandleTx); // PCEnd transaction flow
 
@@ -1761,34 +1768,200 @@ int checkNtpTime()
     }
 }
 
-std::string handle__deploy_contract_rpc(void * arg,void *ack){
+// std::string handle__deploy_contract_rpc(void * arg,void *ack){
 
-    deploy_contract_req * req_=(deploy_contract_req *)arg;
+//     deploy_contract_req * req_=(deploy_contract_req *)arg;
 
-    int ret;
-    std::string strFromAddr=req_->addr;
+//     int ret;
+//     std::string strFromAddr=req_->addr;
    
+//     if (!CheckBase58Addr(strFromAddr))
+//     {
+//        return "base58 error!";
+//     }
+
+//     DBReader data_reader;
+//     uint64_t top = 0;
+// 	if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
+//     {
+//        return "db get top failed!!";
+//     }
+
+//     uint32_t nContractType=std::stoi(req_->nContractType);
+
+//     contract_info info_t;
+//     if(info_t.paseFromJson(req_->info)==false){
+//         return "contract_info pase fail";
+//     }
+
+//     nlohmann::json contract_info_(info_t.paseToString());
+   
+
+//     CTransaction outTx;
+//     TxHelper::vrfAgentType isNeedAgent_flag;
+//     Vrf info_;
+//     if(nContractType == 0)
+//     {
+
+//         std::string code=req_->contract;
+//         std::string strInput=req_->data;
+
+//         if (strInput == "0")
+//         {
+//             strInput.clear();
+//         }
+//         else if(strInput.substr(0, 2) == "0x")
+//         {
+//             strInput = strInput.substr(2);
+//             code += strInput;
+//         }
+//         Base64 base_;
+//         std::string pubstr=base_.Decode(req_->pubstr.c_str(),req_->pubstr.size());
+//         std::string OwnerEvmAddr = evm_utils::generateEvmAddr(pubstr);
+      
+//         // ret = interface_evm::CreateEvmDeployContractTransaction(strFromAddr, OwnerEvmAddr, code, top + 1, contract_info_,
+//         //                                                    outTx,
+//         //                                                    isNeedAgent_flag,
+//         //                                                    info_,ack);
+//         if(ret != 0)
+//         {
+//            return "Failed to create DeployContract transaction! The error code is:" + std::to_string(ret);
+//         }        
+//     }
+//     else
+//     {
+//         return "unknow error";
+//     }
+//     return std::to_string(ret);
+// }
+
+
+// std::string handle__call_contract_rpc(void * arg,void *ack){
+
+//     call_contract_req * ret_t=(call_contract_req*)arg;
+
+//     std::string strFromAddr=ret_t->addr;
+    
+//     if (!CheckBase58Addr(strFromAddr))
+//     {
+//         return DSTR"Input addr error!" ;
+//     }
+
+//     DBReader data_reader;
+//     std::string strToAddr=ret_t->deployer;
+    
+//     if(!CheckBase58Addr(strToAddr))
+//     {
+//         return DSTR "Input addr error!";
+             
+//     }
+
+//     std::string strTxHash=ret_t->deployutxo;
+//     std::string strInput=ret_t->args;
+    
+//     if(strInput.substr(0, 2) == "0x")
+//     {
+//         strInput = strInput.substr(2);
+//     }
+
+//     uint64_t top = 0;
+// 	if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
+//     {
+//         return DSTR"db get top failed!!";
+        
+//     }
+
+//     CTransaction outTx;
+//     CTransaction tx;
+//     std::string tx_raw;
+//     if (DBStatus::DB_SUCCESS != data_reader.GetTransactionByHash(strTxHash, tx_raw))
+//     {
+//         return DSTR"get contract transaction failed!!";
+//     }
+//     if(!tx.ParseFromString(tx_raw))
+//     {
+//         return DSTR"contract transaction parse failed!!";
+//     }
+    
+//     nlohmann::json data_json = nlohmann::json::parse(tx.data());
+//     nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
+//     int vm_type = tx_info["VmType"].get<int>();
+ 
+//     int ret = 0;
+//      std::pair<int,std::string> ret_evm;
+//     TxHelper::vrfAgentType isNeedAgent_flag;
+//     Vrf info_;
+//     if (vm_type == global::ca::VmType::EVM)
+//     {
+//         Base64 base_;
+//         std::string pubstr_=base_.Decode(ret_t->pubstr.c_str(),ret_t->pubstr.size());
+//         std::string OwnerEvmAddr = evm_utils::generateEvmAddr(pubstr_);
+//         ret_evm = interface_evm::ReplaceCreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
+//                                                          OwnerEvmAddr, top + 1,
+//                                                          outTx, isNeedAgent_flag, info_,ack);
+//         if(ret_evm.first != 0)
+//         {
+//            return DSTR"Create call contract transaction failed! ret:"+ret_evm.second;        
+            
+//         }
+//     }
+//     else
+//     {
+//         return DSTR"unkown";
+//     }
+//     return std::to_string(ret);
+// }
+
+
+
+void RPC_contrack_uitl(CTransaction & tx){
+    tx.clear_hash();
+    std::set<std::string> Miset;
+	Base64 base_;
+	auto txUtxo = tx.mutable_utxo();
+	int index = 0;
+	auto vin = txUtxo->mutable_vin();
+	for (auto& owner : txUtxo->owner()) {
+
+		Miset.insert(owner);
+		auto vin_t = vin->Mutable(index);
+		vin_t->clear_vinsign();
+		index++;
+	}
+	for (auto& owner : Miset) {
+		CTxUtxo* txUtxo = tx.mutable_utxo();
+		CTxUtxo copyTxUtxo = *txUtxo;
+		copyTxUtxo.clear_multisign();
+        txUtxo->clear_multisign();
+	}
+	
+}
+
+std::string rpc_deploy_contract(void * arg,void *ack)
+{
+    deploy_contract_req * req_=(deploy_contract_req *)arg;
+    int ret=0;
+    std::string strFromAddr=req_->addr;
     if (!CheckBase58Addr(strFromAddr))
     {
-       return "base58 error!";
+        return DSTR"base58 error!";
     }
 
     DBReader data_reader;
     uint64_t top = 0;
 	if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
     {
-       return "db get top failed!!";
+        return DSTR"db get top failed!!";
     }
 
     uint32_t nContractType=std::stoi(req_->nContractType);
+    
 
-    contract_info info_t;
-    if(info_t.paseFromJson(req_->info)==false){
-        return "contract_info pase fail";
-    }
-
-    nlohmann::json contract_info_(info_t.paseToString());
+     contract_info info_t;
    
+
+    nlohmann::json info_t_obj=info_t.paseToJsonObj(req_->info);
+    
 
     CTransaction outTx;
     TxHelper::vrfAgentType isNeedAgent_flag;
@@ -1796,8 +1969,17 @@ std::string handle__deploy_contract_rpc(void * arg,void *ack){
     if(nContractType == 0)
     {
 
+       
+       
         std::string code=req_->contract;
+        
+        if(code.empty())
+        {
+            return DSTR"code is empty!";
+        }
+        // std::cout << "code :" << code << std::endl;
         std::string strInput=req_->data;
+
 
         if (strInput == "0")
         {
@@ -1808,61 +1990,100 @@ std::string handle__deploy_contract_rpc(void * arg,void *ack){
             strInput = strInput.substr(2);
             code += strInput;
         }
+        //Account launchAccount;
         Base64 base_;
         std::string pubstr=base_.Decode(req_->pubstr.c_str(),req_->pubstr.size());
         std::string OwnerEvmAddr = evm_utils::generateEvmAddr(pubstr);
-      
-        ret = interface_evm::CreateEvmDeployContractTransaction(strFromAddr, OwnerEvmAddr, code, top + 1, contract_info_,
+
+        ret = rpc_evm::rpc_CreateEvmDeployContractTransaction(strFromAddr, OwnerEvmAddr, code, top + 1, info_t_obj,
                                                            outTx,
                                                            isNeedAgent_flag,
-                                                           info_,ack);
+                                                           info_);
         if(ret != 0)
         {
-           return "Failed to create DeployContract transaction! The error code is:" + std::to_string(ret);
+            return DSTR Sutil::Format("Failed to create DeployContract transaction! The error code is:%s", ret);
+            
         }        
     }
     else
     {
-        return "unknow error";
+        return DSTR "unknow error";
     }
-    return std::to_string(ret);
+    tx_ack *ack_t=(tx_ack*)ack;
+    RPC_contrack_uitl(outTx);
+    std::string txJsonString;
+	std::string vrfJsonString;
+	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
+	status=google::protobuf::util::MessageToJsonString(info_,&vrfJsonString);
+	ack_t->txJson=txJsonString;
+	ack_t->vrfJson=vrfJsonString;
+	ack_t->ErrorCode="0";
+	ack_t->height=std::to_string(top);
+	ack_t->txType=std::to_string((int)isNeedAgent_flag);
+
+    return "0";
 }
 
 
-std::string handle__call_contract_rpc(void * arg,void *ack){
 
+
+
+std::string rpc_call_contract(void * arg,void *ack)
+{
     call_contract_req * ret_t=(call_contract_req*)arg;
 
     std::string strFromAddr=ret_t->addr;
-    
+
+  
     if (!CheckBase58Addr(strFromAddr))
     {
-        return DSTR"Input addr error!" ;
+        return DSTR "base58 addr error!";
     }
 
-    DBReader data_reader;
-    std::string strToAddr=ret_t->deployer;
-    
-    if(!CheckBase58Addr(strToAddr))
-    {
-        return DSTR "Input addr error!";
-             
-    }
 
     std::string strTxHash=ret_t->deployutxo;
     std::string strInput=ret_t->args;
+    std::string strToAddr=ret_t->deployer;
+
+    DBReader data_reader;
     
+    if(!CheckBase58Addr(strToAddr))
+    {
+        return DSTR "base58 addr error!";
+    }
+
+   
     if(strInput.substr(0, 2) == "0x")
     {
         strInput = strInput.substr(2);
     }
 
+    std::string contractTipStr=ret_t->tip;
+    
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(contractTipStr, pattern))
+    {
+        return DSTR "input contract tip error ! ";
+        
+    }
+
+    std::string contractTransferStr=ret_t->money;
+    // std::cout << "input contract transfer amount :" << std::endl;
+    // std::cin >> contractTransferStr;
+    if (!std::regex_match(contractTransferStr, pattern))
+    {
+       return DSTR"input contract transfer error ! ";
+      
+    }
+    uint64_t contractTip = (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t contractTransfer = (std::stod(contractTransferStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
     uint64_t top = 0;
 	if (DBStatus::DB_SUCCESS != data_reader.GetBlockTop(top))
     {
-        return DSTR"db get top failed!!";
-        
+       return DSTR"db get top failed!!";
+       
     }
+
 
     CTransaction outTx;
     CTransaction tx;
@@ -1874,14 +2095,15 @@ std::string handle__call_contract_rpc(void * arg,void *ack){
     if(!tx.ParseFromString(tx_raw))
     {
         return DSTR"contract transaction parse failed!!";
+      
     }
     
+
     nlohmann::json data_json = nlohmann::json::parse(tx.data());
     nlohmann::json tx_info = data_json["TxInfo"].get<nlohmann::json>();
     int vm_type = tx_info["VmType"].get<int>();
  
     int ret = 0;
-     std::pair<int,std::string> ret_evm;
     TxHelper::vrfAgentType isNeedAgent_flag;
     Vrf info_;
     if (vm_type == global::ca::VmType::EVM)
@@ -1889,18 +2111,34 @@ std::string handle__call_contract_rpc(void * arg,void *ack){
         Base64 base_;
         std::string pubstr_=base_.Decode(ret_t->pubstr.c_str(),ret_t->pubstr.size());
         std::string OwnerEvmAddr = evm_utils::generateEvmAddr(pubstr_);
-        ret_evm = interface_evm::ReplaceCreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
+        ret = rpc_evm::rpc_CreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
                                                          OwnerEvmAddr, top + 1,
-                                                         outTx, isNeedAgent_flag, info_,ack);
-        if(ret_evm.first != 0)
+                                                         outTx, isNeedAgent_flag, info_, contractTip, contractTransfer);
+        if(ret != 0)
         {
-           return DSTR"Create call contract transaction failed! ret:"+ret_evm.second;        
-            
+            return DSTR Sutil::Format("Create call contract transaction failed! ret: %s", ret);          
         }
     }
     else
     {
-        return DSTR"unkown";
+        return DSTR"not EVM";
     }
-    return std::to_string(ret);
+    
+    //errorL("VVVVVVVRRRRFDATA:%s",info_.data());
+
+    tx_ack *ack_t=(tx_ack*)ack;
+    RPC_contrack_uitl(outTx);
+    std::string txJsonString;
+	std::string vrfJsonString;
+	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
+	status=google::protobuf::util::MessageToJsonString(info_,&vrfJsonString);
+	ack_t->txJson=txJsonString;
+	ack_t->vrfJson=vrfJsonString;
+    //errorL("vrfString:%s",ack_t->vrfJson);
+	ack_t->ErrorCode="0";
+	ack_t->height=std::to_string(top);
+	ack_t->txType=std::to_string((int)isNeedAgent_flag);
+
+    return "0";
+    
 }

@@ -1,5 +1,5 @@
 ![title](./wiki/img/title.png)
-The special architecture design of TFSC leads to the potential competition of node performance in the process of the continuous increase of TPS demand of the main network，The hardware performance of added nodes improves，The TPS of TFSC main network will also be continuously improved
+The special architecture design of TFSC leads to the potential competition of node performance in the process of the continuous increase of TPS demand of the main network,The hardware performance of added nodes improves,The TPS of TFSC main network will also be continuously improved
 
 ## Installation
 
@@ -16,8 +16,8 @@ Net：25+ MBit/ s to download Internet service.
 ### Required package
 
 ```
-gcc （v9.3）
-cmake（v3.21）
+gcc (v9.3)
+cmake(v3.21)
 git
 unzip
 zip
@@ -40,7 +40,7 @@ scl enable devtoolset-9 bash  (Is used to set the gcc toolchain to devtoolset-9)
 
 ```
 
-CMake（Note: The CMake version must be at least 3.15.x or later, and 3.21.x is recommended）
+CMake(Note: The CMake version must be at least 3.15.x or later, and 3.21.x is recommended)
 
 ```plaintext
 curl -O https://cmake.org/files/v3.21/cmake-3.21.4.tar.gz
@@ -50,7 +50,7 @@ cd cmake-3.21.4
 gmake && make install
 ```
 
-Verify the time of the CentOS server（Ensure that the time of each node is the same, and ensure that the transaction on the chain may be reliable）
+Verify the time of the CentOS server(Ensure that the time of each node is the same, and ensure that the transaction on the chain may be reliable)
 
 ```plaintext
 1.Install NTP

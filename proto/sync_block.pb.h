@@ -74,6 +74,12 @@ extern GetBlockByUtxoAckDefaultTypeInternal _GetBlockByUtxoAck_default_instance_
 class GetBlockByUtxoReq;
 struct GetBlockByUtxoReqDefaultTypeInternal;
 extern GetBlockByUtxoReqDefaultTypeInternal _GetBlockByUtxoReq_default_instance_;
+class GetCheckSumHashAck;
+struct GetCheckSumHashAckDefaultTypeInternal;
+extern GetCheckSumHashAckDefaultTypeInternal _GetCheckSumHashAck_default_instance_;
+class GetCheckSumHashReq;
+struct GetCheckSumHashReqDefaultTypeInternal;
+extern GetCheckSumHashReqDefaultTypeInternal _GetCheckSumHashReq_default_instance_;
 class HashType;
 struct HashTypeDefaultTypeInternal;
 extern HashTypeDefaultTypeInternal _HashType_default_instance_;
@@ -130,6 +136,8 @@ template<> ::GetBlockByHashAck* Arena::CreateMaybeMessage<::GetBlockByHashAck>(A
 template<> ::GetBlockByHashReq* Arena::CreateMaybeMessage<::GetBlockByHashReq>(Arena*);
 template<> ::GetBlockByUtxoAck* Arena::CreateMaybeMessage<::GetBlockByUtxoAck>(Arena*);
 template<> ::GetBlockByUtxoReq* Arena::CreateMaybeMessage<::GetBlockByUtxoReq>(Arena*);
+template<> ::GetCheckSumHashAck* Arena::CreateMaybeMessage<::GetCheckSumHashAck>(Arena*);
+template<> ::GetCheckSumHashReq* Arena::CreateMaybeMessage<::GetCheckSumHashReq>(Arena*);
 template<> ::HashType* Arena::CreateMaybeMessage<::HashType>(Arena*);
 template<> ::SyncFromZeroGetBlockAck* Arena::CreateMaybeMessage<::SyncFromZeroGetBlockAck>(Arena*);
 template<> ::SyncFromZeroGetBlockReq* Arena::CreateMaybeMessage<::SyncFromZeroGetBlockReq>(Arena*);
@@ -4827,6 +4835,393 @@ class SyncNodeHashAck final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_sync_5fblock_2eproto;
 };
+// -------------------------------------------------------------------
+
+class GetCheckSumHashReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:GetCheckSumHashReq) */ {
+ public:
+  inline GetCheckSumHashReq() : GetCheckSumHashReq(nullptr) {}
+  ~GetCheckSumHashReq() override;
+  explicit PROTOBUF_CONSTEXPR GetCheckSumHashReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetCheckSumHashReq(const GetCheckSumHashReq& from);
+  GetCheckSumHashReq(GetCheckSumHashReq&& from) noexcept
+    : GetCheckSumHashReq() {
+    *this = ::std::move(from);
+  }
+
+  inline GetCheckSumHashReq& operator=(const GetCheckSumHashReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetCheckSumHashReq& operator=(GetCheckSumHashReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetCheckSumHashReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetCheckSumHashReq* internal_default_instance() {
+    return reinterpret_cast<const GetCheckSumHashReq*>(
+               &_GetCheckSumHashReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    25;
+
+  friend void swap(GetCheckSumHashReq& a, GetCheckSumHashReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetCheckSumHashReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetCheckSumHashReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetCheckSumHashReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetCheckSumHashReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetCheckSumHashReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GetCheckSumHashReq& from) {
+    GetCheckSumHashReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetCheckSumHashReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "GetCheckSumHashReq";
+  }
+  protected:
+  explicit GetCheckSumHashReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kMsgIdFieldNumber = 2,
+    kSelfNodeIdFieldNumber = 3,
+    kHeightFieldNumber = 1,
+  };
+  // string msg_id = 2;
+  void clear_msg_id();
+  const std::string& msg_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_msg_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_msg_id();
+  PROTOBUF_NODISCARD std::string* release_msg_id();
+  void set_allocated_msg_id(std::string* msg_id);
+  private:
+  const std::string& _internal_msg_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_msg_id(const std::string& value);
+  std::string* _internal_mutable_msg_id();
+  public:
+
+  // string self_node_id = 3;
+  void clear_self_node_id();
+  const std::string& self_node_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_self_node_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_self_node_id();
+  PROTOBUF_NODISCARD std::string* release_self_node_id();
+  void set_allocated_self_node_id(std::string* self_node_id);
+  private:
+  const std::string& _internal_self_node_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_self_node_id(const std::string& value);
+  std::string* _internal_mutable_self_node_id();
+  public:
+
+  // uint64 height = 1;
+  void clear_height();
+  uint64_t height() const;
+  void set_height(uint64_t value);
+  private:
+  uint64_t _internal_height() const;
+  void _internal_set_height(uint64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:GetCheckSumHashReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr self_node_id_;
+    uint64_t height_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_sync_5fblock_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetCheckSumHashAck final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:GetCheckSumHashAck) */ {
+ public:
+  inline GetCheckSumHashAck() : GetCheckSumHashAck(nullptr) {}
+  ~GetCheckSumHashAck() override;
+  explicit PROTOBUF_CONSTEXPR GetCheckSumHashAck(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetCheckSumHashAck(const GetCheckSumHashAck& from);
+  GetCheckSumHashAck(GetCheckSumHashAck&& from) noexcept
+    : GetCheckSumHashAck() {
+    *this = ::std::move(from);
+  }
+
+  inline GetCheckSumHashAck& operator=(const GetCheckSumHashAck& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetCheckSumHashAck& operator=(GetCheckSumHashAck&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetCheckSumHashAck& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetCheckSumHashAck* internal_default_instance() {
+    return reinterpret_cast<const GetCheckSumHashAck*>(
+               &_GetCheckSumHashAck_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    26;
+
+  friend void swap(GetCheckSumHashAck& a, GetCheckSumHashAck& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetCheckSumHashAck* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetCheckSumHashAck* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetCheckSumHashAck* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetCheckSumHashAck>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetCheckSumHashAck& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GetCheckSumHashAck& from) {
+    GetCheckSumHashAck::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetCheckSumHashAck* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "GetCheckSumHashAck";
+  }
+  protected:
+  explicit GetCheckSumHashAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kHashFieldNumber = 2,
+    kMsgIdFieldNumber = 3,
+    kSelfNodeIdFieldNumber = 5,
+    kHeightFieldNumber = 1,
+    kSuccessFieldNumber = 4,
+  };
+  // string hash = 2;
+  void clear_hash();
+  const std::string& hash() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_hash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_hash();
+  PROTOBUF_NODISCARD std::string* release_hash();
+  void set_allocated_hash(std::string* hash);
+  private:
+  const std::string& _internal_hash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_hash(const std::string& value);
+  std::string* _internal_mutable_hash();
+  public:
+
+  // string msg_id = 3;
+  void clear_msg_id();
+  const std::string& msg_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_msg_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_msg_id();
+  PROTOBUF_NODISCARD std::string* release_msg_id();
+  void set_allocated_msg_id(std::string* msg_id);
+  private:
+  const std::string& _internal_msg_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_msg_id(const std::string& value);
+  std::string* _internal_mutable_msg_id();
+  public:
+
+  // string self_node_id = 5;
+  void clear_self_node_id();
+  const std::string& self_node_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_self_node_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_self_node_id();
+  PROTOBUF_NODISCARD std::string* release_self_node_id();
+  void set_allocated_self_node_id(std::string* self_node_id);
+  private:
+  const std::string& _internal_self_node_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_self_node_id(const std::string& value);
+  std::string* _internal_mutable_self_node_id();
+  public:
+
+  // uint64 height = 1;
+  void clear_height();
+  uint64_t height() const;
+  void set_height(uint64_t value);
+  private:
+  uint64_t _internal_height() const;
+  void _internal_set_height(uint64_t value);
+  public:
+
+  // bool success = 4;
+  void clear_success();
+  bool success() const;
+  void set_success(bool value);
+  private:
+  bool _internal_success() const;
+  void _internal_set_success(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:GetCheckSumHashAck)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr hash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr self_node_id_;
+    uint64_t height_;
+    bool success_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_sync_5fblock_2eproto;
+};
 // ===================================================================
 
 
@@ -8371,9 +8766,331 @@ inline void SyncNodeHashAck::set_allocated_hash(std::string* hash) {
   // @@protoc_insertion_point(field_set_allocated:SyncNodeHashAck.hash)
 }
 
+// -------------------------------------------------------------------
+
+// GetCheckSumHashReq
+
+// uint64 height = 1;
+inline void GetCheckSumHashReq::clear_height() {
+  _impl_.height_ = uint64_t{0u};
+}
+inline uint64_t GetCheckSumHashReq::_internal_height() const {
+  return _impl_.height_;
+}
+inline uint64_t GetCheckSumHashReq::height() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashReq.height)
+  return _internal_height();
+}
+inline void GetCheckSumHashReq::_internal_set_height(uint64_t value) {
+  
+  _impl_.height_ = value;
+}
+inline void GetCheckSumHashReq::set_height(uint64_t value) {
+  _internal_set_height(value);
+  // @@protoc_insertion_point(field_set:GetCheckSumHashReq.height)
+}
+
+// string msg_id = 2;
+inline void GetCheckSumHashReq::clear_msg_id() {
+  _impl_.msg_id_.ClearToEmpty();
+}
+inline const std::string& GetCheckSumHashReq::msg_id() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashReq.msg_id)
+  return _internal_msg_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetCheckSumHashReq::set_msg_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.msg_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetCheckSumHashReq.msg_id)
+}
+inline std::string* GetCheckSumHashReq::mutable_msg_id() {
+  std::string* _s = _internal_mutable_msg_id();
+  // @@protoc_insertion_point(field_mutable:GetCheckSumHashReq.msg_id)
+  return _s;
+}
+inline const std::string& GetCheckSumHashReq::_internal_msg_id() const {
+  return _impl_.msg_id_.Get();
+}
+inline void GetCheckSumHashReq::_internal_set_msg_id(const std::string& value) {
+  
+  _impl_.msg_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashReq::_internal_mutable_msg_id() {
+  
+  return _impl_.msg_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashReq::release_msg_id() {
+  // @@protoc_insertion_point(field_release:GetCheckSumHashReq.msg_id)
+  return _impl_.msg_id_.Release();
+}
+inline void GetCheckSumHashReq::set_allocated_msg_id(std::string* msg_id) {
+  if (msg_id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.msg_id_.SetAllocated(msg_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.msg_id_.IsDefault()) {
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetCheckSumHashReq.msg_id)
+}
+
+// string self_node_id = 3;
+inline void GetCheckSumHashReq::clear_self_node_id() {
+  _impl_.self_node_id_.ClearToEmpty();
+}
+inline const std::string& GetCheckSumHashReq::self_node_id() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashReq.self_node_id)
+  return _internal_self_node_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetCheckSumHashReq::set_self_node_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.self_node_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetCheckSumHashReq.self_node_id)
+}
+inline std::string* GetCheckSumHashReq::mutable_self_node_id() {
+  std::string* _s = _internal_mutable_self_node_id();
+  // @@protoc_insertion_point(field_mutable:GetCheckSumHashReq.self_node_id)
+  return _s;
+}
+inline const std::string& GetCheckSumHashReq::_internal_self_node_id() const {
+  return _impl_.self_node_id_.Get();
+}
+inline void GetCheckSumHashReq::_internal_set_self_node_id(const std::string& value) {
+  
+  _impl_.self_node_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashReq::_internal_mutable_self_node_id() {
+  
+  return _impl_.self_node_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashReq::release_self_node_id() {
+  // @@protoc_insertion_point(field_release:GetCheckSumHashReq.self_node_id)
+  return _impl_.self_node_id_.Release();
+}
+inline void GetCheckSumHashReq::set_allocated_self_node_id(std::string* self_node_id) {
+  if (self_node_id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.self_node_id_.SetAllocated(self_node_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.self_node_id_.IsDefault()) {
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetCheckSumHashReq.self_node_id)
+}
+
+// -------------------------------------------------------------------
+
+// GetCheckSumHashAck
+
+// uint64 height = 1;
+inline void GetCheckSumHashAck::clear_height() {
+  _impl_.height_ = uint64_t{0u};
+}
+inline uint64_t GetCheckSumHashAck::_internal_height() const {
+  return _impl_.height_;
+}
+inline uint64_t GetCheckSumHashAck::height() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashAck.height)
+  return _internal_height();
+}
+inline void GetCheckSumHashAck::_internal_set_height(uint64_t value) {
+  
+  _impl_.height_ = value;
+}
+inline void GetCheckSumHashAck::set_height(uint64_t value) {
+  _internal_set_height(value);
+  // @@protoc_insertion_point(field_set:GetCheckSumHashAck.height)
+}
+
+// string hash = 2;
+inline void GetCheckSumHashAck::clear_hash() {
+  _impl_.hash_.ClearToEmpty();
+}
+inline const std::string& GetCheckSumHashAck::hash() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashAck.hash)
+  return _internal_hash();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetCheckSumHashAck::set_hash(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.hash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetCheckSumHashAck.hash)
+}
+inline std::string* GetCheckSumHashAck::mutable_hash() {
+  std::string* _s = _internal_mutable_hash();
+  // @@protoc_insertion_point(field_mutable:GetCheckSumHashAck.hash)
+  return _s;
+}
+inline const std::string& GetCheckSumHashAck::_internal_hash() const {
+  return _impl_.hash_.Get();
+}
+inline void GetCheckSumHashAck::_internal_set_hash(const std::string& value) {
+  
+  _impl_.hash_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashAck::_internal_mutable_hash() {
+  
+  return _impl_.hash_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashAck::release_hash() {
+  // @@protoc_insertion_point(field_release:GetCheckSumHashAck.hash)
+  return _impl_.hash_.Release();
+}
+inline void GetCheckSumHashAck::set_allocated_hash(std::string* hash) {
+  if (hash != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.hash_.SetAllocated(hash, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.hash_.IsDefault()) {
+    _impl_.hash_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetCheckSumHashAck.hash)
+}
+
+// string msg_id = 3;
+inline void GetCheckSumHashAck::clear_msg_id() {
+  _impl_.msg_id_.ClearToEmpty();
+}
+inline const std::string& GetCheckSumHashAck::msg_id() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashAck.msg_id)
+  return _internal_msg_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetCheckSumHashAck::set_msg_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.msg_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetCheckSumHashAck.msg_id)
+}
+inline std::string* GetCheckSumHashAck::mutable_msg_id() {
+  std::string* _s = _internal_mutable_msg_id();
+  // @@protoc_insertion_point(field_mutable:GetCheckSumHashAck.msg_id)
+  return _s;
+}
+inline const std::string& GetCheckSumHashAck::_internal_msg_id() const {
+  return _impl_.msg_id_.Get();
+}
+inline void GetCheckSumHashAck::_internal_set_msg_id(const std::string& value) {
+  
+  _impl_.msg_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashAck::_internal_mutable_msg_id() {
+  
+  return _impl_.msg_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashAck::release_msg_id() {
+  // @@protoc_insertion_point(field_release:GetCheckSumHashAck.msg_id)
+  return _impl_.msg_id_.Release();
+}
+inline void GetCheckSumHashAck::set_allocated_msg_id(std::string* msg_id) {
+  if (msg_id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.msg_id_.SetAllocated(msg_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.msg_id_.IsDefault()) {
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetCheckSumHashAck.msg_id)
+}
+
+// bool success = 4;
+inline void GetCheckSumHashAck::clear_success() {
+  _impl_.success_ = false;
+}
+inline bool GetCheckSumHashAck::_internal_success() const {
+  return _impl_.success_;
+}
+inline bool GetCheckSumHashAck::success() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashAck.success)
+  return _internal_success();
+}
+inline void GetCheckSumHashAck::_internal_set_success(bool value) {
+  
+  _impl_.success_ = value;
+}
+inline void GetCheckSumHashAck::set_success(bool value) {
+  _internal_set_success(value);
+  // @@protoc_insertion_point(field_set:GetCheckSumHashAck.success)
+}
+
+// string self_node_id = 5;
+inline void GetCheckSumHashAck::clear_self_node_id() {
+  _impl_.self_node_id_.ClearToEmpty();
+}
+inline const std::string& GetCheckSumHashAck::self_node_id() const {
+  // @@protoc_insertion_point(field_get:GetCheckSumHashAck.self_node_id)
+  return _internal_self_node_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetCheckSumHashAck::set_self_node_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.self_node_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetCheckSumHashAck.self_node_id)
+}
+inline std::string* GetCheckSumHashAck::mutable_self_node_id() {
+  std::string* _s = _internal_mutable_self_node_id();
+  // @@protoc_insertion_point(field_mutable:GetCheckSumHashAck.self_node_id)
+  return _s;
+}
+inline const std::string& GetCheckSumHashAck::_internal_self_node_id() const {
+  return _impl_.self_node_id_.Get();
+}
+inline void GetCheckSumHashAck::_internal_set_self_node_id(const std::string& value) {
+  
+  _impl_.self_node_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashAck::_internal_mutable_self_node_id() {
+  
+  return _impl_.self_node_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetCheckSumHashAck::release_self_node_id() {
+  // @@protoc_insertion_point(field_release:GetCheckSumHashAck.self_node_id)
+  return _impl_.self_node_id_.Release();
+}
+inline void GetCheckSumHashAck::set_allocated_self_node_id(std::string* self_node_id) {
+  if (self_node_id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.self_node_id_.SetAllocated(self_node_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.self_node_id_.IsDefault()) {
+    _impl_.self_node_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetCheckSumHashAck.self_node_id)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

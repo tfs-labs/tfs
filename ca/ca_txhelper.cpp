@@ -1641,8 +1641,7 @@ int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, co
         return -1;
     }
 
-    ret = Evmone::FillDeployOutTx(fromAddr, global::ca::kVirtualDeployContractAddr,
-                                  host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, info_);
+    ret = Evmone::FillDeployOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, info_);
     return ret;
 }
 
@@ -1818,8 +1817,9 @@ bool TxHelper::checkTxTimeOut(const uint64_t & txTime, const uint64_t & timeout,
 		return false;
 	}
     DBReader db_reader;
-
+   // print_trace();
     std::vector<std::string> block_hashes;
+    //debugL("pre_height:%s",pre_height);
 	auto ret = db_reader.GetBlockHashesByBlockHeight(pre_height, pre_height, block_hashes);
     if (DBStatus::DB_SUCCESS != ret)
     {
@@ -2203,7 +2203,7 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 	if(stake_amount < global::ca::kMinStakeAmt)
 	{
 		std::string strError;
-		errorL("stake_amount:" << std::to_string(stake_amount));
+		errorL("stake_amount:%s" , std::to_string(stake_amount));
 		strError = DSTR"-5 The pledge amount must be greater than " + std::to_string(global::ca::kMinStakeAmt);
 		return strError;
 	}
@@ -3495,6 +3495,5 @@ std::string TxHelper::GetEligibleNodes(){
 	int rumdom=getNextNumber(result_node.size());
 	DEBUGLOG("GetEligibleNodes: rumdom: {}",rumdom);
     
-
 	return result_node[rumdom];
 }

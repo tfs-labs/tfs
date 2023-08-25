@@ -278,15 +278,15 @@ void PeerNode::nodelist_switch_thread_fun()
 		{
 			return;
 		}
-		std::vector<Node> NodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
-		if(NodeList.size() == 0)
-		{
-			PeerNode::nodelist_refresh_thread_fun();
-		}
-		else
-		{
+		// std::vector<Node> NodeList = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
+		// if(NodeList.size() == 0)
+		// {
+		// 	PeerNode::nodelist_refresh_thread_fun();
+		// }
+		// else
+		// {
 			MagicSingleton<UnregisterNode>::GetInstance()->StartSyncNode();
-		}	
+		// }	
 
 	} while (true);
 }

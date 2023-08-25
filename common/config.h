@@ -5,6 +5,9 @@
 #include <set>
 #include "../utils/json.hpp"
 #include "../utils/MagicSingleton.h"
+#include <type_traits>
+#include <filesystem>
+#include <fstream>
 
 #define SERVERMAINPORT (MagicSingleton<Config>::GetInstance()->GetServerPort())
 
@@ -56,6 +59,8 @@ public:
     const std::string kCfgServerPort = "server_port";
     const std::string kCfgKeyVersion = "version";
 
+    nlohmann::json _json ;
+
 public:
     Config()
     {
@@ -72,20 +77,40 @@ public:
     int verify(const Node& _node);
     int GetServerPort();
     int GetHttpPort();
-    bool GetRpc();
-    std::string GetIP();
     int GetInfo(Config::Info & info);
-    int SetIP(const std::string & ip);
-
-    std::set<std::string> GetServer();
-
     int GetLog(Config::Log & log);
     int GetHttpCallback(Config::HttpCallback & httpCallback);
+    bool GetRpc();
+    
+    std::string GetIP();
+    
+    int SetIP(const std::string & ip);
+    std::set<std::string> GetServer();
+
+
+    template <typename T>
+    int FilterServerPort(T &t);
+
+    template <typename T>
+    int FilterHttpPort(T &t);
+
+    template <typename T> 
+    int FilterIp(T &t);
+    template <typename T> 
+    int FilterServerIp(T & t);
+    template <typename T>
+    bool FilterBool(T  &t);
+
+    int FilterLog(Log &log);
+    int FilterHttpCallback(HttpCallback &httpcallback);
+//    int FilterVersion(std::string  & Version);
+   
 
 
 private:
     int _Parse(nlohmann::json json);
     int verify();
+    int Filter();
 private:
     Info _info;
     std::string _ip;

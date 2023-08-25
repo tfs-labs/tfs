@@ -104,18 +104,18 @@ class AccountManager
         void PrintAllAccount() const;
         void DeleteAccount(const std::string& base58addr);
         void SetDefaultBase58Addr(const std::string & bs58Addr);
+
         std::string GetDefaultBase58Addr() const;
         int SetDefaultAccount(const std::string & bs58Addr);
         bool IsExist(const std::string & bs58Addr);
         int FindAccount(const std::string & bs58Addr, Account & account);
         int GetDefaultAccount(Account & account);
+        
         void GetAccountList(std::vector<std::string> & base58_list);
         bool GetAccountPubByBytes(const std::string &pubStr, Account &account);
-
         int SavePrivateKeyToFile(const std::string & base58Addr);
         int GetMnemonic(const std::string & bs58Addr, std::string & mnemonic);
         int ImportMnemonic(const std::string & mnemonic);
-        
         int GetPrivateKeyHex(const std::string & bs58Addr, std::string & privateKeyHex);
         int ImportPrivateKeyHex(const std::string & privateKeyHex);
 

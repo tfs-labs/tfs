@@ -10,6 +10,8 @@
 const std::string kBlockHash2BlockHeightKey = "blkhs2blkht_";
 const std::string kBlockHeight2BlockHashKey = "blkht2blkhs_";
 const std::string kBlockHeight2SumHash = "blkht2sumhs_";
+const std::string kBLockComHashHeightKey = "ComHashsblkht2sumhs_";
+const std::string kBlockHeight2thousandSumHash = "thousandsblkht2sumhs_";
 const std::string kBlockHash2BlcokRawKey = "blkhs2blkraw_";
 const std::string kBlockTopKey = "blktop_";
 const std::string kAddress2UtxoKey = "addr2utxo_";
@@ -167,6 +169,32 @@ DBStatus DBReader::GetSumHashByHeight(uint64_t height, std::string& sumHash)
     std::string db_key = kBlockHeight2SumHash + std::to_string(height);
     return ReadData(db_key, sumHash); 
 }
+
+
+DBStatus DBReader::GetCheckBlockHashsByBlockHeight(const uint64_t &blockHeight, std::string &sumHash)
+{
+    if (blockHeight % 1000 != 0 || blockHeight == 0)
+    {
+        return DBStatus::DB_PARAM_NULL;
+    }
+
+    std::string db_key = kBlockHeight2thousandSumHash + std::to_string(blockHeight);
+    return ReadData(db_key, sumHash); 
+}
+
+
+DBStatus DBReader::GetBlockComHashHeight(uint64_t &thousandNum)
+{
+    std::string value;
+    auto ret = ReadData(kBLockComHashHeightKey, value);
+    if (DBStatus::DB_SUCCESS == ret)
+    {
+        thousandNum = std::stoul(value);
+    }
+    return ret;
+}
+
+
 
 DBStatus DBReader::GetBlockTop(uint64_t &blockHeight)
 {
@@ -684,7 +712,6 @@ DBStatus DBReadWriter::SetSumHashByHeight(uint64_t height, const std::string& su
     return WriteData(db_key, sumHash);
 }
 
-
 // Remove Sum hash per 100 heights
 DBStatus DBReadWriter::RemoveSumHashByHeight(uint64_t height)
 {
@@ -692,6 +719,31 @@ DBStatus DBReadWriter::RemoveSumHashByHeight(uint64_t height)
     return DeleteData(db_key);
 }
 
+
+//Set  Sum hash per 1000 heights
+DBStatus DBReadWriter::SetCheckBlockHashsByBlockHeight(const uint64_t &blockHeight ,const std::string &sumHash)
+{
+    std::string db_key = kBlockHeight2thousandSumHash + std::to_string(blockHeight);
+    return WriteData(db_key, sumHash);
+}
+
+//Set  Sum hash per 1000 heights
+DBStatus DBReadWriter::RemoveCheckBlockHashsByBlockHeight(const uint64_t &blockHeight)
+{
+    std::string db_key = kBlockHeight2thousandSumHash + std::to_string(blockHeight);
+    return DeleteData(db_key);
+}
+
+
+DBStatus DBReadWriter::SetBlockComHashHeight(const uint64_t &thousandNum)
+{
+    return WriteData(kBLockComHashHeightKey, std::to_string(thousandNum));
+}
+
+DBStatus DBReadWriter::RemoveBlockComHashHeight(const uint64_t &thousandNum)
+{
+    return DeleteData(kBLockComHashHeightKey);
+}
 
 // Set the highest block
 DBStatus DBReadWriter::SetBlockTop(const unsigned int blockHeight)

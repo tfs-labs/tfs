@@ -307,7 +307,7 @@ void TestFunction2()
             return;
         }
     }
-    infoL("message:" << message);
+    infoL("message:%s" , message);
 
     return;
 }

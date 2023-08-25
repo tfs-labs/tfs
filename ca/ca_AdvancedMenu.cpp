@@ -47,8 +47,6 @@
 #include "utils/tmplog.h"
 
 
-
-
 void gen_key()
 {
     std::cout << "Please enter the number of accounts to be generated: ";
@@ -309,6 +307,7 @@ void get_tx_block_info(uint64_t &top)
         printRocksdb(start, end, true, filestream);
     }
 }
+
 
 void gen_mnemonic()
 {
