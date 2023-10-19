@@ -7,7 +7,7 @@
 #include "./base64.h"
 #include "utils/json.hpp"
 
-#define PAUSE bool paseFromJson(const std::string& json);
+#define PAUSE std::string paseFromJson(const std::string& json);
 #define DOUMP std::string paseToString();
 #define TOJSONOBJ nlohmann::json paseToJsonObj(const std::string & json_str);
 #define UCTS_ACK(name)\
@@ -26,13 +26,14 @@
 
 #define UCTE };
 
+
 //the_top
 struct the_top {
 	std::string type;
 	std::string top;
 	std::string ErrorCode;
 	std::string ErrorMessage;
-	bool paseFromJson(const std::string& json);
+	std::string paseFromJson(const std::string& json);
 	std::string paseToString();
 };
 
@@ -108,6 +109,7 @@ std::string args;
 std::string pubstr;
 std::string tip;
 std::string money;
+std::string istochain;
 UCTE
 
 

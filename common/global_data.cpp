@@ -1,88 +1,88 @@
 #include "common/global_data.h"
-#include "utils/MagicSingleton.h"
+#include "utils/magic_singleton.h"
 #include "utils/time_util.h"
-#include "utils/AccountManager.h"
+#include "utils/account_manager.h"
 
 struct GlobalData
 {
-    std::string msg_id;
-    std::uint32_t ret_num;
-    std::uint32_t time_out_sec;
+    std::string msgId;
+    std::uint32_t retNum;
+    std::uint32_t timeOutSec;
     std::mutex mutex;
     std::condition_variable condition;
     std::vector<std::string> data;
 };
 
-bool GlobalDataManager::CreateWait(uint32_t time_out_sec, uint32_t ret_num, std::string &out_msg_id)
+bool GlobalDataManager::CreateWait(uint32_t timeOutSec, uint32_t retNum, std::string &outMsgId)
 {
-    out_msg_id = getsha256hash(std::to_string(MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp()));
-    std::shared_ptr<GlobalData> data_ptr = std::make_shared<GlobalData>();
-    data_ptr->msg_id = out_msg_id;
-    data_ptr->time_out_sec = time_out_sec;
-    data_ptr->ret_num = ret_num;
+    outMsgId = Getsha256hash(std::to_string(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp()));
+    std::shared_ptr<GlobalData> dataPtr = std::make_shared<GlobalData>();
+    dataPtr->msgId = outMsgId;
+    dataPtr->timeOutSec = timeOutSec;
+    dataPtr->retNum = retNum;
     {
-        std::lock_guard lock(global_data_mutex_);
-        global_data_.insert(std::make_pair(data_ptr->msg_id, data_ptr));
+        std::lock_guard lock(_globalDataMutex);
+        _globalData.insert(std::make_pair(dataPtr->msgId, dataPtr));
     }
 
     return true;
 }
 
-bool GlobalDataManager::AddWaitData(const std::string &msg_id, const std::string &data)
+bool GlobalDataManager::AddWaitData(const std::string &msgId, const std::string &data)
 {
-    std::shared_ptr<GlobalData> data_ptr;
+    std::shared_ptr<GlobalData> dataPtr;
     {
-        std::lock_guard lock(global_data_mutex_);
-        auto it = global_data_.find(msg_id);
-        if (global_data_.end() == it)
+        std::lock_guard lock(_globalDataMutex);
+        auto it = _globalData.find(msgId);
+        if (_globalData.end() == it)
         {
             return false;
         }
-        data_ptr = it->second;
+        dataPtr = it->second;
     }
     {
-        std::lock_guard lock(data_ptr->mutex);
-        data_ptr->data.push_back(data);
-        if (data_ptr->data.size() >= data_ptr->ret_num)
+        std::lock_guard lock(dataPtr->mutex);
+        dataPtr->data.push_back(data);
+        if (dataPtr->data.size() >= dataPtr->retNum)
         {
-            data_ptr->condition.notify_all();
+            dataPtr->condition.notify_all();
         }
     }
     return true;
 }
 
-bool GlobalDataManager::WaitData(const std::string &msg_id, std::vector<std::string> &ret_data)
+bool GlobalDataManager::WaitData(const std::string &msgId, std::vector<std::string> &retData)
 {
-    std::shared_ptr<GlobalData> data_ptr;
+    std::shared_ptr<GlobalData> dataPtr;
     {
-        std::lock_guard lock(global_data_mutex_);
-        auto it = global_data_.find(msg_id);
-        if (global_data_.end() == it)
+        std::lock_guard lock(_globalDataMutex);
+        auto it = _globalData.find(msgId);
+        if (_globalData.end() == it)
         {
             return false;
         }
-        data_ptr = it->second;
+        dataPtr = it->second;
     }
-    std::unique_lock<std::mutex> lock(data_ptr->mutex);
+    std::unique_lock<std::mutex> lock(dataPtr->mutex);
     bool flag = true;
-    if (data_ptr->data.size() < data_ptr->ret_num)
+    if (dataPtr->data.size() < dataPtr->retNum)
     {
-        data_ptr->condition.wait_for(lock, std::chrono::seconds(data_ptr->time_out_sec));
+        dataPtr->condition.wait_for(lock, std::chrono::seconds(dataPtr->timeOutSec));
     }
-    data_ptr->mutex.unlock();
+    dataPtr->mutex.unlock();
     {
-        std::lock_guard lock(global_data_mutex_);
-        auto it = global_data_.find(msg_id);
-        if (global_data_.end() != it)
+        std::lock_guard lock(_globalDataMutex);
+        auto it = _globalData.find(msgId);
+        if (_globalData.end() != it)
         {
-            global_data_.erase(it);
+            _globalData.erase(it);
         }
     }
     {
-        std::lock_guard lock(data_ptr->mutex);
-        ret_data = data_ptr->data;
+        std::lock_guard lock(dataPtr->mutex);
+        retData = dataPtr->data;
     }
-    if (ret_data.size() < data_ptr->ret_num)
+    if (retData.size() < dataPtr->retNum)
     {
         flag = false;
     }
@@ -91,18 +91,18 @@ bool GlobalDataManager::WaitData(const std::string &msg_id, std::vector<std::str
 
 GlobalDataManager &GlobalDataManager::GetGlobalDataManager()
 {
-    static GlobalDataManager g_global_data_mgr;
-    return g_global_data_mgr;
+    static GlobalDataManager g_globalDataMgr;
+    return g_globalDataMgr;
 }
 
 GlobalDataManager &GlobalDataManager::GetGlobalDataManager2()
 {
-    static GlobalDataManager g_global_data_mgr;
-    return g_global_data_mgr;
+    static GlobalDataManager g_globalDataMgr;
+    return g_globalDataMgr;
 }
 
 GlobalDataManager &GlobalDataManager::GetGlobalDataManager3()
 {
-    static GlobalDataManager g_global_data_mgr;
-    return g_global_data_mgr;
+    static GlobalDataManager g_globalDataMgr;
+    return g_globalDataMgr;
 }

@@ -7,7 +7,7 @@
 #include <chrono>
 #include "./time_util.h"
 #include "../include/logging.h"
-#include "../ca/ca_global.h"
+#include "../ca/global.h"
 
 void Trim(std::string& str, bool bLeft, bool bRight)
 {
@@ -28,26 +28,26 @@ TimeUtil::~TimeUtil()
     
 }
 
-x_uint64_t TimeUtil::getUTCTimestamp()
+x_uint64_t TimeUtil::GetUTCTimestamp()
 {
     struct timeval tv;
     gettimeofday( &tv, NULL );
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-x_uint64_t TimeUtil::getTimestamp()
+x_uint64_t TimeUtil::GetTimestamp()
 {
-    x_uint64_t time = getNtpTimestamp();
+    x_uint64_t time = GetNtpTimestamp();
     if(time == 0)
     {
-        time = getUTCTimestamp();
+        time = GetUTCTimestamp();
     }
     return time;
 }
 
-x_uint64_t TimeUtil::getNtpTimestampConf()
+x_uint64_t TimeUtil::GetNtpTimestampConf()
 {
-    std::vector< std::string > ntp_host;
+    std::vector< std::string > ntpHost;
 
 	std::ifstream infile;
 	infile.open("./ntp_server.conf");  
@@ -58,7 +58,7 @@ x_uint64_t TimeUtil::getNtpTimestampConf()
 	std::string temp;
 	while (getline(infile, temp)) {
 		if (temp.size() < 0) break;
-		ntp_host.push_back(temp);
+		ntpHost.push_back(temp);
 	}
 
     int err = -1;
@@ -66,7 +66,7 @@ x_uint64_t TimeUtil::getNtpTimestampConf()
 
     for(int i = 0; i < 3; i++)
     {
-        std::string host = ntp_host[rand()%(ntp_host.size())];
+        std::string host = ntpHost[rand()%(ntpHost.size())];
         
         Trim(host,true,true);      
         err = ntp_get_time(host.c_str(), NTP_PORT, 1000, &timev);
@@ -79,28 +79,28 @@ x_uint64_t TimeUtil::getNtpTimestampConf()
     return timev/10;
 }
 
-x_uint64_t TimeUtil::getNtpTimestamp(bool is_sync)
+x_uint64_t TimeUtil::GetNtpTimestamp(bool is_sync)
 {
-    std::vector< std::string > ntp_host;
-    ntp_host.push_back(std::string("ntp1.aliyun.com"));
-    ntp_host.push_back(std::string("ntp2.aliyun.com"));
-    ntp_host.push_back(std::string("ntp3.aliyun.com"));
-    ntp_host.push_back(std::string("ntp4.aliyun.com"));
-    ntp_host.push_back(std::string("ntp5.aliyun.com"));
-    ntp_host.push_back(std::string("ntp6.aliyun.com"));
-    ntp_host.push_back(std::string("ntp7.aliyun.com"));
-    ntp_host.push_back(std::string("time1.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time2.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time3.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time4.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time5.cloud.tencent.com"));
+    std::vector< std::string > ntpHost;
+    ntpHost.push_back(std::string("ntp1.aliyun.com"));
+    ntpHost.push_back(std::string("ntp2.aliyun.com"));
+    ntpHost.push_back(std::string("ntp3.aliyun.com"));
+    ntpHost.push_back(std::string("ntp4.aliyun.com"));
+    ntpHost.push_back(std::string("ntp5.aliyun.com"));
+    ntpHost.push_back(std::string("ntp6.aliyun.com"));
+    ntpHost.push_back(std::string("ntp7.aliyun.com"));
+    ntpHost.push_back(std::string("time1.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time2.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time3.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time4.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time5.cloud.tencent.com"));
 
     int err = -1;
     x_uint64_t timev = 0ULL;
 
     for(int i = 0; i < 3; i++)
     {
-        std::string host = ntp_host[rand()%(ntp_host.size())];
+        std::string host = ntpHost[rand()%(ntpHost.size())];
                 
         err = ntp_get_time(host.c_str(), NTP_PORT, 1000, &timev);
         if (0 == err)
@@ -110,12 +110,12 @@ x_uint64_t TimeUtil::getNtpTimestamp(bool is_sync)
     }
     if(err == 0 && is_sync)
     {
-        setLocalTime(timev/10);
+        SetLocalTime(timev/10);
     }
     return timev/10;
 }
 
-bool TimeUtil::setLocalTime(x_uint64_t timestamp)
+bool TimeUtil::SetLocalTime(x_uint64_t timestamp)
 {
     struct timeval tv;
     tv.tv_sec = timestamp/1000000;
@@ -130,27 +130,27 @@ bool TimeUtil::setLocalTime(x_uint64_t timestamp)
 }
 
 
-void TimeUtil::testNtpDelay()
+void TimeUtil::TestNtpDelay()
 {
     int err = -1;
 
     x_uint64_t xut_timev = 0ULL;
 
-    std::vector< std::string > ntp_host;
-    ntp_host.push_back(std::string("ntp1.aliyun.com"));
-    ntp_host.push_back(std::string("ntp2.aliyun.com"));
-    ntp_host.push_back(std::string("ntp3.aliyun.com"));
-    ntp_host.push_back(std::string("ntp4.aliyun.com"));
-    ntp_host.push_back(std::string("ntp5.aliyun.com"));
-    ntp_host.push_back(std::string("ntp6.aliyun.com"));
-    ntp_host.push_back(std::string("ntp7.aliyun.com"));
-    ntp_host.push_back(std::string("time1.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time2.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time3.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time4.cloud.tencent.com"));
-    ntp_host.push_back(std::string("time5.cloud.tencent.com"));
+    std::vector< std::string > ntpHost;
+    ntpHost.push_back(std::string("ntp1.aliyun.com"));
+    ntpHost.push_back(std::string("ntp2.aliyun.com"));
+    ntpHost.push_back(std::string("ntp3.aliyun.com"));
+    ntpHost.push_back(std::string("ntp4.aliyun.com"));
+    ntpHost.push_back(std::string("ntp5.aliyun.com"));
+    ntpHost.push_back(std::string("ntp6.aliyun.com"));
+    ntpHost.push_back(std::string("ntp7.aliyun.com"));
+    ntpHost.push_back(std::string("time1.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time2.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time3.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time4.cloud.tencent.com"));
+    ntpHost.push_back(std::string("time5.cloud.tencent.com"));
     
-    for (std::vector< std::string >::iterator itvec = ntp_host.begin(); itvec != ntp_host.end(); ++itvec)
+    for (std::vector< std::string >::iterator itvec = ntpHost.begin(); itvec != ntpHost.end(); ++itvec)
     {
         xut_timev = 0ULL;
         err = ntp_get_time_test(itvec->c_str(), NTP_PORT, 1000, &xut_timev);
@@ -162,14 +162,14 @@ void TimeUtil::testNtpDelay()
 }
 
 
-std::string TimeUtil::formatTimestamp(x_uint64_t timestamp)
+std::string TimeUtil::FormatTimestamp(x_uint64_t timestamp)
 {
     time_t s = (time_t)(timestamp / 1000000);
     std::stringstream ss;
     ss << std::put_time(localtime(&s), "%F %T");
     return ss.str();
 }
-std::string TimeUtil::formatUTCTimestamp(x_uint64_t timestamp)
+std::string TimeUtil::FormatUTCTimestamp(x_uint64_t timestamp)
 {
     char buffer [128];
     time_t s = (time_t)(timestamp / 1000000);
@@ -178,7 +178,7 @@ std::string TimeUtil::formatUTCTimestamp(x_uint64_t timestamp)
     strftime (buffer,sizeof(buffer),"%Y/%m/%d %H:%M:%S",p);
     return buffer;
 }
-uint64_t TimeUtil::getMorningTime(time_t t) 
+uint64_t TimeUtil::GetMorningTime(time_t t) 
 {  
 
 	t = t/1000000;
@@ -190,13 +190,13 @@ uint64_t TimeUtil::getMorningTime(time_t t)
 
     return  zero_time;
 }  
-uint64_t TimeUtil::getPeriod(uint64_t TxTime)
+uint64_t TimeUtil::GetPeriod(uint64_t TxTime)
 {
     return ((TxTime/1000000) - (global::ca::kGenesisTime/1000000)) / (24  *60 * 60);
 }
 std::string TimeUtil::GetDate(int d)
 {
-    uint64_t cur_time=getNtpTimestamp();
+    uint64_t cur_time=GetNtpTimestamp();
 		
 	struct timeval tv;
 	tv.tv_sec = cur_time/1000000;

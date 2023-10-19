@@ -4,32 +4,32 @@
 
 std::string Base64::Encode(const unsigned char* str, int bytes) {
     int num = 0, bin = 0, i;
-    std::string _encode_result;
+    std::string encodeResult;
     const unsigned char* current;
     current = str;
     while (bytes > 2) {
-        _encode_result += _base64_table[current[0] >> 2];
-        _encode_result += _base64_table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
-        _encode_result += _base64_table[((current[1] & 0x0f) << 2) + (current[2] >> 6)];
-        _encode_result += _base64_table[current[2] & 0x3f];
+        encodeResult += base64Table[current[0] >> 2];
+        encodeResult += base64Table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
+        encodeResult += base64Table[((current[1] & 0x0f) << 2) + (current[2] >> 6)];
+        encodeResult += base64Table[current[2] & 0x3f];
 
         current += 3;
         bytes -= 3;
     }
     if (bytes > 0)
     {
-        _encode_result += _base64_table[current[0] >> 2];
+        encodeResult += base64Table[current[0] >> 2];
         if (bytes % 3 == 1) {
-            _encode_result += _base64_table[(current[0] & 0x03) << 4];
-            _encode_result += "==";
+            encodeResult += base64Table[(current[0] & 0x03) << 4];
+            encodeResult += "==";
         }
         else if (bytes % 3 == 2) {
-            _encode_result += _base64_table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
-            _encode_result += _base64_table[(current[1] & 0x0f) << 2];
-            _encode_result += "=";
+            encodeResult += base64Table[((current[0] & 0x03) << 4) + (current[1] >> 4)];
+            encodeResult += base64Table[(current[1] & 0x0f) << 2];
+            encodeResult += "=";
         }
     }
-    return _encode_result;
+    return encodeResult;
 }
 
 
@@ -55,7 +55,7 @@ std::string Base64::Decode(const char* str, int length) {
         -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2
     };
     int bin = 0, i = 0, pos = 0;
-    std::string _decode_result;
+    std::string decodeResult;
     const char* current = str;
     char ch;
     while ((ch = *current++) != '\0' && length-- > 0)
@@ -77,20 +77,20 @@ std::string Base64::Decode(const char* str, int length) {
             break;
         case 1:
             bin |= ch >> 4;
-            _decode_result += bin;
+            decodeResult += bin;
             bin = (ch & 0x0f) << 4;
             break;
         case 2:
             bin |= ch >> 2;
-            _decode_result += bin;
+            decodeResult += bin;
             bin = (ch & 0x03) << 6;
             break;
         case 3:
             bin |= ch;
-            _decode_result += bin;
+            decodeResult += bin;
             break;
         }
         i++;
     }
-    return _decode_result;
+    return decodeResult;
 }

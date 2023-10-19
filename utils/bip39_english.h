@@ -969,7 +969,7 @@ const char * const wordlist[] = {
 "invite",
 "involve",
 "iron",
-"island",
+"IsLand",
 "isolate",
 "issue",
 "item",

@@ -1,49 +1,50 @@
 #include "epoll_mode.h"
 #include "./global.h"
-#include "utils/console.h"
+#include "../utils/console.h"
 
 EpollMode::EpollMode()
 {
-    this->listen_thread = NULL;
+    this->_listenThread = NULL;
 }
+
 EpollMode::~EpollMode()
 {
-    if (NULL != this->listen_thread)
+    if (NULL != this->_listenThread)
     {
-        delete this->listen_thread;
-        this->listen_thread = NULL;
+        delete this->_listenThread;
+        this->_listenThread = NULL;
     }
 }
 
-bool EpollMode::init_listen()
+bool EpollMode::InitListen()
 {
-    this->epoll_fd = epoll_create(MAXEPOLLSIZE);
-    if (this->epoll_fd < 0)
+    this->epollFd = epoll_create(MAXEPOLLSIZE);
+    if (this->epollFd < 0)
     {
         ERRORLOG("EpollMode error");
         return false;
     }
-    this->fd_ser_main = net_tcp::listen_server_init(SERVERMAINPORT, 1000);
-    this->add_epoll_event(this->fd_ser_main, EPOLLIN | EPOLLOUT | EPOLLET);
+    this->_fdSerMain = net_tcp::ListenServerInit(SERVERMAINPORT, 1000);
+    this->EpollLoop(this->_fdSerMain, EPOLLIN | EPOLLOUT | EPOLLET);
     return true;
 }
 
-void EpollMode::work(EpollMode *epmd)
+void EpollMode::EpollWork(EpollMode *epmd)
 {
-    epmd->init_listen();
-    global::listen_thread_inited = true;
-    global::cond_listen_thread.notify_all();
-    epmd->epoll_loop();
+    epmd->InitListen();
+    global::g_ListenThreadInited = true;
+    global::g_condListenThread.notify_all();
+    epmd->EpollLoop();
 }
 
-bool EpollMode::start()
+bool EpollMode::EpoolModeStart()
 {
-    this->listen_thread = new thread(EpollMode::work, this);
-    this->listen_thread->detach();
+    this->_listenThread = new thread(EpollMode::EpollWork, this);
+    this->_listenThread->detach();
     return true;
 }
 
-int EpollMode::epoll_loop()
+int EpollMode::EpollLoop()
 {
     INFOLOG("EpollMode working");
     int nfds, n;
@@ -53,7 +54,7 @@ int EpollMode::epoll_loop()
     struct rlimit rt;
     u32 u32_ip;
     u16 u16_port;
-    int e_fd;
+    int eFd;
     MsgData data;
     //Sets the maximum number of files allowed to be opened per process
     rt.rlim_max = rt.rlim_cur = MAXEPOLLSIZE;
@@ -61,12 +62,12 @@ int EpollMode::epoll_loop()
     {
         ERRORLOG("setrlimit error");
     }
-    INFOLOG("epoll loop start success!");
-    while (halt_listening)
+    INFOLOG("epoll loop EpoolModeStart success!");
+    while (_haltListening)
     {
 
         //Wait for something to happen
-        nfds = epoll_wait(this->epoll_fd, events, MAXEPOLLSIZE, 1 * 1000);
+        nfds = epoll_wait(this->epollFd, events, MAXEPOLLSIZE, 1 * 1000);
         if (nfds == -1)
         {
             continue;
@@ -80,36 +81,36 @@ int EpollMode::epoll_loop()
                 socklen_t len;
                 err = 0;
                 len = sizeof(err);
-                e_fd = events[n].data.fd;
-                status = getsockopt(e_fd, SOL_SOCKET, SO_ERROR, &err, &len);
+                eFd = events[n].data.fd;
+                status = getsockopt(eFd, SOL_SOCKET, SO_ERROR, &err, &len);
                 //Connection failed
                 if (status == 0)
                 {
-                    MagicSingleton<PeerNode>::GetInstance()->delete_by_fd(e_fd);
+                    MagicSingleton<PeerNode>::GetInstance()->DeleteByFd(eFd);
                 }
             }
             //Handle primary connection listening
-            if (events[n].data.fd == this->fd_ser_main)
+            if (events[n].data.fd == this->_fdSerMain)
             {
-                int connfd = 0;
-                int lis_fd = events[n].data.fd;
+                int connFd = 0;
+                int lisFd = events[n].data.fd;
        
-                while ((connfd = net_tcp::Accept(lis_fd, (struct sockaddr *)&cliaddr, &socklen)) > 0)
+                while ((connFd = net_tcp::Accept(lisFd, (struct sockaddr *)&cliaddr, &socklen)) > 0)
                 {
-                    net_tcp::set_fd_noblocking(connfd);
+                    net_tcp::SetFdNoBlocking(connFd);
                     //Turn off all signals
                     int value = 1;
-                    setsockopt(connfd, SOL_SOCKET, MSG_NOSIGNAL, &value, sizeof(value));
+                    setsockopt(connFd, SOL_SOCKET, MSG_NOSIGNAL, &value, sizeof(value));
 
-                    u32_ip = IpPort::ipnum(inet_ntoa(cliaddr.sin_addr));
+                    u32_ip = IpPort::IpNum(inet_ntoa(cliaddr.sin_addr));
                     u16_port = htons(cliaddr.sin_port);
-                    auto self = MagicSingleton<PeerNode>::GetInstance()->get_self_node();
-                    DEBUGLOG(YELLOW "u32_ip({}),u16_port({}),self.public_ip({}),self.local_ip({})" RESET, IpPort::ipsz(u32_ip), u16_port, IpPort::ipsz(self.public_ip), IpPort::ipsz(self.listen_ip));
+                    auto self = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
+                    DEBUGLOG(YELLOW "u32_ip({}),u16_port({}),self.publicIp({}),self.local_ip({})" RESET, IpPort::IpSz(u32_ip), u16_port, IpPort::IpSz(self.publicIp), IpPort::IpSz(self.listenIp));
 
-                    MagicSingleton<BufferCrol>::GetInstance()->add_buffer(u32_ip, u16_port, connfd);
-                    MagicSingleton<EpollMode>::GetInstance()->add_epoll_event(connfd, EPOLLIN | EPOLLOUT | EPOLLET);
+                    MagicSingleton<BufferCrol>::GetInstance()->AddBuffer(u32_ip, u16_port, connFd);
+                    MagicSingleton<EpollMode>::GetInstance()->EpollLoop(connFd, EPOLLIN | EPOLLOUT | EPOLLET);
                 }
-                if (connfd == -1)
+                if (connFd == -1)
                 {
                     if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR)
                         ERRORLOG("accept");
@@ -118,55 +119,55 @@ int EpollMode::epoll_loop()
             }
             if (events[n].events & EPOLLIN)
             {
-                e_fd = events[n].data.fd;
-                this->delete_epoll_event(e_fd);
-                u32_ip = IpPort::get_peer_nip(e_fd);
-                u16_port = IpPort::get_peer_port(e_fd);
+                eFd = events[n].data.fd;
+                this->DeleteEpollEvent(eFd);
+                u32_ip = IpPort::GetPeerNip(eFd);
+                u16_port = IpPort::GetPeerPort(eFd);
                 if(u16_port == SERVERMAINPORT)
                 {
-                     u16_port = IpPort::get_connect_port(e_fd);
+                     u16_port = IpPort::GetConnectPort(eFd);
                 }
 
                 data.ip = u32_ip;
                 data.port = u16_port;
                 data.type = E_READ;
-                data.fd = e_fd;
-                global::queue_read.push(data);
+                data.fd = eFd;
+                global::g_queueRead.Push(data);
             }
             if (events[n].events & EPOLLOUT)
             {
-                e_fd = events[n].data.fd;
-                u32_ip = IpPort::get_peer_nip(e_fd);
-                u16_port = IpPort::get_peer_port(e_fd);
+                eFd = events[n].data.fd;
+                u32_ip = IpPort::GetPeerNip(eFd);
+                u16_port = IpPort::GetPeerPort(eFd);
                 if(u16_port == SERVERMAINPORT)
                 {
-                     u16_port = IpPort::get_connect_port(e_fd);
+                     u16_port = IpPort::GetConnectPort(eFd);
                 }
                 
-                bool isempty = MagicSingleton<BufferCrol>::GetInstance()->is_cache_empty(u32_ip, u16_port);
+                bool isempty = MagicSingleton<BufferCrol>::GetInstance()->IsCacheEmpty(u32_ip, u16_port);
                 if(isempty){
                     continue;
                 }
                 MsgData send;
                 send.type = E_WRITE;
-                send.fd = e_fd;
+                send.fd = eFd;
                 send.ip = u32_ip;
                 send.port = u16_port;
-                global::queue_write.push(send);
+                global::g_queueWrite.Push(send);
             }
         }
     }
     return 0;
 }
 
-bool EpollMode::add_epoll_event(int fd, int state)
+bool EpollMode::EpollLoop(int fd, int state)
 {
     struct epoll_event ev;
     memset(&ev, 0, sizeof(ev));
     ev.events = state;
     ev.data.fd = fd;
 
-    int ret = epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, fd, &ev);
+    int ret = epoll_ctl(this->epollFd, EPOLL_CTL_ADD, fd, &ev);
 
     if (0 != ret)
     {
@@ -175,9 +176,9 @@ bool EpollMode::add_epoll_event(int fd, int state)
     return true;
 }
 
-bool EpollMode::delete_epoll_event(int fd)
+bool EpollMode::DeleteEpollEvent(int fd)
 {
-    int ret = epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, fd, NULL);
+    int ret = epoll_ctl(this->epollFd, EPOLL_CTL_DEL, fd, NULL);
     if (0 != ret)
     {
         return false;

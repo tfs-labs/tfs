@@ -1,9 +1,9 @@
 #include "db/db_api.h"
-#include "utils/MagicSingleton.h"
+#include "utils/magic_singleton.h"
 #include "db/cache.h"
 #include "include/logging.h"
 #include "utils/string_util.h"
-#include "ca/ca_global.h"
+#include "ca/global.h"
 
 
 // Block-related interfaces

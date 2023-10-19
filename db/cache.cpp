@@ -2,7 +2,7 @@
 #include "include/logging.h"
 #include <sys/sysinfo.h>
 #include "db/db_api.h"
-#include "ca/ca_global.h"
+#include "ca/global.h"
 
 int BounsAddrCache::get_amount(const std::string& BounsAddr, uint64_t& amount)
 {

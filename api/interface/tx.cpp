@@ -1,12 +1,13 @@
 #include "tx.h"
 #include "utils/json.hpp"
-#include "utils/tmplog.h"
+#include "utils/tmp_log.h"
 
 #define PARSE_JSON(value)                                                      \
   if (jsObject.contains(#value)) {                                             \
     jsObject[#value].get_to(this->value);                                      \
   } else {                                                                     \
     errorL("not found key:%s" ,std::string(#value))                             \
+    return Sutil::Format("not found key:%s",std::string(#value));\
   }
 
 #define PARSE_JSON_OBJ(obj, target, value)                                     \
@@ -14,6 +15,7 @@
     obj[#target].get_to(value);                                                \
   } else {                                                                     \
     errorL("not found key:%s" , std::string(#target))                            \
+    return Sutil::Format("not found key:%s",std::string(#target));\
   }
 
 #define TO_JSON_OBJ(obj, target, value) obj[#target] = value;
@@ -21,7 +23,7 @@
 #define TO_JSON(value) jsObject[#value] = this->value;
 
 #define PAUSE_D_ACK(sname)                                                     \
-  bool sname::paseFromJson(const std::string& json) {                                 \
+  std::string sname::paseFromJson(const std::string& json) {                                 \
     nlohmann::json jsObject;                                                   \
     try {                                                                      \
       jsObject = nlohmann::json::parse(json);                                  \
@@ -30,7 +32,7 @@
     PARSE_JSON(ErrorMessage)
 
 #define PAUSE_D_REQ(sname)                                                     \
-  bool sname::paseFromJson(const std::string& json) {                                 \
+  std::string sname::paseFromJson(const std::string& json) {                                 \
     nlohmann::json jsObject;                                                   \
     try {                                                                      \
       jsObject = nlohmann::json::parse(json);                                  \
@@ -54,9 +56,9 @@
   }                                                                            \
   catch (std::exception & e) {                                                 \
     errorL("error:%s" , e.what());                                              \
-    return false;                                                              \
+    return e.what();                                                              \
   }                                                                            \
-  return true;                                                                 \
+  return "OK";                                                                 \
   }
 #define D_END_R                                                                \
   }                                                                            \
@@ -66,6 +68,7 @@
   }                                                                            \
   return jsObject.dump();                                                      \
   }
+
 
 // the_top
 PAUSE_D_ACK(the_top)
@@ -169,6 +172,7 @@ PARSE_JSON(args)
 PARSE_JSON(pubstr)
 PARSE_JSON(tip)
 PARSE_JSON(money)
+PARSE_JSON(istochain)
 D_END
 
 DOUMP_D_REQ(call_contract_req)
@@ -179,6 +183,7 @@ TO_JSON(args)
 TO_JSON(pubstr)
 TO_JSON(tip)
 TO_JSON(money)
+PARSE_JSON(istochain)
 D_END_R
 
 PAUSE_D_REQ(deploy_utxo_req)

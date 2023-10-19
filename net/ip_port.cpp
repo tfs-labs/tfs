@@ -12,171 +12,175 @@
 #include <unistd.h>
 #include "../utils/util.h"
 
-char g_localhost_ip[16];
+char g_localHostIp[16];
 char g_public_net_ip[16];
 char g_publicIP[30];             //IP Store the public IP address
 int g_my_port;
 
 //Ip /Get Local IP
-bool IpPort::get_localhost_ip(std::string & localhost_ip)
+bool IpPort::GetLocalHostIp(std::string & localHostIp)
 {
-	struct ifaddrs* if_addr_ptr = NULL;
-	struct ifaddrs* if_addr_ptr_copy = NULL;
-	getifaddrs(&if_addr_ptr);
-	if_addr_ptr_copy = if_addr_ptr;
-
-	void* tmp_addr_ptr = NULL;
-	char local_ip_str[IP_LEN] = {0};
-
-	while (if_addr_ptr != NULL)
+	struct ifaddrs* ifAddrPtr = NULL;
+	struct ifaddrs* ifAddrPtrCopy = NULL;
+	if(getifaddrs(&ifAddrPtr) != 0)
 	{
-		if (if_addr_ptr->ifa_addr->sa_family == AF_INET)
+		std::cout << "Please fill in the IP address in the configuration file" << std::endl;
+		return false;
+	}
+	ifAddrPtrCopy = ifAddrPtr;
+
+	void* tmpAddrPtr = NULL;
+	char localIpStr[IP_LEN] = {0};
+
+	while (ifAddrPtr != NULL)
+	{
+		if (ifAddrPtr->ifa_addr != NULL && ifAddrPtr->ifa_addr->sa_family == AF_INET)
 		{
-			tmp_addr_ptr = &((struct sockaddr_in*)if_addr_ptr->ifa_addr)->sin_addr;
-			inet_ntop(AF_INET, tmp_addr_ptr, local_ip_str, IP_LEN);
+			tmpAddrPtr = &((struct sockaddr_in*)ifAddrPtr->ifa_addr)->sin_addr;
+			inet_ntop(AF_INET, tmpAddrPtr, localIpStr, IP_LEN);
 			INFOLOG("Get local ip");
-			INFOLOG("==========={}==============", local_ip_str);
+			INFOLOG("==========={}==============", localIpStr);
 			
-			u32 local_ip = IpPort::ipnum(local_ip_str);
+			u32 local_ip = IpPort::IpNum(localIpStr);
 			if (htonl(INADDR_LOOPBACK) != local_ip 
 				&& htonl(INADDR_BROADCAST) != local_ip 
-				&& IpPort::is_local_ip(local_ip)
+				&& IpPort::IsLocalIp(local_ip)
 				)
 			{
-				INFOLOG("==========={}==============", local_ip_str);
+				INFOLOG("==========={}==============", localIpStr);
 				INFOLOG("Belong local IP");
 
-				localhost_ip = local_ip_str;
-				freeifaddrs(if_addr_ptr_copy);
+				localHostIp = localIpStr;
+				freeifaddrs(ifAddrPtrCopy);
 				return true;
 			}
 		}
-		if_addr_ptr = if_addr_ptr->ifa_next;
+		ifAddrPtr = ifAddrPtr->ifa_next;
 	}
-	freeifaddrs(if_addr_ptr_copy);
+	freeifaddrs(ifAddrPtrCopy);
 	return false;
 }
 
-u32 IpPort::ipnum(const char* sz_ip)
+u32 IpPort::IpNum(const char* szIp)
 {
-	u32 num_ip = inet_addr(sz_ip);
-	return num_ip;
+	u32 numIp = inet_addr(szIp);
+	return numIp;
 }
-u32 IpPort::ipnum(const string& sz_ip)
+u32 IpPort::IpNum(const string& szIp)
 {
-	u32 num_ip = inet_addr(sz_ip.c_str());
-	return num_ip;
+	u32 numIp = inet_addr(szIp.c_str());
+	return numIp;
 }
 
-const char* IpPort::ipsz(const u32 num_ip)
+const char* IpPort::IpSz(const u32 numIp)
 {
 	struct in_addr addr = {0};
-	memcpy(&addr, &num_ip, sizeof(u32));
-	const char* sz_ip = inet_ntoa(addr);
-	return sz_ip;
+	memcpy(&addr, &numIp, sizeof(u32));
+	const char* szIp = inet_ntoa(addr);
+	return szIp;
 }
 
-bool IpPort::is_valid_ip(std::string const& str_ip)
+bool IpPort::IsValidIp(std::string const& strIp)
 {
 	try
 	{
 		string pattern = "^(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|[1-9])\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)$";
 		std::regex re(pattern);
-		bool rst = std::regex_search(str_ip, re);
+		bool rst = std::regex_search(strIp, re);
 		return rst;
 	}
 	catch (std::regex_error const& e)
 	{
-		DEBUGLOG("is_valid_ip e{})", e.what());
+		DEBUGLOG("IsValidIp e{})", e.what());
 	}
 	return false;
 }
 
-bool IpPort::is_local_ip(std::string const& str_ip)
+bool IpPort::IsLocalIp(std::string const& strIp)
 {
-	if (false == is_valid_ip(str_ip))
+	if (false == IsValidIp(strIp))
 		return false;
 
 	try
 	{
 		std::string pattern{ "^(127\\.0\\.0\\.1)|(localhost)|(10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})|(172\\.((1[6-9])|(2\\d)|(3[01]))\\.\\d{1,3}\\.\\d{1,3})|(192\\.168\\.\\d{1,3}\\.\\d{1,3})$" };
 		std::regex re(pattern);
-		bool rst = std::regex_search(str_ip, re);
+		bool rst = std::regex_search(strIp, re);
 		return rst;
 	}
 	catch (std::regex_error const& e)
 	{
-		DEBUGLOG("is_valid_ip e({})", e.code());
+		DEBUGLOG("IsValidIp e({})", e.code());
 	}
 	return false;
 }
 
-bool IpPort::is_local_ip(u32 u32_ip)
+bool IpPort::IsLocalIp(u32 u32_ip)
 {
-	string str_ip = ipsz(u32_ip);
-	return is_local_ip(str_ip);
+	string strIp = IpSz(u32_ip);
+	return IsLocalIp(strIp);
 }
 
-bool IpPort::is_public_ip(std::string const& str_ip)
+bool IpPort::IsPublicIp(std::string const& strIp)
 {
-	if (false == is_valid_ip(str_ip))
+	if (false == IsValidIp(strIp))
 		return false;
 
-	return false == is_local_ip(str_ip);
+	return false == IsLocalIp(strIp);
 }
 
-bool IpPort::is_public_ip(u32 u32_ip)
+bool IpPort::IsPublicIp(u32 u32_ip)
 {
-	string str_ip = ipsz(u32_ip);
-	return is_public_ip(str_ip);
+	string strIp = IpSz(u32_ip);
+	return IsPublicIp(strIp);
 }
 
-bool IpPort::is_valid_port(u16 u16_port)
+bool IpPort::IsValidPort(u16 u16_port)
 {
 	return u16_port > 0 && u16_port <= 65535;
 }
 
-u32 IpPort::get_peer_nip(int sockconn)
+u32 IpPort::GetPeerNip(int sockConn)
 {
 	struct sockaddr_in sa { 0 };
 	socklen_t len = sizeof(sa);
-	if (!getpeername(sockconn, (struct sockaddr*) & sa, &len))
-		return ipnum(inet_ntoa(sa.sin_addr));
+	if (!getpeername(sockConn, (struct sockaddr*) & sa, &len))
+		return IpNum(inet_ntoa(sa.sin_addr));
 	else
-		DEBUGLOG("get_peer_nip getpeername fail.");
+		DEBUGLOG("GetPeerNip getpeername fail.");
 
 	return 0;
 }
 
-u16 IpPort::get_peer_port(int sockconn)
+u16 IpPort::GetPeerPort(int sockConn)
 {
 	struct sockaddr_in sa { 0 };
 	socklen_t len;
-	if (!getpeername(sockconn, (struct sockaddr*) & sa, &len))
+	if (!getpeername(sockConn, (struct sockaddr*) & sa, &len))
 		return ntohs(sa.sin_port);
 	else
-		DEBUGLOG("get_peer_port getpeername fail.");
+		DEBUGLOG("GetPeerPort getpeername fail.");
 
 	return 0;
 }
 
 //Gets the local address on the connection represented by sockfd
-u16 IpPort::get_connect_port(int confd)
+u16 IpPort::GetConnectPort(int conFd)
 {
 	struct sockaddr_in clientAddr;
     socklen_t clientAddrLen = sizeof(clientAddr);
-	if(!getsockname(confd, (struct sockaddr*)&clientAddr, &clientAddrLen))
+	if(!getsockname(conFd, (struct sockaddr*)&clientAddr, &clientAddrLen))
 	{
 		return ntohs(clientAddr.sin_port);
 	}
 	else
 	{
-		DEBUGLOG("get_connect_port getsockname fail.");
+		DEBUGLOG("GetConnectPort getsockname fail.");
 	} 
 	return 0;
 }
 
-bool IpPort::isLAN(std::string const& ipString)
+bool IpPort::IsLan(std::string const& ipString)
 {
 	#if PRIMARYCHAIN || TESTCHAIN
 	istringstream st(ipString);

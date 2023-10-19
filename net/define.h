@@ -31,13 +31,13 @@ using ull = unsigned long long;
 
 
 //Network packet body
-typedef struct net_pack
+typedef struct NetPack
 {
 	uint32_t	len				= 0;
 	std::string	data			= "";
-	uint32_t   	checksum		= 0;
+	uint32_t   	checkSum		= 0;
 	uint32_t	flag			= 0;
-	uint32_t    end_flag        = END_FLAG;
-}net_pack;
+	uint32_t    endFlag        = END_FLAG;
+}NetPack;
 
 #endif

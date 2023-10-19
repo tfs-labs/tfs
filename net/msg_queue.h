@@ -1,4 +1,12 @@
-
+/**
+ * *****************************************************************************
+ * @file        msg_queue.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-26
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef _MSG_QUEUE_H_
 #define _MSG_QUEUE_H_
 
@@ -7,10 +15,11 @@
 #include <string>
 #include <utility>
 #include <condition_variable>
+
 #include "./ip_port.h"
-#include "../include/logging.h"
 #include "./peer_node.h"
 
+#include "../include/logging.h"
 
 using namespace std;
 enum DataType
@@ -20,14 +29,14 @@ enum DataType
     E_WRITE
 };
 
-typedef struct msg_data
+typedef struct MsgData
 {
     DataType type;
     int fd;
     uint16_t port;
     uint32_t ip;
     std::string data;
-    net_pack pack;
+    NetPack pack;
     std::string id;
 }MsgData;
 
@@ -44,69 +53,97 @@ struct MsgDataCompare
 class MsgQueue
 {
 public:
-    std::string str_info_;
-    std::priority_queue<MsgData, std::vector<MsgData>, MsgDataCompare> msg_queue_;
-	std::mutex mutex_for_list_;
+    std::string strInfo;
+    std::priority_queue<MsgData, std::vector<MsgData>, MsgDataCompare> msgQueue;
+	std::mutex mutexForList;
 
-	std::condition_variable_any m_notEmpty;	
-	std::condition_variable_any m_notFull;	
-	size_t max_size_;						
+	std::condition_variable_any notEmpty;	
+	std::condition_variable_any notFull;	
+	size_t maxSize;						
 
 public:
+	/**
+	 * @brief       
+	 * 
+	 * @return      true 
+	 * @return      false 
+	 */
 	bool IsFull() const
 	{
-		return msg_queue_.size() == max_size_;
-	}
-	bool IsEmpty() const
-	{
-		return msg_queue_.empty();
+		return msgQueue.size() == maxSize;
 	}
 
-public:
-    bool push(MsgData& data)
+	/**
+	 * @brief       
+	 * 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool IsEmpty() const
+	{
+		return msgQueue.empty();
+	}
+	
+	/**
+	 * @brief       
+	 * 
+	 * @param       data 
+	 * @return      true 
+	 * @return      false 
+	 */
+    bool Push(MsgData& data)
     {
-		std::lock_guard<std::mutex> lck(mutex_for_list_);
+		std::lock_guard<std::mutex> lck(mutexForList);
 		while (IsFull())
 		{
-			DEBUGLOG(" {} the blocking queue is full,waiting...",str_info_.c_str());
-			m_notFull.wait(mutex_for_list_);
+			DEBUGLOG(" {} the blocking queue is full,waiting...",strInfo.c_str());
+			notFull.wait(mutexForList);
 		}
-		msg_queue_.push(std::move(data));
-		m_notEmpty.notify_one();
+		msgQueue.push(std::move(data));
+		notEmpty.notify_one();
 
 		return true;
     };
 
-    bool try_wait_pop(MsgData & out)
+	/**
+	 * @brief       
+	 * 
+	 * @param       out 
+	 * @return      true 
+	 * @return      false 
+	 */
+    bool TryWaitTop(MsgData & out)
     {
-		std::lock_guard<std::mutex> lck(mutex_for_list_);
+		std::lock_guard<std::mutex> lck(mutexForList);
 		while (IsEmpty())
 		{
-			m_notEmpty.wait(mutex_for_list_);
+			notEmpty.wait(mutexForList);
 		}
 
-		out = std::move(msg_queue_.top());
-		msg_queue_.pop();
-		m_notFull.notify_one();
+		out = std::move(msgQueue.top());
+		msgQueue.pop();
+		notFull.notify_one();
 		return true;
     };
     
-    bool pop(MsgData *ret)
+	/**
+	 * @brief       
+	 * 
+	 * @param       ret 
+	 * @return      true 
+	 * @return      false 
+	 */
+    bool Pop(MsgData *ret)
     {
 	    return ret;
     };
 
-    MsgQueue() : str_info_(""), max_size_(10000 * 5)
+    MsgQueue() : strInfo(""), maxSize(10000 * 5) {}
+	MsgQueue(std::string strInfo) : maxSize(10000 * 5)
 	{
-
-	}
-	
-	MsgQueue(std::string strInfo) : max_size_(10000 * 5)
-	{
-         str_info_ = strInfo;
+         strInfo = strInfo;
     }
-    
-	~MsgQueue() = default;
+    ~MsgQueue() = default;
 };
 
 

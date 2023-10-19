@@ -6,31 +6,23 @@
 #include "include/logging.h"
 #include "common/global.h"
 #include "utils/time_util.h"
-#include "net/net_api.h"
+#include "net/api.h"
 #include "ca/ca.h"
-#include "ca/ca_global.h"
-#include "utils/hexcode.h"
-#include "ca/ca_AdvancedMenu.h"
-#include "ca/ca_algorithm.h"
-#include "utils/MagicSingleton.h"
-#include "ca_test.h"
+#include "ca/global.h"
+#include "utils/hex_code.h"
+#include "ca/advanced_menu.h"
+#include "ca/algorithm.h"
+#include "utils/magic_singleton.h"
+#include "test.h"
 #include "utils/base58.h"
 #include "interface.pb.h"
-#include "ca/ca_interface.h"
-#include "utils/AccountManager.h"
-#include "ca/ca_block_http_callback.h"
+#include "ca/interface.h"
+#include "utils/account_manager.h"
+#include "ca/block_http_callback.h"
 
-
-
-
-
-
-
-
-
-void menu()
+void Menu()
 {
-	ca_print_basic_info();
+	PrintBasicInfo();
 	while (true)
 	{
 		std::cout << std::endl << std::endl;
@@ -60,52 +52,51 @@ void menu()
 		{			
 			case 0:
 				std::cout << "Exiting, bye!" << std::endl;
-				ca_cleanup();
+				CaCleanup();
 				exit(0);
 				return;		
 			case 1:
-				handle_transaction();
+				HandleTransaction();
 				break;
 			case 2:
-				handle_stake();
+				HandleStake();
 				break;
 			case 3:
-				handle_unstake();
+				HandleUnstake();
 				break;
 			case 4:
-				handle_invest();
+				HandleInvest();
                 break;
 			case 5:
-				handle_disinvest();
+				HandleDisinvest();
                 break;
 			case 6:
-				handle_bonus();
+				HandleBonus();
                 break;
 			case 7:
-				ca_print_basic_info();
+				PrintBasicInfo();
 				break;
       		case 8:
-				handle_deploy_contract();
+				HandleDeployContract();
 				break;
 			case 9:
-				handle_call_contract();
+				HandleCallContract();
 				break;
 			case 10:
-				handle_AccountManger();
+				HandleAccountManger();
 				break;
 			default:
                 std::cout << "Invalid input." << std::endl;
                 continue;
 		}
-
 		sleep(1);
 	}
 }
 	
-bool init()
+bool Init()
 {
 	// Initialize the random number seed
-	srand(MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp());
+	srand(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
 	
 	// Initialize configuration
 	// if (!InitConfig())
@@ -142,7 +133,7 @@ bool init()
 		return false;		
 	}
 
-	return  ca_init() && net_com::net_init();
+	return  CaInit() && net_com::InitializeNetwork();
 }
 
 bool InitConfig()
@@ -177,14 +168,14 @@ bool InitRocksDb()
         return false;
     }
 
-    DBReadWriter db_read_writer;
+    DBReadWriter dbReadWriter;
     uint64_t top = 0;
-    if (DBStatus::DB_SUCCESS != db_read_writer.GetBlockTop(top))
+    if (DBStatus::DB_SUCCESS != dbReadWriter.GetBlockTop(top))
     {
         //  Initialize Block 0. Here, the simplified processing directly reads the key information and saves it to the database
-        std::string str_block0 = global::ca::kGenesisBlockRaw;
+        std::string strBlock = global::ca::kGenesisBlockRaw;
 
-		std::string serBlock = Hex2Str(str_block0);
+		std::string serBlock = Hex2Str(strBlock);
 
         CBlock block;
         if(!block.ParseFromString(serBlock))
@@ -202,10 +193,10 @@ bool InitRocksDb()
             return false;
         }
 
-        db_read_writer.SetBlockHeightByBlockHash(block.hash(), block.height());
-        db_read_writer.SetBlockHashByBlockHeight(block.height(), block.hash(), true);
-        db_read_writer.SetBlockByBlockHash(block.hash(), block.SerializeAsString());
-        db_read_writer.SetBlockTop(0);
+        dbReadWriter.SetBlockHeightByBlockHash(block.hash(), block.height());
+        dbReadWriter.SetBlockHashByBlockHeight(block.height(), block.hash(), true);
+        dbReadWriter.SetBlockByBlockHash(block.hash(), block.SerializeAsString());
+        dbReadWriter.SetBlockTop(0);
 
 		
 		for(int i = 0; i < tx.utxo().vout_size(); ++i)
@@ -214,29 +205,29 @@ bool InitRocksDb()
 			{
 				continue;
 			}
-			db_read_writer.SetUtxoHashsByAddress(tx.utxo().vout(i).addr(), tx.hash());
+			dbReadWriter.SetUtxoHashsByAddress(tx.utxo().vout(i).addr(), tx.hash());
 			if(tx.utxo().vout(i).addr() == global::ca::kInitAccountBase58Addr)
 			{
-				db_read_writer.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
-				db_read_writer.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
+				dbReadWriter.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
+				dbReadWriter.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
 			}
 			else
 			{
-				db_read_writer.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
-				db_read_writer.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
+				dbReadWriter.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
+				dbReadWriter.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
 			}
 		}
 
-        db_read_writer.SetTransactionByHash(tx.hash(), tx.SerializeAsString());
-        db_read_writer.SetBlockHashByTransactionHash(tx.hash(), block.hash());
+        dbReadWriter.SetTransactionByHash(tx.hash(), tx.SerializeAsString());
+        dbReadWriter.SetBlockHashByTransactionHash(tx.hash(), block.hash());
 
-        db_read_writer.SetBalanceByAddress(tx.utxo().owner().at(0), tx.utxo().vout(0).value());
+        dbReadWriter.SetBalanceByAddress(tx.utxo().owner().at(0), tx.utxo().vout(0).value());
 
         uint64_t totalCirculation = global::ca::kM2 * global::ca::kDecimalNum;
-        db_read_writer.SetTotalCirculation(totalCirculation);
+        dbReadWriter.SetTotalCirculation(totalCirculation);
     }
-    db_read_writer.SetInitVer(global::kVersion);
-    if (DBStatus::DB_SUCCESS != db_read_writer.TransactionCommit())
+    dbReadWriter.SetInitVer(global::kVersion);
+    if (DBStatus::DB_SUCCESS != dbReadWriter.TransactionCommit())
     {
         ERRORLOG("(rocksdb init) TransactionCommit failed !");
         return false;
@@ -247,24 +238,24 @@ bool InitRocksDb()
 
 bool Check()
 {
-	DBReader db_reader;
+	DBReader dbReader;
     uint64_t top = 0;
 	std::string hash;
-	std::string blockraw;
-    if (DBStatus::DB_SUCCESS != db_reader.GetBlockHashByBlockHeight(top,hash))
+	std::string blockRaw;
+    if (DBStatus::DB_SUCCESS != dbReader.GetBlockHashByBlockHeight(top,hash))
     {
 		return false;
 	}
 
-	if (DBStatus::DB_SUCCESS != db_reader.GetBlockByBlockHash(hash,blockraw))
+	if (DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(hash,blockRaw))
     {
 		return false;
 	}
 
-	CBlock db_block;
-    db_block.ParseFromString(blockraw);
+	CBlock dbBlock;
+    dbBlock.ParseFromString(blockRaw);
 
-	if(db_block.time() != global::ca::kGenesisTime)
+	if(dbBlock.time() != global::ca::kGenesisTime)
 	{
 		std::cout << "The current version data is inconsistent with the new version !" << std::endl;
 		return false;
@@ -272,10 +263,10 @@ bool Check()
 
 	std::string serBlock = Hex2Str(global::ca::kGenesisBlockRaw);
 
-	CBlock gensis_block;
-	gensis_block.ParseFromString(serBlock);
+	CBlock gensisBlock;
+	gensisBlock.ParseFromString(serBlock);
 
-	if(gensis_block.hash() != hash)
+	if(gensisBlock.hash() != hash)
 	{
 		std::cout << "The current version data is inconsistent with the new version !" << std::endl;
 		return false;

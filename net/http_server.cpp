@@ -1,22 +1,25 @@
 
 #include "http_server.h"
+
 #include <unistd.h>
+
 #include <functional>
+
 #include "../common/config.h"
-#include "../utils/MagicSingleton.h"
+#include "../utils/magic_singleton.h"
 
 
-std::thread HttpServer::listen_thread;
-std::map<const std::string, HttpCallBack> HttpServer::cbs;
-std::map<const std::string, JsonRpcCallBack> HttpServer::rpc_cbs;
+std::thread HttpServer::_listenThread;
+std::map<const std::string, HttpCallBack> HttpServer::_cbs;
+std::map<const std::string, JsonRpcCallBack> HttpServer::rpcCbs;
 
-void HttpServer::work()
+void HttpServer::Work()
 {
   using namespace httplib;
 
   Server svr;
 
-  for(auto item: cbs)
+  for(auto item: _cbs)
   {
     svr.Get(item.first.c_str(), item.second);
     svr.Post(item.first.c_str(), item.second);
@@ -28,20 +31,20 @@ void HttpServer::work()
 }
 
 
-void HttpServer::start()
+void HttpServer::Start()
 {
-    registerAllCallback();
-    listen_thread = std::thread(HttpServer::work);
-    listen_thread.detach();	
+    RegisterAllCallback();
+    _listenThread = std::thread(HttpServer::Work);
+    _listenThread.detach();	
 }
 
-void HttpServer::registerAllCallback()
+void HttpServer::RegisterAllCallback()
 {
-  	registerCallback("/hello",api_hello);
+  	RegisterCallback("/hello",ApiHello);
 }
 
 
-void api_hello(const Request & req, Response & res)
+void ApiHello(const Request & req, Response & res)
 {
   res.set_content("Hello World!!!", "text/plain");
 }

@@ -1,33 +1,45 @@
+/**
+ * *****************************************************************************
+ * @file        trie.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef TFS_MPT_TRIE_H_
 #define TFS_MPT_TRIE_H_
 
-#include "node.h"
 #include <memory>
 #include <iostream>
 #include <map>
-#include "Common.h"
-#include "RLP.h"
+
 #include <boost/algorithm/hex.hpp>
 #include <boost/uuid/detail/sha1.hpp>
 
-struct ret {
+#include "node.h"
+#include "common.h"
+#include "rlp.h"
+struct ReturnVal 
+{
 public:
     bool dirty;
-    nodeptr node;
+    nodePtr node;
     int err;
 };
-struct ret2 {
+struct ReturnNode 
+{
 public:
-    nodeptr value_node;
-    nodeptr new_node;
+    nodePtr valueNode;
+    nodePtr newNode;
 };
-class virtualDB
+class VirtualDB
 {
 public:
     static std::map<std::string, std::string> db;
 public:
-    static void insert(std::string k, std::string v) { db[k] = v; }
-    static std::string get(std::string k) 
+    static void Insert(std::string k, std::string v) { db[k] = v; }
+    static std::string Get(std::string k) 
     { 
         if (db.find(k) != db.end())
         {
@@ -46,69 +58,69 @@ public:
     }
 };
 
-class trie
+class Trie
 {
 public:
-    trie() 
+    Trie() 
     {
         root = NULL;
     }
-    trie(std::string ContractAddr) 
+    Trie(std::string ContractAddr) 
     {
         root = NULL;
-        this->mContractAddr = ContractAddr;
+        this->contractAddr = ContractAddr;
     }
-    trie(std::string roothash, std::string ContractAddr) 
+    Trie(std::string roothash, std::string ContractAddr) 
     {
-        this->mContractAddr = ContractAddr;
-        auto roothashnode = std::shared_ptr<packing<hashNode>>(
-            new packing<hashNode>(hashNode{ roothash }));
-        root = resolveHash(roothashnode, "");
+        this->contractAddr = ContractAddr;
+        auto roothashnode = std::shared_ptr<packing<HashNode>>(
+            new packing<HashNode>(HashNode{ roothash }));
+        root = ResolveHash(roothashnode, "");
     }
 
-    nodeFlag newFlag()
+    NodeFlag newFlag()
     {
-        nodeFlag nf;
+        NodeFlag nf;
         nf.dirty = true;
         return nf;
     }
-    nodeptr resolveHash(nodeptr n, std::string prefix) const;
+    nodePtr ResolveHash(nodePtr n, std::string prefix) const;
     std::string Get(std::string& key) const;
-    ret2 Get(nodeptr n, std::string key, int pos) const;
+    ReturnNode Get(nodePtr n, std::string key, int pos) const;
 
-    ret insert(nodeptr n, std::string prefix, std::string key, nodeptr value);
+    ReturnVal Insert(nodePtr n, std::string prefix, std::string key, nodePtr value);
 
-    nodeptr Update(std::string key, std::string value);
+    nodePtr Update(std::string key, std::string value);
 
-    nodeptr descendKey(std::string key) const;
-    nodeptr decodeShort(std::string hash, dev::RLP const& _r) const;
-    nodeptr decodeFull(std::string hash, dev::RLP const& _r) const;
-    nodeptr decodeRef(dev::RLP const& _r) const;
-    nodeptr decodeNode(std::string hash, dev::RLP const& _r) const;
+    nodePtr DescendKey(std::string key) const;
+    nodePtr DecodeShort(std::string hash, dev::RLP const& r) const;
+    nodePtr DecodeFull(std::string hash, dev::RLP const& r) const;
+    nodePtr DecodeRef(dev::RLP const& r) const;
+    nodePtr DecodeNode(std::string hash, dev::RLP const& r) const;
 
-    nodeptr hash(nodeptr n);
-    nodeptr hashShortNodeChildren(nodeptr n);
-    nodeptr hashFullNodeChildren(nodeptr n);
-    nodeptr ToHash(nodeptr n);
-    dev::RLPStream encode(nodeptr n);
+    nodePtr hash(nodePtr n);
+    nodePtr HashShortNodeChildren(nodePtr n);
+    nodePtr HashFullNodeChildren(nodePtr n);
+    nodePtr ToHash(nodePtr n);
+    dev::RLPStream Encode(nodePtr n);
 
-    nodeptr store(nodeptr n);
-    nodeptr commit(nodeptr n);
-    std::array<nodeptr, 17>commitChildren(nodeptr n);
+    nodePtr Store(nodePtr n);
+    nodePtr Commit(nodePtr n);
+    std::array<nodePtr, 17>commitChildren(nodePtr n);
 
-    void save();
+    void Save();
 
     std::string WapperKey(std::string str) const;
-    bool hasTerm(std::string& s) const;
-    std::string hexToKeybytes(std::string hex);
-    int prefixLen(std::string a, std::string b);
-    int toint(char c) const;
+    bool HasTerm(std::string& s) const;
+    std::string HexToKeybytes(std::string hex);
+    int PrefixLen(std::string a, std::string b);
+    int Toint(char c) const;
 
-    void GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyhash);
+    void GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash);
 public:
-    mutable nodeptr root;
-    std::string mContractAddr;
-    std::map<std::string, std::string> dirtyhash;
+    mutable nodePtr root;
+    std::string contractAddr;
+    std::map<std::string, std::string> dirtyHash;
 };
 #endif
 

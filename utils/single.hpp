@@ -1,3 +1,12 @@
+/**
+ * *****************************************************************************
+ * @file        single.hpp
+ * @brief       
+ * @author HXD (2848973813@qq.com)
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -11,8 +20,14 @@
 #define MY_PID_FILE     "/tmp/my_pid_file"
 #define BUF_LEN_FOR_PID 64
  
- 
-static int write_pid_into_fd(int fd, pid_t pid)
+/**
+ * @brief       
+ * 
+ * @param       fd: 
+ * @param       pid: 
+ * @return      int 
+ */
+static int WritePidIntoFd(int fd, pid_t pid)
 {
 	int ret = -1;
 	char buf[BUF_LEN_FOR_PID] = {0};
@@ -40,7 +55,7 @@ static int write_pid_into_fd(int fd, pid_t pid)
  *
  * @return: 0 is ok, -1 is error.
  */
-static int create_pid_file(pid_t pid)
+static int CreatePidFile(pid_t pid)
 {
 	int fd, ret;
 	char buf[BUF_LEN_FOR_PID] = {0};
@@ -58,7 +73,7 @@ static int create_pid_file(pid_t pid)
 		return -1;
 	}
  
-	ret = write_pid_into_fd(fd, pid);
+	ret = WritePidIntoFd(fd, pid);
  
 	flock(fd, LOCK_UN);
 	close(fd);
@@ -73,7 +88,7 @@ static int create_pid_file(pid_t pid)
  *
  * @return: 0 is ok, -1 is error.
  */
-static int check_pid_file(int fd, pid_t pid)
+static int CheckPidFile(int fd, pid_t pid)
 {
 	int ret = -1;
 	pid_t old_pid;
@@ -96,7 +111,7 @@ static int check_pid_file(int fd, pid_t pid)
 		ret = kill(old_pid, 0);
 		if(ret < 0) {
 			if(errno == ESRCH) { /* old_pid is not running. */
-				ret = write_pid_into_fd(fd, pid);
+				ret = WritePidIntoFd(fd, pid);
 			} else {
 				perror("send signal fail\n");
 				ret = -1;
@@ -106,7 +121,7 @@ static int check_pid_file(int fd, pid_t pid)
 			ret = -1;
 		}
 	} else if(ret == 0) { /* read 0 byte from file */
-		ret = write_pid_into_fd(fd, pid);
+		ret = WritePidIntoFd(fd, pid);
 	}
  
 	flock(fd, LOCK_UN);
@@ -119,7 +134,7 @@ static int check_pid_file(int fd, pid_t pid)
  * 
  * @return: 0 is ok, -1 is error.
  */
-static int init_pid_file()
+static int InitPidFile()
 {
 	pid_t pid;
 	int fd, ret;
@@ -129,19 +144,24 @@ static int init_pid_file()
 	fd = open(MY_PID_FILE, O_RDWR);
 	if(fd == -1) {  /* open file fail */
 		if(errno == ENOENT) {  /* No such file. Create one for this program. */
-			ret = create_pid_file(pid);
+			ret = CreatePidFile(pid);
 		} else {
 			perror("open " MY_PID_FILE" fail\n");
 			ret = -1;
 		}
 	} else {  /* pid file already exists */
-		ret = check_pid_file(fd, pid);
+		ret = CheckPidFile(fd, pid);
 		close(fd);
 	}
  
 	return ret;
 }
- 
+
+/**
+ * @brief       
+ * 
+ * @param       sig: 
+ */
 static void sigHandler(int sig)
 {
 	if(sig == SIGINT || sig == SIGTERM)

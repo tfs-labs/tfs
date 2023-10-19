@@ -1,3 +1,11 @@
+/**
+ * *****************************************************************************
+ * @file        console.h
+ * @brief       
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef _CA_CONSOLE_H_
 #define _CA_CONSOLE_H_
 
@@ -23,29 +31,68 @@ typedef enum ConsoleColor
 
 } ConsoleColor;
 
-class ca_console
+/**
+ * @brief       
+ * 
+ */
+class CaConsole
 {
 public:
-    ca_console(const ConsoleColor foregroundColor = kConsoleColor_White, 
+    /**
+     * @brief       Construct a new Ca Console object
+     * 
+     * @param       foregroundColor: 
+     * @param       backgroundColor: 
+     * @param       highlight: 
+     */
+    CaConsole(const ConsoleColor foregroundColor = kConsoleColor_White, 
                 const ConsoleColor backgroundColor = kConsoleColor_Black, 
                 bool highlight = false);
-    ~ca_console();
     
-    const std::string color(); //Returns the color
-    void setColor(const ConsoleColor foregroundColor = kConsoleColor_White, 
+    /**
+     * @brief       Destroy the Ca Console object
+     * 
+     */
+    ~CaConsole();
+    
+    /**
+     * @brief       Returns the Color
+     * 
+     * @return      const std::string 
+     */
+    const std::string Color(); 
+
+    /**
+     * @brief       Set the Color object
+     * 
+     * @param       foregroundColor: 
+     * @param       backgroundColor: 
+     * @param       highlight: 
+     */
+    void SetColor(const ConsoleColor foregroundColor = kConsoleColor_White, 
                 const ConsoleColor backgroundColor = kConsoleColor_Black, 
                 bool highlight = false);
     
-    const std::string reset(); //reset
-    void clear(); //clear
+    /**
+     * @brief       
+     * 
+     * @return      const std::string 
+     */
+    const std::string Reset(); //Reset
+
+    /**
+     * @brief       
+     * 
+     */
+    void Clear(); //Clear
 
     operator const char * ();
     operator char * ();
 
 private:
-    std::string bColorString;
-    std::string fColorString;
-    bool isHightLight;
+    std::string _bColorString;
+    std::string _fColorString;
+    bool _isHightLight;
 };
 
 #endif // !_CA_CONSOLE_H_

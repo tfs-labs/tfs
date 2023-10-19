@@ -1,3 +1,12 @@
+/**
+ * *****************************************************************************
+ * @file        compress.h
+ * @brief       
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 #ifndef COMPRESS_H_
 #define COMPRESS_H_
 #include <iostream>
@@ -6,17 +15,17 @@
 class Compress
 {
 public:
-    Compress(std::string raw_data) : m_raw_data(raw_data){ compressFunc(); }
-    Compress(std::string compress_data, uint64_t uncompress_len) 
-        : m_compress_data(compress_data), m_uncompress_len(uncompress_len){ uncompressFunc(); }
+    Compress(std::string rawData) : _rawData(rawData){ compressFunc(); }
+    Compress(std::string compress_data, uint64_t uncompressLen) 
+        : _compressData(compress_data), _uncompressLen(uncompressLen){ uncompressFunc(); }
     ~Compress(){}
 
     void compressFunc();
     void uncompressFunc();
 
-    std::string m_raw_data;
-    std::string m_compress_data;
-    uint64_t m_uncompress_len;
+    std::string _rawData;
+    std::string _compressData;
+    uint64_t _uncompressLen;
 };
 
 

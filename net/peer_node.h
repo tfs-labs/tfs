@@ -1,3 +1,12 @@
+/**
+ * *****************************************************************************
+ * @file        peer_node.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-26
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef _PEER_NODE_H_
 #define _PEER_NODE_H_
 
@@ -11,10 +20,12 @@
 #include <thread>
 #include <vector>
 #include <iostream>
+#include <shared_mutex>
+
 #include "./define.h"
 #include "./ip_port.h"
-#include <shared_mutex>
-#include "node.hpp"
+
+#include "../net/node.hpp"
 
 using namespace std;
 
@@ -32,76 +43,318 @@ public:
 	~PeerNode() = default;
 
 public:
-	bool find_node(std::string const& base58addr, Node& x);
-	bool find_node_by_fd(int fd, Node& node_);
+	/**
+	 * @brief       
+	 * 
+	 * @param       base58Addr 
+	 * @param       x 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool FindNode(std::string const& base58Addr, Node& x);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       fd 
+	 * @param       node 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool FindNodeByFd(int fd, Node& node);
 	
-	std::vector<Node> get_nodelist(NodeType type = NODE_ALL, bool mustAlive = false);
-	void get_nodelist(std::map<std::string, bool>& NodeAddrs, NodeType type = NODE_ALL, bool mustAlive = false);
-	uint64_t get_nodelist_size();
+	/**
+	 * @brief       Get the Nodelist object
+	 * 
+	 * @param       type 
+	 * @param       mustAlive 
+	 * @return      std::vector<Node> 
+	 */
+	std::vector<Node> GetNodelist(NodeType type = NODE_ALL, bool mustAlive = false);
 
-	void delete_node(std::string base58addr);
-	void delete_by_fd(int fd);
+	/**
+	 * @brief       Get the Nodelist object
+	 * 
+	 * @param       nodeAddrs 
+	 * @param       type 
+	 * @param       mustAlive 
+	 */
+	void GetNodelist(std::map<std::string, bool>& nodeAddrs, NodeType type = NODE_ALL, bool mustAlive = false);
 
-	bool add(const Node &_node);
-	bool update(const Node &_node);
-	bool add_or_update(Node _node);
-	void print(std::vector<Node> &nodelist);
-	void print(const Node &node);
-	std::string nodelist_info(std::vector<Node> &nodelist);
+	/**
+	 * @brief       Get the Nodelist Size object
+	 * 
+	 * @return      uint64_t 
+	 */
+	uint64_t GetNodelistSize();
 
+	/**
+	 * @brief       
+	 * 
+	 * @param       base58Addr 
+	 */
+	void DeleteNode(std::string base58Addr);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       fd 
+	 */
+	void DeleteByFd(int fd);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       node 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool Add(const Node &node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       node 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool Update(const Node &node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       node 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool AddOrUpdate(Node node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       nodeList 
+	 */
+	void Print(std::vector<Node> &nodeList);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       node 
+	 */
+	void Print(const Node &node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       nodeList 
+	 * @return      std::string 
+	 */
+	std::string NodelistInfo(std::vector<Node> &nodeList);
 
 	//Refresh threads
-	bool nodelist_refresh_thread_init();
-	void nodelist_switch_thread_fun();
+	/**
+	 * @brief       
+	 * 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool NodelistRefreshThreadInit();
+
+	/**
+	 * @brief       
+	 * 
+	 */
+	void NodelistSwitchThreadFun();
 
 	//Thread functions
-	void nodelist_refresh_thread_fun();
-	bool nodelist_switch_thread();
+	/**
+	 * @brief       
+	 * 
+	 */
+	void NodelistRefreshThreadFun();
 
-	int connect_node(Node & node);
-	int disconnect_node(Node & node);
-	int disconnect_node(uint32_t ip, uint16_t port, int fd);
+	/**
+	 * @brief       
+	 * 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool NodelistSwitchThread();
 
+	/**
+	 * @brief       
+	 * 
+	 * @param       node 
+	 * @return      int 
+	 */
+	int ConnectNode(Node & node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       node 
+	 * @return      int 
+	 */
+	int DisconnectNode(Node & node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       ip 
+	 * @param       port 
+	 * @param       fd 
+	 * @return      int 
+	 */
+	int DisconnectNode(uint32_t ip, uint16_t port, int fd);
 
 	// Get the ID
-	const std::string get_self_id();
+	/**
+	 * @brief       Get the Self Id object
+	 * 
+	 * @return      const std::string 
+	 */
+	const std::string GetSelfId();
 
 	//Get the PUB
-	const std::string get_self_pub();
-	void set_self_id(const std::string &base58addr);
-	void set_self_ip_p(const u32 public_ip);
-	void set_self_ip_l(const u32 listen_ip);
-	void set_self_port_p(const u16 port_p);
-	void set_self_port_l(const u16 port_l);
-	void set_self_height(u32 height);
-	void set_self_height();
-	void set_self_ver(const std::string & ver);
+	/**
+	 * @brief       Get the Self Pub object
+	 * 
+	 * @return      const std::string 
+	 */
+	const std::string GetSelfPub();
 
-	void set_self_identity(const std::string & identity );
-	void set_self_name(const std::string &name_);
-	void set_self_logo(const std::string &logo_);
+	/**
+	 * @brief       Set the Self Id object
+	 * 
+	 * @param       base58Addr 
+	 */
+	void SetSelfId(const std::string &base58Addr);
 
-	u32 get_self_chain_height_newest();
-	const Node get_self_node();
-	const std::string get_base58addr();
-    int update_base58Addr(const string &oldpub, const std::string & newpub);
+	/**
+	 * @brief       Set the Self Ip Public object
+	 * 
+	 * @param       publicIp 
+	 */
+	void SetSelfIpPublic(const u32 publicIp);
 
-	void stop_nodes_swap() {nodes_swap_end = false;}
+	/**
+	 * @brief       Set the Self Ip Listen object
+	 * 
+	 * @param       listenIp 
+	 */
+	void SetSelfIpListen(const u32 listenIp);
+
+	/**
+	 * @brief       Set the Self Port Public object
+	 * 
+	 * @param       portPublic 
+	 */
+	void SetSelfPortPublic(const u16 portPublic);
+
+	/**
+	 * @brief       Set the Self Port Listen object
+	 * 
+	 * @param       portListen 
+	 */
+
+	/**
+	 * @brief       Set the Self Port Listen object
+	 * 
+	 * @param       portListen 
+	 */
+	void SetSelfPortListen(const u16 portListen);
+
+	/**
+	 * @brief       Set the Self Height object
+	 * 
+	 * @param       height 
+	 */
+	void SetSelfHeight(u32 height);
+
+	/**
+	 * @brief       Set the Self Height object
+	 * 
+	 */
+	void SetSelfHeight();
+
+	/**
+	 * @brief       Set the Self Ver object
+	 * 
+	 * @param       ver 
+	 */
+	void SetSelfVer(const std::string & ver);
+
+	/**
+	 * @brief       Set the Self Identity object
+	 * 
+	 * @param       identity 
+	 */
+	void SetSelfIdentity(const std::string & identity );
+
+	/**
+	 * @brief       Set the Self Name object
+	 * 
+	 * @param       name 
+	 */
+	void SetSelfName(const std::string &name);
+
+	/**
+	 * @brief       Set the Self Logo object
+	 * 
+	 * @param       logo 
+	 */
+	void SetSelfLogo(const std::string &logo);
+
+	/**
+	 * @brief       Get the Self Chain Height Newest object
+	 * 
+	 * @return      u32 
+	 */
+	u32 GetSelfChainHeightNewest();
+
+	/**
+	 * @brief       Get the Self Node object
+	 * 
+	 * @return      const Node 
+	 */
+	const Node GetSelfNode();
+
+	/**
+	 * @brief       Get the Base 5 8addr object
+	 * 
+	 * @return      const std::string 
+	 */
+	const std::string GetBase58Address();
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       oldPub 
+	 * @param       newPub 
+	 * @return      int 
+	 */
+    int UpdateBase58Address(const string &oldPub, const std::string & newPub);
+
+	/**
+	 * @brief       
+	 * 
+	 */
+	void StopNodesSwap() {_nodesSwapEnd = false;}
 
 	
 private:
     friend std::string PrintCache(int where);
 	//List of public network nodes
-	std::shared_mutex mutex_for_nodes_;
-	std::map<std::string, Node> node_map_;
+	std::shared_mutex _mutexForNodes;
+	std::map<std::string, Node> _nodeMap;
 
-	std::mutex mutex_for_curr_;
-	Node curr_node_;
+	std::mutex _mutexForCurr;
+	Node _currNode;
 
-	std::thread refresh_thread;
-	std::thread node_switch_thread;
+	std::thread _refreshThread;
+	std::thread _nodeSwitchThread;
 
-	std::atomic<bool> nodes_swap_end = true;
+	std::atomic<bool> _nodesSwapEnd = true;
 };
 
 #endif

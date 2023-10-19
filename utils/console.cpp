@@ -3,21 +3,21 @@
 #include <sstream>
 #include <iostream>
 
-ca_console::ca_console(const ConsoleColor foregroundColor, const ConsoleColor backgroundColor, bool highlight)
+CaConsole::CaConsole(const ConsoleColor foregroundColor, const ConsoleColor backgroundColor, bool highlight)
 {
-    setColor(foregroundColor, backgroundColor, highlight);
+    SetColor(foregroundColor, backgroundColor, highlight);
 }
 
-ca_console::~ca_console()
+CaConsole::~CaConsole()
 {
-    reset();
+    Reset();
 }
 
-const std::string ca_console::color()
+const std::string CaConsole::Color()
 {
-    std::string output = "\033[" + bColorString + ";" + fColorString + "m";
+    std::string output = "\033[" + _bColorString + ";" + _fColorString + "m";
 
-    if (isHightLight)
+    if (_isHightLight)
     {
         output = "\033[1m" + output;
     }
@@ -25,35 +25,35 @@ const std::string ca_console::color()
     return output;
 }
 
-ca_console::operator const char *()
+CaConsole::operator const char *()
 {
-    return color().c_str();
+    return Color().c_str();
 }
 
-ca_console::operator char *()
+CaConsole::operator char *()
 {
-    return const_cast<char*>(color().c_str());
+    return const_cast<char*>(Color().c_str());
 }
 
-void ca_console::setColor(const ConsoleColor foregroundColor, const ConsoleColor backgroundColor,  bool highlight)
+void CaConsole::SetColor(const ConsoleColor foregroundColor, const ConsoleColor backgroundColor,  bool highlight)
 {
     std::stringstream  s;
     s << (foregroundColor + 30); 
-    s >> fColorString;
+    s >> _fColorString;
 
     std::stringstream ss;
     ss << (backgroundColor + 40);
-    ss >> bColorString;
+    ss >> _bColorString;
 
-    isHightLight = highlight;
+    _isHightLight = highlight;
 }
 
-const std::string ca_console::reset()
+const std::string CaConsole::Reset()
 {
     return std::string("\033[0m");
 }
 
-void ca_console::clear()
+void CaConsole::Clear()
 {
     std::cout << "\033[2J";
 }

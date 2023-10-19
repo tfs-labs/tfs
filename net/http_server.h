@@ -1,4 +1,12 @@
-
+/**
+ * *****************************************************************************
+ * @file        http_server.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-26
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef _HTTP_SERVER_H_
 #define _HTTP_SERVER_H_
 
@@ -10,7 +18,9 @@
 #include <thread>
 #include <vector>
 #include <iostream>
-#include "httplib.h"
+
+#include "./httplib.h"
+
 #include "../utils/json.hpp"
 
 using namespace httplib;
@@ -24,34 +34,60 @@ class HttpServer
 public:
 	HttpServer() = default;
 	~HttpServer() = default;
+	/**
+	 * @brief       
+	 * 
+	 */
+	static void Work();
+	
+	/**
+	 * @brief       
+	 * 
+	 */
+	static void Start();
 
+	/**
+	 * @brief       
+	 * 
+	 */
+	static void RegisterAllCallback();
 
-	static void work();
-	static void start();
-	static void registerAllCallback();
-	static void registerCallback(std::string pattern, HttpCallBack handler)
+	/**
+	 * @brief       
+	 * 
+	 * @param       pattern 
+	 * @param       handler 
+	 */
+	static void RegisterCallback(std::string pattern, HttpCallBack handler)
 	{
-		HttpServer::cbs[pattern] = handler;
+		HttpServer::_cbs[pattern] = handler;
 	}
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       method 
+	 * @param       cb 
+	 */
 	static void registerJsonRpcCallback(std::string method, JsonRpcCallBack cb)
 	{
-		HttpServer::rpc_cbs[method] = cb;
+		HttpServer::rpcCbs[method] = cb;
 	}
 
-
-	
-	static std::map<const std::string, JsonRpcCallBack> rpc_cbs;
+	static std::map<const std::string, JsonRpcCallBack> rpcCbs;
 private:
     friend std::string PrintCache(int where);
-    static std::thread listen_thread;
-	static std::map<const std::string, HttpCallBack> cbs;
+    static std::thread _listenThread;
+	static std::map<const std::string, HttpCallBack> _cbs;
 };
 
-
-void api_hello(const Request & req, Response & res);
-void api_print_block(const Request & req, Response & res);
-
-
+/**
+ * @brief       
+ * 
+ * @param       req 
+ * @param       res 
+ */
+void ApiHello(const Request & req, Response & res);
 #endif
 
 

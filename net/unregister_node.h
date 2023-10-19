@@ -1,10 +1,19 @@
+/**
+ * *****************************************************************************
+ * @file        unregister_node.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef _UnregisterNode_H_
 #define _UnregisterNode_H_
 
 #include <shared_mutex>
 #include <map>
 #include <set>
-#include "utils/CTimer.hpp"
+#include "utils/timer.hpp"
 #include "node.hpp"
 
 class UnregisterNode
@@ -17,36 +26,98 @@ public:
     UnregisterNode &operator=(const UnregisterNode &) = delete;
     ~UnregisterNode();
 public:
+    /**
+     * @brief       
+     * 
+     * @param       node 
+     * @return      int 
+     */
     int Add(const Node & node);
+    /**
+     * @brief       
+     * 
+     * @param       node 
+     * @return      int 
+     */
     int Find(const Node & node);
 
-    bool Register(std::map<uint32_t, Node> node_map);
-    bool StartRegisterNode(std::map<std::string, int> &server_list);
+    /**
+     * @brief       
+     * 
+     * @param       nodeMap 
+     * @return      true 
+     * @return      false 
+     */
+    bool Register(std::map<uint32_t, Node> nodeMap);
+    
+    /**
+     * @brief       
+     * 
+     * @param       serverList 
+     * @return      true 
+     * @return      false 
+     */
+    bool StartRegisterNode(std::map<std::string, int> &serverList);
+
+    /**
+     * @brief       
+     * 
+     * @return      true 
+     * @return      false 
+     */
     bool StartSyncNode();
 
     struct NodeCompare
     {
         bool operator()(const Node& n1, const Node& n2) const {
-            return n1.base58address < n2.base58address;
+            return n1.base58Address < n2.base58Address;
         }
     };
 
-    void getIpMap(std::map<uint64_t, std::map<Node,int, NodeCompare>> & m1); 
+    /**
+     * @brief       Get the Ip Map object
+     * 
+     * @param       m1 
+     */
+    void GetIpMap(std::map<uint64_t, std::map<Node,int, NodeCompare>> & m1); 
+    
+    /**
+     * @brief       Get the Consensus Node List object
+     * 
+     * @param       nodeList 
+     * @return      std::vector<Node> 
+     */
     std::vector<Node> GetConsensusNodeList(std::vector<Node> & nodeList);
     
-    void deleteConsensusNode(const std::string & base58);
-    void AddConsensusNode(const std::map<Node, int, NodeCompare>  sync_node_count);
+    /**
+     * @brief       
+     * 
+     * @param       base58 
+     */
+    void DeleteConsensusNode(const std::string & base58);
+
+    /**
+     * @brief       
+     * 
+     * @param       syncNodeCount 
+     */
+    void AddConsensusNode(const std::map<Node, int, NodeCompare>  syncNodeCount);
+
+    /**
+     * @brief       
+     * 
+     */
     void ClearConsensusNodeList();
 
 
 private:
     friend std::string PrintCache(int where);
-    std::shared_mutex _mutex_for_nodes;
-    std::shared_mutex _mutex_consensus_nodes;
+    std::shared_mutex _mutexForNodes;
+    std::shared_mutex _mutexConsensusNodes;
     std::map<std::string, Node> _nodes;
 
     //The IP address and the corresponding number of times are stored once and synchronized once
-    std::map<uint64_t, std::map<Node,int, NodeCompare>> consensus_node_list;
+    std::map<uint64_t, std::map<Node,int, NodeCompare>> _consensusNodeList;
 
 };
 

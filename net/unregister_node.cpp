@@ -1,13 +1,15 @@
 
 #include "unregister_node.h"
-#include "net/peer_node.h"
-#include "utils/MagicSingleton.h"
-#include "common/global_data.h"
-#include "common/config.h"
-#include "net_api.h"
-#include "net.pb.h"
-#include "handle_event.h"
+
+#include "./handle_event.h"
+#include "./api.h"
+
 #include "../utils/time_util.h"
+#include "../net/peer_node.h"
+#include "../utils/magic_singleton.h"
+#include "../common/global_data.h"
+#include "../common/config.h"
+#include "../proto/net.pb.h"
 
 UnregisterNode::UnregisterNode()
 {
@@ -18,8 +20,8 @@ UnregisterNode::~UnregisterNode()
 
 int UnregisterNode::Add(const Node & node)
 {
-    std::unique_lock<std::shared_mutex> lck(_mutex_for_nodes);
-    std::string key = std::to_string(node.public_ip) + std::to_string(node.public_port);
+    std::unique_lock<std::shared_mutex> lck(_mutexForNodes);
+    std::string key = std::to_string(node.publicIp) + std::to_string(node.publicPort);
 
     if(key.size() == 0)
 	{
@@ -36,23 +38,23 @@ int UnregisterNode::Add(const Node & node)
     return 0;
 }
 
-bool UnregisterNode::Register(std::map<uint32_t, Node> node_map)
+bool UnregisterNode::Register(std::map<uint32_t, Node> nodeMap)
 {
-    std::string msg_id;
-    uint32 send_num = node_map.size();
-    if (!GLOBALDATAMGRPTR2.CreateWait(5, send_num, msg_id))
+    std::string msgId;
+    uint32 sendNum = nodeMap.size();
+    if (!GLOBALDATAMGRPTR2.CreateWait(5, sendNum, msgId))
     {
         return false;
     }
 
-    std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
+    std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
     
-    for (auto & unconnect_node : node_map)
+    for (auto & unconnectNode : nodeMap)
     {
         bool isFind = false;
         for (auto & node : nodelist)
         {
-            if (unconnect_node.second.public_ip == node.public_ip)
+            if (unconnectNode.second.publicIp == node.publicIp)
             {
                 isFind = true;
                 break;
@@ -64,28 +66,28 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> node_map)
             continue;
         }
 
-        int ret = net_com::SendRegisterNodeReq(unconnect_node.second, msg_id, false);
+        int ret = net_com::SendRegisterNodeReq(unconnectNode.second, msgId, false);
         if(ret != 0)
         {
             ERRORLOG("SendRegisterNodeReq fail ret = {}", ret);
         }
     }
 
-    std::vector<std::string> ret_datas;
-    if (!GLOBALDATAMGRPTR2.WaitData(msg_id, ret_datas))//Wait for enough voting data to be received
+    std::vector<std::string> returnDatas;
+    if (!GLOBALDATAMGRPTR2.WaitData(msgId, returnDatas))//Wait for enough voting data to be received
     {
-        if (ret_datas.empty())
+        if (returnDatas.empty())
         {
-            ERRORLOG("wait Register time out send:{} recv:{}", send_num, ret_datas.size());
+            ERRORLOG("wait Register time out send:{} recv:{}", sendNum, returnDatas.size());
             return false;
         }
     }
 
     RegisterNodeAck registerNodeAck;
-    for (auto &ret_data : ret_datas)
+    for (auto &retData : returnDatas)
     {
         registerNodeAck.Clear();
-        if (!registerNodeAck.ParseFromString(ret_data))
+        if (!registerNodeAck.ParseFromString(retData))
         {
             continue;
         }
@@ -95,9 +97,9 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> node_map)
         if(registerNodeAck.nodes_size() <= 1)
 	    {
             const NodeInfo &nodeinfo = registerNodeAck.nodes(0);
-			if (MagicSingleton<BufferCrol>::GetInstance()->is_exists(ip, port) /* && node.is_established()*/)
+			if (MagicSingleton<BufferCrol>::GetInstance()->IsExists(ip, port) /* && node.is_established()*/)
 			{
-                DEBUGLOG("handleRegisterNodeAck--FALSE from.ip: {}", IpPort::ipsz(ip));
+                DEBUGLOG("HandleRegisterNodeAck--FALSE from.ip: {}", IpPort::IpSz(ip));
                 auto ret = VerifyRegisterNode(nodeinfo, ip, port);
                 if(ret < 0)
                 {
@@ -108,52 +110,52 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> node_map)
     }
     return true;
 }
-bool UnregisterNode::StartRegisterNode(std::map<std::string, int> &server_list)
+bool UnregisterNode::StartRegisterNode(std::map<std::string, int> &serverList)
 {
-    std::string msg_id;
-    uint32 send_num = server_list.size();
-    if (!GLOBALDATAMGRPTR2.CreateWait(5, send_num, msg_id))
+    std::string msgId;
+    uint32 sendNum = serverList.size();
+    if (!GLOBALDATAMGRPTR2.CreateWait(5, sendNum, msgId))
     {
         return false;
     }
-    Node selfNode = MagicSingleton<PeerNode>::GetInstance()->get_self_node();
-    for (auto & item : server_list)
+    Node selfNode = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
+    for (auto & item : serverList)
 	{
         //The party actively establishing the connection
 		Node node;
-		node.public_ip = IpPort::ipnum(item.first);
-		node.listen_ip = selfNode.listen_ip;
-		node.listen_port = SERVERMAINPORT;
+		node.publicIp = IpPort::IpNum(item.first);
+		node.listenIp = selfNode.listenIp;
+		node.listenPort = SERVERMAINPORT;
 
-		if (item.first == global::local_ip)
+		if (item.first == global::g_localIp)
 		{
 			continue;
 		}
 
-		int ret = net_com::SendRegisterNodeReq(node, msg_id, true);
+		int ret = net_com::SendRegisterNodeReq(node, msgId, true);
         if(ret != 0)
         {
             ERRORLOG("StartRegisterNode error ret : {}", ret);
         }
 	}
 
-    std::vector<std::string> ret_datas;
-    if (!GLOBALDATAMGRPTR2.WaitData(msg_id, ret_datas))//Wait for enough voting data to be received
+    std::vector<std::string> returnDatas;
+    if (!GLOBALDATAMGRPTR2.WaitData(msgId, returnDatas))//Wait for enough voting data to be received
     {
-        if (ret_datas.empty())
+        if (returnDatas.empty())
         {
-            ERRORLOG("wait StartRegisterNode time out send:{} recv:{}", send_num, ret_datas.size());
+            ERRORLOG("wait StartRegisterNode time out send:{} recv:{}", sendNum, returnDatas.size());
             return false;
         }
     }
     RegisterNodeAck registerNodeAck;
-    std::map<uint32_t, Node> node_map;
+    std::map<uint32_t, Node> nodeMap;
 
 
-    for (auto &ret_data : ret_datas)
+    for (auto &retData : returnDatas)
     {
         registerNodeAck.Clear();
-        if (!registerNodeAck.ParseFromString(ret_data))
+        if (!registerNodeAck.ParseFromString(retData))
         {
             continue;
         }
@@ -166,26 +168,26 @@ bool UnregisterNode::StartRegisterNode(std::map<std::string, int> &server_list)
             const NodeInfo &nodeinfo = registerNodeAck.nodes(i);
             {
                 Node node;
-                node.listen_ip = selfNode.listen_ip;
-	            node.listen_port = SERVERMAINPORT;
-                node.public_ip = nodeinfo.public_ip();
-                node.base58address = nodeinfo.base58addr();
+                node.listenIp = selfNode.listenIp;
+	            node.listenPort = SERVERMAINPORT;
+                node.publicIp = nodeinfo.public_ip();
+                node.base58Address = nodeinfo.base58addr();
             }
-            if(nodeinfo.base58addr() == selfNode.base58address)
+            if(nodeinfo.base58addr() == selfNode.base58Address)
             {
                 continue;
             }
             if(i == 0)
             {
                 //Determine if TCP is connected
-                if (MagicSingleton<BufferCrol>::GetInstance()->is_exists(ip, port))
+                if (MagicSingleton<BufferCrol>::GetInstance()->IsExists(ip, port))
                 {
-                    DEBUGLOG("handleRegisterNodeAck--TRUE from.ip: {}", IpPort::ipsz(ip));
+                    DEBUGLOG("HandleRegisterNodeAck--TRUE from.ip: {}", IpPort::IpSz(ip));
                     auto ret = VerifyRegisterNode(nodeinfo, ip, port);
                     if(ret < 0)
                     {
                         DEBUGLOG("VerifyRegisterNode error ret:{}", ret);
-                        MagicSingleton<PeerNode>::GetInstance()->disconnect_node(ip, port, fd);
+                        MagicSingleton<PeerNode>::GetInstance()->DisconnectNode(ip, port, fd);
                         continue;
                     }
                 }
@@ -193,156 +195,156 @@ bool UnregisterNode::StartRegisterNode(std::map<std::string, int> &server_list)
             else
             {
                 Node node;
-                node.listen_ip = selfNode.listen_ip;
-	            node.listen_port = SERVERMAINPORT;
-                node.public_ip = nodeinfo.public_ip();
-                DEBUGLOG("Add NodeList--TRUE ip: {}", IpPort::ipsz(node.public_ip));
-                if(node_map.find(node.public_ip) == node_map.end())
+                node.listenIp = selfNode.listenIp;
+	            node.listenPort = SERVERMAINPORT;
+                node.publicIp = nodeinfo.public_ip();
+                DEBUGLOG("Add NodeList--TRUE ip: {}", IpPort::IpSz(node.publicIp));
+                if(nodeMap.find(node.publicIp) == nodeMap.end())
                 {
-                    node_map[nodeinfo.public_ip()] = node;
+                    nodeMap[nodeinfo.public_ip()] = node;
                 }
             } 
         }
     }
-    Register(node_map);
+    Register(nodeMap);
     return true;
 }
 
 bool UnregisterNode::StartSyncNode()
 {
-    std::string msg_id;
-    std::vector<Node> node_list = MagicSingleton<PeerNode>::GetInstance()->get_nodelist();
-    uint32 send_num = node_list.size();
-    if (!GLOBALDATAMGRPTR3.CreateWait(5, send_num, msg_id))
+    std::string msgId;
+    std::vector<Node> node_list = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    uint32 sendNum = node_list.size();
+    if (!GLOBALDATAMGRPTR3.CreateWait(5, sendNum, msgId))
     {
         return false;
     }
-    Node selfNode = MagicSingleton<PeerNode>::GetInstance()->get_self_node();
+    Node selfNode = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
     
     for (auto & node : node_list)
     {
         //Determine if TCP is connected
-        if (MagicSingleton<BufferCrol>::GetInstance()->is_exists(node.public_ip, node.public_port) /* && node.is_established()*/)
+        if (MagicSingleton<BufferCrol>::GetInstance()->IsExists(node.publicIp, node.publicPort) /* && node.is_established()*/)
         {
-            net_com::SendSyncNodeReq(node, msg_id);
+            net_com::SendSyncNodeReq(node, msgId);
         }
         else
         {
-            DEBUGLOG("SendSyncNodeReq error id:{} ip:{} port:{}", node.base58address, IpPort::ipsz(node.public_ip), node.public_port);
+            DEBUGLOG("SendSyncNodeReq error id:{} ip:{} port:{}", node.base58Address, IpPort::IpSz(node.publicIp), node.publicPort);
         }
     }
 
-    std::vector<std::string> ret_datas;
-    if (!GLOBALDATAMGRPTR3.WaitData(msg_id, ret_datas))//Wait for enough voting data to be received
+    std::vector<std::string> returnDatas;
+    if (!GLOBALDATAMGRPTR3.WaitData(msgId, returnDatas))//Wait for enough voting data to be received
     {
-        if (ret_datas.empty())
+        if (returnDatas.empty())
         {
-            ERRORLOG("wait StartRegisterNode time out send:{} recv:{}", send_num, ret_datas.size());
+            ERRORLOG("wait StartRegisterNode time out send:{} recv:{}", sendNum, returnDatas.size());
             return false;
         }
     }
     SyncNodeAck syncNodeAck;
-    std::map<uint32_t, Node> node_map;
-    std::vector<Node> sync_nodes;
-    for (auto &ret_data : ret_datas)
+    std::map<uint32_t, Node> nodeMap;
+    std::vector<Node> syncNodes;
+    for (auto &retData : returnDatas)
     {
         syncNodeAck.Clear();
-        if (!syncNodeAck.ParseFromString(ret_data))
+        if (!syncNodeAck.ParseFromString(retData))
         {
             continue;
         }
         for (int i = 0; i < syncNodeAck.nodes_size(); i++)
 	    {
             const NodeInfo &nodeinfo = syncNodeAck.nodes(i);
-            if(nodeinfo.base58addr() == selfNode.base58address)
+            if(nodeinfo.base58addr() == selfNode.base58Address)
             {
                 continue;
             }
             Node node;
-            node.listen_ip = selfNode.listen_ip;
-            node.listen_port = SERVERMAINPORT;
-            node.public_ip = nodeinfo.public_ip();
-            node.base58address = nodeinfo.base58addr();
-            node.time_stamp = nodeinfo.time_stamp();
+            node.listenIp = selfNode.listenIp;
+            node.listenPort = SERVERMAINPORT;
+            node.publicIp = nodeinfo.public_ip();
+            node.base58Address = nodeinfo.base58addr();
+            node.timeStamp = nodeinfo.time_stamp();
             node.height = nodeinfo.height();
 
-            if(node_map.find(node.public_ip) == node_map.end())
+            if(nodeMap.find(node.publicIp) == nodeMap.end())
             {
-                node_map[nodeinfo.public_ip()] = node;
+                nodeMap[nodeinfo.public_ip()] = node;
             }
             //Add the nodes brought back by synchronizing the nodes to the array
-            sync_nodes.push_back(node);
+            syncNodes.push_back(node);
 
         }
     }
 
     //Count the number of IPs and the number of times they correspond to IPs
     {
-        std::map<Node,int, NodeCompare> sync_node_count;
-        for(auto it = sync_nodes.begin(); it != sync_nodes.end(); ++it)
+        std::map<Node,int, NodeCompare> syncNodeCount;
+        for(auto it = syncNodes.begin(); it != syncNodes.end(); ++it)
         {
-            sync_node_count[*it]++;
+            syncNodeCount[*it]++;
         }
-        AddConsensusNode(sync_node_count);
-        sync_nodes.clear();
-        sync_node_count.clear();
+        AddConsensusNode(syncNodeCount);
+        syncNodes.clear();
+        syncNodeCount.clear();
     }
 
     //Only the latest elements are stored in the maintenance map map
-    if(consensus_node_list.size() == 2)
+    if(_consensusNodeList.size() == 2)
     {
         ClearConsensusNodeList();
     }
 
-    if(node_map.empty())
+    if(nodeMap.empty())
     {
-        auto config_server_list = MagicSingleton<Config>::GetInstance()->GetServer();
+        auto configServerList = MagicSingleton<Config>::GetInstance()->GetServer();
         int port = MagicSingleton<Config>::GetInstance()->GetServerPort();
         
-        std::map<std::string, int> server_list;
-        for (auto & config_server_ip: config_server_list)
+        std::map<std::string, int> serverList;
+        for (auto & configServerIp: configServerList)
         {
-            server_list.insert(std::make_pair(config_server_ip, port));
+            serverList.insert(std::make_pair(configServerIp, port));
         }
 
-        MagicSingleton<UnregisterNode>::GetInstance()->StartRegisterNode(server_list);
+        MagicSingleton<UnregisterNode>::GetInstance()->StartRegisterNode(serverList);
     }
     else
     {
-        Register(node_map);
+        Register(nodeMap);
     }
 
     return true;
 }
 
-void UnregisterNode::getIpMap(std::map<uint64_t, std::map<Node, int, NodeCompare>> & m1)
+void UnregisterNode::GetIpMap(std::map<uint64_t, std::map<Node, int, NodeCompare>> & m1)
 {
-    std::shared_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
-    m1 = consensus_node_list;
+    std::shared_lock<std::shared_mutex> lck(_mutexConsensusNodes);
+    m1 = _consensusNodeList;
 }
 
-void UnregisterNode::AddConsensusNode(const std::map<Node, int, NodeCompare>  sync_node_count)
+void UnregisterNode::AddConsensusNode(const std::map<Node, int, NodeCompare>  syncNodeCount)
 {
-    std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
-    uint64_t current_time = MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
-    consensus_node_list[current_time] = sync_node_count;
+    std::unique_lock<std::shared_mutex> lck(_mutexConsensusNodes);
+    uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    _consensusNodeList[currentTime] = syncNodeCount;
 }
 
-void UnregisterNode::deleteConsensusNode(const std::string & base58)
+void UnregisterNode::DeleteConsensusNode(const std::string & base58)
 {
-    std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
-    auto iter1 = consensus_node_list.begin();
-    if(consensus_node_list.empty() || iter1->second.empty() )
+    std::unique_lock<std::shared_mutex> lck(_mutexConsensusNodes);
+    auto iter1 = _consensusNodeList.begin();
+    if(_consensusNodeList.empty() || iter1->second.empty() )
     {
-        ERRORLOG("consensus_node_list is empty");
+        ERRORLOG("_consensusNodeList is empty");
         return;
     }
 
-    for(auto & [_ , iter]: consensus_node_list)
+    for(auto & [_ , iter]: _consensusNodeList)
     {
         for(auto iter2 = iter.begin(); iter2 != iter.end(); ++iter2)
         {
-            if(iter2->first.base58address == base58)
+            if(iter2->first.base58Address == base58)
             {
                 iter2 = iter.erase(iter2);
                 return;
@@ -353,50 +355,49 @@ void UnregisterNode::deleteConsensusNode(const std::string & base58)
 
 void UnregisterNode::ClearConsensusNodeList()
 {
-    std::unique_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
-    auto it = consensus_node_list.begin();
-    consensus_node_list.erase(it);
+    std::unique_lock<std::shared_mutex> lck(_mutexConsensusNodes);
+    auto it = _consensusNodeList.begin();
+    _consensusNodeList.erase(it);
 }
 
 std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeList)
 {
-    std::shared_lock<std::shared_mutex> lck(_mutex_consensus_nodes);
+    std::shared_lock<std::shared_mutex> lck(_mutexConsensusNodes);
     std::vector<Node> nodes;
 
-    if(consensus_node_list.empty())
+    if(_consensusNodeList.empty())
     {
         return nodes;
     }
 
-    auto item = consensus_node_list.begin();
+    auto item = _consensusNodeList.begin();
 
-    std::map<int,int> map_cnts; 
+    std::map<int,int> mapCnts;
     std::vector<uint64_t> counts;
     for(auto iter : item->second)
     {
         counts.push_back(iter.second);
-        ++map_cnts[iter.second];
+        ++mapCnts[iter.second];
     }
 
-
-    int max_elem = 0, max_cnt = 0;
-    for(auto iter : map_cnts)
+    int maxElem = 0, maxCnt = 0;
+    for(auto iter : mapCnts)
     {
-        if(max_cnt <  iter.second)
+        if(maxCnt <  iter.second)
         {
-            max_elem = iter.first;
-            max_cnt = iter.second;
+            maxElem = iter.first;
+            maxCnt = iter.second;
         }
     }
 
-    DEBUGLOG("GetConsensusNodeList : max_cnt = {} , item->second.size = {}, max_elem = {}", max_cnt, item->second.size(), max_elem);
+    DEBUGLOG("GetConsensusNodeList : maxCnt = {} , item->second.size = {}, maxElem = {}", maxCnt, item->second.size(), maxElem);
 
-    counts.erase(std::remove_if(counts.begin(), counts.end(),[max_elem](int x){ return x == max_elem;}), counts.end());
+    counts.erase(std::remove_if(counts.begin(), counts.end(),[maxElem](int x){ return x == maxElem;}), counts.end());
     if(counts.size() < 2)
     {
         for(auto i : item->second)
         {
-            if(i.second == max_elem)
+            if(i.second == maxElem)
             {
                 nodes.push_back(i.first);
             }
@@ -405,37 +406,34 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
     else
     {
 
-        uint64_t quarter_num = counts.size() * 0.25;
-        uint64_t three_quarter_num = counts.size() * 0.75;
-        if (quarter_num == three_quarter_num)
+        uint64_t quarterNum = counts.size() * 0.25;
+        uint64_t threeQuarterNum = counts.size() * 0.75;
+        if (quarterNum == threeQuarterNum)
         {
-            ERRORLOG("Number of exceptions quarter_num = {}, three_quarter_num = {}", quarter_num, three_quarter_num);
+            ERRORLOG("Number of exceptions quarterNum = {}, threeQuarterNum = {}", quarterNum, threeQuarterNum);
             return nodes;
         }
 
         std::sort(counts.begin(), counts.end());
 
+        uint64_t quarterNumValue = counts.at(quarterNum);
+        uint64_t threeQuarterNumValue = counts.at(threeQuarterNum);
+        int64_t slowerLimitValue = quarterNumValue -
+                                            ((threeQuarterNumValue - quarterNumValue) * 1.5);
 
-        uint64_t quarter_num_value = counts.at(quarter_num);
-        uint64_t three_quarter_num_value = counts.at(three_quarter_num);
-        int64_t slower_limit_value = quarter_num_value -
-                                            ((three_quarter_num_value - quarter_num_value) * 1.5);
-
-
-        if(slower_limit_value > max_elem)
+        if(slowerLimitValue > maxElem)
         {
-            DEBUGLOG("Modify the value of the number of exceptions : {} , slower_limit_value: {}", max_elem, slower_limit_value);
-            slower_limit_value = max_elem;
+            DEBUGLOG("Modify the value of the number of exceptions : {} , slowerLimitValue: {}", maxElem, slowerLimitValue);
+            slowerLimitValue = maxElem;
         }
 
-
-        if(slower_limit_value >= 0)
+        if(slowerLimitValue >= 0)
         {
             for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
             {
-                if (iter->second < slower_limit_value)
+                if (iter->second < slowerLimitValue)
                 {
-                    DEBUGLOG("slower_limit_value : {}, iter->second", slower_limit_value, iter->second);
+                    DEBUGLOG("slowerLimitValue : {}, iter->second", slowerLimitValue, iter->second);
                     continue;
                 }
 
@@ -444,13 +442,11 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
         }
     }
 
-
     for(auto & node : nodeList)
     {
         for(auto & iter : nodes)
         {
-
-            if(node.base58address == iter.base58address)
+            if(node.base58Address == iter.base58Address)
             {
                 iter.height = node.height;
             }

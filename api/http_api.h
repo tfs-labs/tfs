@@ -1,77 +1,97 @@
+/**
+ * *****************************************************************************
+ * @file        http_api.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #include "../net/http_server.h"
-#include "ca_test.h"
+#include "test.h"
 #include "../net/unregister_node.h"
 #include "net/httplib.h"
 
-void ca_register_http_callbacks();
+/**
+ * @brief       
+ * 
+ */
+void CaRegisterHttpCallbacks();
 
 #ifndef NDEBUG
-void api_get_log_line(const Request & req,Response & res);
-void get_all_system_info(const Request &req, Response &res);
-std::string api_get_cpu_info();
-std::string api_get_system_info();
-std::string get_net_rate();
-std::string get_process_info();
-std::string api_time();
-void api_get_real_bandwidth(const Request &req, Response &res);
-void api_get_block_info(const Request &req, Response &res);
-void api_get_tx_info(const Request &req,Response &res);
 
-void api_print_block(const Request & req, Response & res);
-void api_info(const Request & req, Response & res);
-void api_get_block(const Request & req, Response & res);
-
-void api_start_autotx(const Request & req, Response & res);
-void api_end_autotx(const Request & req, Response & res);
-void api_status_autotx(const Request & req, Response & res);
-
-void api_pub(const Request & req, Response & res);
-void api_filter_height(const Request &req, Response &res);
-
-void api_jsonrpc(const Request & req, Response & res);
-void api_test_echo(const Request & req, Response & res);
-void api_get_rates_info(const Request &req,Response &res);
-void api_print_all_blocks(const Request &req,Response &res);
-void api_print_Calc1000SumHash(const Request &req,Response &res);
-void api_set_Calc1000TopHeight(const Request &req,Response &res);
+/**
+ * @brief       
+ * 
+ * @param       req 
+ * @param       res 
+ */
+void ApiGetLogLine(const Request & req,Response & res);
+void GetAllSystemInfo(const Request &req, Response &res);
+std::string ApiGetCpuInfo();
+std::string ApiGetSystemInfo();
+std::string GetNetRate();
+std::string GetProcessInfo();
+std::string ApiTime();
+void ApiGetRealBandwidth(const Request &req, Response &res);
+void ApiGetBlockInfo(const Request &req, Response &res);
+void ApiGetTxInfo(const Request &req,Response &res);
+void ApiPrintBlock(const Request & req, Response & res);
+void ApiInfo(const Request & req, Response & res);
+void ApiGetBlock(const Request & req, Response & res);
+void ApiStartAutoTx(const Request & req, Response & res);
+void ApiEndAutotx(const Request & req, Response & res);
+void ApiStatusAutoTx(const Request & req, Response & res);
+void ApiPub(const Request & req, Response & res);
+void ApiFilterHeight(const Request &req, Response &res);
+void ApiJsonRpc(const Request & req, Response & res);
+void ApiTestEcho(const Request & req, Response & res);
+void ApiGetRatesInfo(const Request &req,Response &res);
+void ApiPrintAllBlocks(const Request &req,Response &res);
+void ApiPrintCalc1000SumHash(const Request &req,Response &res);
+void ApiSetCalc1000TopHeight(const Request &req,Response &res);
 
 #endif
 
+bool ApiStatusAutoTxTest(Response & res);
+void ApiEndAutoTxTest(Response & res);
+void JsonRpcGetHeight(const Request &req,Response &res);
+void JsonrpcGetBalance(const Request &req, Response &res) ;
+void GetStakeUtxo(const Request & req, Response & res);
+void GetDisinvestUtxo(const Request & req, Response & res);
+void GetTransaction(const Request & req, Response & res);
+void GetStake(const Request & req, Response & res);
+void GetUnstake(const Request & req, Response & res);
+void GetInvest(const Request & req, Response & res);
+void GetDisinvest(const Request & req, Response & res);
+void GetDeclare(const Request & req, Response & res);
+void GetBonus(const Request & req, Response & res);
+void GetRsaPub(const Request & req, Response & res);
+void DeployContract(const Request & req, Response & res);
+void CallContract(const Request & req, Response & res);
+void SendMessage(const Request & req, Response & res);
+void GetIsOnChain(const Request & req, Response & res);
+void GetDeployer(const Request & req, Response & res);
+void GetDeployerUtxo(const Request & req, Response & res);
+// void get_base58_from_evm(const Request & req, Response & res);
+// void get_evmaddr_from_pubstr(const Request & req,Response & res);
+void GetRestInvest(const Request & req, Response & res);
+void ApiIp(const Request &req, Response & res);
+void ApiNormal(const Request & req, Response & res);
+void GetAllStakeNodeListAcknowledge(const Request & req,Response & res);
+void ApiGetRatesInfo(const Request &req,Response &res);
+void TfsRpcParse(const Request &req,Response &res);
 
-bool api_status_autotx_test(Response & res);
-void api_end_autotx_test(Response & res);
+enum RPCERROR:int
+{
+    RPCVERSION_ERROR=847,
+    FIELD_REEOR,
+    PASE_ERROR,
+    NUMBER_ERROR,
+    TRANSACTION_ERROR
+};
 
-void jsonrpc_get_height(const Request &req,Response &res);
-void jsonrpc_get_balance(const Request &req, Response &res) ;
-void get_stakeutxo(const Request & req, Response & res);
-void get_disinvestutxo(const Request & req, Response & res);
-void get_transaction(const Request & req, Response & res);
-void get_stake(const Request & req, Response & res);
-void get_unstake(const Request & req, Response & res);
-void get_invest(const Request & req, Response & res);
-void get_disinvest(const Request & req, Response & res);
-void get_declare(const Request & req, Response & res);
-void get_bonus(const Request & req, Response & res);
-void get_rsa_pub(const Request & req, Response & res);
-void deploy_contract(const Request & req, Response & res);
-void call_contract(const Request & req, Response & res);
+#define tfsrpc
+#ifdef tfsrpc
 
-void send_message(const Request & req, Response & res);
-
-void get_isonchain(const Request & req, Response & res);
-
-void get_deployer(const Request & req, Response & res);
-
-void get_deployerutxo(const Request & req, Response & res);
-
-
-void get_base58_from_evm(const Request & req, Response & res);
-void get_evmaddr_from_pubstr(const Request & req,Response & res);
-
-
-void get_restinvest(const Request & req, Response & res);
-void api_ip(const Request &req, Response & res);
-void api_normal(const Request & req, Response & res);
-
-void get_all_stake_node_list_ack(const Request & req,Response & res);
-void api_get_rates_info(const Request &req,Response &res);
+#endif

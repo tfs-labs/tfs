@@ -41,7 +41,7 @@ int mnemonic_from_data(const uint8_t *data, int len, char *out, size_t outLen)
 	memset(out, 0x00, outLen);
 
 	sha256_Raw(data, len, bits);
-	// checksum
+	// checkSum
 	bits[len] = bits[0];
 	// data
 	memcpy(bits, data, len);

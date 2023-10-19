@@ -1,19 +1,23 @@
+#include "./config.h"
+
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp>
+#include <boost/asio/io_context.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <tuple>
 #include <regex>
 #include <filesystem>
 
-
-#include "./config.h"
+#include "../utils/console.h"
+#include "../net/peer_node.h"
+#include "../common/global.h"
+#include "../net/node.hpp"
 #include "../net/ip_port.h"
 #include "../include/logging.h"
 #include "../net/peer_node.h"
-#include "../ca/ca_global.h"
-#include "utils/console.h"
-#include "net/peer_node.h"
-#include "common/global.h"
-
+#include "../ca/global.h"
 
 
 int Config::InitFile()
@@ -24,26 +28,32 @@ int Config::InitFile()
     if(f.good())
     {
         std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-        _json = nlohmann::json::parse(str);
-        if(_Parse(_json) == -1)
+        tmpJson = nlohmann::json::parse(str);
+        if(_Parse(tmpJson) == -1)
         {
             return -1;
         }
     }
+    f.close();
+
     std::ifstream configFile(Config::kConfigFilename);
+
     if (!configFile)
     {
         std::ofstream outFile(Config::kConfigFilename);
-        _json = nlohmann::json::parse(global::ca::kConfigJson);
-        if(_Parse(_json) == -1)
+        tmpJson = nlohmann::json::parse(global::ca::kConfigJson);
+
+        if(_Parse(tmpJson) == -1)
         {
             return -1;
         }
-        outFile << _json.dump(4);
+        outFile << tmpJson.dump(4);
         outFile.close();    
         
     }
-    if(Filter() != 0 || verify() != 0)
+    configFile.close();
+
+    if(_Filter() != 0 || _Verify() != 0)
     {
         std::filesystem::remove(kConfigFilename);
         std::ofstream outFile(Config::kConfigFilename);
@@ -52,6 +62,8 @@ int Config::InitFile()
         outFile.close();  
       return 0;
     }
+
+    //GetAllServerAddress();
     return 0;
 }
 
@@ -64,6 +76,7 @@ int Config::_Parse(nlohmann::json json)
         }
 
         try {
+        _ip = json[kCfgIp].get<std::string>();
         _httpCallback.ip = json[kCfgHttpCallback][kCfgHttpCallbackIp].get<std::string>();
         _httpCallback.port = json[kCfgHttpCallback][kCfgHttpCallbackPort].get<uint32_t>();
         _httpCallback.path = json[kCfgHttpCallback][kCfgHttpCallbackPath].get<std::string>();
@@ -82,22 +95,23 @@ int Config::_Parse(nlohmann::json json)
        _serverPort = json[kCfgServerPort].get<uint32_t>();
        _version = json[kCfgKeyVersion].get<std::string>();  
         } 
-        catch(const std::exception& e) {
+        catch(const std::exception& e) 
+        {
   
          std::cout << e.what() << std::endl; 
-}
+        }
                 
        return 0;
-}
+        }
 
-    //Check whether the nickname is legal
-#define _verify_(Info,param,minnum,maxnum,ip,regex_var)  \
+    //_Check whether the nickname is legal
+#define Dverify(Info,param,minnum,maxnum,ip,regex_var)  \
     if(Info.param.length() >= minnum && Info.param.length() <= maxnum )  \
     {   \
         if(!Info.param.empty() && !std::regex_match(Info.param,std::regex(regex_var)))  \
         {   \
-            std::cout << RED << "Config error in " << #param << " verify " ; \
-            if(ip)  std::cout << " ip: " << IpPort::ipsz(ip);    \
+            std::cout << RED << "Config error in " << #param << " _Verify " ; \
+            if(ip)  std::cout << " ip: " << IpPort::IpSz(ip);    \
             std::cout << RESET << std::endl;    \
             return -1;  \
         }   \
@@ -106,37 +120,38 @@ int Config::_Parse(nlohmann::json json)
     {   \
         std::cout << RED << "Config error in "<< #param << " length! " << #param << " : " <<  Info.param  \
         << " length is: " << Info.param.length() << " The range should be:" << minnum << " - " << maxnum ;  \
-        if(ip)  std::cout << " ip: " << IpPort::ipsz(ip);    \
+        if(ip)  std::cout << " ip: " << IpPort::IpSz(ip);    \
         std::cout << RESET << std::endl;    \
         return -2;  \
     }   \
 
 
-int Config::verify(const Node& _node)
+int Config::_Verify(const Node& node)
 {
-    _verify_(_node,name,0,45,_node.public_ip,"^[\u4E00-\u9FA5A-Za-z0-9_]+$");
-    _verify_(_node,logo,0,512,_node.public_ip,"^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/[^/][a-zA-Z0-9\\.\\,\?\'\\/\\+&%\\$#\\=~_\\-@]*)*$"); 
+    Dverify(node,name,0,45,node.publicIp,"^[\u4E00-\u9FA5A-Za-z0-9_]+$");
+    Dverify(node,logo,0,512,node.publicIp,"^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/[^/][a-zA-Z0-9\\.\\,\?\'\\/\\+&%\\$#\\=~_\\-@]*)*$"); 
     return 0;
 }
 
-int Config::verify()
+int Config::_Verify()
 {
-    _verify_(_info,name,0,45,0,"^[\u4E00-\u9FA5A-Za-z0-9_]+$");
-    _verify_(_info,logo,0,512,0,"^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/[^/][a-zA-Z0-9\\.\\,\?\'\\/\\+&%\\$#\\=~_\\-@]*)*$"); 
+    Dverify(_info,name,0,45,0,"^[\u4E00-\u9FA5A-Za-z0-9_]+$");
+    Dverify(_info,logo,0,512,0,"^(http|https|ftp)\\://([a-zA-Z0-9\\.\\-]+(\\:[a-zA-Z0-9\\.&%\\$\\-]+)*@)?((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.[a-zA-Z]{2,4})(\\:[0-9]+)?(/[^/][a-zA-Z0-9\\.\\,\?\'\\/\\+&%\\$#\\=~_\\-@]*)*$"); 
     return 0;
 }
 
-int Config::Filter()
+int Config::_Filter()
 {
     if(FilterIp(_ip) != 0)
     {
         return -1;
     }
-    if(FilterServerPort(_serverPort) != 0)
     
+    if(FilterServerPort(_serverPort) != 0)
     {
         return -2;
     }
+
     if(FilterHttpPort(_httpPort) != 0)
     {
         return -3;
@@ -202,23 +217,20 @@ int Config::GetInfo(Config::Info & info)
 
 int Config::SetIP(const std::string & ip)
 {
-
-
     std::ifstream configFile(Config::kConfigFilename);
     if (!configFile.good())
     {
         return -1;
     }
-    _json["ip"] = ip;
+    tmpJson["ip"] = ip;
     
     std::ofstream outFile(Config::kConfigFilename);
     if (outFile.fail())
     {
         return -2;
     }
-    outFile << _json.dump(4);
+    outFile << tmpJson.dump(4);
     outFile.close();
-
     _ip = ip;
     return 0;
 }
@@ -313,32 +325,29 @@ int Config::FilterServerIp(T & t)
 }
 
 int Config::FilterLog(Log &log)
-{
-    if( _json["log"]["level"] == "debug"|| _json["log"]["level"] == "info"|| _json["log"]["level"] == "warn"|| _json["log"]["level"] == "err"|| _json["log"]["level"] == "critical"|| _json["log"]["level"] == "OFF")
+{    
+    std::string level = tmpJson["log"]["level"];
+    std::regex regex_level("(debug|info|warn|error|trace|critical|off)", std::regex::icase);
+    if (!std::regex_match(level, regex_level)) 
     {
-        
-    }
-    else
-    {
-        std::cerr << RED <<"log level input error and has set for default" << RESET <<std::endl;
-    }
-    if(_json["log"]["path"] == "./logs")
-    {
-        
-    }
-    else
-    {
-        std::cerr << RED <<"log path input error and has set for default" << RESET << std::endl;
-    }
-
-    if(FilterBool(log.console))
-    {
-        return 0;
-    }
-    else
-    {
+        std::cerr << RED <<"log level input error " << RESET <<std::endl;
         return -1;
     }
+
+    std::string path = tmpJson["log"]["path"];
+    std::regex regex_path("^\\./logs$");
+    if(!std::regex_match(path,regex_path))
+    {
+        std::cerr << RED <<"log path input error " << RESET << std::endl;
+        return -2;
+    }
+
+    if(!FilterBool(log.console))
+    {
+        std::cerr << RED <<"log console is not bool type" << RESET << std::endl;
+        return -3;
+    }
+    return 0;
   
 }
 int Config::FilterHttpCallback(HttpCallback &httpcallback)
@@ -366,3 +375,45 @@ bool Config::FilterBool(T  &t)
     }
     
 }
+
+void Config::GetAllServerAddress()
+{
+    std::vector<Node> nodeList =
+        MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+        tmpJson["server"].clear();
+   	for (auto node : nodeList)
+	{
+        std::string ip = std::string(IpPort::IpSz(node.publicIp));
+        std::vector<std::string> a = tmpJson["server"];
+        if (std::find(a.begin(), a.end(), ip) != a.end())
+        {
+            continue;
+        }
+        else
+        {
+            tmpJson["server"].push_back(ip);
+        }
+    }
+
+    std::ifstream f(kConfigFilename);
+    
+    if(f.good())
+    {
+        std::filesystem::remove(kConfigFilename);
+        std::ofstream outFile(Config::kConfigFilename);
+        outFile << tmpJson.dump(4);
+        outFile.close();  
+    }
+    
+}
+void Config::_Check() 
+{
+    while(!_exitThread)  
+    {
+    std::this_thread::sleep_for(std::chrono::hours(1));
+    GetAllServerAddress(); 
+    }
+    return ;
+}
+
+

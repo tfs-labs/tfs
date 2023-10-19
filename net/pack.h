@@ -1,29 +1,86 @@
+/**
+ * *****************************************************************************
+ * @file        pack.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-26
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef _PACK_H_
 #define _PACK_H_
 
 #include <string>
-#include "net.pb.h"
-#include "common.pb.h"
+
 #include "./peer_node.h"
-#include "utils/compress.h"
-#include "common/global.h"
+
+#include "../proto/net.pb.h"
+#include "../proto/common.pb.h"
+#include "../utils/compress.h"
+#include "../common/global.h"
 
 class Pack
 {
 public:
-
-	static void packag_to_buff(const net_pack & pack, char* buff, int buff_len);
+	/**
+	 * @brief       
+	 * 
+	 * @param       pack 
+	 * @param       buff 
+	 * @param       buffLen 
+	 */
+	static void PackagToBuff(const NetPack & pack, char* buff, int buffLen);
 	
-	static std::string packag_to_str(const net_pack& pack);
-	static bool apart_pack(net_pack& pk, const char* pack, int len);
+	/**
+	 * @brief       
+	 * 
+	 * @param       pack 
+	 * @return      std::string 
+	 */
+	static std::string PackagToStr(const NetPack& pack);
 
+	/**
+	 * @brief       
+	 * 
+	 * @param       pk 
+	 * @param       pack 
+	 * @param       len 
+	 * @return      true 
+	 * @return      false 
+	 */
+	static bool ApartPack(NetPack& pk, const char* pack, int len);
+
+	/**
+	 * @brief       
+	 * 
+	 * @tparam T 
+	 * @param       msg 
+	 * @param       submsg 
+	 * @param       encrypt 
+	 * @param       compress 
+	 * @return      true 
+	 * @return      false 
+	 */
 	template <typename T>
 	static bool InitCommonMsg(CommonMsg & msg, T& submsg, int32_t encrypt = 0, int32_t compress = 0);
-	static bool common_msg_to_pack(const CommonMsg& msg, const int8_t priority, net_pack& pack);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       msg 
+	 * @param       priority 
+	 * @param       pack 
+	 * @return      true 
+	 * @return      false 
+	 */
+	static bool PackCommonMsg(const CommonMsg& msg, const int8_t priority, NetPack& pack);
 
 };
 
-
+/**
+ * @brief       
+ * 
+ */
 template <typename T>
 bool Pack::InitCommonMsg(CommonMsg& msg, T& submsg, int32_t encrypt, int32_t compress)
 {
@@ -36,7 +93,7 @@ bool Pack::InitCommonMsg(CommonMsg& msg, T& submsg, int32_t encrypt, int32_t com
 	{
 		Compress cpr(tmp);
 		//Try compression, if the compression ratio is poor, do not use compression
-		if (cpr.m_compress_data.size() > tmp.size())
+		if (cpr._compressData.size() > tmp.size())
 		{
 			msg.set_compress(0);
 			msg.set_data(tmp);
@@ -44,7 +101,7 @@ bool Pack::InitCommonMsg(CommonMsg& msg, T& submsg, int32_t encrypt, int32_t com
 		else
 		{
 			msg.set_compress(compress);
-			msg.set_data(cpr.m_compress_data);
+			msg.set_data(cpr._compressData);
 		}
 	}
 	else 

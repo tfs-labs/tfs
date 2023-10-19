@@ -1,137 +1,302 @@
+/**
+ * *****************************************************************************
+ * @file        task_pool.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef __TASK_POOL_H__
 #define __TASK_POOL_H__
 #define BOOST_BIND_NO_PLACEHOLDERS
 
-#include "net/dispatcher.h"
-#include "utils/MagicSingleton.h"
 #include "./config.h"
 #include "./global.h"
-#include "net/work_thread.h"
+
+#include "../net/dispatcher.h"
+#include "../utils/magic_singleton.h"
+#include "../net/work_thread.h"
+
 #include <boost/threadpool.hpp>
 using boost::threadpool::pool;
 
-
+/**
+ * @brief       
+ * 
+ */
 void Gettid();
 
-class taskPool{
+class TaskPool{
 public:
-    ~taskPool() = default;
-    taskPool(taskPool &&) = delete;
-    taskPool(const taskPool &) = delete;
-    taskPool &operator=(taskPool &&) = delete;
-    taskPool &operator=(const taskPool &) = delete;
+    ~TaskPool() = default;
+    TaskPool(TaskPool &&) = delete;
+    TaskPool(const TaskPool &) = delete;
+    TaskPool &operator=(TaskPool &&) = delete;
+    TaskPool &operator=(const TaskPool &) = delete;
 public:
-    taskPool():
-      ca_taskPool(global::ca_thread_number),
-      net_taskPool(global::net_thread_number),
-      broadcast_taskPool(global::broadcast_thread_number),
-      tx_taskPool(global::tx_thread_number),
-      syncBlock_taskPool(global::syncBlock_thread_number),
-      saveBlock_taskPool(global::saveBlock_thread_number),
-      block_taskPool(global::block_thread_number),
-      work_taskPool(global::work_thread_number)
-      {}
+    TaskPool()
+    :_caTaskPool(global::kCaThreadNumber)
+    ,_netTaskPool(global::kNetThreadNumber)
+    ,_broadcastTaskPool(global::kBroadcastThreadNumber)
+    ,_txTaskPool(global::kTxThreadNumber)
+    ,_syncBlockTaskPool(global::kSyncBlockThreadNumber)
+    ,_saveBlockTaskPool(global::kSaveBlockThreadNumber)
+    ,_blockTaskPool(global::kBlockThreadNumber)
+    ,_workTaskPool(global::kWorkThreadNumber)
+    {}
     
-    void taskPool_init();
+    /**
+     * @brief       
+     * 
+     */
+    void TaskPoolInit();
     
-    void commit_ca_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitCaTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
     {
-        ca_taskPool.schedule(boost::bind(func, sub_msg, data));
+        _caTaskPool.schedule(boost::bind(func, subMsg, data));
     }
+    
+    /**
+     * @brief       
+     * 
+     */
     template<class T>
-    void commit_ca_task(T func)
+    void CommitCaTask(T func)
     {
-        ca_taskPool.schedule(func);
+        _caTaskPool.schedule(func);
     }
 
-    void commit_net_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitNetTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
     {
-        net_taskPool.schedule(boost::bind(func, sub_msg, data));
+        _netTaskPool.schedule(boost::bind(func, subMsg, data));
     }
 
-    void commit_broadcast_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitBroadcastTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
     {
-        broadcast_taskPool.schedule(boost::bind(func, sub_msg, data));
+        _broadcastTaskPool.schedule(boost::bind(func, subMsg, data));
     }
 
-    void commit_tx_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitTxTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
     {
-        tx_taskPool.schedule(boost::bind(func, sub_msg, data));
+        _txTaskPool.schedule(boost::bind(func, subMsg, data));
+    }
+
+    /**
+     * @brief       
+     * 
+     */
+    template<class T>
+    void CommitTxTask(T func)
+    {
+        _txTaskPool.schedule(func);
+    }
+
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitSyncBlockTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
+    {
+        _syncBlockTaskPool.schedule(boost::bind(func, subMsg, data));
+    }
+
+    /**
+     * @brief       
+     * 
+     */
+    template<class T>
+    void CommitSyncBlockTask(T func)
+    {
+        _syncBlockTaskPool.schedule(func);
+    }
+
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitSaveBlockTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
+    {
+        _saveBlockTaskPool.schedule(boost::bind(func, subMsg, data));
+    }
+
+    /**
+     * @brief       
+     * 
+     * @param       func 
+     * @param       subMsg 
+     * @param       data 
+     */
+    void CommitBlockTask(ProtoCallBack func, MessagePtr subMsg, const MsgData &data)
+    {
+        _blockTaskPool.schedule(boost::bind(func, subMsg, data));
+    }
+
+    /**
+     * @brief       
+     * 
+     */
+    template<class T>
+    void CommitBlockTask(T func)
+    {
+        _blockTaskPool.schedule(func);
     }
 
     template<class T>
-    void commit_tx_task(T func)
+    void CommitWorkTask(T func)
     {
-        tx_taskPool.schedule(func);
+        _workTaskPool.schedule(func);
     }
 
-    void commit_syncBlock_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
-    {
-        syncBlock_taskPool.schedule(boost::bind(func, sub_msg, data));
-    }
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t CaActive() const  {return _caTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t CaPending() const {return _caTaskPool.pending();}
 
-    template<class T>
-    void commit_syncBlock_task(T func)
-    {
-        syncBlock_taskPool.schedule(func);
-    }
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t NetActive() const {return _netTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t NetPending() const  {return _netTaskPool.pending();}
 
-    void commit_saveBlock_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
-    {
-        saveBlock_taskPool.schedule(boost::bind(func, sub_msg, data));
-    }
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t BroadcastActive() const{return _broadcastTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t BroadcastPending() const{return _broadcastTaskPool.pending();}
 
-    void commit_block_task(ProtoCallBack func, MessagePtr sub_msg, const MsgData &data)
-    {
-        block_taskPool.schedule(boost::bind(func, sub_msg, data));
-    }
-    template<class T>
-    void commit_block_task(T func)
-    {
-        block_taskPool.schedule(func);
-    }
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t TxActive() const{return _txTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t TxPending() const{return _txTaskPool.pending();}
 
-    template<class T>
-    void commit_work_task(T func)
-    {
-        work_taskPool.schedule(func);
-    }
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t SyncBlockActive() const{return _syncBlockTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t SyncBlockPending() const{return _syncBlockTaskPool.pending();}
 
-    size_t ca_active() const  {return ca_taskPool.active();}
-    size_t ca_pending() const {return ca_taskPool.pending();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t SaveBlockActive() const{return _saveBlockTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t SaveBlockPending() const{return _saveBlockTaskPool.pending();}
 
-    size_t net_active() const {return net_taskPool.active();}
-    size_t net_pending() const  {return net_taskPool.pending();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t BlockActive() const{return _blockTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t BlockPending() const{return _blockTaskPool.pending();}
 
-    size_t broadcast_active() const{return broadcast_taskPool.active();}
-    size_t broadcast_pending() const{return broadcast_taskPool.pending();}
-
-    size_t tx_active() const{return tx_taskPool.active();}
-    size_t tx_pending() const{return tx_taskPool.pending();}
-
-    size_t syncBlock_active() const{return syncBlock_taskPool.active();}
-    size_t syncBlock_pending() const{return syncBlock_taskPool.pending();}
-
-    size_t saveBlock_active() const{return saveBlock_taskPool.active();}
-    size_t saveBlock_pending() const{return saveBlock_taskPool.pending();}
-
-    size_t block_active() const{return block_taskPool.active();}
-    size_t block_pending() const{return block_taskPool.pending();}
-
-    size_t work_active() const{return work_taskPool.active();}
-    size_t work_pending() const{return work_taskPool.pending();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t WorkActive() const{return _workTaskPool.active();}
+    /**
+     * @brief       
+     * 
+     * @return      size_t 
+     */
+    size_t WorkPending() const{return _workTaskPool.pending();}
 
 private:
-    pool ca_taskPool;
-    pool net_taskPool;
-    pool broadcast_taskPool;
+    pool _caTaskPool;
+    pool _netTaskPool;
+    pool _broadcastTaskPool;
 
-    pool tx_taskPool;
-    pool syncBlock_taskPool;
-    pool saveBlock_taskPool;
+    pool _txTaskPool;
+    pool _syncBlockTaskPool;
+    pool _saveBlockTaskPool;
 
-    pool block_taskPool;
-    pool work_taskPool;
+    pool _blockTaskPool;
+    pool _workTaskPool;
 };
 
 #endif // __TASK_POOL_H__

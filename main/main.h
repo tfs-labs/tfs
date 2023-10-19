@@ -2,8 +2,8 @@
 #define TFS_MAIN_H
 
  
-void menu();
-bool init();
+void Menu();
+bool Init();
 bool InitConfig();
 bool InitLog();
 bool InitAccount();

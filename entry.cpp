@@ -8,15 +8,16 @@
 #include "utils/console.h"
 #include "common/config.h"
 #include "ca/ca.h"
-#include "ca/ca_global.h"
-#include "ca/ca_transaction.h"
+#include "ca/global.h"
+#include "ca/transaction.h"
 #include "utils/single.hpp"
-#include "utils/TFSbenchmark.h"
+#include "utils/tfs_bench_mark.h"
+#include "ca/test.h"
+
 
 int main(int argc, char* argv[])
 {
-
-	if(-1 == init_pid_file()) {
+	if(-1 == InitPidFile()) {
 		exit(-1);
 	}
  
@@ -35,14 +36,14 @@ int main(int argc, char* argv[])
     tzset();
 
 	// Get the current number of CPU cores and physical memory size
-	global::cpu_nums = sysconf(_SC_NPROCESSORS_ONLN);
+	global::g_cpuNums = sysconf(_SC_NPROCESSORS_ONLN);
 	uint64_t memory = (uint64_t)sysconf(_SC_PAGESIZE) * (uint64_t)sysconf(_SC_PHYS_PAGES) / 1024 / 1024;
-	INFOLOG("Number of current CPU cores:{}", global::cpu_nums);
+	INFOLOG("Number of current CPU cores:{}", global::g_cpuNums);
 	INFOLOG("Number of current memory size:{}", memory);
-	if(global::cpu_nums < 1 || memory < 0.5 * 1024)
+	if(global::g_cpuNums < 1 || memory < 0.5 * 1024)
 	{
 		std::cout << "Current machine configuration:\n"
-				  << "The number of processors currently online (available): "<< global::cpu_nums << "\n"
+				  << "The number of processors currently online (available): "<< global::g_cpuNums << "\n"
 		          << "The memory size: " << memory << " MB" << std::endl;
 		std::cout << RED << "Tfs basic configuration:\n"
 						 << "The number of processors currently online (available): 8\n"
@@ -66,14 +67,22 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(argv[i], "-c") == 0)
 		{
-			MagicSingleton<Config>::GetInstance();
-			std::cout << "Init Config file" << std::endl;
-			return 2;
+		    std::ifstream configFile("config.json");
+    		if (!configFile)
+    		{
+        	std::ofstream outFile("config.json");
+        	nlohmann::json initjson = nlohmann::json::parse(global::ca::kConfigJson);
+        	outFile << initjson.dump(4);
+        	outFile.close();    
+    		}
+			configFile.close();	
+		std::cout << "Init Config file" << std::endl;
+		return 2;
 		}
 		else if (strcmp(argv[i], "--help") == 0)
 		{
 			ERRORLOG("The parameter is Help!");
-			std::cout << argv[0] << ": --help version:" << global::kCompatibleVersion << " \n -m show menu\n -s value, signature fee\n -p value, package fee" << std::endl;
+			std::cout << argv[0] << ": --help version:" << global::kCompatibleVersion << " \n -m show Menu\n -s value, signature fee\n -p value, package fee" << std::endl;
 			return 3;
 		}
 		else if (strcmp(argv[i], "-t") == 0)
@@ -94,24 +103,34 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (!init())
+	bool initFail = false;
+	if (!Init())
 	{
-		return 5;
+		initFail = true;
 	}         
-
-	if (Check() == false)
+	
+	if (!Check())
 	{
-		return 6;
+		initFail = true;
 	}
 
+	if(initFail)
+	{
+		CaCleanup();
+		exit(0);
+	}
+
+	Config config;
 	if (showMenu)
 	{
-		menu();
+		Menu();
 	}
+	
 	while (true)
 	{
 		sleep(9999);
 	}
-	
+
 	return 0;
+
 }

@@ -1,7 +1,7 @@
 #ifndef TFS_DB_REDIS_H_
 #define TFS_DB_REDIS_H_
 
-#include "utils/CTimer.hpp"
+#include "utils/timer.hpp"
 #include <map>
 #include <mutex>
 #include <set>

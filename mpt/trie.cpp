@@ -1,28 +1,30 @@
 #include "node.h"
+
 #include <memory>
 #include <iostream>
 #include <map>
+
 #include <db/db_api.h>
-#include "CommonData.h"
-#include "Common.h"
-#include "RLP.h"
-#include "trie.h"
-#include "utils/AccountManager.h"
+#include "./commondata.h"
+#include "./common.h"
+#include "./rlp.h"
+#include "./trie.h"
+#include "utils/account_manager.h"
 #include "include/logging.h"
 
-std::map<std::string, std::string> virtualDB::db = virtualDB::Createdb();
+std::map<std::string, std::string> VirtualDB::db = VirtualDB::Createdb();
 
-std::string trie::WapperKey(std::string str) const
+std::string Trie::WapperKey(std::string str) const
 {
     return str + 'z';
 }
-bool trie::hasTerm(std::string& s) const
+bool Trie::HasTerm(std::string& s) const
 {
     return s.length() > 0 && s[s.length() - 1] == 'z';
 }
-std::string trie::hexToKeybytes(std::string hex)
+std::string Trie::HexToKeybytes(std::string hex)
 {
-    if (hasTerm(hex))
+    if (HasTerm(hex))
     {
         hex = hex.substr(0, hex.length() - 1);
     }
@@ -37,7 +39,7 @@ std::string trie::hexToKeybytes(std::string hex)
     }
     return std::string(key.begin(), key.end());
 }
-int trie::prefixLen(std::string a, std::string b) {
+int Trie::PrefixLen(std::string a, std::string b) {
     int i = 0;
     int length = a.length();
     if (b.length() < length)
@@ -52,320 +54,320 @@ int trie::prefixLen(std::string a, std::string b) {
     }
     return i;
 }
-int trie::toint(char c) const
+int Trie::Toint(char c) const
 {
     if (c >= '0' && c <= '9') return c - 48;
 
     return c - 87;
 }
-void trie::GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyhash)
+void Trie::GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash)
 {
     if(root == NULL) return ;
-    auto hn = root->to_son_class<hashNode>();
-    if(this->dirtyhash.empty())
+    auto hashnode = root->ToSonClass<HashNode>();
+    if(this->dirtyHash.empty())
     {
-        rootHash.first = hn->data;
+        rootHash.first = hashnode->data;
         rootHash.second = "";
         return;
     }
     else
     {
-        auto it = this->dirtyhash.find(hn->data);
+        auto it = this->dirtyHash.find(hashnode->data);
         rootHash.first = it->first;
         rootHash.second = it->second;
-        if (it != this->dirtyhash.end())
+        if (it != this->dirtyHash.end())
         {
-            this->dirtyhash.erase(it);
+            this->dirtyHash.erase(it);
         }
-        dirtyhash = this->dirtyhash;
+        dirtyHash = this->dirtyHash;
     }
     return;
 }
 
-nodeptr trie::resolveHash(nodeptr n, std::string prefix) const
+nodePtr Trie::ResolveHash(nodePtr n, std::string prefix) const
 {
-    std::string str_sha1;
-    auto v = n->to_son_class<hashNode>();
+    std::string strSha1;
+    auto v = n->ToSonClass<HashNode>();
 
-    return descendKey(v->data);
+    return DescendKey(v->data);
 }
-ret2 trie::Get(nodeptr n, std::string key, int pos) const
+ReturnNode Trie::Get(nodePtr n, std::string key, int pos) const
 {
     if (n == NULL)
     {
-        return ret2{NULL, NULL};
+        return ReturnNode{NULL, NULL};
     }
-    else if (n->name == typeid(valueNode).name())
+    else if (n->name == typeid(ValueNode).name())
     {
-        return ret2{ n, n };
+        return ReturnNode{ n, n };
     }
-    else if (n->name == typeid(shortNode).name())
+    else if (n->name == typeid(ShortNode).name())
     {
-        auto sn = n->to_son_class<shortNode>();
+        auto sn = n->ToSonClass<ShortNode>();
 
-        if (key.length() - pos < sn->key_.length() || !(sn->key_ == key.substr(pos, sn->key_.length())))
+        if (key.length() - pos < sn->nodeKey.length() || !(sn->nodeKey == key.substr(pos, sn->nodeKey.length())))
         {
-            return ret2{ NULL, NULL };
+            return ReturnNode{ NULL, NULL };
         }
-        ret2 r = Get(sn->Val_, key, pos + sn->key_.length());
-        if (r.new_node != NULL)
+        ReturnNode r = Get(sn->nodeVal, key, pos + sn->nodeKey.length());
+        if (r.newNode != NULL)
         {
-            sn->Val_ = r.new_node;
+            sn->nodeVal = r.newNode;
         }
-        return ret2{r.value_node, n};
+        return ReturnNode{r.valueNode, n};
     }
-    else if (n->name == typeid(fullNode).name())
+    else if (n->name == typeid(FullNode).name())
     {
-        auto fn = n->to_son_class<fullNode>();
-        ret2 r = Get(fn->Children[toint(key[pos])], key, pos + 1);
-        if (r.new_node != NULL)
+        auto fn = n->ToSonClass<FullNode>();
+        ReturnNode r = Get(fn->children[Toint(key[pos])], key, pos + 1);
+        if (r.newNode != NULL)
         {
-            fn->Children[toint(key[pos])] = r.new_node;
+            fn->children[Toint(key[pos])] = r.newNode;
         }
-        return ret2{ r.value_node, n };
+        return ReturnNode{ r.valueNode, n };
     }
-    else if (n->name == typeid(hashNode).name())
+    else if (n->name == typeid(HashNode).name())
     {
-        auto hn = n->to_son_class<hashNode>();
-        nodeptr child = resolveHash(n, key.substr(0, pos));
-        ret2 r = Get(child, key, pos);
+        auto hashnode = n->ToSonClass<HashNode>();
+        nodePtr child = ResolveHash(n, key.substr(0, pos));
+        ReturnNode r = Get(child, key, pos);
         return r;
     }
-    return ret2{ NULL, NULL };
+    return ReturnNode{ NULL, NULL };
 }
 
-std::string trie::Get(std::string& key) const
+std::string Trie::Get(std::string& key) const
 {
-    ret2 r = Get(root, WapperKey(key), 0);
-    if(r.value_node != NULL)
+    ReturnNode r = Get(root, WapperKey(key), 0);
+    if(r.valueNode != NULL)
     {
-        this->root = r.new_node;
-        auto vn = r.value_node->to_son_class<valueNode>();
+        this->root = r.newNode;
+        auto vn = r.valueNode->ToSonClass<ValueNode>();
         return vn->data;
     }
     return "";
 }
-ret trie::insert(nodeptr n, std::string prefix, std::string key, nodeptr value)
+ReturnVal Trie::Insert(nodePtr n, std::string prefix, std::string key, nodePtr value)
 {
     if (n == NULL)
     {
-        return ret{ true, std::shared_ptr<packing<shortNode>>(
-                new packing<shortNode>(shortNode{key, value, newFlag()})), 0 };
+        return ReturnVal{ true, std::shared_ptr<packing<ShortNode>>(
+                new packing<ShortNode>(ShortNode{key, value, newFlag()})), 0 };
     }
-    else if (n->name == typeid(shortNode).name())
+    else if (n->name == typeid(ShortNode).name())
     {
-        auto sn = n->to_son_class<shortNode>();
-        int matchlen = prefixLen(key, sn->key_);
+        auto sn = n->ToSonClass<ShortNode>();
+        int matchlen = PrefixLen(key, sn->nodeKey);
 
-        if (matchlen == sn->key_.length())
+        if (matchlen == sn->nodeKey.length())
         {
-            ret r = insert(sn->Val_, prefix + key.substr(0, matchlen), key.substr(matchlen), value);
+            ReturnVal r = Insert(sn->nodeVal, prefix + key.substr(0, matchlen), key.substr(matchlen), value);
             if (!r.dirty || r.err != 0)
             {
-                return ret{ false, n, r.err };
+                return ReturnVal{ false, n, r.err };
             }
-            return ret{ true,
-            std::shared_ptr<packing<shortNode>>(
-                new packing<shortNode>(shortNode{sn->key_, r.node, newFlag()})), 0 };
+            return ReturnVal{ true,
+            std::shared_ptr<packing<ShortNode>>(
+                new packing<ShortNode>(ShortNode{sn->nodeKey, r.node, newFlag()})), 0 };
         }
-        fullNode fn;
+        FullNode fn;
         fn.flags = newFlag();
 
-        ret r = insert(0, prefix + sn->key_.substr(0, matchlen + 1), sn->key_.substr(matchlen + 1), sn->Val_);
-        auto ssn = r.node->to_son_class<shortNode>();
-        fn.Children[toint(sn->key_[matchlen])] = r.node;
+        ReturnVal r = Insert(0, prefix + sn->nodeKey.substr(0, matchlen + 1), sn->nodeKey.substr(matchlen + 1), sn->nodeVal);
+        auto ssn = r.node->ToSonClass<ShortNode>();
+        fn.children[Toint(sn->nodeKey[matchlen])] = r.node;
         if (r.err != 0)
         {
-            return ret{ false, 0, r.err };
+            return ReturnVal{ false, 0, r.err };
         }
-        ret r1 = insert(0, prefix + key.substr(0, matchlen + 1), key.substr(matchlen + 1), value);
+        ReturnVal r1 = Insert(0, prefix + key.substr(0, matchlen + 1), key.substr(matchlen + 1), value);
 
-        fn.Children[toint(key[matchlen])] = r1.node;
+        fn.children[Toint(key[matchlen])] = r1.node;
         if (r1.err != 0)
         {
-            return ret{ false, 0, r.err };
+            return ReturnVal{ false, 0, r.err };
         }
-        auto branch = std::shared_ptr<packing<fullNode>>(
-            new packing<fullNode>(fn));
-        // Replace this shortNode with the branch if it occurs at index 0.
+        auto branch = std::shared_ptr<packing<FullNode>>(
+            new packing<FullNode>(fn));
+        // Replace this ShortNode with the branch if it occurs at index 0.
         if (matchlen == 0)
         {
-            return ret{ true, branch, 0 };
+            return ReturnVal{ true, branch, 0 };
         }
 
 
-        return ret{ true, std::shared_ptr<packing<shortNode>>(
-                new packing<shortNode>(shortNode{sn->key_.substr(0,matchlen), branch, newFlag()})), 0 };
+        return ReturnVal{ true, std::shared_ptr<packing<ShortNode>>(
+                new packing<ShortNode>(ShortNode{sn->nodeKey.substr(0,matchlen), branch, newFlag()})), 0 };
     }
-    else if (n->name == typeid(fullNode).name())
+    else if (n->name == typeid(FullNode).name())
     {
-        auto fn = n->to_son_class<fullNode>();
-        ret r = insert(fn->Children[toint(key[0])], prefix + key[0], key.substr(1), value);
+        auto fn = n->ToSonClass<FullNode>();
+        ReturnVal r = Insert(fn->children[Toint(key[0])], prefix + key[0], key.substr(1), value);
         if (!r.dirty || r.err != 0)
         {
-            return ret{ false, n, r.err };
+            return ReturnVal{ false, n, r.err };
         }
         fn->flags = newFlag();
-        fn->Children[toint(key[0])] = r.node;
-        return ret{ true, n, 0 };
+        fn->children[Toint(key[0])] = r.node;
+        return ReturnVal{ true, n, 0 };
     }
-    else if (n->name == typeid(hashNode).name())
+    else if (n->name == typeid(HashNode).name())
     {
-        auto rn = resolveHash(n, prefix);
+        auto rn = ResolveHash(n, prefix);
 
-        ret r = insert(rn, prefix, key, value);
+        ReturnVal r = Insert(rn, prefix, key, value);
         if (!r.dirty || r.err != 0)
         {
-            return ret{ false, rn, r.err };
+            return ReturnVal{ false, rn, r.err };
         }
-        return ret{ true, r.node, 0 };
+        return ReturnVal{ true, r.node, 0 };
 
     }
     if (key.length() == 0)
     {
         int a = 1;
-        auto va = n->to_son_class<valueNode>();
-        auto vb = value->to_son_class<valueNode>();
+        auto va = n->ToSonClass<ValueNode>();
+        auto vb = value->ToSonClass<ValueNode>();
         if (va->data == vb->data)
         {
-            return ret{ false,value,0 };
+            return ReturnVal{ false,value,0 };
         }
-        return ret{ true,value,0 };//true, value, nil
+        return ReturnVal{ true,value,0 };//true, value, nil
     }
-    return ret{ true,NULL,0 };
+    return ReturnVal{ true,NULL,0 };
 }
-nodeptr trie::Update(std::string key, std::string value)
+nodePtr Trie::Update(std::string key, std::string value)
 {
     std::string k = WapperKey(key);
     if (value.length() != 0)
     {
-        auto vn = std::shared_ptr<packing<valueNode>>(
-            new packing<valueNode>(valueNode{ value }));
-        ret r = insert(this->root, "", k, vn);
+        auto vn = std::shared_ptr<packing<ValueNode>>(
+            new packing<ValueNode>(ValueNode{ value }));
+        ReturnVal r = Insert(this->root, "", k, vn);
         this->root = r.node;
     }
     return NULL;
 }
 
-nodeptr trie::descendKey(std::string key) const
+nodePtr Trie::DescendKey(std::string key) const
 {
-    DBReader data_reader;
+    DBReader dataReader;
     std::string value;
-    if(data_reader.GetMptValueByMptKey(mContractAddr + "_" + key, value) != 0)
+    if(dataReader.GetMptValueByMptKey(contractAddr + "_" + key, value) != 0)
     {
         ERRORLOG("GetContractStorageByKey error");
     }
     dev::bytes bs = dev::fromHex(value);
     if (value == "") return NULL;
     dev::RLP r = dev::RLP(bs);
-    return decodeNode(key, r);  // if not, it must be a list
+    return DecodeNode(key, r);  // if not, it must be a list
 }
-nodeptr trie::decodeShort(std::string hash, dev::RLP const& _r) const
+nodePtr Trie::DecodeShort(std::string hash, dev::RLP const& r) const
 {
-    nodeFlag flag;
+    NodeFlag flag;
     flag.hash = hash;
-    std::string kay = _r[0].toString();
-    if (!hasTerm(kay))
+    std::string kay = r[0].toString();
+    if (!HasTerm(kay))
     {
-        auto v = decodeRef(_r[1]);
+        auto v = DecodeRef(r[1]);
 
-        return std::shared_ptr<packing<shortNode>>(
-            new packing<shortNode>(shortNode{ _r[0].toString(),v, flag }));
+        return std::shared_ptr<packing<ShortNode>>(
+            new packing<ShortNode>(ShortNode{ r[0].toString(),v, flag }));
     }
     else
     {
 
-        auto v = std::shared_ptr<packing<valueNode>>(
-            new packing<valueNode>(valueNode{ _r[1][0].toString() }));
+        auto v = std::shared_ptr<packing<ValueNode>>(
+            new packing<ValueNode>(ValueNode{ r[1][0].toString() }));
 
-        return std::shared_ptr<packing<shortNode>>(
-            new packing<shortNode>(shortNode{ _r[0].toString(),v, flag }));
+        return std::shared_ptr<packing<ShortNode>>(
+            new packing<ShortNode>(ShortNode{ r[0].toString(),v, flag }));
     };
 }
-nodeptr trie::decodeFull(std::string hash, dev::RLP const& _r) const
+nodePtr Trie::DecodeFull(std::string hash, dev::RLP const& r) const
 {
-    fullNode fn;
-    nodeFlag flag;
+    FullNode fn;
+    NodeFlag flag;
     flag.hash = hash;
     fn.flags = flag;
 
     for (unsigned i = 0; i < 16; ++i)
     {
-        if (!_r[i].isEmpty())// 16 branches are allowed to be empty
+        if (!r[i].isEmpty())// 16 branches are allowed to be empty
         {
-            auto v = decodeRef(_r[i]);
-            fn.Children[i] = v;
+            auto v = DecodeRef(r[i]);
+            fn.children[i] = v;
         }
     }
 
-    return std::shared_ptr<packing<fullNode>>(
-        new packing<fullNode>(fn));
+    return std::shared_ptr<packing<FullNode>>(
+        new packing<FullNode>(fn));
 }
-nodeptr trie::decodeRef(dev::RLP const& _r) const
+nodePtr Trie::DecodeRef(dev::RLP const& r) const
 {
-    int len = _r.size();
-    bool a = _r.isData();
-    if (_r.isData() && _r.size() == 0)
+    int len = r.size();
+    bool a = r.isData();
+    if (r.isData() && r.size() == 0)
     {
         return NULL;
     }
 
-    else if (_r.isData() && _r.size() == 66)
+    else if (r.isData() && r.size() == 66)
     {
-        return std::shared_ptr<packing<hashNode>>(
-            new packing<hashNode>(hashNode{ _r[0].toString() }));
+        return std::shared_ptr<packing<HashNode>>(
+            new packing<HashNode>(HashNode{ r[0].toString() }));
     }
-    else if (_r.isList())
+    else if (r.isList())
     {
-        return decodeNode("", _r);
+        return DecodeNode("", r);
     }
     return NULL;
 }
-nodeptr trie::decodeNode(std::string hash, dev::RLP const& _r) const
+nodePtr Trie::DecodeNode(std::string hash, dev::RLP const& r) const
 {
-    if (_r.isList() && _r.itemCount() == 2)
+    if (r.isList() && r.itemCount() == 2)
     {
-        return decodeShort(hash, _r);
+        return DecodeShort(hash, r);
     }
-    else if (_r.isList() && _r.itemCount() == 17)
+    else if (r.isList() && r.itemCount() == 17)
     {
-        return decodeFull(hash, _r);
+        return DecodeFull(hash, r);
     }
     return NULL;
 }
 
-nodeptr trie::hash(nodeptr n)
+nodePtr Trie::hash(nodePtr n)
 {
-    if (n->name == typeid(shortNode).name())
+    if (n->name == typeid(ShortNode).name())
     {
-        auto sn = n->to_son_class<shortNode>();
+        auto sn = n->ToSonClass<ShortNode>();
 
-        if (!sn->flags_.hash.data.empty())
+        if (!sn->nodeFlags.hash.data.empty())
         {
-            return std::shared_ptr<packing<hashNode>>(
-                new packing<hashNode>(sn->flags_.hash));
+            return std::shared_ptr<packing<HashNode>>(
+                new packing<HashNode>(sn->nodeFlags.hash));
         }
 
-        auto hashed = hashShortNodeChildren(n);
-        auto hn = hashed->to_son_class<hashNode>();
-        sn->flags_.hash = *hn;
+        auto hashed = HashShortNodeChildren(n);
+        auto hashnode = hashed->ToSonClass<HashNode>();
+        sn->nodeFlags.hash = *hashnode;
 
         return hashed;
 
     }
-    else if (n->name == typeid(fullNode).name())
+    else if (n->name == typeid(FullNode).name())
     {
-        auto fn = n->to_son_class<fullNode>();
+        auto fn = n->ToSonClass<FullNode>();
 
         if (!fn->flags.hash.data.empty())
         {
-            return std::shared_ptr<packing<hashNode>>(
-                new packing<hashNode>(fn->flags.hash));
+            return std::shared_ptr<packing<HashNode>>(
+                new packing<HashNode>(fn->flags.hash));
         }
 
-        auto hashed = hashFullNodeChildren(n);
-        auto hn = hashed->to_son_class<hashNode>();
-        fn->flags.hash = *hn;
+        auto hashed = HashFullNodeChildren(n);
+        auto hashnode = hashed->ToSonClass<HashNode>();
+        fn->flags.hash = *hashnode;
 
         return hashed;
 
@@ -376,75 +378,75 @@ nodeptr trie::hash(nodeptr n)
     }
 
 }
-nodeptr trie::hashShortNodeChildren(nodeptr n)
+nodePtr Trie::HashShortNodeChildren(nodePtr n)
 {
 
-    auto sn = n->to_son_class<shortNode>();
+    auto sn = n->ToSonClass<ShortNode>();
 
-    auto vn = sn->Val_;
+    auto vn = sn->nodeVal;
 
-    if (vn->name == typeid(shortNode).name() || vn->name == typeid(fullNode).name())
+    if (vn->name == typeid(ShortNode).name() || vn->name == typeid(FullNode).name())
     {
 
-        sn->flags_.hash = *hash(vn)->to_son_class<hashNode>();
+        sn->nodeFlags.hash = *hash(vn)->ToSonClass<HashNode>();
     }
 
     return ToHash(n);
 }
-nodeptr trie::hashFullNodeChildren(nodeptr n)
+nodePtr Trie::HashFullNodeChildren(nodePtr n)
 {
 
-    auto fn = n->to_son_class<fullNode>();
+    auto fn = n->ToSonClass<FullNode>();
 
-    fullNode collapsed;
+    FullNode collapsed;
     for (int i = 0; i < 16; i++)
     {
-        auto child = fn->Children[i];
+        auto child = fn->children[i];
         if (child != NULL)
         {
-            collapsed.Children[i] = hash(child);
+            collapsed.children[i] = hash(child);
         }
         else {
-            collapsed.Children[i] = NULL;
+            collapsed.children[i] = NULL;
         }
     }
 
-    return ToHash(std::shared_ptr<packing<fullNode>>(
-        new packing<fullNode>(collapsed)));
+    return ToHash(std::shared_ptr<packing<FullNode>>(
+        new packing<FullNode>(collapsed)));
 }
-nodeptr trie::ToHash(nodeptr n)
+nodePtr Trie::ToHash(nodePtr n)
 {
-    dev::RLPStream rlp = encode(n);
-    std::string str_sha256;
+    dev::RLPStream rlp = Encode(n);
+    std::string strSha256;
     dev::bytes data = rlp.out();
 
     std::string stringData = dev::toHex(data);
-    str_sha256 = getsha256hash(stringData);
+    strSha256 = Getsha256hash(stringData);
     
-    hashNode hn;
-    hn.data = str_sha256;
-    return std::shared_ptr<packing<hashNode>>(
-        new packing<hashNode>(hn));
+    HashNode hashnode;
+    hashnode.data = strSha256;
+    return std::shared_ptr<packing<HashNode>>(
+        new packing<HashNode>(hashnode));
 }
-dev::RLPStream trie::encode(nodeptr n)
+dev::RLPStream Trie::Encode(nodePtr n)
 {
-    if (n->name == typeid(shortNode).name())
+    if (n->name == typeid(ShortNode).name())
     {
         dev::RLPStream rlp(2);
-        auto sn = n->to_son_class<shortNode>();
-        rlp.append(sn->key_);
-        rlp.append(encode(sn->Val_).out());
+        auto sn = n->ToSonClass<ShortNode>();
+        rlp.append(sn->nodeKey);
+        rlp.append(Encode(sn->nodeVal).out());
         return rlp;
     }
-    else if (n->name == typeid(fullNode).name())
+    else if (n->name == typeid(FullNode).name())
     {
         dev::RLPStream rlp(17);
-        auto fn = n->to_son_class<fullNode>();
-        for (auto c : fn->Children)
+        auto fn = n->ToSonClass<FullNode>();
+        for (auto c : fn->children)
         {
             if (c != NULL)
             {
-                rlp.append(encode(c).out());
+                rlp.append(Encode(c).out());
             }
             else
             {
@@ -453,133 +455,133 @@ dev::RLPStream trie::encode(nodeptr n)
         }
         return rlp;
     }
-    else if (n->name == typeid(valueNode).name())
+    else if (n->name == typeid(ValueNode).name())
     {
         dev::RLPStream rlp;
-        auto vn = n->to_son_class<valueNode>();
+        auto vn = n->ToSonClass<ValueNode>();
 
         rlp << vn->data;
         return rlp;
     }
-    else if (n->name == typeid(hashNode).name())
+    else if (n->name == typeid(HashNode).name())
     {
         dev::RLPStream rlp;
-        auto hn = n->to_son_class<hashNode>();
+        auto hashnode = n->ToSonClass<HashNode>();
 
-        rlp << hn->data;
+        rlp << hashnode->data;
         return rlp;
     }
     return dev::RLPStream();
 }
 
-nodeptr trie::store(nodeptr n) {
+nodePtr Trie::Store(nodePtr n) {
 
-    if (n->name != typeid(shortNode).name() && n->name != typeid(fullNode).name())
+    if (n->name != typeid(ShortNode).name() && n->name != typeid(FullNode).name())
     {
         return n;
     }
     else
     {
-        hashNode hash;
-        if (n->name == typeid(shortNode).name())
+        HashNode hash;
+        if (n->name == typeid(ShortNode).name())
         {
-            auto sn = n->to_son_class<shortNode>();
-            hash = sn->flags_.hash;
+            auto sn = n->ToSonClass<ShortNode>();
+            hash = sn->nodeFlags.hash;
         }
-        else if(n->name == typeid(fullNode).name())
+        else if(n->name == typeid(FullNode).name())
         {
-            auto fn = n->to_son_class<fullNode>();
+            auto fn = n->ToSonClass<FullNode>();
             hash = fn->flags.hash;
         }
         // No leaf-callback used, but there's still a database. Do serial
         // insertion
-        dev::RLPStream rlp = encode(n);
-        std::string str_sha1;
+        dev::RLPStream rlp = Encode(n);
+        std::string strSha1;
         dev::bytes data = rlp.out();
         std::string stringData = dev::toHex(data);
 
-        dirtyhash[hash.data] = stringData;
+        dirtyHash[hash.data] = stringData;
 
-        return std::shared_ptr<packing<hashNode>>(
-            new packing<hashNode>(hash));
+        return std::shared_ptr<packing<HashNode>>(
+            new packing<HashNode>(hash));
     }
 
 }
-nodeptr trie::commit(nodeptr n)
+nodePtr Trie::Commit(nodePtr n)
 {
-    if (n->name == typeid(shortNode).name())
+    if (n->name == typeid(ShortNode).name())
     {
-        auto sn = n->to_son_class<shortNode>();
-        if (!sn->flags_.dirty && !sn->flags_.hash.data.empty())
+        auto sn = n->ToSonClass<ShortNode>();
+        if (!sn->nodeFlags.dirty && !sn->nodeFlags.hash.data.empty())
         {
-            return std::shared_ptr<packing<hashNode>>(
-                new packing<hashNode>(sn->flags_.hash));
+            return std::shared_ptr<packing<HashNode>>(
+                new packing<HashNode>(sn->nodeFlags.hash));
         }
 
-        auto vn = sn->Val_;
-        if (vn->name == typeid(fullNode).name())
+        auto vn = sn->nodeVal;
+        if (vn->name == typeid(FullNode).name())
         {
-            auto childV = commit(vn);
-            sn->Val_ = childV;
+            auto childV = Commit(vn);
+            sn->nodeVal = childV;
         }
-        auto hashed = store(n);
-        if (hashed->name == typeid(hashNode).name())
+        auto hashed = Store(n);
+        if (hashed->name == typeid(HashNode).name())
         {
             return hashed;
         }
         return n;
     }
-    else if (n->name == typeid(fullNode).name())
+    else if (n->name == typeid(FullNode).name())
     {
-        auto fn = n->to_son_class<fullNode>();
+        auto fn = n->ToSonClass<FullNode>();
         if (!fn->flags.dirty && !fn->flags.hash.data.empty())
         {
-            return std::shared_ptr<packing<hashNode>>(
-                new packing<hashNode>(fn->flags.hash));
+            return std::shared_ptr<packing<HashNode>>(
+                new packing<HashNode>(fn->flags.hash));
         }
-        std::array<nodeptr, 17> hashedKids = commitChildren(n);
-        fn->Children = hashedKids;
-        auto hashed = store(n);
-        if (hashed->name == typeid(hashNode).name())
+        std::array<nodePtr, 17> hashedKids = commitChildren(n);
+        fn->children = hashedKids;
+        auto hashed = Store(n);
+        if (hashed->name == typeid(HashNode).name())
         {
             return hashed;
         }
         return n;
     }
-    else if (n->name == typeid(hashNode).name())
+    else if (n->name == typeid(HashNode).name())
     {
         return n;
     }
     return NULL;
 }
-std::array<nodeptr, 17> trie::commitChildren(nodeptr n)
+std::array<nodePtr, 17> Trie::commitChildren(nodePtr n)
 {
-    auto fn = n->to_son_class<fullNode>();
-    std::array<nodeptr, 17> children;
+    auto fn = n->ToSonClass<FullNode>();
+    std::array<nodePtr, 17> children;
     for (int i = 0; i < 16; i++)
     {
-        auto child = fn->Children[i];
+        auto child = fn->children[i];
         if (child == NULL)
         {
             continue;
         }
-        if (child->name == typeid(hashNode).name())
+        if (child->name == typeid(HashNode).name())
         {
             children[i] = child;
             continue;
         }
 
-        auto hashed = commit(child);
+        auto hashed = Commit(child);
         children[i] = hashed;
     }
-    if (fn->Children[16] != NULL)
+    if (fn->children[16] != NULL)
     {
-        children[16] = fn->Children[16];
+        children[16] = fn->children[16];
     }
     return children;
 }
 
-void trie::save()
+void Trie::Save()
 {
     if(root == NULL)
     {
@@ -587,5 +589,5 @@ void trie::save()
     }
     hash(root);
 
-    this->root = commit(root);
+    this->root = Commit(root);
 }

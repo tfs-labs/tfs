@@ -1,3 +1,12 @@
+/**
+ * *****************************************************************************
+ * @file        time_report.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef __TIME_REPORT_H__
 #define __TIME_REPORT_H__
 
@@ -15,17 +24,50 @@ public:
     TimeReport& operator=(TimeReport&&) = delete;
 
 public:
+    
+    /**
+     * @brief       
+     * 
+     */
     void Init();
+    
+    /**
+     * @brief       
+     * 
+     */
     void End();
+    
+    /**
+     * @brief       
+     * 
+     */
     void Report();
+    
+    /**
+     * @brief       
+     * 
+     * @param       title 
+     */
     void Report(const string& title);
-    uint64_t GetStart() { return start_; }
-    uint64_t GetEnd() { return end_; }
+    
+    /**
+     * @brief       Get the Start object
+     * 
+     * @return      uint64_t 
+     */
+    uint64_t GetStart() { return _start; }
+
+    /**
+     * @brief       Get the End object
+     * 
+     * @return      uint64_t 
+     */
+    uint64_t GetEnd() { return _end; }
 
 private:
-    string title_;
-    uint64_t start_;
-    uint64_t end_;
+    string _title;
+    uint64_t _start;
+    uint64_t _end;
 };
 
 #endif // __TIME_REPORT_H__

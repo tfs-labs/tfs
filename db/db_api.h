@@ -47,10 +47,16 @@ public:
     DBStatus GetBlockByBlockHash(const std::string &blockHash, std::string &block);
     //Get Sum hash per global::ca::sum_hash_range heights
     DBStatus GetSumHashByHeight(uint64_t height, std::string& sumHash);
-    //Get Sum CheckBlockHash 
+
+
+
+    //
     DBStatus GetCheckBlockHashsByBlockHeight(const uint64_t &blockHeight, std::string &sumHash);
-    //Get ComHash
+    //
     DBStatus GetBlockComHashHeight(uint64_t &thousandNum);
+
+
+
     //Get highest block
     DBStatus GetBlockTop(uint64_t &blockHeight);
     //Obtain the utxo hash through the address (there are multiple utxohashes)
@@ -145,14 +151,15 @@ public:
     DBStatus SetSumHashByHeight(uint64_t height, const std::string& sumHash);
     //Remove Sum hash per global::ca::sum_hash_range heights
     DBStatus RemoveSumHashByHeight(uint64_t height);   
-    //Set Sum CheckBlockHash 
+    
     DBStatus SetCheckBlockHashsByBlockHeight(const uint64_t &blockHeight ,const std::string &sumHash);
-    //Remove Sum CheckBlockHash 
+
     DBStatus RemoveCheckBlockHashsByBlockHeight(const uint64_t &blockHeight);
-    //Set ComHash
+
     DBStatus SetBlockComHashHeight(const uint64_t &thousandNum);
-    //Remove ComHash
+
     DBStatus RemoveBlockComHashHeight(const uint64_t &thousandNum);   
+
     //Set highest block
     DBStatus SetBlockTop(const unsigned int blockHeight);
     //Set Stake address

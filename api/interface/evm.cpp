@@ -1,34 +1,33 @@
-#include "ca_TfsHost.hpp"
-#include "ca_evmone.h"
+#include "tfs_host.hpp"
 
 #include <cstdint>
-#include <evmc/hex.hpp>
-#include <evmone/evmone.h>
-#include "utils/json.hpp"
-#include "utils/console.h"
-#include <proto/transaction.pb.h>
-#include <db/db_api.h>
-#include "ca_transaction.h"
-#include "mpt/trie.h"
-#include "ca_global.h"
-#include "include/logging.h"
-#include "utils/ContractUtils.h"
-#include "ca_algorithm.h"
 #include <future>
 #include <chrono>
+
+#include <evmc/hex.hpp>
+#include <evmone/evmone.h>
+#include <proto/transaction.pb.h>
+#include <db/db_api.h>
+
+#include "utils/json.hpp"
+#include "evmone.h"
+#include "utils/console.h"
+#include "transaction.h"
+#include "mpt/trie.h"
+#include "global.h"
+#include "include/logging.h"
+#include "utils/contract_utils.h"
+#include "algorithm.h"
 #include "evm.h"
-#include "utils/tmplog.h"
-
-
+#include "utils/tmp_log.h"
+#include "rpc_error.h"
 
 namespace rpc_evm{
-
-
-int rpc_genVin(const std::vector<std::string>& vecfromAddr,CTxUtxo * txUtxo, std::vector<std::string>& utxoHashs, uint64_t& total, bool isSign)
+int RpcGenVin(const std::vector<std::string>& vecFromAddr,CTxUtxo * txUtxo, std::vector<std::string>& utxoHashs, uint64_t& total, bool isSign)
 {
     // Find utxo
     std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-    auto ret = TxHelper::FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
+    auto ret = TxHelper::FindUtxo(vecFromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
     if (ret != 0)
     {
         ERRORLOG(RED "FindUtxo failed! The error code is {}." RESET, ret);
@@ -40,19 +39,19 @@ int rpc_genVin(const std::vector<std::string>& vecfromAddr,CTxUtxo * txUtxo, std
         ERRORLOG(RED "Utxo is empty!" RESET);
         return -6;
     }
-    std::set<std::string> setTxowners;
+    std::set<std::string> setTxOwners;
     // Fill Vin
     for (auto & utxo : setOutUtxos)
     {
-        setTxowners.insert(utxo.addr);
+        setTxOwners.insert(utxo.addr);
     }
-    if (setTxowners.empty())
+    if (setTxOwners.empty())
     {
         ERRORLOG(RED "Tx owner is empty!" RESET);
         return -7;
     }
     uint32_t n = txUtxo->vin_size();
-    for (auto & owner : setTxowners)
+    for (auto & owner : setTxOwners)
     {
         txUtxo->add_owner(owner);
         
@@ -72,7 +71,7 @@ int rpc_genVin(const std::vector<std::string>& vecfromAddr,CTxUtxo * txUtxo, std
 
         if(isSign)
         {
-            // std::string serVinHash = getsha256hash(vin->SerializeAsString());
+            // std::string serVinHash = Getsha256hash(vin->SerializeAsString());
             // std::string signature;
             // std::string pub;
             // if (TxHelper::Sign(owner, serVinHash, signature, pub) != 0)
@@ -93,35 +92,35 @@ int rpc_genVin(const std::vector<std::string>& vecfromAddr,CTxUtxo * txUtxo, std
     return 0;
 }
 
-int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
-                  const std::vector<transferInfo> &transferrings, int64_t gasCost, 
+int RpcGenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
+                  const std::vector<TransferInfo> &transFerrings, int64_t gasCost, 
                   CTransaction& outTx, const uint64_t& contractTip, std::vector<std::string>& utxoHashs, bool isGenSign)
 {
-    DBReader db_reader;
+    DBReader dbReader;
     std::vector<std::string> vecDeployerAddrs;
-    auto ret = db_reader.GetAllDeployerAddr(vecDeployerAddrs);
+    auto ret = dbReader.GetAllDeployerAddr(vecDeployerAddrs);
     if (DBStatus::DB_SUCCESS != ret && DBStatus::DB_NOT_FOUND != ret)
     {
         return -3;
     }
 
-    std::map<std::string,map<std::string,uint64_t>> transfersMap;
-    for(const auto& iter : transferrings)
+    std::map<std::string,map<std::string,uint64_t>> transFersMap;
+    for(const auto& iter : transFerrings)
     {
         DEBUGLOG("from:{}, to:{}, amount:{}", iter.from, iter.to, iter.amount); 
         if(iter.amount == 0) continue;
-        transfersMap[iter.from][iter.to] += iter.amount;
+        transFersMap[iter.from][iter.to] += iter.amount;
     }
 
     std::map<std::string, uint64_t> fromBalance;
-    for(const auto& iter : transfersMap)
+    for(const auto& iter : transFersMap)
     {
         bool isSign = false;
-        std::vector<std::string> vecfromAddr;
-        vecfromAddr.push_back(iter.first);
+        std::vector<std::string> vecFromAddr;
+        vecFromAddr.push_back(iter.first);
 
         std::string utxo;
-        if(db_reader.GetLatestUtxoByContractAddr(iter.first, utxo) != DBStatus::DB_SUCCESS)
+        if(dbReader.GetLatestUtxoByContractAddr(iter.first, utxo) != DBStatus::DB_SUCCESS)
         {
             isSign = true;
         }
@@ -132,7 +131,7 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
         }
 
         uint64_t total = 0;
-        auto ret =rpc_evm::rpc_genVin(vecfromAddr, outTx.mutable_utxo(), utxoHashs, total, isSign);
+        auto ret =rpc_evm::RpcGenVin(vecFromAddr, outTx.mutable_utxo(), utxoHashs, total, isSign);
         if(ret < 0)
         {
             ERRORLOG("genVin fail!!! ret:{}",ret);
@@ -146,8 +145,8 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
     if(found == fromBalance.end())
     {
         bool isSign = true;
-        std::vector<std::string> vecfromAddr;
-        vecfromAddr.push_back(fromAddr);
+        std::vector<std::string> vecFromAddr;
+        vecFromAddr.push_back(fromAddr);
 
         if(!isGenSign)
         {
@@ -155,7 +154,7 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
         }
 
         uint64_t total = 0;
-        auto ret =rpc_evm::rpc_genVin(vecfromAddr, outTx.mutable_utxo(), utxoHashs, total, isSign);
+        auto ret =rpc_evm::RpcGenVin(vecFromAddr, outTx.mutable_utxo(), utxoHashs, total, isSign);
         if(ret < 0)
         {
             ERRORLOG("genVin fail!!! ret:{}",ret);
@@ -185,7 +184,7 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
         targetAddrs.insert({toAddr, contractTip});
     }
 
-    for(auto & iter : transfersMap)
+    for(auto & iter : transFersMap)
     {
         auto& balance = fromBalance[iter.first];
         for(const auto& toaddr : iter.second)
@@ -224,6 +223,7 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
     if (contractTip != 0 && contractTip < gas)
     {
         ERRORLOG("contractTip {} < gas {}" , contractTip, gas);
+        SetRpcError("-72018", Sutil::Format("contractTip %s < gas %s", contractTip,gas));
         return -11;
     }
     expend += gas;
@@ -231,6 +231,7 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
     if(fromBalance[fromAddr] < expend)
     {
         ERRORLOG("The total cost = {} is less than the cost = {}", fromBalance[fromAddr], expend);
+        SetRpcError("-72013", Sutil::Format("The total cost = %s is less than the cost = %s", fromBalance[fromAddr], expend));
         return -10;
     }
 
@@ -247,17 +248,18 @@ int rpc_GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
 }
 
 
-int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType tx_type,
-          const std::vector<transferInfo> &transferrings, const nlohmann::json &jTxInfo,
-          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_, const uint64_t& contractTip)
+int RpcFillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType txType,
+          const std::vector<TransferInfo> &transFerrings, const nlohmann::json &jTxInfo,
+          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info, const uint64_t& contractTip)
 {
     if(toAddr.empty())
     {
         return -1;
     }
 
-    if(contractTip != 0 && fromAddr != toAddr)
+    if(contractTip != 0 && fromAddr == toAddr)
     {
+        debugL("tip:%s,fromAddr:%s,toAddr:%s",contractTip,fromAddr,toAddr);
         return -2;
     }
 
@@ -268,7 +270,7 @@ int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global
     outTx.set_data(s);
     
     std::vector<std::string> utxoHashs;
-    int ret = rpc_evm::rpc_GenCallOutTx(fromAddr, toAddr, transferrings, gasCost, outTx, contractTip, utxoHashs);
+    int ret = rpc_evm::RpcGenCallOutTx(fromAddr, toAddr, transFerrings, gasCost, outTx, contractTip, utxoHashs);
     if(ret < 0)
     {
         ERRORLOG("GenCallOutTx fail !!! ret:{}", ret);
@@ -277,8 +279,8 @@ int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global
 
     //ca_algorithm::PrintTx(outTx);
 
-    auto current_time=MagicSingleton<TimeUtil>::GetInstance()->getUTCTimestamp();
-    TxHelper::GetTxStartIdentity(std::vector<std::string>(),height,current_time,type);
+    auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    TxHelper::GetTxStartIdentity(std::vector<std::string>(),height,currentTime,type);
     if(type == TxHelper::vrfAgentType_unknow)
     {
     //This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
@@ -289,7 +291,7 @@ int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global
 
 
 
-    outTx.set_time(current_time);
+    outTx.set_time(currentTime);
     //Determine whether dropshipping is default or local dropshipping
     if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
     {
@@ -303,10 +305,10 @@ int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global
         for(auto & utxoHash : utxoHashs){
             allUtxos += utxoHash;
         }
-        allUtxos += std::to_string(current_time);
+        allUtxos += std::to_string(currentTime);
 
         std::string id;
-        auto ret = GetBlockPackager(id,allUtxos,info_);
+        auto ret = GetBlockPackager(id,allUtxos,info);
         if(ret != 0){
             ERRORLOG("GetBlockPackager fail ret: {}", ret);
             return ret -= 300;
@@ -315,7 +317,7 @@ int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global
     }
 
     outTx.set_version(0);
-    outTx.set_txtype((uint32_t)tx_type);
+    outTx.set_txtype((uint32_t)txType);
     outTx.set_consensus(global::ca::kConsensus);
 
     return 0;
@@ -323,10 +325,10 @@ int rpc_FillOutTx(const std::string &fromAddr, const std::string &toAddr, global
 
 
 
-int rpc_CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
+int RpcCreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
                                                  const std::string &code, uint64_t height,
                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
-                                                 TxHelper::vrfAgentType &type, Vrf &info_)
+                                                 TxHelper::vrfAgentType &type, Vrf &info)
 {
     std::string strOutput;
     TfsHost host;
@@ -354,60 +356,238 @@ int rpc_CreateEvmDeployContractTransaction(const std::string &fromAddr, const st
         return -1;
     }
 
-    ret = rpc_evm::rpc_FillOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,global::ca::TxType::kTxTypeDeployContract,host.coin_transferrings, jTxInfo ,height,gasCost, outTx, type, info_,0);
+    ret = rpc_evm::RpcFillOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,global::ca::TxType::kTxTypeDeployContract,host.coin_transferrings, jTxInfo ,height,gasCost, outTx, type, info,0);
     return ret;
 }
 
 
 
 
-int rpc_CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
+int RpcCreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
                                                const std::string &txHash,
                                                const std::string &strInput, const std::string &OwnerEvmAddr,
                                                uint64_t height,
-                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_,
-											   const uint64_t contractTip,const uint64_t contractTransfer)
+                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info,
+											   const uint64_t contractTip,const uint64_t contractTransfer,bool istochain)
 {
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
-    if (ret != 0)
-    {
-        ERRORLOG("Evmone failed to call contract!");
-        ret -= 10;
+     int ret=0;
+    if(istochain){
+        ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
+        if (ret != 0) {
+            SetRpcError("-72019", Sutil::Format("Evmone failed to call contract! %s",ret));
+            ERRORLOG("Evmone failed to call contract!");
+            ret -= 10;
+            return ret;
+        }
+
+        nlohmann::json jTxInfo;
+        jTxInfo["Version"] = 0;
+        jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+        jTxInfo["VmType"] = global::ca::VmType::EVM;
+        jTxInfo["DeployerAddr"] = toAddr;
+        jTxInfo["DeployHash"] = txHash;
+        jTxInfo["Input"] = strInput;
+        jTxInfo["Output"] = strOutput;
+        jTxInfo["contractTip"] = contractTip;
+        jTxInfo["contractTransfer"] = contractTransfer;
+
+        ret = Evmone::ContractInfoAdd(host, jTxInfo,
+                                      global::ca::TxType::kTxTypeCallContract);
+        if (ret != 0) {
+            DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
+            return -1;
+        }
+
+        // ret = Evmone::FillCallOutTx(fromAddr, toAddr,
+        // host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
+        //                             info, contractTip);
+
+        ret = rpc_evm::RpcFillOutTx(fromAddr, toAddr,
+                                     global::ca::TxType::kTxTypeCallContract,
+                                     host.coin_transferrings, jTxInfo, height,
+                                     gasCost, outTx, type, info, contractTip);
+        if (ret != 0) {
+            ERRORLOG("FillCallOutTx fail ret: {}", ret);
+        }
         return ret;
+
+    }else{
+        ret = RpcECallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
+
+        if (ret != 0) {
+            SetRpcError("-72019", Sutil::Format("Evmone failed to call contract! %s",ret));
+            ERRORLOG("Evmone failed to call contract!");
+            ret -= 10;
+            return ret;
+        }
+
+        nlohmann::json jTxInfo;
+        jTxInfo["Version"] = 0;
+        jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+        jTxInfo["VmType"] = global::ca::VmType::EVM;
+        jTxInfo["DeployerAddr"] = toAddr;
+        jTxInfo["DeployHash"] = txHash;
+        jTxInfo["Input"] = strInput;
+        jTxInfo["Output"] = strOutput;
+        jTxInfo["contractTip"] = contractTip;
+        jTxInfo["contractTransfer"] = contractTransfer;
+
+        outTx.set_data(jTxInfo.dump());
+
+        return ret;
+
     }
-
-    nlohmann::json jTxInfo;
-    jTxInfo["Version"] = 0;
-    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
-    jTxInfo["VmType"] = global::ca::VmType::EVM;
-    jTxInfo["DeployerAddr"] = toAddr;
-    jTxInfo["DeployHash"] = txHash;
-    jTxInfo["Input"] = strInput;
-    jTxInfo["Output"] = strOutput;
-	jTxInfo["contractTip"] = contractTip;
-    jTxInfo["contractTransfer"] = contractTransfer;
-
-    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
-    if(ret != 0)
-    {
-        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
-        return -1;
-    }
-
-    // ret = Evmone::FillCallOutTx(fromAddr, toAddr, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
-    //                             info_, contractTip);
-
-    ret=rpc_evm::rpc_FillOutTx(fromAddr, toAddr, global::ca::TxType::kTxTypeCallContract, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type, info_, contractTip);
-    if (ret != 0)
-    {
-        ERRORLOG("FillCallOutTx fail ret: {}", ret);
-    }
-    return ret;
+    return 0;
+     
+    
 }
 
+
+int RpcECallContract(const std::string &fromAddr, const std::string &OwnerEvmAddr, const std::string &strDeployer, const std::string &strDeployHash,
+                     const std::string &strInput, std::string &strOutput, TfsHost &host, int64_t &gasCost, const uint64_t& contractTransfer)
+{
+    // check whether the addr has deployed the tx hash
+    DBReader dataReader;
+    std::vector<std::string> vecDeployHashs;
+    auto ret = dataReader.GetDeployUtxoByDeployerAddr(strDeployer, vecDeployHashs);
+    if(ret != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetDeployUtxoByDeployerAddr failed!");
+        return -1;
+    }
+    auto iter = std::find(vecDeployHashs.cbegin(), vecDeployHashs.cend(), strDeployHash);
+    if(iter == vecDeployHashs.cend())
+    {
+        ERRORLOG("Transaction has not been deployed at this address!");
+        return -2;
+    }
+    std::string ContractAddress = evm_utils::GenerateContractAddr(strDeployer + strDeployHash);
+    std::cout<<"ContractAddress:" << ContractAddress << std::endl;
+    std::string deployHash;
+    if(dataReader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetContractDeployUtxoByContractAddr failed!");
+        return -3;
+    }
+    std::string txRaw;
+    if(dataReader.GetTransactionByHash(deployHash, txRaw) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetTransactionByHash failed!");
+        return -4;
+    }
+    CTransaction deployTx;
+    if(!deployTx.ParseFromString(txRaw))
+    {
+        ERRORLOG("Transaction Parse failed!");
+        return -5;
+    }
+
+    std::string strCode;
+    evmc::bytes code;
+    evmc::bytes input;
+    try
+    {
+        nlohmann::json dataJson = nlohmann::json::parse(deployTx.data());
+        nlohmann::json txInfo = dataJson["TxInfo"].get<nlohmann::json>();
+        strCode = txInfo["Output"].get<std::string>();
+        if(strCode.empty())
+        {
+            return -6;
+        }
+        code = evmc::from_hex(strCode);
+        input = evmc::from_hex(strInput);
+
+    }
+    catch(const std::exception& e)
+    {
+        ERRORLOG("can't parse deploy contract transaction");
+        return -7;
+    }
+    // msg
+    evmc_address&& evmAddr = evm_utils::StringToEvmAddr(OwnerEvmAddr);
+    evmc_message msg{};
+    msg.kind = EVMC_CALL;
+    msg.input_data = input.data();
+    msg.input_size = input.size();
+    msg.recipient = evm_utils::StringToEvmAddr(evm_utils::GenerateEvmAddr(strDeployer + strDeployHash));
+    msg.sender = evmAddr;
+    uint64_t balance = 100000;
+    //GetBalanceByUtxo(fromAddr, balance);
+    msg.gas = balance;
+
+    dev::u256 value = contractTransfer;
+    if(value > 0)
+    {
+       dev::bytes by = dev::fromHex(dev::toCompactHex(value, 32));
+       memcpy(msg.value.bytes, &by[0], by.size() * sizeof(uint8_t));
+    }
+
+    host.coin_transferrings.emplace_back(evm_utils::EvmAddrToBase58(msg.sender), evm_utils::EvmAddrToBase58(msg.recipient), contractTransfer);
+    struct evmc_tx_context TxContext = 
+    {
+        .tx_origin = evmAddr
+    };
+    host.tx_context = TxContext;
+
+    // host
+    std::string strPrevTxHash;
+	ret = dataReader.GetLatestUtxoByContractAddr(ContractAddress, strPrevTxHash);
+    if(ret != DBStatus::DB_SUCCESS)
+    {
+		ERRORLOG("GetLatestUtxoByContractAddr failed!");
+        return -8;        
+    }
+
+    CTransaction prevTx;
+    std::string transactionRaw;
+	ret = dataReader.GetTransactionByHash(strPrevTxHash, transactionRaw);
+
+    if(ret != DBStatus::DB_SUCCESS)    
+    {
+		ERRORLOG("GetTransactionByHash failed!");
+        return -9;   
+    }
+
+    if(!prevTx.ParseFromString(transactionRaw))
+    {
+		ERRORLOG("parse failed!");
+        return -10;   
+    }
+    
+	std::string rootHash;
+    try
+    {
+        nlohmann::json jPrevData = nlohmann::json::parse(prevTx.data());
+        nlohmann::json jPrevStorage = jPrevData["TxInfo"]["Storage"];
+        if(!jPrevStorage.is_null())
+        {
+            auto txType = (global::ca::TxType)prevTx.txtype();
+            if(txType == global::ca::TxType::kTxTypeDeployContract)
+            {
+                rootHash = jPrevStorage[std::string("_") + "rootHash"].get<std::string>();
+            }
+            else
+            {
+                rootHash = jPrevStorage[ContractAddress + "_" + "rootHash"].get<std::string>();
+            }
+        }
+        
+    }
+    catch(...)
+    {
+		ERRORLOG("Parsing failed!");  
+        return -11;
+    }
+
+    host.accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+    host.accounts[msg.recipient].set_code(code);
+    int res = ExecuteByEvmone(msg, code, host, strOutput, gasCost);
+    DEBUGLOG("evm execute ret: {}", res);
+    return res;
+}
 
 
 }

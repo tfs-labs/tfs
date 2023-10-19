@@ -77,21 +77,19 @@ Obtain source code
 git clone https://github.com/TFSC-Transformers/tfs.git
 ```
 
-Compile
+### Compile and install test net debug version
 
-```plaintext
-cd XXX
-mkdir build_dev_debug
-cmake .. && make
+```
+mkdir build_test_debug && cd build_test_debug
+cmake .. -DTESTCHAIN=ON
+make
 ```
 
-Run
+### Run 
 
 ```
 cd build_dev_debug/bin
-./tfs_vx_xx_devnet
-vx:Web version number
-xx:Program version number
+./tfs_xx_xx_devnet
 ```
 
 ### The official website link and the official Twitter link are as follows：

@@ -1,3 +1,12 @@
+/**
+ * *****************************************************************************
+ * @file        node.h
+ * @brief       
+ * @author  ()
+ * @date        2023-09-28
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
 #ifndef TFS_MPT_NODE_H_
 #define TFS_MPT_NODE_H_
 
@@ -7,62 +16,64 @@
 #include <memory>
 #include <array>
 
-class hashNode
+class HashNode
 {
 public:
-	hashNode() {}
-	hashNode(std::string mdata) :data(mdata) {}
-	~hashNode() {}
+	HashNode() {}
+	HashNode(std::string mdata) :data(mdata) {}
+	~HashNode() {}
 
 public:
 	std::string data;
 };
-class valueNode
+
+class ValueNode
 {
 public:
-	valueNode() {}
-	valueNode(std::string mdata) :data(mdata) {}
-	~valueNode() {}
+	ValueNode() {}
+	ValueNode(std::string mdata) :data(mdata) {}
+	~ValueNode() {}
 
 public:
 	std::string data;
 };
-class nodeFlag
+
+class NodeFlag
 {
 public:
-	nodeFlag() {}
-	~nodeFlag() {}
-	hashNode hash;
+	NodeFlag() {}
+	~NodeFlag() {}
+	HashNode hash;
 	bool dirty{false};
 };
 
 template<class T> class packing;
-
-class object
+class Object
 {
 public:
-	object() {}
-	~object() {}
-	template <typename T> T* to_son_class() {
-		if (typeid(packing<T>).hash_code() != hash_code) {
+	Object() {}
+	~Object() {}
+	template <typename T> T* ToSonClass() 
+	{
+		if (typeid(packing<T>).hash_code() != hashCode) {
 			return nullptr;
 		}
 
 		return &(((packing<T>*)this)->data);
 	}
 public:
-	size_t hash_code;
+	size_t hashCode;
 	std::string name;
 };
-typedef std::shared_ptr<object> nodeptr;
+typedef std::shared_ptr<Object> nodePtr;
 
 template<class T>
-class packing :public object
+class packing :public Object
 {
 public:
-	packing(T _data) {
-		data = _data;
-		hash_code = typeid(*this).hash_code();
+	packing(T inputData) {
+		data = inputData;
+		hashCode = typeid(*this).hash_code();
 		name = typeid(T).name();
 	}
 	~packing() {}
@@ -70,24 +81,24 @@ public:
 	T data;
 };
 
-class fullNode
+class FullNode
 {
 public:
-	fullNode() {}
-	~fullNode() {}
-	std::array<nodeptr, 17> Children;
-	nodeFlag flags;
+	FullNode() {}
+	~FullNode() {}
+	std::array<nodePtr, 17> children;
+	NodeFlag flags;
 };
 
-class shortNode
+class ShortNode
 {
 public:
-	shortNode() {}
-	shortNode(std::string key, nodeptr Val, nodeFlag flags) :key_(key), Val_(Val), flags_(flags) {}
-	~shortNode() {}
-	std::string key_;
-	nodeptr Val_;
-	nodeFlag flags_;
+	ShortNode() {}
+	ShortNode(std::string key, nodePtr Val, NodeFlag flags) :nodeKey(key), nodeVal(Val), nodeFlags(flags) {}
+	~ShortNode() {}
+	std::string nodeKey;
+	nodePtr nodeVal;
+	NodeFlag nodeFlags;
 };
 
 #endif

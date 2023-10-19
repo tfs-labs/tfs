@@ -1,7 +1,8 @@
 #include "db/rocksdb.h"
-#include "utils/MagicSingleton.h"
+#include "utils/magic_singleton.h"
 #include "include/logging.h"
 #include "db/db_api.h"
+#include "ca/ca.h"
 
 void BackgroundErrorListener::OnBackgroundError(rocksdb::BackgroundErrorReason reason, rocksdb::Status *bg_error)
 {
