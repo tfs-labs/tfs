@@ -51,7 +51,7 @@ ebpc*
 # File
 *.json
 log.txt
-block_*.*
+#block_*.*
 net.conf
 config.json*
 trans.sh
