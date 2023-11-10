@@ -387,6 +387,7 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
             {
                 dataMap.push_back(std::make_pair("StakeType", dataJson["TxInfo"]["StakeType"].get<std::string>()));
                 dataMap.push_back(std::make_pair("StakeAmount", std::to_string(dataJson["TxInfo"]["StakeAmount"].get<uint64_t>())));
+                dataMap.push_back(std::make_pair("BonusPumping", std::to_string(dataJson["TxInfo"]["BonusPumping"].get<double>())));
             }
             else if (txType == global::ca::TxType::kTxTypeUnstake)
             {

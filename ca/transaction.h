@@ -124,7 +124,7 @@ int HandleBuildBlockBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>&
  * @param       nextNodes: 
  * @return      int 
  */
-int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg, std::set<std::string> & nextNodes);
+int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg, std::unordered_set<std::string> & nextNodes);
 
 /**
  * @brief       Get the Block Packager object

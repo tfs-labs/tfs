@@ -144,7 +144,7 @@ void SocketBuf::PrintfCache()
     DEBUGLOG("fd: {}", this->fd);
     DEBUGLOG("portAndIp: {}", this->portAndIp);
     DEBUGLOG("_cache: {}", this->_cache.c_str());
-    DEBUGLOG("sendCache: {}", this->_sendCache.c_str());
+    DEBUGLOG("sendCache： {}", this->_sendCache.c_str());
 }
 
 std::string SocketBuf::GetSendMsg()

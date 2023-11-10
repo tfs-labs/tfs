@@ -306,7 +306,7 @@ class AccountManager
         void GetAccountList(std::vector<std::string> & base58_list);
 
         /**
-         * @brief      
+         * @brief       
          * 
          * @param       pubStr: 
          * @param       account: 

@@ -47,7 +47,6 @@
 #include "utils/tmp_log.h"
 
 
-
 void GenKey()
 {
     std::cout << "Please enter the number of accounts to be generated: ";
@@ -81,7 +80,9 @@ void GetStakeList()
     std::cout << "StakeList :" << std::endl;
     for (auto &it : addResses)
     {
-        std::cout << it << std::endl;
+        double timp = 0.0;
+        ca_algorithm::GetCommissionPercentage(it, timp);
+        std::cout << "addr: " << it << "\tbonus pumping: " << timp << std::endl;
     }
 }
 int GetBounsAddrInfo()
@@ -1583,8 +1584,8 @@ void TestCreateStake_2(const std::string &from)
     CTransaction outTx;
     TxHelper::vrfAgentType isNeedAgentFlag;
     Vrf info;
-    std::vector<TxHelper::Utxo> outVin;
-    if(TxHelper::CreateStakeTransaction(from, stakeAmount, top + 1, pledgeType, outTx, outVin,isNeedAgentFlag,info) != 0)
+    std::vector<TxHelper::Utxo> outVin;  
+    if(TxHelper::CreateStakeTransaction(from, stakeAmount, top + 1, pledgeType, outTx, outVin,isNeedAgentFlag,info,global::ca::KMaxBonusPumping) != 0)
     {
         return;
     }
@@ -1830,7 +1831,7 @@ void GetRewardAmount()
         std::cout<< "input invalid" << std::endl;
         return ;
     } 
-    std::cout << "Please input the base58address :";
+    std::cout << "Please input the base58address：";
     std::cin >> addr;
     
     if(!CheckBase58Addr(addr))

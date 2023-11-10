@@ -130,11 +130,13 @@ public:
      * @param       outVin: 
      * @param       type: 
      * @param       information: 
+     * @param       commission: commission percentage (0.05 - 0.2)
      * @return      int 
      */
     static int CreateStakeTransaction(const std::string & fromAddr,uint64_t stakeAmount,uint64_t height,
                         TxHelper::pledgeType pledgeType,CTransaction &outTx,
-                        std::vector<TxHelper::Utxo> & outVin,TxHelper::vrfAgentType &type ,Vrf & information);
+                        std::vector<TxHelper::Utxo> & outVin,TxHelper::vrfAgentType &type,
+                        Vrf & information, double commission);
 
     /**
      * @brief       
@@ -350,7 +352,7 @@ public:
      * @param       ack: 
      * @return      std::string 
      */
-    static std::string ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stakeAmount,  int32_t pledgeType, void* ack);
+    static std::string ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stakeAmount,  int32_t pledgeType, void* ack, double commission);
 
     /**
      * @brief       

@@ -546,18 +546,31 @@ DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vect
 //    auto cache = MagicSingleton<DBCache>::GetInstance();
     std::vector<std::string> cache_values;
     std::vector<rocksdb::Slice> db_keys;
-    std::string value;
+    std::vector<std::string> str;
+    for(auto t : keys)
+    {
+        str.push_back(t);
+    }
+    
+    std::vector<std::string> db_keys_str;
     for (auto key : keys)
     {
-//        if (cache->GetData(key, value))
-//        {
-//            cache_values.push_back(value);
-//        }
-//        else
-        {
-            db_keys.push_back(key);
-        }
+        db_keys_str.push_back(key);
+        db_keys.push_back(db_keys_str.back());
     }
+
+    std::string value;
+//     for (auto& key : keys)
+//     {
+// //        if (cache->GetData(key, value))
+// //        {
+// //            cache_values.push_back(value);
+// //        }
+// //        else
+//         {
+//             db_keys.push_back(key);
+//         }
+//     }
 //    if (db_keys.empty())
 //    {
 //        values.swap(cache_values);

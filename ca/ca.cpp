@@ -288,6 +288,25 @@ void HandleStake()
         return;
     }
 
+    std::regex bonus("^(5|6|7|8|9|1[0-9]|20)$");
+    std::cout <<"Please input the bonus pumping percentage to stake (5 - 20):" << std::endl;
+    std::string strRewardRank;
+    std::cin >> strRewardRank;
+    if(!std::regex_match(strRewardRank,bonus))
+    {
+        std::cout << "input the bonus pumping percentage error" << std::endl;
+        return;
+    }
+    
+    double commission = std::stold(strRewardRank) / 100;
+    if(commission < global::ca::KMinBonusPumping || commission > global::ca::KMaxBonusPumping)
+    {
+        std::cout << "input the bonus pumping percentage error" << std::endl;
+        return;
+    }
+    std::cout << commission << std::endl;
+   
+
     TxHelper::pledgeType pledgeType = TxHelper::pledgeType::kPledgeType_Node;
 
     uint64_t stakeAmount = std::stod(strStakeFee) * global::ca::kDecimalNum;
@@ -304,7 +323,7 @@ void HandleStake()
     std::vector<TxHelper::Utxo> outVin;
     TxHelper::vrfAgentType isNeedAgentFlag;
     Vrf info;
-    if (TxHelper::CreateStakeTransaction(strFromAddr, stakeAmount, top + 1,  pledgeType, outTx, outVin,isNeedAgentFlag,info) != 0)
+    if (TxHelper::CreateStakeTransaction(strFromAddr, stakeAmount, top + 1,  pledgeType, outTx, outVin,isNeedAgentFlag,info, commission) != 0)
     {
         return;
     }

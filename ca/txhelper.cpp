@@ -525,8 +525,8 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 										uint64_t height,
 										TxHelper::pledgeType pledgeType,
 										CTransaction & outTx,
-										std::vector<TxHelper::Utxo> & outVin
-										,TxHelper::vrfAgentType &type ,Vrf & information)
+										std::vector<TxHelper::Utxo> & outVin,
+										TxHelper::vrfAgentType &type ,Vrf & information, double commission)
 {
 	//  Check parameters
 	std::vector<std::string> vecfromAddr;
@@ -641,6 +641,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	nlohmann::json txInfo;
 	txInfo["StakeType"] = strStakeType;
 	txInfo["StakeAmount"] = stakeAmount;
+	txInfo["BonusPumping"] = commission;
 
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
@@ -1485,9 +1486,17 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	uint64_t tempCosto=0;
 	uint64_t tempNodeDividend=0;
 	uint64_t tempTotalClaim=0;
+
+	double bonusPumping;
+	int rt = ca_algorithm::GetCommissionPercentage(Addr, bonusPumping);
+	if(rt != 0)
+	{
+		ERRORLOG("GetCommissionPercentage error:{}", rt);
+        return -100;
+	}
 	for(auto company : companyDividend)
 	{
-		tempCosto=company.second*global::ca::KBonusPumping+0.5;
+		tempCosto=company.second*bonusPumping+0.5;
 		tempNodeDividend+=tempCosto;
 		std::string addr = company.first;
 		uint64_t award = company.second - tempCosto;
@@ -1544,9 +1553,10 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	uint64_t nodeDividend=0;
 	uint64_t totalClaim=0;
 	std::cout << YELLOW << "Claim Addr : Claim Amount" << RESET << std::endl;
+	std::cout << "bonusPumping: " << bonusPumping << std::endl;
 	for(auto company : companyDividend)
 	{
-		costo=company.second*global::ca::KBonusPumping+0.5;
+		costo=company.second*bonusPumping+0.5;
 		nodeDividend+=costo;
 		std::string addr = company.first;
 		uint64_t award = company.second - costo;
@@ -2168,7 +2178,7 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	return "0";
 }
 
-std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stakeAmount, int32_t pledgeType, void* ack)
+std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stakeAmount, int32_t pledgeType, void* ack, double commission)
 {
 	tx_ack *ackT=(tx_ack *)ack;
 	DBReader dbReader;
@@ -2280,6 +2290,12 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 	nlohmann::json txInfo;
 	txInfo["StakeType"] = strStakeType;
 	txInfo["StakeAmount"] = stakeAmount;
+	if(commission < global::ca::KMinBonusPumping || commission > global::ca::KMaxBonusPumping)
+    {
+        	std::string strError = "-16 commission error , error code is -16";
+			return strError;
+    }
+	txInfo["BonusPumping"] = commission;
 
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
@@ -3308,9 +3324,15 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	uint64_t tempCosto=0;
 	uint64_t tempNodeDividend=0;
 	uint64_t tempTotalClaim=0;
+	double bonusPumping;
+	int rt = ca_algorithm::GetCommissionPercentage(Addr, bonusPumping);
+	if(rt != 0)
+	{
+		return DSTR"TxHelper GetCommissionPercentage error"+std::to_string(rt);
+	}
 	for(auto company : companyDividend)
 	{
-		tempCosto=company.second*global::ca::KBonusPumping+0.5;
+		tempCosto=company.second*bonusPumping+0.5;
 		tempNodeDividend+=tempCosto;
 		std::string addr = company.first;
 		uint64_t award = company.second - tempCosto;
@@ -3371,7 +3393,7 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	std::cout << YELLOW << "Claim Addr : Claim Amount" << RESET << std::endl;
 	for(auto company : companyDividend)
 	{
-		costo=company.second*global::ca::KBonusPumping+0.5;
+		costo=company.second*bonusPumping+0.5;
 		nodeDividend+=costo;
 		std::string addr = company.first;
 		uint64_t award = company.second - costo;

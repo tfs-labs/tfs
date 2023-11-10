@@ -66,7 +66,7 @@ void CTimer::Cancel()
     std::thread::native_handle_type handle = m_Thread->native_handle();
     
 #if defined(__unix__) || defined(__APPLE__) || defined(__ANDROID__)
-    pthread_cancel(handle);        // Unix/Linux/MacOS//Android 
+    pthread_cancel(handle);        
 #endif
     
     m_ThreadCon.notify_all();      
@@ -76,8 +76,8 @@ void CTimer::Cancel()
 void CTimer::DeleteThread()
 {
     if (m_Thread) {
-        m_ThreadCon.notify_all();   //Wake from sleep
-        m_Thread->join();           //Wait for the thread to exit
+        m_ThreadCon.notify_all();  
+        m_Thread->join();           
         m_Thread.reset();           
     }
 }

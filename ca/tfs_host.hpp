@@ -484,7 +484,8 @@ public:
             }
         }
 
-        evmc_result r = evmc::make_result(EVMC_FAILURE, 0, nullptr, 0);
+        evmc_result evmc_success_result = evmc::make_result(EVMC_SUCCESS, msg.gas, 0, 0);
+        evmc_result evmc_failure_result = evmc::make_result(EVMC_FAILURE, msg.gas, 0, 0);
 
         auto found = std::find_if(recorded_selfdestructs.begin(), recorded_selfdestructs.end(), [msg](const selfdestruct_record& item){
 
@@ -497,7 +498,7 @@ public:
         if(found != recorded_selfdestructs.end())
         {
             DEBUGLOG("Contract selfdestructs addr:{}", evm_utils::EvmAddrToBase58(found->selfdestructed));
-            return result{r};
+            return result{evmc_failure_result};
         }
 
         dev::bytes by2(msg.value.bytes, msg.value.bytes + sizeof(msg.value.bytes) / sizeof(uint8_t));
@@ -540,13 +541,13 @@ public:
                         if(balance < DBspendMap[fromAddr])
                         {
                             ERRORLOG("fromAddr:{}, balance:{} < amount:{} failed!",fromAddr, balance, DBspendMap[fromAddr]);
-                            return result{r};
+                            return result{evmc_failure_result};
                         }
                     }
                 }
             }
             tmp_transferrings.push_back({fromAddr, toAddr, amount});// B -> A 10
-            //return result{call_result};
+            //return result{evmc_success_result};
         }
 
         coin_transferrings.insert(coin_transferrings.end(), tmp_transferrings.begin(), tmp_transferrings.end());
@@ -554,7 +555,7 @@ public:
         if(msg.input_size <= 0)
         {
             DEBUGLOG("empty input data, sender: {}, code_address: {}", fromAddr, toAddr);
-            return result{call_result};
+            return result{evmc_success_result};
         }   
         
         DBReader data_reader;
@@ -563,7 +564,7 @@ public:
         if(data_reader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
         {
             DEBUGLOG("GetContractDeployUtxoByContractAddr failed!, base58Addr:{}", ContractAddress);
-            return result{call_result};
+            return result{evmc_success_result};
         }
 
 
@@ -574,13 +575,13 @@ public:
         if(data_reader.GetTransactionByHash(deployHash, txRaw) != DBStatus::DB_SUCCESS)
         {
             ERRORLOG("GetTransactionByHash failed!");
-            return result{r};
+            return result{evmc_failure_result};
         }
         CTransaction deployTx;
         if(!deployTx.ParseFromString(txRaw))
         {
             ERRORLOG("Transaction Parse failed!");
-            return result{r};
+            return result{evmc_failure_result};
         }
         std::string strCode;
         evmc::bytes code;
@@ -594,7 +595,7 @@ public:
         catch(const std::exception& e)
         {
             ERRORLOG("can't parse deploy contract transaction");
-            return result{r};
+            return result{evmc_failure_result};
         }
 
         if(msg.kind == EVMC_CALL)
@@ -607,7 +608,7 @@ public:
             if(ret != DBStatus::DB_SUCCESS)
             {
                 ERRORLOG("GetLatestUtxoByContractAddr failed!");
-                return result{r};
+                return result{evmc_failure_result};
             }
 
             CTransaction PrevTx;
@@ -616,12 +617,12 @@ public:
             if(ret != DBStatus::DB_SUCCESS)    
             {
                 ERRORLOG("GetTransactionByHash failed!");
-                return result{r}; 
+                return result{evmc_failure_result}; 
             }
             if(!PrevTx.ParseFromString(deployTxRaw))
             {
                 ERRORLOG("Transaction Parse failed!");
-                return result{r}; 
+                return result{evmc_failure_result}; 
             }
             try
             {
@@ -643,7 +644,7 @@ public:
             catch(...)
             {
                 ERRORLOG("Parsing failed!");  
-                return result{r};
+                return result{evmc_failure_result};
             }
 
             this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
@@ -655,11 +656,11 @@ public:
         struct evmc_vm* pvm = evmc_create_evmone();
         if (!pvm)
         {
-            return result{r};
+            return result{evmc_failure_result};
         }
         if (!evmc_is_abi_compatible(pvm))
         {
-            return result{r};
+            return result{evmc_failure_result};
         }
         evmc::VM vm{pvm};
         

@@ -260,6 +260,16 @@ int Calc1000HeightsSumHash(uint64_t blockHeight, DBReadWriter &dbWriter, std::st
  * @return      false 
  */
 bool CalculateHeightSumHash(uint64_t startHeight, uint64_t endHeight, DBReadWriter &dbWriter, std::string &sumHash);
+
+
+/**
+ * @brief       Get the Commission Percentage object
+ * 
+ * @param       addr: base58
+ * @param       commission: Commission Percentage
+ * @return      int 0 success
+ */
+int GetCommissionPercentage(const std::string& addr, double& commission);
 }; // namespace ca_algorithm
 
 #endif

@@ -19,6 +19,7 @@
 #include "ca/interface.h"
 #include "utils/account_manager.h"
 #include "ca/block_http_callback.h"
+#include "ca/block_stroage.h"
 
 void Menu()
 {

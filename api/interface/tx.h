@@ -143,6 +143,7 @@ std::string vrfJson;
 std::string txType;
 std::string time;
 std::string gas;
+std::string pumpingPercentage;
 UCTE
 
 
@@ -151,6 +152,7 @@ UCTS_REQ(get_stake_req)
 std::string fromAddr;
 std::string stake_amount;
 std::string PledgeType;
+std::string pumpingPercentage;
 UCTE
 
 

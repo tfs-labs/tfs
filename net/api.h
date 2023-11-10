@@ -503,7 +503,7 @@ bool net_com::BroadCastMessage(T &msg, const net_com::Compress isCompress, const
 	const std::vector<Node> &&publicNodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 	if (global::kBuildType == global::BuildType::kBuildType_Dev)
 	{
-		// std::cout << "Total number of public nodelists :" << publicNodeList.size() << std::endl;
+		// std::cout << "Total number of public nodelists：" << publicNodeList.size() << std::endl;
 		INFOLOG("Total number of public nodelists: {}",  publicNodeList.size());
 	}
 	if (publicNodeList.empty())

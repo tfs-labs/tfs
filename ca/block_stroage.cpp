@@ -47,7 +47,7 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 
     CBlock block;
     block.ParseFromString(msg.block());
-    INFOLOG("come block sign = {}",GetBase58Addr(block.sign(1).pub()));
+    INFOLOG("recv block sign addr = {}",GetBase58Addr(block.sign(1).pub()));
 
     if(block.sign_size() != 2)
     {
@@ -60,28 +60,18 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 		
 		if(block.hash() != i.first || global::ca::kRecvSignCnt == _blockCnt[block.hash()].size())
 		{
-            DEBUGLOG(" enough _blockCnt[block.hash()].second.size() = {}",_blockCnt[block.hash()].size());
 			continue;
 		}
 
-        int64_t time = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-        const int64_t kpointFivesecond = (int64_t)1000000 * 1;
-        
-
-        if(abs(time - (int64_t)block.time()) < kpointFivesecond && _blockCnt[block.hash()].size() < global::ca::KRandomNodeGroup)        
+        auto it = _blockCnt.find(block.hash());
+        if (it != _blockCnt.end())
         {
-            auto it = _blockCnt.find(block.hash());
-            if (it != _blockCnt.end())
-            {
-                _blockCnt[block.hash()].push_back(msg);
-            }
-            DEBUGLOG("add  msg ==== ");
+            _blockCnt[block.hash()].push_back(msg);
         }
-
-
+        
 		if( global::ca::kRecvSignCnt == _blockCnt[block.hash()].size())
 		{
-            DEBUGLOG("_blockCnt[block.hash()].second.size() = {}",_blockCnt[block.hash()].size());
+            DEBUGLOG("Recv sign count = {}",_blockCnt[block.hash()].size());
             
             Cycliclist<BlockMsg> list;
             std::vector<BlockMsg> secondMsg = _blockCnt[block.hash()];
@@ -121,13 +111,13 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 
             if(targetMsg.size() != (global::ca::kConsensus - 1))
             {
-                DEBUGLOG("======  targetMsg.size() = {}",targetMsg.size());
+                DEBUGLOG("target lazy weight, size = {}",targetMsg.size());
                 continue;
             }
         
-            for(auto & msg_ : targetMsg)
+            for(auto & msgTmg : targetMsg)
             {
-                i.second.push_back(msg_);
+                i.second.push_back(msgTmg);
             }
 
             //Combined into BlockMsg
@@ -567,6 +557,7 @@ int BlockStroage::CheckData(const BlockStatus& blockStatus)
     return 0;
 }
 
+
 void BlockStroage::AddBlockStatus(const std::string& blockHash, const CBlock& Block, const std::vector<std::string>& verifyNodes, const Vrf& vrf)
 {
     std::unique_lock<std::mutex> lck(_statusMutex);
@@ -576,7 +567,7 @@ void BlockStroage::AddBlockStatus(const std::string& blockHash, const CBlock& Bl
         blockStatusWrapper.blockHash = blockHash;
         blockStatusWrapper.block = Block;
         blockStatusWrapper.broadcastType = BroadcastType::verifyBroadcast;
-        blockStatusWrapper.verifyNodesNumber = global::ca::KSign_node_threshold - global::ca::kConsensus + 2;
+        blockStatusWrapper.verifyNodesNumber = global::ca::KSend_node_threshold - global::ca::kConsensus + 2;
         blockStatusWrapper.verifyNodes.insert(verifyNodes.begin(), verifyNodes.end());
         for(auto &tx : Block.txs())
         {

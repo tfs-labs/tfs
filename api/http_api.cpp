@@ -197,7 +197,7 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/deploy_utxo_req", GetDeployerUtxo);
 
     HttpServer::RegisterCallback("/get_restinverst_req", GetRestInvest);
-    HttpServer::RegisterCallback("/GetAllStakeNodeListAcknowledge",GetAllStakeNodeListAcknowledge);
+    HttpServer::RegisterCallback("/GetAllStakeNodeListAck",GetAllStakeNodeListAcknowledge);
 
    HttpServer::RegisterCallback("/tfscrpc",TfsRpcParse);
 
@@ -787,7 +787,6 @@ void ApiNormal(const Request & req, Response & res)
         oss << "-------------------------------------------------------------------------------------" << std::endl;
         oss << MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(item->first) << std::endl;
 
-       
         std::map<int,int> mapCnts; 
         std::vector<uint64_t> counts;
         for(auto iter : item->second)
@@ -807,12 +806,10 @@ void ApiNormal(const Request & req, Response & res)
         }
 
         int64_t slowerLimitValue = 0;
-
         counts.erase(std::remove_if(counts.begin(), counts.end(),[maxElem](int x){ return x == maxElem;}), counts.end());
 
         if(counts.size() > 2)
         {
-
             uint64_t quarterNum = counts.size() * 0.25;
             uint64_t threeQuarterNum = counts.size() * 0.75;
             if (quarterNum == threeQuarterNum)
@@ -823,7 +820,6 @@ void ApiNormal(const Request & req, Response & res)
 
             std::sort(counts.begin(), counts.end());
 
-
             uint64_t quarterNumValue = counts.at(quarterNum);
             uint64_t threeQuarterNumValue = counts.at(threeQuarterNum);
             slowerLimitValue = quarterNumValue -
@@ -833,7 +829,6 @@ void ApiNormal(const Request & req, Response & res)
         {
             slowerLimitValue = maxElem;
         }
-
 
         for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
         {
@@ -1626,10 +1621,21 @@ void GetStake(const Request &req, Response &res)
         (std::stod(req_t.stake_amount) + global::ca::kFixDoubleMinPrecision) *
         global::ca::kDecimalNum;
     int32_t pledgeType = std::stoll(req_t.PledgeType);
+
+    std::regex bonus("^(5|6|7|8|9|1[0-9]|20)$"); // 5 - 20 
+    if(!std::regex_match(req_t.pumpingPercentage,bonus))
+    {
+        ack_t.ErrorCode="-3005";
+        ack_t.ErrorMessage=Sutil::Format("input pumping percentage error:",req_t.pumpingPercentage);
+        res.set_content(ack_t.paseToString(), "application/json");
+        return;
+    }
+    double pumpingPercentage = std::stod(req_t.pumpingPercentage) / 100;
+
     ack_t.type = "getStake_ack";
     ack_t.ErrorCode = "0";
     std::string strError = TxHelper::ReplaceCreateStakeTransaction(
-        fromAddr, stake_amount, pledgeType, &ack_t);
+        fromAddr, stake_amount, pledgeType, &ack_t, pumpingPercentage);
     if (strError != "0") {
         ack_t.ErrorMessage = strError;
         ack_t.ErrorCode = "-1";
@@ -2348,6 +2354,8 @@ void TfsRpcParse(const Request &req,Response &res){
        // std::tuple<std::string,std::string,std::string> params=GetRpcParams<std::string,std::string,std::string>(obj_func);
         std::string FromAddr=obj_func[0];
         std::string stake_amount=obj_func[1];
+        std::string strCommission = obj_func[2];
+        
         debugL("FromAddr:%s",FromAddr);
         debugL("stake_amount:%s",stake_amount);
         int type=0;
@@ -2362,9 +2370,9 @@ void TfsRpcParse(const Request &req,Response &res){
         (std::stod(stake_amount) + global::ca::kFixDoubleMinPrecision) *
         global::ca::kDecimalNum;
 
+        double commission = std::stold(strCommission);
         debugL(stake_amount_s);
-
-         std::string strError = TxHelper::ReplaceCreateStakeTransaction(FromAddr, stake_amount_s, 0, &ack_t);
+         std::string strError = TxHelper::ReplaceCreateStakeTransaction(FromAddr, stake_amount_s, 0, &ack_t, commission);
          debugL("strError:%s",strError);
         if (strError != "0") {
             out_json["message"]=strError;

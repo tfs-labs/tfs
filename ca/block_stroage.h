@@ -47,6 +47,8 @@ public:
 
 
 public:
+
+
 	/**
 	 * @brief       
 	 * 
@@ -231,6 +233,7 @@ private:
 	std::map<std::string, BlockStatusWrapper> _blockStatusMap;
 
 	std::map<std::string , std::vector<BlockMsg>> _blockCnt;
+
 	double _failureRate = 0.75;
 };
 static int GetPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,

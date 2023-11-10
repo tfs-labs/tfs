@@ -271,12 +271,14 @@ PAUSE_D_REQ(get_stake_req)
 PARSE_JSON(fromAddr)
 PARSE_JSON(stake_amount)
 PARSE_JSON(PledgeType)
+PARSE_JSON(pumpingPercentage)
 D_END
 
 DOUMP_D_REQ(get_stake_req)
 TO_JSON(fromAddr)
 TO_JSON(stake_amount)
 TO_JSON(PledgeType)
+TO_JSON(pumpingPercentage)
 D_END_R
 
 PAUSE_D_REQ(get_unstake_req)

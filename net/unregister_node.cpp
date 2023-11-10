@@ -372,13 +372,14 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
 
     auto item = _consensusNodeList.begin();
 
-    std::map<int,int> mapCnts;
+    std::map<int,int> mapCnts; 
     std::vector<uint64_t> counts;
     for(auto iter : item->second)
     {
         counts.push_back(iter.second);
         ++mapCnts[iter.second];
     }
+
 
     int maxElem = 0, maxCnt = 0;
     for(auto iter : mapCnts)
@@ -391,6 +392,7 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
     }
 
     DEBUGLOG("GetConsensusNodeList : maxCnt = {} , item->second.size = {}, maxElem = {}", maxCnt, item->second.size(), maxElem);
+
 
     counts.erase(std::remove_if(counts.begin(), counts.end(),[maxElem](int x){ return x == maxElem;}), counts.end());
     if(counts.size() < 2)
