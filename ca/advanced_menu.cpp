@@ -47,6 +47,7 @@
 #include "utils/tmp_log.h"
 
 
+
 void GenKey()
 {
     std::cout << "Please enter the number of accounts to be generated: ";
@@ -142,7 +143,6 @@ int GetBounsAddrInfo()
 }
 
 #pragma region netMenu
-
 void SendMessageToUser()
 {
     if (net_com::SendOneMessageByInput() == 0){
@@ -311,7 +311,6 @@ void getTxBlockInfo(uint64_t &top)
         PrintRocksdb(start, end, true, filestream);
     }
 }
-
 
 void GenMnemonic()
 {
@@ -1355,7 +1354,7 @@ void Get_InvestedNodeBlance()
     }
 
     std::cout << "------------" << ack.addr() << "------------" << std::endl;
-
+    std::cout << "size: " << ack.list_size() << std::endl;
     for (int i = 0; i < ack.list_size(); i++)
     {
         const InvestAddressItem info = ack.list(i);
@@ -2010,4 +2009,152 @@ void TestsHandleInvest()
     }
 
     DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+}
+
+
+
+void TestHandleInvestMoreToOne(std::string strFromAddr, std::string strToAddr, std::string strInvestFee)
+{
+    
+    TxHelper::InvestType investType = TxHelper::InvestType::kInvestType_NetLicence;
+    uint64_t investAmount = std::stod(strInvestFee) * global::ca::kDecimalNum;
+
+    DBReader dbReader;
+    uint64_t top = 0;
+    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return;
+    }
+
+    CTransaction outTx;
+    std::vector<TxHelper::Utxo> outVin;
+    TxHelper::vrfAgentType isNeedAgentFlag;
+    Vrf info;
+    int ret = TxHelper::CreateInvestTransaction(strFromAddr, strToAddr, investAmount, top + 1,  investType, outTx, outVin,isNeedAgentFlag,info);
+    if (ret != 0)
+    {
+        ERRORLOG("Failed to create investment transaction! The error code is:{}", ret);
+        return;
+    }
+
+    TxMsgReq txMsg;
+    txMsg.set_version(global::kVersion);
+    TxMsgInfo *txMsgInfo = txMsg.mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+    txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg.mutable_vrfinfo();
+        newInfo->CopyFrom(info);
+
+    }
+
+    auto msg = std::make_shared<TxMsgReq>(txMsg);
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    {
+        ret=DropshippingTx(msg,outTx);
+    }else{
+        ret=DoHandleTx(msg,outTx);
+    }
+    if (ret != 0)
+    {
+        ret -= 100;
+    }
+
+    DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+}
+
+void TestManToOneDelegate()
+{
+    uint32_t num = 0;
+    std::cout << "plase inter delegate num: " << std::endl;
+    std::cin >> num; 
+
+    std::vector<std::string> base58_list;
+    MagicSingleton<AccountManager>::GetInstance()->GetAccountList(base58_list);
+
+    if(num > base58_list.size())
+    {
+        std::cout << "error: Account num < " << num << std::endl;
+        return;
+    }   
+
+    std::string strToAddr;
+    std::cout << "Please enter the addr you want to delegate to:" << std::endl;
+    std::cin >> strToAddr;
+    if (!CheckBase58Addr(strToAddr))
+    {
+        ERRORLOG("Input addr error!");
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    std::string strInvestFee;
+    std::cout << "Please enter the amount to delegate:" << std::endl;
+    std::cin >> strInvestFee;
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(strInvestFee, pattern))
+    {
+        ERRORLOG("Input invest fee error!");
+        std::cout << "Input delegate fee error!" << std::endl;
+        return;
+    }
+
+    DBReadWriter dbReader;
+    std::set<std::string> pledgeAddr;
+
+    std::vector<std::string> stakeAddr;
+    auto status = dbReader.GetStakeAddress(stakeAddr);
+    if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+    {
+        std::cout << "GetStakeAddress error" << std::endl;
+        return;
+    }
+
+    for(const auto& addr : stakeAddr)
+    {
+        if(VerifyBonusAddr(addr) != 0)
+        {
+            continue;
+        }
+        pledgeAddr.insert(addr);
+    }
+
+    int successNum = 0;
+    int testNum = 0;
+    for(int i = 0; successNum != num; ++i)
+    {
+        std::string fromAddr;
+        try
+        {
+            fromAddr = base58_list.at(i);
+        }
+        catch (const std::exception&)
+        {
+            break;
+        }
+
+        if (!CheckBase58Addr(fromAddr))
+        {
+            ERRORLOG("fromAddr addr error!");
+            std::cout << "fromAddr addr error! : " << fromAddr << std::endl;
+            continue;
+        }
+
+        auto it = pledgeAddr.find(fromAddr);
+        if(it != pledgeAddr.end())
+        {
+            ++testNum;
+            continue;
+        }
+
+        TestHandleInvestMoreToOne(fromAddr, strToAddr, strInvestFee);  
+        ++successNum;
+    }
+
+    std::cout << "testNum: " << testNum << std::endl;
 }

@@ -1,5 +1,6 @@
 #include "txhelper.h"
 
+#include "api/interface/rpc_error.h"
 #include "include/logging.h"
 #include "db/db_api.h"
 #include "utils/magic_singleton.h"
@@ -2635,10 +2636,8 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	{
 		std::string strError = "-6 FromAddr is not qualified to invest! The error code is " + std::to_string(ret-200);
 		ERRORLOG(strError);
-        if(ret==-9){
-            return "-72017";
-        }
-		return "-72016";
+        auto er=GetRpcError();
+        return er.first;
 	}	
 	std::string strinvestType;
 	TxHelper::InvestType locaInvestType = (TxHelper::InvestType)investType;

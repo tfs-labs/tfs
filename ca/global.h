@@ -18,14 +18,14 @@ namespace global{
         extern const std::string kConfigJson ;
 
         // consensus
-        extern const int kConsensus ;
+        extern const int kConsensus ; 
         
         extern const int KDouble_broadcast_threshold ; 
 
         extern const int KSend_node_threshold ; 
         extern const int kRecvSignCnt ; 
 
-        extern const int kNeed_node_threshold ;
+        extern const int kNeed_node_threshold ; 
         extern const int KSign_node_threshold ; 
         extern const int KRandomNodeGroup ; 
 

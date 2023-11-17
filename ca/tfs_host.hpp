@@ -233,7 +233,7 @@ private:
         std::string deployHash;
         if(db_reader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
         {
-            DEBUGLOG("GetContractDeployUtxoByContractAddr failed!, failAddr:{}", ContractAddress);
+            //DEBUGLOG("GetContractDeployUtxoByContractAddr failed!, failAddr:{}", ContractAddress);
             return;
         }
 

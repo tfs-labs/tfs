@@ -192,6 +192,8 @@ void PrintBenchmarkToFile();
  */
 void GetRewardAmount();
 
+void TestManToOneDelegate();
+
 
 namespace ThreadTest
 {

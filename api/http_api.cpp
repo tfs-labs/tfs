@@ -810,6 +810,7 @@ void ApiNormal(const Request & req, Response & res)
 
         if(counts.size() > 2)
         {
+
             uint64_t quarterNum = counts.size() * 0.25;
             uint64_t threeQuarterNum = counts.size() * 0.75;
             if (quarterNum == threeQuarterNum)

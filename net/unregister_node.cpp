@@ -380,7 +380,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
         ++mapCnts[iter.second];
     }
 
-
     int maxElem = 0, maxCnt = 0;
     for(auto iter : mapCnts)
     {

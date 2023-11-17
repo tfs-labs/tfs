@@ -105,6 +105,12 @@ public:
 	/**
 	 * @brief       
 	 * 
+	 */
+	void ClearPreHashMap();
+
+	/**
+	 * @brief       
+	 * 
 	 * @param       seekHeight: 
 	 * @return      true 
 	 * @return      false 

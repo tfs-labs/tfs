@@ -42,7 +42,7 @@ void Menu()
 		std::string strKey;
 		std::cout << "Please input your choice: "<< std::endl;
 		std::cin >> strKey;	    
-		std::regex pattern("^[0-9]|([1][0])$");
+		std::regex pattern("^[0-9]|([1][0])|(99)|(100)$");
 		if(!std::regex_match(strKey, pattern))
         {
             std::cout << "Invalid input." << std::endl;

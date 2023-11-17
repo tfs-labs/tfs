@@ -83,10 +83,10 @@
 #endif
 
 #ifndef CPPHTTPLIB_THREAD_POOL_COUNT
-#define CPPHTTPLIB_THREAD_POOL_COUNT                                           \
-  ((std::max)(8u, std::thread::hardware_concurrency() > 0                      \
-                      ? std::thread::hardware_concurrency() - 1                \
-                      : 0))
+#define CPPHTTPLIB_THREAD_POOL_COUNT     64                                      //\
+  // ((std::max)(8u, std::thread::hardware_concurrency() > 0                      \
+  //                     ? std::thread::hardware_concurrency() - 1                \
+  //                     : 0))
 #endif
 
 // Prefer gnu::deprecated, otherwise gcc complains if we use

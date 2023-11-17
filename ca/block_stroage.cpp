@@ -361,6 +361,12 @@ void BlockStroage::ForceCommitSeekTask(uint64_t seekHeight)
     return;
 }
 
+void BlockStroage::ClearPreHashMap()
+{
+    std::unique_lock<std::shared_mutex> lck(_prehashMutex);
+    _preHashMap.clear();
+}
+
 int GetPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,
                             std::vector<std::string> &sendNodeIds)
 {

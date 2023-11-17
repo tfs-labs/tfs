@@ -250,6 +250,7 @@ void Evmone::GetStorage(const TfsHost& host, nlohmann::json& jStorage, std::set<
         jStorage[root->contractAddr + "_" + "rootHash"] = rootHash.first;
         if (!rootHash.second.empty())
         {
+            dirtyContract.insert(account.first);
             jStorage[root->contractAddr + "_" + rootHash.first] = rootHash.second;
         }
         

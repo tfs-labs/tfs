@@ -16,7 +16,7 @@ std::map<std::string, std::string> VirtualDB::db = VirtualDB::Createdb();
 
 std::string Trie::WapperKey(std::string str) const
 {
-    return str + 'z';
+    return str + str[str.length() - 1] + 'z';
 }
 bool Trie::HasTerm(std::string& s) const
 {
