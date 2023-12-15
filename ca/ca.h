@@ -16,6 +16,7 @@
 
 #include "proto/ca_protomsg.pb.h"
 #include "net/msg_queue.h"
+#include "transaction.pb.h"
 
 extern bool bStopTx;
 extern bool bIsCreateTx;
@@ -85,11 +86,13 @@ void HandleSetdefaultAccount();
  * @brief       
  */
 void HandleDeployContract();
+void HandleDeployContract_V33_1();
 
 /**
  * @brief       
  */
 void HandleCallContract();
+void HandleCallContract_V33_1();
 
 /**
  * @brief       
@@ -128,5 +131,27 @@ std::string RpcCallContract(void * arg,void *ack);
  * @param       ack: 
  * @return      std::string 
  */
+std::string RpcCallContract_V33_1(void * arg,void *ack);
+
+/**
+ * @brief       
+ * 
+ * @param       arg: 
+ * @param       ack: 
+ * @return      std::string 
+ */
 std::string RpcDeployContract(void * arg,void *ack);
+
+
+/**
+ * @brief       
+ * 
+ * @param       arg: 
+ * @param       ack: 
+ * @return      std::string 
+ */
+std::string RpcDeployContract_V33_1(void * arg,void *ack);
+
+int SigTx(CTransaction &tx,const std::string & addr);
+
 #endif

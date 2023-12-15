@@ -62,3 +62,16 @@ message SeekPreHashByHightAck
     uint64 		              seek_height        = 3;
     repeated string         prehashes          = 4;
 }
+
+message SeekContractPreHashReq
+{
+    string                  self_node_id         = 1;
+    string                  msg_id               = 2;
+}
+
+message SeekContractPreHashAck
+{
+    string                  self_node_id       = 1;
+    string                  msg_id             = 2;
+    string                  ContractPreHash    = 3;
+}

@@ -221,9 +221,15 @@ public:
      * @return      int 
      */
     static int CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
-                                       const std::string &code, uint64_t height,
-                                       const nlohmann::json &contractInfo, 
-                                       CTransaction &outTx,TxHelper::vrfAgentType &type, Vrf &information);
+                                                  const std::string &code, uint64_t height,
+                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
+                                                  std::vector<std::string> &dirtyContract,
+                                                  TxHelper::vrfAgentType &type, Vrf &information);
+
+    static int CreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, const std::string &OwnerEvmAddr,
+                                                  const std::string &code, uint64_t height,
+                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
+                                                  TxHelper::vrfAgentType &type, Vrf &information);
 
     /**
      * @brief       Create a Evm Call Contract Transaction object
@@ -241,10 +247,17 @@ public:
      * @param       contractTransfer: 
      * @return      int 
      */
-    static int CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr, 
-                                    const std::string &txHash,const std::string &strInput, const std::string &OwnerEvmAddr, 
-                                    uint64_t height,CTransaction &outTx, TxHelper::vrfAgentType &type, 
-                                    Vrf &information,const uint64_t contractTip,const uint64_t contractTransfer);
+    static int CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
+                                                const std::string &txHash, const std::string &strInput,
+                                                const std::string &OwnerEvmAddr, uint64_t height,
+                                                CTransaction &outTx, TxHelper::vrfAgentType &type,
+                                                Vrf &information, const uint64_t contractTip,
+                                                const uint64_t contractTransfer,
+                                                std::vector<std::string> &dirtyContract);
+    static int CreateEvmCallContractTransaction_V33_1(const std::string &fromAddr, const std::string &toAddr, 
+                                const std::string &txHash,const std::string &strInput, const std::string &OwnerEvmAddr, 
+                                uint64_t height,CTransaction &outTx, TxHelper::vrfAgentType &type, 
+                                Vrf &information,const uint64_t contractTip,const uint64_t contractTransfer);
 
     /**
      * @brief       
@@ -322,8 +335,8 @@ public:
      * @param       currentTime: 
      * @param       type: 
      */
-    static void GetTxStartIdentity(const std::vector<std::string> &fromaddr,const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type);
-    
+    static void GetTxStartIdentity(const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type);
+    static void GetTxStartIdentity_V33_1(const std::vector<std::string> &fromaddr,const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type);
     /**
      * @brief       Get the Initiator Type object
      * 
@@ -436,6 +449,12 @@ public:
      */
     static std::string GetEligibleNodes();
     
+    /**
+     * @brief       ReplaceTxVersion
+     * 
+     * @return      int
+     */
+    static void ReplaceTxVersion(CTransaction& outTx);
 };
 
 #endif

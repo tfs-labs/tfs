@@ -82,6 +82,7 @@ std::string PrintRangeBlocks(int startNum = 0,int num = 0, bool pre_hash_flag = 
  * @param       blocks: 
  */
 void BlockInvert(const std::string & strHeader, nlohmann::json &blocks);
+void BlockInvert_V33_1(const std::string & strHeader, nlohmann::json &blocks);
 
 /**
  * @brief       
@@ -89,5 +90,9 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks);
  * @param       where: 
  * @return      std::string 
  */
+
+int PrintContractBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream);
+std::string PrintContractBlocks(int num, bool pre_hash_flag);
+std::string PrintRangeContractBlocks(int startNum,int num, bool pre_hash_flag);
 std::string PrintCache(int where);
 #endif

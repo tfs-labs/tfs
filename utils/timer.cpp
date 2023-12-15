@@ -69,15 +69,15 @@ void CTimer::Cancel()
     pthread_cancel(handle);        
 #endif
     
-    m_ThreadCon.notify_all();      
+    m_ThreadCon.notify_all();     
     m_Thread->join();              
 }
 
 void CTimer::DeleteThread()
 {
     if (m_Thread) {
-        m_ThreadCon.notify_all();  
-        m_Thread->join();           
+        m_ThreadCon.notify_all();   //Wake from sleep
+        m_Thread->join();           //Wait for the thread to exit
         m_Thread.reset();           
     }
 }

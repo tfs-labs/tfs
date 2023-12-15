@@ -49,6 +49,7 @@ const std::string kAllDeployerAddr = "alldeployeraddr_";
 const std::string kDeployerAddr2DeployUtxo = "deployeraddr2deployutxo_";
 const std::string kContractAddr2DeployUtxo = "contractaddr2deployutxo_";
 const std::string kContractAddr2LatestUtxo = "contractaddr2latestutxo_";
+const std::string kLatestContractBlockHash = "latestcontractblockhash_";
 const std::string kContractMptK = "contractmpt_";
 bool DBInit(const std::string &db_path)
 {
@@ -531,6 +532,7 @@ DBStatus DBReader::GetLatestUtxoByContractAddr(const std::string &ContractAddr, 
     std::string db_key = kContractAddr2LatestUtxo + ContractAddr;
     return ReadData(db_key, Utxo);
 }
+
 DBStatus DBReader::GetMptValueByMptKey(const std::string &MptKey, std::string &MptValue)
 {
     std::string db_key = kContractMptK + MptKey;
@@ -1063,6 +1065,7 @@ DBStatus DBReadWriter::SetLatestUtxoByContractAddr(const std::string &ContractAd
     std::string db_key = kContractAddr2LatestUtxo + ContractAddr;
     return WriteData(db_key, Utxo);
 }
+
 DBStatus DBReadWriter::RemoveLatestUtxoByContractAddr(const std::string &ContractAddr)
 {
     std::string db_key = kContractAddr2LatestUtxo + ContractAddr;

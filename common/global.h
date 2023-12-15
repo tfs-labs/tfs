@@ -1,3 +1,10 @@
+/*
+ * @Author: HaoXuDong 2848973813@qq.com
+ * @Date: 2023-12-08 15:55:15
+ * @LastEditors: HaoXuDong 2848973813@qq.com
+ * @LastEditTime: 2023-12-14 11:05:55
+ * @FilePath: /tfs/common/global.h
+ */
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 #include <string>
@@ -22,8 +29,8 @@ namespace global{
 
     // version
     static const std::string kNetVersion = "33";
-    static const std::string kLinuxCompatible = "0.33.1";
-    static const std::string kWindowsCompatible = "0.33.1";
+    static const std::string kLinuxCompatible = "0.33.2";
+    static const std::string kWindowsCompatible = "0.33.2";
     static const std::string kIOSCompatible = "4.0.4";
     static const std::string kAndroidCompatible = "3.1.0";
 

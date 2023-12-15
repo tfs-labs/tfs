@@ -52,6 +52,9 @@
 #include "ca/failed_transaction_cache.h"
 #include "db/cache.h"
 #include "api/interface/evm.h"
+#include "dispatchtx.h"
+
+
 
 bool bStopTx = false;
 bool bIsCreateTx = false;
@@ -99,6 +102,9 @@ bool CaInit()
     CheckNtpTime();
 
     MagicSingleton<TransactionCache>::GetInstance()->Process();
+    MagicSingleton<TransactionCache_V33_1>::GetInstance()->Process();
+
+    MagicSingleton<ContractDispatcher>::GetInstance()->Process();
 
     std::filesystem::create_directory("./contract");
     return true;
@@ -121,6 +127,7 @@ void CaCleanup()
     MagicSingleton<BlockHelper>::GetInstance()->StopSaveBlock();
     MagicSingleton<TFSbenchmark>::GetInstance()->Clear();
     MagicSingleton<TransactionCache>::GetInstance()->Stop();
+    MagicSingleton<TransactionCache_V33_1>::GetInstance()->Stop();
     MagicSingleton<SyncBlock>::GetInstance()->ThreadStop();
     MagicSingleton<BlockStroage>::GetInstance()->StopTimer();
     MagicSingleton<DoubleSpendCache>::GetInstance()->StopTimer();
@@ -1193,6 +1200,7 @@ void HandleDeployContract()
     CTransaction outTx;
     TxHelper::vrfAgentType isNeedAgentFlag;
     Vrf info;
+    std::vector<std::string> dirtyContract;
     if(nContractType == 0)
     {
 
@@ -1233,7 +1241,7 @@ void HandleDeployContract()
         }
         std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(launchAccount.GetPubStr());
         ret = TxHelper::CreateEvmDeployContractTransaction(strFromAddr, ownerEvmAddr, code, top + 1, contract_info,
-                                                           outTx,
+                                                           outTx, dirtyContract,
                                                            isNeedAgentFlag,
                                                            info);
         if(ret != 0)
@@ -1247,30 +1255,73 @@ void HandleDeployContract()
         return;
     }
 
-	TxMsgReq txMsg;
-	txMsg.set_version(global::kVersion);
-    TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
+    int sret=SigTx(outTx, strFromAddr);
+    if(sret!=0){
+        errorL("sig fial %s",sret);
+        return ;
+    }
+    std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    outTx.set_hash(txHash);
+
+
+    ContractTxMsgReq ContractMsg;
+    ContractMsg.set_version(global::kVersion);
+    TxMsgReq * txMsg = ContractMsg.mutable_txmsgreq();
+	txMsg->set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg->mutable_txmsginfo();
     txMsgInfo->set_type(0);
     txMsgInfo->set_tx(outTx.SerializeAsString());
     txMsgInfo->set_height(top);
-
-	if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    for (const auto& addr : dirtyContract)
     {
-        Vrf * newInfo=txMsg.mutable_vrfinfo();
-        newInfo->CopyFrom(info);
+        txMsgInfo->add_contractstoragelist(addr);
+    }
+
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg->mutable_vrfinfo();
+        newInfo -> CopyFrom(info);
 
     }
 
-    auto msg = make_shared<TxMsgReq>(txMsg);
+
+ 
+    auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf )
     {
-        ret = DropshippingTx(msg,outTx);
+        ret = DropCallShippingTx(msg,outTx);
     }
-    else
-    {
-        ret = DoHandleTx(msg,outTx);
-    }
+
+    //
+	// TxMsgReq txMsg;
+	// txMsg.set_version(global::kVersion);
+    // TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
+    // txMsgInfo->set_type(0);
+    // txMsgInfo->set_tx(outTx.SerializeAsString());
+    // txMsgInfo->set_height(top);
+    // for (const auto& addr : dirtyContract)
+    // {
+    //     txMsgInfo->add_contractstoragelist(addr);
+    // }
+
+	// if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    // {
+    //     Vrf * newInfo=txMsg.mutable_vrfinfo();
+    //     newInfo->CopyFrom(info);
+
+    // }
+
+    // auto msg = make_shared<TxMsgReq>(txMsg);
+    // std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    // if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    // {
+    //     ret = DropCallShippingTx(msg,outTx);
+    // }
+    // else
+    // {
+    //     ret = DoHandleTx(msg,outTx);
+    // }
 
     DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
 }
@@ -1387,6 +1438,7 @@ void HandleCallContract()
     int ret = 0;
     TxHelper::vrfAgentType isNeedAgentFlag;
     Vrf info;
+    std::vector<std::string> dirtyContract;
     if (vmType == global::ca::VmType::EVM)
     {
         Account launchAccount;
@@ -1398,7 +1450,8 @@ void HandleCallContract()
         std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(launchAccount.GetPubStr());
         ret = TxHelper::CreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
                                                          ownerEvmAddr, top + 1,
-                                                         outTx, isNeedAgentFlag, info, contractTip, contractTransfer);
+                                                         outTx, isNeedAgentFlag, info, contractTip, contractTransfer,
+                                                         dirtyContract);
         if(ret != 0)
         {
             ERRORLOG("Create call contract transaction failed! ret:{}", ret);        
@@ -1410,39 +1463,47 @@ void HandleCallContract()
         return;
     }
 
-    TxMsgReq txMsg;
-	txMsg.set_version(global::kVersion);
-    TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
+    int sret=SigTx(outTx, strFromAddr);
+    if(sret!=0){
+        errorL("sig fial %s",sret);
+        return ;
+    }
+
+    std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    outTx.set_hash(txHash);
+
+    ContractTxMsgReq ContractMsg;
+    ContractMsg.set_version(global::kVersion);
+    TxMsgReq * txMsg = ContractMsg.mutable_txmsgreq();
+	txMsg->set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg->mutable_txmsginfo();
     txMsgInfo->set_type(0);
     txMsgInfo->set_tx(outTx.SerializeAsString());
     txMsgInfo->set_height(top);
 
+    std::cout << "size = " << dirtyContract.size() << std::endl;
+    for (const auto& addr : dirtyContract)
+    {
+        std::cout << "addr = " << addr << std::endl;
+        txMsgInfo->add_contractstoragelist(addr);
+    }
+
     if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
-        Vrf * newInfo=txMsg.mutable_vrfinfo();
+        Vrf * newInfo=txMsg->mutable_vrfinfo();
         newInfo -> CopyFrom(info);
 
     }
-
-    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
-    {
-        Vrf * newInfo=txMsg.mutable_vrfinfo();
-        newInfo->CopyFrom(info);
-
-    }
-
-    auto msg = make_shared<TxMsgReq>(txMsg);
+ 
+    auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
-        ret = DropshippingTx(msg,outTx);
+        ret = DropCallShippingTx(msg,outTx);
     }
-    else
-    {
-        ret = DoHandleTx(msg,outTx);
-    }
+    return ;
 
-    DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+  //  DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
 }
 
 void HandleExportPrivateKey()
@@ -1579,12 +1640,15 @@ void RegisterCallback()
 
     // PCEnd correlation
     TxRegisterCallback<TxMsgReq>(HandleTx); // PCEnd transaction flow
-
+    TxRegisterCallback<ContractTxMsgReq>(HandleContractTx);
+    TxRegisterCallback<ContractPackagerMsg>(HandleContractPackagerMsg);
     
     SaveBlockRegisterCallback<BuildBlockBroadcastMsg>(HandleBuildBlockBroadcastMsg); // Building block broadcasting
 
     BlockRegisterCallback<BlockMsg>(HandleBlock);      // PCEnd transaction flow
     BlockRegisterCallback<BuildBlockBroadcastMsgAck>(HandleAddBlockAck);
+    BlockRegisterCallback<SeekContractPreHashReq>(HandleSeekContractPreHashReq);
+    BlockRegisterCallback<SeekContractPreHashAck>(HandleSeekContractPreHashAck);
     
 
     CaRegisterCallback<MultiSignTxReq>(HandleMultiSignTxReq);
@@ -1950,6 +2014,139 @@ void RPC_contrack_uitl(CTransaction & tx){
 std::string RpcDeployContract(void * arg,void *ack)
 {
     deploy_contract_req * req=(deploy_contract_req *)arg;
+   
+    std::string strFromAddr=req->addr;
+    // std::cout << "Please enter your addr:" << std::endl;
+    // std::cin >> strFromAddr;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        errorL("Input addr error!");
+        return "-1";
+    }
+
+    DBReader dataReader;
+    uint64_t top = 0;
+	if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return "-2";
+    }
+
+    uint32_t nContractType=std::stoi(req->nContractType);
+    // std::cout << "Please enter contract type: (0: EVM) " << std::endl;
+    // std::cin >> nContractType;
+
+    nlohmann::json contract_info=nlohmann::json::parse(req->info);
+    // int ret = GenerateContractInfo(contract_info);
+    // if (ret != 0)
+    // {
+    //     return;
+    // }
+
+    CTransaction outTx;
+    TxHelper::vrfAgentType isNeedAgentFlag;
+    Vrf info;
+    std::vector<std::string> dirtyContract;
+    if(nContractType == 0)
+    {
+
+        //std::string nContractPath=req->contract;
+        // std::cout << "Please enter contract path : (enter 0 use default path ./contract/contract) " << std::endl;
+        // std::cin >> nContractPath;
+
+        std::string code=req->contract;
+        // ret = LoopReadFile(nContractPath, code, "contract");
+        // if (ret != 0)
+        // {
+        //     return;
+        // }
+
+        // if(code.empty())
+        // {
+        //     return;
+        // }
+        // std::cout << "code :" << code << std::endl;
+        std::string strInput=req->data;
+        // std::cout << "Please enter input data (enter 0 to skip):" << std::endl;
+        // std::cin >> strInput;
+
+        if (strInput == "0")
+        {
+            strInput.clear();
+        }
+        else if(strInput.substr(0, 2) == "0x")
+        {
+            strInput = strInput.substr(2);
+            code += strInput;
+        }
+        
+        // if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0)
+        // {
+        //     ERRORLOG("Failed to find account {}", strFromAddr);
+        //     return;
+        // }
+        Base64 base_;
+       std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(base_.Decode(req->pubstr.c_str(), req->pubstr.size()));
+       int ret = TxHelper::CreateEvmDeployContractTransaction(strFromAddr, ownerEvmAddr, code, top + 1, contract_info,
+                                                           outTx, dirtyContract,
+                                                           isNeedAgentFlag,
+                                                           info);
+        if(ret != 0)
+        {
+            ERRORLOG("Failed to create DeployContract transaction! The error code is:{}", ret);
+            return "-3";
+        }        
+    }
+    else
+    {
+        return "-4";
+    }
+
+    // int sret=SigTx(outTx, strFromAddr);
+    // if(sret!=0){
+    //     errorL("sig fial %s",sret);
+    //     return ;
+    // }
+    // std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    // outTx.set_hash(txHash);
+
+
+    ContractTxMsgReq ContractMsg;
+    ContractMsg.set_version(global::kVersion);
+    TxMsgReq * txMsg = ContractMsg.mutable_txmsgreq();
+	txMsg->set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg->mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+   // txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+    for (const auto& addr : dirtyContract)
+    {
+        txMsgInfo->add_contractstoragelist(addr);
+    }
+
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg->mutable_vrfinfo();
+        newInfo -> CopyFrom(info);
+
+    }
+
+    contract_ack *ack_t=(contract_ack*)ack;
+
+    std::string contracJs;
+    std::string txJs;
+    google::protobuf::util::MessageToJsonString(ContractMsg,&contracJs);
+    google::protobuf::util::MessageToJsonString(outTx,&txJs);
+    ack_t->contractJs=contracJs;
+    ack_t->txJs=txJs;
+    return "0";
+}
+
+
+
+std::string RpcDeployContract_V33_1(void * arg,void *ack)
+{
+    deploy_contract_req * req=(deploy_contract_req *)arg;
     int ret=0;
     std::string strFromAddr=req->addr;
     if (!CheckBase58Addr(strFromAddr))
@@ -2005,7 +2202,7 @@ std::string RpcDeployContract(void * arg,void *ack)
         std::string pubstr=base_.Decode(req->pubstr.c_str(),req->pubstr.size());
         std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(pubstr);
 
-        ret = rpc_evm::RpcCreateEvmDeployContractTransaction(strFromAddr, ownerEvmAddr, code, top + 1, infoTObj,
+        ret = rpc_evm::RpcCreateEvmDeployContractTransaction_V33_1(strFromAddr, ownerEvmAddr, code, top + 1, infoTObj,
                                                            outTx,
                                                            isNeedAgentFlag,
                                                            info);
@@ -2039,6 +2236,147 @@ std::string RpcDeployContract(void * arg,void *ack)
 
 
 std::string RpcCallContract(void * arg,void *ack)
+{
+    call_contract_req * req=(call_contract_req*)arg;
+
+    std::string strFromAddr=req->addr;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+       errorL("Input addr error!" );
+        return "-1";
+    }
+
+    DBReader dataReader;
+    std::vector<std::string> vecDeployers;
+    std::string strToAddr=req->deployer;
+    if(!CheckBase58Addr(strToAddr))
+    {
+       errorL("Input addr error!");
+       return "-3";    
+    }
+
+    
+    std::string strTxHash=req->deployutxo;
+    std::string strInput=req->args;
+   
+    if(strInput.substr(0, 2) == "0x")
+    {
+        strInput = strInput.substr(2);
+    }
+
+    std::string contractTipStr=req->tip;
+   
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(contractTipStr, pattern))
+    {
+        errorL("input contract tip error ! " );
+        return "-4";
+    }
+
+    std::string contractTransferStr=req->money;
+    
+    if (!std::regex_match(contractTransferStr, pattern))
+    {
+        
+        return "-5";
+    }
+    uint64_t contractTip = (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t contractTransfer = (std::stod(contractTransferStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t top = 0;
+	if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return "-6";
+    }
+
+
+    CTransaction outTx;
+    CTransaction tx;
+    std::string txRaw;
+    if (DBStatus::DB_SUCCESS != dataReader.GetTransactionByHash(strTxHash, txRaw))
+    {
+        ERRORLOG("get contract transaction failed!!");
+        return "-7";
+    }
+    if(!tx.ParseFromString(txRaw))
+    {
+        ERRORLOG("contract transaction parse failed!!");
+        return "-8";
+    }
+    
+
+    nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+    nlohmann::json txInfo = dataJson["TxInfo"].get<nlohmann::json>();
+    int vmType = txInfo["VmType"].get<int>();
+ 
+    int ret = 0;
+    TxHelper::vrfAgentType isNeedAgentFlag;
+    Vrf info;
+    std::vector<std::string> dirtyContract;
+    if (vmType == global::ca::VmType::EVM)
+    {
+       
+        Base64 base_;
+        std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(base_.Decode(req->pubstr.c_str(), req->pubstr.size()));
+        ret = TxHelper::CreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
+                                                         ownerEvmAddr, top + 1,
+                                                         outTx, isNeedAgentFlag, info, contractTip, contractTransfer,
+                                                         dirtyContract);
+        if(ret != 0)
+        {
+           errorL("Create call contract transaction failed! ret:{}", ret);        
+           return "-7";
+        }
+    }
+    else
+    {
+        return "-8";
+    }
+
+    // int sret=SigTx(outTx, strFromAddr);
+    // if(sret!=0){
+    //     errorL("sig fial %s",sret);
+    //     return ;
+    // }
+
+    // std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    // outTx.set_hash(txHash);
+
+    ContractTxMsgReq ContractMsg;
+    ContractMsg.set_version(global::kVersion);
+    TxMsgReq * txMsg = ContractMsg.mutable_txmsgreq();
+	txMsg->set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg->mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+   // txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+
+    std::cout << "size = " << dirtyContract.size() << std::endl;
+    for (const auto& addr : dirtyContract)
+    {
+        std::cout << "addr = " << addr << std::endl;
+        txMsgInfo->add_contractstoragelist(addr);
+    }
+
+  
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg->mutable_vrfinfo();
+        newInfo -> CopyFrom(info);
+
+    }
+    contract_ack *ack_t=(contract_ack*)ack;
+    std::string txJsonString;
+	std::string contractJsonString;
+	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
+	status=google::protobuf::util::MessageToJsonString(ContractMsg,&contractJsonString);
+	ack_t->contractJs=contractJsonString;
+    ack_t->txJs=txJsonString;
+    return "0";
+    
+}
+
+std::string RpcCallContract_V33_1(void * arg,void *ack)
 {
     call_contract_req * retT=(call_contract_req*)arg;
 
@@ -2122,7 +2460,7 @@ std::string RpcCallContract(void * arg,void *ack)
         Base64 base;
         std::string pubstr=base.Decode(retT->pubstr.c_str(),retT->pubstr.size());
         std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(pubstr);
-        ret = rpc_evm::RpcCreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
+        ret = rpc_evm::RpcCreateEvmCallContractTransaction_V33_1(strFromAddr, strToAddr, strTxHash, strInput,
                                                          ownerEvmAddr, top + 1,
                                                          outTx, isNeedAgentFlag, info, contractTip, contractTransfer,isToChain);
         if(ret != 0)
@@ -2152,4 +2490,361 @@ std::string RpcCallContract(void * arg,void *ack)
 
     return "0";
     
+}
+
+void HandleDeployContract_V33_1()
+{
+            std::cout << std::endl
+              << std::endl;
+
+    std::cout << "AddrList : " << std::endl;
+    MagicSingleton<AccountManager>::GetInstance()->PrintAllAccount();
+
+    std::string strFromAddr;
+    std::cout << "Please enter your addr:" << std::endl;
+    std::cin >> strFromAddr;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    DBReader dataReader;
+    uint64_t top = 0;
+	if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return ;
+    }
+
+    uint32_t nContractType;
+    std::cout << "Please enter contract type: (0: EVM) " << std::endl;
+    std::cin >> nContractType;
+
+    nlohmann::json contract_info;
+    int ret = GenerateContractInfo(contract_info);
+    if (ret != 0)
+    {
+        return;
+    }
+
+    CTransaction outTx;
+    TxHelper::vrfAgentType isNeedAgentFlag;
+    Vrf info;
+    if(nContractType == 0)
+    {
+
+        std::string nContractPath;
+        std::cout << "Please enter contract path : (enter 0 use default path ./contract/contract) " << std::endl;
+        std::cin >> nContractPath;
+
+        std::string code;
+        ret = LoopReadFile(nContractPath, code, "contract");
+        if (ret != 0)
+        {
+            return;
+        }
+
+        if(code.empty())
+        {
+            return;
+        }
+        std::cout << "code :" << code << std::endl;
+        std::string strInput;
+        std::cout << "Please enter input data (enter 0 to skip):" << std::endl;
+        std::cin >> strInput;
+
+        if (strInput == "0")
+        {
+            strInput.clear();
+        }
+        else if(strInput.substr(0, 2) == "0x")
+        {
+            strInput = strInput.substr(2);
+            code += strInput;
+        }
+        Account launchAccount;
+        if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0)
+        {
+            ERRORLOG("Failed to find account {}", strFromAddr);
+            return;
+        }
+        std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(launchAccount.GetPubStr());
+        ret = TxHelper::CreateEvmDeployContractTransaction_V33_1(strFromAddr, ownerEvmAddr, code, top + 1, contract_info,
+                                                           outTx,
+                                                           isNeedAgentFlag,
+                                                           info);
+        if(ret != 0)
+        {
+            ERRORLOG("Failed to create DeployContract transaction! The error code is:{}", ret);
+            return;
+        }        
+    }
+    else
+    {
+        return;
+    }
+
+    int sret=SigTx(outTx, strFromAddr);
+    if(sret!=0){
+        errorL("sig fial %s",sret);
+        return ;
+    }
+    std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    outTx.set_hash(txHash);
+
+	TxMsgReq txMsg;
+	txMsg.set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+    txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+
+	if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg.mutable_vrfinfo();
+        newInfo->CopyFrom(info);
+
+    }
+
+    auto msg = make_shared<TxMsgReq>(txMsg);
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    {
+        ret = DropshippingTx(msg,outTx);
+    }
+    else
+    {
+        ret = DoHandleTx(msg,outTx);
+    }
+
+    DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+}
+
+void HandleCallContract_V33_1()
+{
+     std::cout << std::endl
+              << std::endl;
+
+    std::cout << "AddrList : " << std::endl;
+    MagicSingleton<AccountManager>::GetInstance()->PrintAllAccount();
+
+    std::string strFromAddr;
+    std::cout << "Please enter your addr:" << std::endl;
+    std::cin >> strFromAddr;
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    DBReader dataReader;
+    std::vector<std::string> vecDeployers;
+    dataReader.GetAllDeployerAddr(vecDeployers);
+    std::cout << "=====================deployers=====================" << std::endl;
+    for(auto& deployer : vecDeployers)
+    {
+        std::cout << "deployer: " << deployer << std::endl;
+    }
+    std::cout << "=====================deployers=====================" << std::endl;
+    std::string strToAddr;
+    std::cout << "Please enter to addr:" << std::endl;
+    std::cin >> strToAddr;
+    if(!CheckBase58Addr(strToAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;        
+    }
+
+    std::vector<std::string> vecDeployUtxos;
+    dataReader.GetDeployUtxoByDeployerAddr(strToAddr, vecDeployUtxos);
+    std::cout << "=====================deployed utxos=====================" << std::endl;
+    for(auto& deploy_utxo : vecDeployUtxos)
+    {
+        std::string ContractAddress = evm_utils::GenerateContractAddr(strToAddr + deploy_utxo);
+        std::string deployHash;
+        if(dataReader.GetContractDeployUtxoByContractAddr(ContractAddress, deployHash) != DBStatus::DB_SUCCESS)
+        {
+            continue;
+        }
+        std::cout << "deployed utxo: " << deploy_utxo << std::endl;
+    }
+    std::cout << "=====================deployed utxos=====================" << std::endl;
+    std::string strTxHash;
+    std::cout << "Please enter tx hash:" << std::endl;
+    std::cin >> strTxHash;
+    
+    std::string strInput;
+    std::cout << "Please enter args:" << std::endl;
+    std::cin >> strInput;
+    if(strInput.substr(0, 2) == "0x")
+    {
+        strInput = strInput.substr(2);
+    }
+
+    std::string contractTipStr;
+    std::cout << "input contract tip amount :" << std::endl;
+    std::cin >> contractTipStr;
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(contractTipStr, pattern))
+    {
+        std::cout << "input contract tip error ! " << std::endl;
+        return;
+    }
+
+    std::string contractTransferStr;
+    std::cout << "input contract transfer amount :" << std::endl;
+    std::cin >> contractTransferStr;
+    if (!std::regex_match(contractTransferStr, pattern))
+    {
+        std::cout << "input contract transfer error ! " << std::endl;
+        return;
+    }
+    uint64_t contractTip = (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t contractTransfer = (std::stod(contractTransferStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t top = 0;
+	if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return ;
+    }
+
+
+    CTransaction outTx;
+    CTransaction tx;
+    std::string txRaw;
+    if (DBStatus::DB_SUCCESS != dataReader.GetTransactionByHash(strTxHash, txRaw))
+    {
+        ERRORLOG("get contract transaction failed!!");
+        return ;
+    }
+    if(!tx.ParseFromString(txRaw))
+    {
+        ERRORLOG("contract transaction parse failed!!");
+        return ;
+    }
+    
+
+    nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+    nlohmann::json txInfo = dataJson["TxInfo"].get<nlohmann::json>();
+    int vmType = txInfo["VmType"].get<int>();
+ 
+    int ret = 0;
+    TxHelper::vrfAgentType isNeedAgentFlag;
+    Vrf info;
+    if (vmType == global::ca::VmType::EVM)
+    {
+        Account launchAccount;
+        if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0)
+        {
+            ERRORLOG("Failed to find account {}", strFromAddr);
+            return;
+        }
+        std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(launchAccount.GetPubStr());
+        ret = TxHelper::CreateEvmCallContractTransaction_V33_1(strFromAddr, strToAddr, strTxHash, strInput,
+                                                         ownerEvmAddr, top + 1,
+                                                         outTx, isNeedAgentFlag, info, contractTip, contractTransfer);
+        if(ret != 0)
+        {
+            ERRORLOG("Create call contract transaction failed! ret:{}", ret);        
+            return;
+        }
+    }
+    else
+    {
+        return;
+    }
+
+    int sret=SigTx(outTx, strFromAddr);
+    if(sret!=0){
+        errorL("sig fial %s",sret);
+        return ;
+    }
+
+    std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    outTx.set_hash(txHash);
+
+
+    TxMsgReq txMsg;
+	txMsg.set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg.mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+    txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg.mutable_vrfinfo();
+        newInfo -> CopyFrom(info);
+
+    }
+
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg.mutable_vrfinfo();
+        newInfo->CopyFrom(info);
+
+    }
+
+    auto msg = make_shared<TxMsgReq>(txMsg);
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    {
+        ret = DropshippingTx(msg,outTx);
+    }
+    else
+    {
+        ret = DoHandleTx(msg,outTx);
+    }
+
+    DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+}
+
+
+int SigTx(CTransaction &tx,const std::string & addr){
+    std::set<std::string> Miset;
+	Base64 base_;
+	auto txUtxo = tx.mutable_utxo();
+	int index = 0;
+	auto vin = txUtxo->mutable_vin();
+	for (auto& owner : txUtxo->owner()) {
+		Miset.insert(owner);
+		auto vin_t = vin->Mutable(index);
+        if(!vin_t->contractaddr().empty()){
+            continue;
+        }
+		std::string serVinHash = Getsha256hash(vin_t->SerializeAsString());
+		std::string signature;
+		std::string pub;
+
+        if(TxHelper::Sign(addr, serVinHash, signature, pub)){
+            return -1;
+        }
+		CSign* vinSign = vin_t->mutable_vinsign();
+		vinSign->set_sign(signature);
+		vinSign->set_pub(pub);
+		index++;
+	}
+    // if (tx.txtype() == (int)global::ca::TxType::kTxTypeDeployContract ||
+    //     tx.txtype() == (int)global::ca::TxType::kTxTypeCallContract) {
+    //     return 0;
+    // }
+
+    for (auto &owner : Miset) {
+        CTxUtxo *txUtxo = tx.mutable_utxo();
+        CTxUtxo copyTxUtxo = *txUtxo;
+        copyTxUtxo.clear_multisign();
+        std::string serTxUtxo = Getsha256hash(copyTxUtxo.SerializeAsString());
+        std::string signature;
+        std::string pub;
+
+        if (TxHelper::Sign(addr, serTxUtxo, signature, pub)) {
+            return -2;
+        }
+        CSign *multiSign = txUtxo->add_multisign();
+        multiSign->set_sign(signature);
+        multiSign->set_pub(pub);
+    }
+
+    return 0;
 }

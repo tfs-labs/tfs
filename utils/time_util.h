@@ -49,6 +49,13 @@ public:
      * @return      x_uint64_t 
      */
     x_uint64_t GetUTCTimestamp();
+    
+    /**
+    * @brief
+    *
+    * @return       x_uint64_t
+    */
+    x_uint64_t GetTheTimestampPerUnitOfTime(const x_uint64_t& utcTime);
 
     /**
      * @brief       Obtain the timestamp, first obtain it from NTP, and then go to the local level if it is unsuccessful

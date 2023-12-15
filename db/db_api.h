@@ -113,6 +113,7 @@ public:
     DBStatus GetContractDeployUtxoByContractAddr(const std::string &ContractAddr, std::string &ContractDeployUtxo);
 
     DBStatus GetLatestUtxoByContractAddr(const std::string &ContractAddr, std::string &Utxo);
+
     DBStatus GetMptValueByMptKey(const std::string &MptKey, std::string &MptValue);
 
     virtual DBStatus MultiReadData(const std::vector<std::string> &keys, std::vector<std::string> &values);
@@ -269,6 +270,7 @@ public:
     DBStatus RemoveContractDeployUtxoByContractAddr(const std::string &ContractAddr);
 
     DBStatus SetLatestUtxoByContractAddr(const std::string &ContractAddr, const std::string &Utxo);
+
     DBStatus RemoveLatestUtxoByContractAddr(const std::string &ContractAddr);
     DBStatus SetMptValueByMptKey(const std::string &MptKey, const std::string &MptValue);
     DBStatus RemoveMptValueByMptKey(const std::string &MptKey);

@@ -1,7 +1,10 @@
 #include "advanced_menu.h"
 
 #include <cstdint>
+#include <fstream>
 #include <sys/time.h>
+#include "api/interface/tx.h"
+#include "boost/threadpool/pool.hpp"
 #include "sys/socket.h"
 
 
@@ -45,7 +48,254 @@
 #include "utils/tfs_bench_mark.h"
 #include "block_helper.h"
 #include "utils/tmp_log.h"
+#include <boost/threadpool.hpp>
+#include <map>
+#include <thread>
+#include <unistd.h>
 
+struct contractJob{
+    std::string fromAddr;
+    std::string deployer;
+    std::string deployutxo;
+    std::string arg;
+    std::string tip;
+    std::string money;
+};
+
+std::vector<contractJob> jobs;
+std::atomic<int> jobs_index=0;
+std::atomic<int> perrnode_index=0;
+boost::threadpool::pool test_pool;
+
+void ReadContract_json(const std::string & file_name){
+    std::ifstream file(file_name);
+    std::stringstream buffer;  
+    buffer << file.rdbuf();  
+    std::string contents(buffer.str());
+    if(contents.empty()){
+        errorL("no data");
+        return;
+    }
+    nlohmann::json jsonboj;
+    try {
+       jsonboj=nlohmann::json::parse(contents);
+    } catch (std::exception & e) {
+       errorL(e.what());
+       return;
+    }
+
+    if(!jsonboj.is_array()){
+        errorL("not a array");
+       return;
+    }
+    try{
+       for(auto &aitem:jsonboj){
+            contractJob job;
+            job.deployer=aitem["deployer"];
+            job.deployutxo=aitem["deployutxo"];
+            job.arg=aitem["arg"];
+            job.money=aitem["money"];
+            jobs.push_back(job);
+       }
+    }catch(std::exception & e){
+        errorL("wath:%s",e.what());
+       return;
+    }
+}
+
+void ContrackInvke(contractJob job){
+    
+
+    infoL("fromAddr:%s",job.fromAddr);
+    infoL("deployer:%s",job.deployer);
+    infoL("deployutxo:%s",job.deployutxo);
+    infoL("money:%s",job.money);
+    infoL("arg:%s",job.arg);
+
+    std::string strFromAddr=job.fromAddr;
+
+    if (!CheckBase58Addr(strFromAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;
+    }
+
+    DBReader dataReader;
+
+    std::string strToAddr=job.deployer;
+    // std::cout << "Please enter to addr:" << std::endl;
+    // std::cin >> strToAddr;
+    if(!CheckBase58Addr(strToAddr))
+    {
+        std::cout << "Input addr error!" << std::endl;
+        return;        
+    }
+
+    std::string strTxHash=job.deployutxo;
+    // std::cout << "Please enter tx hash:" << std::endl;
+    // std::cin >> strTxHash;
+    
+    std::string strInput=job.arg;
+    // std::cout << "Please enter args:" << std::endl;
+    // std::cin >> strInput;
+    if(strInput.substr(0, 2) == "0x")
+    {
+        strInput = strInput.substr(2);
+    }
+
+    std::string contractTipStr="0";
+    // std::cout << "input contract tip amount :" << std::endl;
+    // std::cin >> contractTipStr;
+    std::regex pattern("^\\d+(\\.\\d+)?$");
+    if (!std::regex_match(contractTipStr, pattern))
+    {
+        std::cout << "input contract tip error ! " << std::endl;
+        return;
+    }
+
+    std::string contractTransferStr=job.money;
+    // std::cout << "input contract transfer amount :" << std::endl;
+    // std::cin >> contractTransferStr;
+    if (!std::regex_match(contractTransferStr, pattern))
+    {
+        std::cout << "input contract transfer error ! " << std::endl;
+        return;
+    }
+    uint64_t contractTip = (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t contractTransfer = (std::stod(contractTransferStr) + global::ca::kFixDoubleMinPrecision) * global::ca::kDecimalNum;
+    uint64_t top = 0;
+	if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top))
+    {
+        ERRORLOG("db get top failed!!");
+        return ;
+    }
+
+
+    CTransaction outTx;
+    CTransaction tx;
+    std::string txRaw;
+    if (DBStatus::DB_SUCCESS != dataReader.GetTransactionByHash(strTxHash, txRaw))
+    {
+        ERRORLOG("get contract transaction failed!!");
+        return ;
+    }
+    if(!tx.ParseFromString(txRaw))
+    {
+        ERRORLOG("contract transaction parse failed!!");
+        return ;
+    }
+    
+
+    nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+    nlohmann::json txInfo = dataJson["TxInfo"].get<nlohmann::json>();
+    int vmType = txInfo["VmType"].get<int>();
+ 
+    int ret = 0;
+    TxHelper::vrfAgentType isNeedAgentFlag;
+    Vrf info;
+    std::vector<std::string> dirtyContract;
+    if (vmType == global::ca::VmType::EVM)
+    {
+        Account launchAccount;
+        if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0)
+        {
+            ERRORLOG("Failed to find account {}", strFromAddr);
+            return;
+        }
+        std::string ownerEvmAddr = evm_utils::GenerateEvmAddr(launchAccount.GetPubStr());
+        ret = TxHelper::CreateEvmCallContractTransaction(strFromAddr, strToAddr, strTxHash, strInput,
+                                                         ownerEvmAddr, top + 1,
+                                                         outTx, isNeedAgentFlag, info, contractTip, contractTransfer,
+                                                         dirtyContract);
+        if(ret != 0)
+        {
+            ERRORLOG("Create call contract transaction failed! ret:{}", ret);        
+            return;
+        }
+    }
+    else
+    {
+        return;
+    }
+
+
+    int sret=SigTx(outTx, strFromAddr);
+    if(sret!=0){
+        errorL("sig fial %s",sret);
+        return ;
+    }
+
+    std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    outTx.set_hash(txHash);
+
+    ContractTxMsgReq ContractMsg;
+    ContractMsg.set_version(global::kVersion);
+    TxMsgReq * txMsg = ContractMsg.mutable_txmsgreq();
+	txMsg->set_version(global::kVersion);
+    TxMsgInfo * txMsgInfo = txMsg->mutable_txmsginfo();
+    txMsgInfo->set_type(0);
+    txMsgInfo->set_tx(outTx.SerializeAsString());
+    txMsgInfo->set_height(top);
+
+    std::cout << "size = " << dirtyContract.size() << std::endl;
+    for (const auto& addr : dirtyContract)
+    {
+        std::cout << "addr = " << addr << std::endl;
+        txMsgInfo->add_contractstoragelist(addr);
+    }
+
+
+    if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
+    {
+        Vrf * newInfo=txMsg->mutable_vrfinfo();
+        newInfo -> CopyFrom(info);
+
+    }
+ 
+    auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    {
+        ret = DropCallShippingTx(msg,outTx);
+    }
+
+    DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
+}
+
+
+void test_contact_thread(){
+    ReadContract_json("contract.json");
+    std::vector<std::string> acccountlist;
+    MagicSingleton<AccountManager>::GetInstance()->GetAccountList(acccountlist);
+   
+    jobs_index=0;
+    perrnode_index=0;
+    int time_s;
+    std::cout << "time_s:" ;
+    std::cin >>  time_s;
+    std::cout << "second:";
+    long long _second;
+    std::cin >> _second;
+    std::cout << "hom much:";
+    long long _much;
+    std::cin >> _much;
+    int oneSecond=0;
+    while(time_s){
+        oneSecond++;
+        std::cout <<"hhh h" << std::endl;
+        jobs[jobs_index].fromAddr=acccountlist[perrnode_index];
+        test_pool.schedule(boost::bind(ContrackInvke, jobs[jobs_index]));
+        std::thread th=std::thread(ContrackInvke,jobs[jobs_index]);
+        th.detach();
+        jobs_index=++jobs_index%jobs.size();
+        perrnode_index=++perrnode_index%acccountlist.size();
+        ::usleep(_second *1000 *1000 / _much);
+        if(oneSecond == _much){
+            time_s--;
+            oneSecond=0;
+        }
+    }
+}
 
 
 void GenKey()
@@ -143,6 +393,7 @@ int GetBounsAddrInfo()
 }
 
 #pragma region netMenu
+
 void SendMessageToUser()
 {
     if (net_com::SendOneMessageByInput() == 0){
@@ -675,7 +926,7 @@ int ImitateCreateTxStruct()
     uint64_t time = global::ca::kGenesisTime;
 
     CTransaction tx;
-    tx.set_version(0);
+    tx.set_version(global::ca::kCurrentTransactionVersion);
     tx.set_time(time);
     tx.set_n(0);
     tx.set_identity(addr);
@@ -986,7 +1237,7 @@ int ImitateCreateTxStruct()
 
     CBlock block;
     block.set_time(time);
-    block.set_version(0);
+    block.set_version(global::ca::kCurrentBlockVersion);
     block.set_prevhash(std::string(64, '0'));
     block.set_height(0);
 
@@ -1247,11 +1498,11 @@ void GetTxHashByHeight(int64_t start,int64_t end,std::ofstream& filestream)
         }
         txTotal += txHashCount;
         blockTotal += tmpBlockHashs.size();
-        filestream  << "height: " << i << " block: " << tmpBlockHashs.size() << " tx: " << txHashCount  << std::endl;
+        filestream  << "Height >: " << i << " Blocks >: " << tmpBlockHashs.size() << " Txs >: " << txHashCount  << std::endl;
     }
 
-    filestream  << "block sum " << blockTotal  << std::endl;
-    filestream  << "tx sum " << txTotal   << std::endl;
+    filestream  << "Total block sum >:" << blockTotal  << std::endl;
+    filestream  << "Total tx sum >:" << txTotal   << std::endl;
     //debugL("..............");
     std::vector<std::string> startHashes;
     if (DBStatus::DB_SUCCESS != dbReader.GetBlockHashsByBlockHeight(localStart, startHashes))
@@ -1293,17 +1544,17 @@ void GetTxHashByHeight(int64_t start,int64_t end,std::ofstream& filestream)
     std::sort(endBlocks.begin(), endBlocks.end(), [](const CBlock &x, const CBlock &y)
               { return x.time() < y.time(); });
 
-    uint64_t timeDiff = 0;
-    if (endBlocks[endBlocks.size() - 1].time() - endBlocks[0].time() != 0)
+    float timeDiff = 0;
+    if (endBlocks[endBlocks.size() - 1].time() - startBlocks[0].time() != 0)
     {
-        timeDiff = (endBlocks[endBlocks.size() - 1].time() - endBlocks[0].time()) / 1000000;
+        timeDiff = float(endBlocks[endBlocks.size() - 1].time() - startBlocks[0].time()) / float(1000000);
     }
     else
     {
         timeDiff = 1;
     }
     uint64_t tx_conut = txTotal ;
-    uint64_t tps = tx_conut / timeDiff;
+    float tps = float(tx_conut) / float(timeDiff);
     filestream << "TPS : " << tps << std::endl;
 }
 
@@ -1326,11 +1577,9 @@ void TpsCount(){
     std::string EndW = std::to_string(end);
     std::string fileName =  "TPS_INFO_" +StartW +"_"+ EndW+".txt";
     std::ofstream filestream;
-    filestream.open(fileName,std::ios::app);
-    for(int i = start;i < end;){
-        GetTxHashByHeight(i,i+100,filestream);
-        i+=100;
-    }
+    filestream.open(fileName);
+    GetTxHashByHeight(start,end,filestream);
+
      
 }
 
@@ -1801,10 +2050,10 @@ void PrintBlockCache()
 //    std::cout << "input height :";
 //    int height;
 //    std::cin >> height;
-//    std::map<uint64_t, std::set<CBlock, CBlockCompare>> _cache;
-//    MagicSingleton<CBlockCache>::GetInstance()->GetCache(_cache);
-//    auto iter = _cache.begin();
-//    for (; iter != _cache.end(); ++iter)
+//    std::map<uint64_t, std::set<CBlock, CBlockCompare>> _transactionCache;
+//    MagicSingleton<CBlockCache>::GetInstance()->GetCache(_transactionCache);
+//    auto iter = _transactionCache.begin();
+//    for (; iter != _transactionCache.end(); ++iter)
 //    {
 //        if (iter->first == height)
 //        {
@@ -1830,7 +2079,7 @@ void GetRewardAmount()
         std::cout<< "input invalid" << std::endl;
         return ;
     } 
-    std::cout << "Please input the base58address：";
+    std::cout << "Please input the base58address:";
     std::cin >> addr;
     
     if(!CheckBase58Addr(addr))
@@ -2157,4 +2406,349 @@ void TestManToOneDelegate()
     }
 
     std::cout << "testNum: " << testNum << std::endl;
+}
+
+int ImitateCreateTxStruct_V33_1()
+{
+    Account acc;
+    if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(acc) != 0)
+    {
+        return -1;
+    }
+
+    const std::string addr = acc.GetBase58();
+    uint64_t time = global::ca::kGenesisTime;
+
+    CTransaction tx;
+    tx.set_version(0);
+    tx.set_time(time);
+    tx.set_n(0);
+    tx.set_identity(addr);
+    tx.set_type(global::ca::kGenesisSign);
+
+    //Check whether the Genesis account is in the address list
+    std::vector<std::string> base58List;
+    MagicSingleton<AccountManager>::GetInstance()->GetAccountList(base58List);
+    if(std::find(base58List.begin(), base58List.end(), global::ca::kInitAccountBase58Addr) == base58List.end())
+    {
+        std::cout << "The Genesis account is not in the node list !" << std::endl;
+        return -2;
+    }
+
+    std::map<std::string,uint64_t> addrValue =
+    {
+        {"12u85eP4Kd6NPwA1btZY2rZk8BQZvPZ7LJ",11000},
+{"16hCNpdxF94Mm3QDZ1F9AXS8UPjaE9AvXB",11000},
+{"18oM7XVJuHQCKwrQq8vs3habQ5dJoQmSva",11000},
+{"16Z5ALbkeYMh5gCES8HFoSC14kzHpvJqpq",11000},
+{"1w6jWxBjgGiw4h9x6G9BsCGkEgR5vZo8W",11000},
+{"1GyPLVwWDtKnYN4eP3UfKQhMUZyzSAUom3",11000},
+{"156ctQvkTqS23BwrCZ7pXpZELk7u7JmJBF",11000},
+{"122q7Erg1bcrexAjNU6SyB3ZiCyE4G79yt",11000},
+{"1DBZbzUHYbdZZ7csZ5DRtLpherYo3JBK3E",11000},
+{"1AhKA4UZEvZPj8XDC5NFi13cS91pKyuw3P",11000},
+{"1E5nfVSZGEecAbfiyhDjPLHxnkpMtzMuRu",11000},
+{"1LiDzQ8tKjBbBMdYWHEn37czVQD65yXQy3",11000},
+{"1NjgWZCzaz22kKj6NLerYhotv5BUsS3mkZ",11000},
+{"1K531keawuuECY8g5E12wGxzs9LWjrQWZc",11000},
+{"16tuYNcascTvKfUR3ENNLE9EuZDX7DKocd",11000},
+{"1AhuZC8QEF1YpkJKEdSJt34JcxLvXocwDm",11000},
+{"1CyUoFGRMWoHQuw4ufRLXqKEeB8aUM2MkF",11000},
+{"1P1MmDxzUnFHffCZvgyowYbfFN84wAPhuZ",11000},
+{"178gmqQdoYtx2dY6myaqz8KFCn9EP6VuoV",11000},
+{"1B6qci2h5717p72n2PEDm2yELjDjPthihK",11000},
+{"1GVco1eXRwtjjZbT4qDuyDAsSiJGMtkUiY",11000},
+{"1CwUfVAxT4EHLuTUaTS7A2jErjhPRfrtqN",11000},
+{"16pF1KiSX61Dgt5JtkCzZg6ioqTpqXRbgz",11000},
+{"127UrEKXvrPCiCFhyoxDBpWBAQCY83uN4b",11000},
+{"13EgBSQKFYZGB8DcejxgcY7QSkFgcrZDSf",11000},
+{"13cyQwgzdo2HhAqP1adRVgZh4sd125ehHt",11000},
+{"12Hiko2c1UKtP6vRxNWJ2USpLiy1YSDuxo",11000},
+{"13woAE1ALKRcEGQ5U11eudCkqCsBHLgc5M",11000},
+{"14dVkX6d1dMbLRJNjCGXXitjZZ5h5T726z",11000},
+{"18hXG5nyWnMPPnzEhusFQcGxzEnSfTGahn",11000},
+{"14FLEXVvPZ5aZSVZcawr9wj2QfzDaNWAme",11000},
+{"19A8eq4oWxjdoL7xtreuJoMvwSWrGDED4b",11000},
+{"14KXJsZibiPYSc2XQXGQscWd49aur9YkAG",11000},
+{"19WFBXw6JuwnfjjUgPWbgupYYYMs2S7Lqy",11000},
+{"14PQVCepWpQ1dcfMLoyNYfTBs67vAtoZTb",11000},
+{"1ANwkbyrXnqSNiwZd9UFxLyAmqxMWhU9m9",11000},
+{"1539VtN5V2ipGRCNCVVsQjvAAvbip4UapD",11000},
+{"1AUkq7cXFtCqjoX9NvbAJ4GS3bhWyzZuwk",11000},
+{"164ai1J9vSbLFGytx1gZmTn3qiC3aDATMk",11000},
+{"16aFNhQf6hCvUFocXPKH8GnDDp4b6F5ukq",11000},
+{"16q7ajCKtLG6FyFN5ciPUvK6YmEDkKvxLL",11000},
+{"177uvL6GYNs7gsws2o13HGfeftpQfsUwit",11000},
+{"17ejqTV3PjSXR3KVmZamfaox2FB5jg4Sc2",11000},
+{"17fYyyHk6mFy92WieXMDVXzvk1x1ksGmRf",11000},
+{"1E82Jaz89gVABKGqs3Pn7rKBcCCyjwxyvF",11000},
+{"17n3Q6DyC8dXTFojKQ8PYxPzKAEAmCXZpo",11000},
+{"1ETLYLT66TNb54UwxH3hRfyxeDf7u6iQHi",11000},
+{"186RrLPg7DkwrPbVLeL2j3MpvqNVn1bAzH",11000},
+{"1FcTKypjsSyiCrxBiBocKsQsy1ucJANqKy",11000},
+{"18uyNbbQAJDGHnStNfMTnzMeg7TMpVdcso",11000},
+{"197w59A23K1ZChTWnHowSLzUfz9FUo164R",11000},
+{"1KPdcT36MqJnjrjjUTSA6WhzqCMzEERcAs",11000},
+{"19vwRb565qe8x5kuavxxkUqUZc3zGZdzL8",11000},
+{"1MV2T6p9AFcrAb8jnothJwcDT9PighWMX1",11000},
+{"1MsWV5VWEXEuXKa9Ma3zXYMbwR4WH1AAmS",11000},
+{"1Aie8HmxsXQxVXes5bJ6phu1zMRQKkjhKS",11000},
+{"1AmTVsnFfi4GHNKWKpniaGWP9jH1hxUAwF",11000},
+{"1NSyG35kgR6ZbxHnqPBcoXN2toAoXgZ4LW",11000},
+{"1AQiyZXZrYsLe5MszQMiQaFZxGzpjBKfCg",11000},
+{"1jvpxsXgQpDkEJifbiYw2J3M1xeNTV3By",11000},
+{"1AZXE1XaCxDXcCSCsaBD35DLAykXwEXGtU",11000},
+{"1B2pHegoTXTNu8nMFKYUroFaJBn2K5TEiW",11000},
+{"1B9oXEqMeX5dTvyyiEC29a4W97g1azQnAr",11000},
+{"1BHAmbTgCApUWyxVPn4CQa3Xnz7sfquvk1",11000},
+{"1Bv52v6Fw7bRcbqgqiXspU9zthwcrL9UcW",11000},
+{"1BxiGEV4fa1NhMcFhqKDTWzVBnpPaFaR3H",11000},
+{"1BxZZhA93BL6EWBoEA9T9XX2m9YgMLiirC",11000},
+{"1Ce3ZjRW9ktEo9Q9BEL9WEvNECbWgzBAQn",11000},
+{"15QannrnHMqR6UZsjGx4EsrC743A8rBbza",11000},
+{"1DS9nxYVCMD7kj3mamwys1Kr8d94A8Yjde",11000},
+{"1E2xrgUkxp25dPuryFA3BHezFNNuBG6hX3",11000},
+{"1EEXbLcAXrPBWP85RnLwfpe6j8MNfncp6b",11000},
+{"17zTS8iK64HzkKy9qUHXgYSxT27FNQhABB",11000},
+{"1EfrxA82K81L3u4rYWRezVudF68AwwJRWW",11000},
+{"1MR2uVW9ZmLoXqUXJkn6Ugf6modFHpVrS3",11000},
+{"15gTa5j7CKZVSVLAfsudeDY6oWb7AfunGr",11000},
+{"1NGJp7cmMj33Udk4dYDfXPCwzfQfKmKiRy",11000},
+{"1EHPSo6LGmSeSxmqx5v82o8EYSpk6yC2Kw",11000},
+{"1M6iEr78rcBR8JjxMGbZ5q5arNHhtyVxW1",11000},
+{"134b5AHqGpT6DmrHssiuBWySkBEt8uQ74h",11000},
+{"1JDYnkr8x8kQgxyKnuwWk7o8yZwQ6eUtt4",11000},
+{"1GLseeESXE8CJqNP5ydGsquXN7Qq2YxGwF",11000},
+{"1Gvyq2qFgkVfiA5jEb9fmssg9Rnb8GdkWX",11000},
+{"1DW4y1iX16Mok5usp1gco8ZZ9SxS8o5Prr",11000},
+{"1G36gQ291aBqTcufeRUrBTznP7Fz6ijAdi",11000},
+{"1HKoSEy9aogGk14PJL2PPmB94dy3Pz5CtR",11000},
+{"1Fb7aeSxAuyzJW1WoGZCo3LWp59eikadav",11000},
+{"1NDxNkscnHDFamtYeFNNSYhYsEguDdxLWk",11000},
+{"1QBrN93p7JXCPpdtEpU66mcfiWEJghLB5v",11000},
+{"1DJ86UGm4jRozPNXrpKXQDtUSmKWnhwW2U",11000},
+{"1KC1pyW8YSGF1pTUmfFmHAgy1rKEe1XThD",11000},
+{"1KUHxfyfc7sHxSE6ZnJB1cEqTWqvpB8b3c",11000},
+{"1KvW2gS34MTSUJ2DAeEBxJNVr61ZrD6Bmy",11000},
+{"1MZ3W4UaR8nQqhMckf3xveUJAGunvr1qs5",11000},
+{"1N7MhG61y3eLANLY9VSQ3CtaKV9NUC9RB7",11000},
+{"1HYn9c3FefchcDDqki6WTFSaFM8qEhKnhB",11000},
+{"1NEzai1ot46MRztiw1RKfnrsPJ8bwhgEps",11000},
+{"1NJKxboLeFVEGgxDZyZcSAJ2ettLfRurue",11000},
+{"1PLTj3RpxhfUFk5rGC1hRqTafrk9tvf6sa",11000},
+{"12DqHdKJnVsoA7pSfwWaz8EMguqP2AX5tc",11000},
+{"141s7evrcnBULuQbSPFYycsFcrMf2RZys1",11000},
+{"145hthEbZWv56qpdxLCXvd51aUG1bUQSUB",11000},
+{"167FkujkDru1UstE5eT7aNk2vfUEwN3ZVh",11000},
+{"19F2MbfCT5DFoHNeGyN1shuXrcU9wvou5k",11000},
+{"1B4oeWMQAk4ty2t2FCifedb21N4WG6Cn4o",11000},
+{"1PjE9WazBd8f9rCXvkjyGDQ8bznzujBvJQ",11000},
+{"14P9s65WLCSag8Bgw77T3UnAeEox3YncWR",11000},
+{"134YJkgQrnTivb8Qn1ekAYWXnnmLNSwuJL",11000},
+{"1AfwPgJWdfMivbBtcckVtjLeP52PaqgrF4",11000},
+{"1AnSMArzacpLFCwriy2ZY3bAu8Ysi4a1z2",11000},
+{"1CEcRrPV6FEK7ngDqfyvvZKxVonKMZtv82",11000},
+{"1F36o1nyjzvuVk4EFNGLaYXbaA96Uk5EvL",11000},
+{"1LnEc9bWLSDEAnw59sxHiyRRpsbjuvgd1z",11000},
+{"1MLg9XFs8Gu4ZQaoEe4zRUWTyXibLgL5Hi",11000},
+{"16ARNbmtqgyt7N6UgcbLqfqGN8FoDeTkYt",11000},
+{"16iAd4spDyMMoS1tfoPgnt52bxhYdH5Wae",11000},
+{"17enPcq4ef7Bqu1eKZpDiD66daddNnvJe6",11000},
+{"1EjpybxPL5T2dvE7JnRcgvimT9FLQ3VCDH",11000},
+{"12GuJ9FtcpXdX5EkUCsQA4FHwgiH3s1X5H",11000},
+{"15q5TwcopH5FV4rBKybKsNULN3fpsxgUPa",11000},
+{"1GQnEbEnbkrgSg2mMqzv2DGPMEgJHtcihu",11000},
+{"1N4akFjmo4DvA9uKEGzbou94ZWsyunZi78",11000},
+{"17hZU4AGKRUfodVj9ZMo5Kr3oxDojtTs7f",11000},
+{"1818hFhhRED76sf6H1bqLANZRrcz7BZzJH",11000},
+{"19qAy8D5XJJ9ag92Qsozxfm9aD9nu7XtZY",11000},
+{"1PUT79Dq9k2i4zrnDuUWFPGdNzmnLanmFs",11000},
+{"16F58JQXfjwG4ADDm78a5WaB8AmbB11L5V",11000},
+{"18yNpiJq6Jag8EB9FmEF15ae4XEcSktVTS",11000},
+{"19cbwSQXJ1jU58WsaHZ5YNahxf9r48aUuB",11000},
+{"1B1wbY9ozppm5o3ZqdQb91TEj17ADHkZvJ",11000},
+{"1CXEDDHz4C87oUp9muZQeahLJnBB8BkG9J",11000},
+{"1Jtmo85Lbdd8rtfpfEHDNecRFF4i6DAzsU",11000},
+{"157FwHkeJkMreCPJtphVAVua9fpr1zG3iM",11000},
+{"15staEsUjVSx4nR8XUvdkbgrddJgAYtBTe",11000},
+{"167SxvzwWJBpufGsd7JbTrqMHGW5QBsn3v",11000},
+{"169PEZd4Scw5RRB9cysnJHzGCjncrCESnN",11000},
+{"17XGQK1SnXiYzr9Xmp2CLRCY9YZWNRkhNb",11000},
+{"18ijeniFNafhkBFf69J5gLLJN62yP7yuVu",11000},
+{"1ACT3a177B9gw7FQMWHLizSYdMM8ZN9asy",11000},
+{"1AHFpKEJXQhQd8PYxfNL24LLNGgoGufeH6",11000},
+{"1Ba3zhzPc4kobAikKFUvXSBAFLAXoXqrzN",11000},
+{"1Co3XYAffT29bJqhZ4izDuYGhwHz4i5fhj",11000},
+{"1KgxmFvEcsg1fzoM3YvTfceqRfJZEytgAz",11000},
+{"1LGDt4iezd4fhHWtALUZhfKPnCYdUiWiSi",11000},
+{"1PzhJe5zbi7X7MCPaHi9aFqbFE498eKDGy",11000},
+{"1Pxc1hvoDguffu9rJU6e76ZgceSrgJfKrL",11000},
+{"1QEqhMiqmAtvu2kiGnUC4jz9NEBFYmMtfA",11000},
+{"1AMJaWwcVp7tqCwgTL4Bt9ed37nqNqSe3f",11000},
+{"1GoshyMJ9GwPjcz5MREfs5w1yWVwS8dV33",11000},
+{"15cNv5FRhyC2qMGHWri7kSe27tY7jxG8PN",11000},
+{"16J1xFYdwZMnhZV4b5D8vqVK9Zg4w9ApMd",11000},
+{"17st4yEMBEyPFXoq9fhDyQjCVSvX5Vic8D",11000},
+{"19UEm1oSz2MBuzZiMhUHbCPx55ruNuopKv",11000},
+{"1LiVZ9yzuC8sDUidRgWdFNyUj3D9XN2ean",11000},
+{"12AqaisLxPiwVEnLGmUzhtU9pmY8REUy8z",11000},
+{"13VfDcqskzh79FctagngjRYgxdVkAHDAkL",11000},
+{"15meAw8oY331vX3aR6J42Gu2Q6wpRLFurN",11000},
+{"18GgjWPPyc13xN47f2jXqaiZF8pxaTWRbF",11000},
+{"18funjm4jc5cMJLnrBdYwJTSW9J9tgFMyd",11000},
+{"1EP9szCHHZV9EqiqWesQM6CRWFR9a5HSYT",11000},
+{"1KGkWaHvKUEeWd9kvyw9NQJP1iW8K6ypqV",11000},
+{"1KUMpSSsZdXvc6hn8ZbWpmwCjbuo97Y266",11000},
+{"1Kd89vyEasL9K85Y8Nu917WXqMWwJnsadt",11000},
+{"1LA9y2NMUrCwiq2BSbvaCYFFpbiUTEA5a9",11000},
+{"1kwronToBoXvvU3R4GmeVVx1bkvAF6Qjm",11000},
+{"15z8CAU5gY2C87ia1pdh1fH4QBPsjot7E2",11000},
+{"123ouHPfkx1kfRpqDVquwKbzGeUMuuqsHG",11000},
+{"12P6Qxae46kFzAS8cEo5vLLjFo7xztXuRJ",11000},
+{"12fYj9z8krHxVz8Ligga2GH13sQihVCdm7",11000},
+{"13JocapVGDXHSK1zayzLAu1mY67kfAgXLv",11000},
+{"13MQ7gmA55gYSos6teguwJkraGEamQwAZh",11000},
+{"14GKR4tTc9PorMkmmWQ5NCmMU9TENF8E4N",11000},
+{"159TNWoJQGPQrNaTF2yXr2u7iJFSFKZPWo",11000},
+{"16Vw2yrqHY7DMLD6f9xRkMGspQYG7PPu7j",11000},
+{"16YdMiHdF7qY3EQXc1zyqMcmXeEhpmZugH",11000},
+{"17k1BnxYQUVPRhkpWZCSBorkQe9rgDgbij",11000},
+{"17rmdqxEmAgLFcmPSR5Ag1wofa1aTQWFpx",11000},
+{"1977piKCvvBFJxR9nrQmRD5zWvDAbYJts6",11000},
+{"19VUVEYHYhSyQaBoATuUKKYXZkL9ShiCMX",11000},
+{"19jtGaPiM1i7MWLJEwjDsVhks6AVto8X2M",11000},
+{"1Dwk8hnovPGYzTxhLe13g7HW2YhFiKC8sD",11000},
+{"1EgH9ysxmMUPUiC3aa1D1sguBNosA7idqZ",11000},
+{"1FCrQnGfaymu8DtgdVLCTiA6uvKjFMDDpS",11000},
+{"1FL5iXBYiB7rrzbZTE9miJTjmkMa1unB6y",11000},
+{"1HYGe9LwNAcQ1uBzWSUhnLwAg3tRq8QBKs",11000},
+{"1Hvf7SoMn24h8z6RyA8h6HgPAHHvD74KSj",11000},
+{"1J5LgtkEsfyKFvqL7YkdvgabEx73M8atQ4",11000},
+{"1Jc8GKxMQbZESejB3RVDa9i3SAaKNgztVi",11000},
+{"1JyVo4FaVBoqAKhK6amJv1QqswzvoUtoy4",11000},
+{"1Lr2x7L6hhHmPdeueinLQt8ZsKbUNMnqXQ",11000},
+{"1MXJHzEnei1TFMwWFQGzv5oTVnuDNCkGYM",11000},
+{"1PHYcQUYq5mxxipxHeiCVA19HCMXb1PVCj",11000},
+{"1SKpzyMJ6SKaMqKrdFa1iLk85iY6x4BM7",11000},
+{"1PhfueW4F4Ywn6MYctbUH1ScpanbDQC9Zm",11000},
+{"1AMH7LY6fky5TBRfiYjG2b3hpyV6VFQeUX",11000},
+{"1Gw3C7yvLtXTQjorpBULLuPESUawPzLcJv",11000},
+{"18eiKdJ8XpvfZfhzJzpDuNvb82BtnDvLME",11000},
+{"15JSZvsbyPPBFyzRsrsG4uRJWgD4nKpxuv",11000},
+{"1GrY4H1im2QVbyTZPdABTTxbekHJA9YMzS",11000},
+{"1MSqsQ7fKqVgPVYSDGcg9iHbs9zjjqe3Uf",11000},
+{"1DHuTpYQ3uj8VcoFJizVriAWqwioqCUmvL",11000},
+{"1HrCWNuvKN2CFHJc3cYatzEzwqbWGZdjGo",11000},
+{"1FX8jQcLjZ5QT6Grs6pQ7e2dDiLVKhhdoD",11000},
+{"18gDVThNoTHE85JJ9jHcxT5ff83X6PZAgJ",11000},
+{"1KkvAJV96iMXNczaF7VSLEZqz9m3yGxuad",11000},
+{"14z6ZhoXA65JV6GSSKUDihompqqLGL9XfB",11000},
+{"1NoTT4BD78H6zPjCHru9usJu1u5GgmwwFq",11000},
+{"145mgdgJvMhUDQu5axgZ9yh5PkE9C435S9",11000},
+{"19pcC9beqYLvVci2eWHR1bXsZzP83gsZ5G",11000},
+{"1BWjxb6sKPkmoXu48qA5TZLeZv8ieqnHk8",11000},
+{"1HtF6AbMEFte5x8LwufexSRD9NNAKnkaga",11000},
+{"18KubKseuWBfSGrzbgbp9Mn6tiAsENiTnW",11000},
+{"1J1VfmwM53quMQqLPbLWMA26QzQm9zPTBS",11000},
+{"18cNdf1kUDSGxsGF8jcuwabUyQFBvtkTin",11000},
+{"17nCtX5MCBYVwfgucPTeSeyNcq2nsXUwmR",11000},
+{"15MsLuunKRuWt9VHcJdLMzV66bJv3F1dbe",11000},
+{"1KbpoiLpmHQcy7juNmjkQFwRdywHp7rFrA",11000},
+{"1AC7LhsB8kt84FRvpsn8kU3fd7UYJ44Yku",11000},
+{"1EjdKxcjeBiYe842R8CtPkYVn7D2xEj3V8",11000},
+{"1GEFLd7NxEYAFpHBcXntJiuUU5MK963L2g",11000},
+{"1PKaASFmeZuPQWBNcqrGyNKrNj15XvgECq",11000},
+{"13FAh7T58jhiSayFH4pErqq3QMF5iCK8uM",11000},
+{"14dfVKuwTm5sNLssG8nnqadzHFox9DcXM5",11000},
+{"1CwsqnwhDV3j5cR6d8xsxZ5xNfND3ip3PW",11000},
+{"1BF2zjJBUc3xgZ9q1Ed93gspp9tdvis8fX",11000},
+{"1BkMKqjiufgXkrFbNEYFUpbKoSiLbvUDZL",11000},
+{"13bZSE36m1CYQAE49X7M14HWx3ygaGPo2C",11000},
+{"14gVFeSPUZYUhseb6EHW7pLFeKyUKDwJe6",11000},
+{"12oD2zNMzmW9F9i2x1TDRBjKiYWfLvxQNs",11000},
+{"1GXazUPXDwS3merbdMDGc7oj92C58RvAVz",11000},
+{"1NRYv3LjnKif8B59oQTGg1trSFAxXqJTmq",11000},
+{"1Lb5BRnFoadifqRyrwe7fZrdZyMeGPvbG5",11000},
+{"18CbFRTYLRPpU8MJqDRGPBjv8dk8xpbnuH",11000},
+{"1BJEHjppW76FHiTwr4uKVYEpp1m6FH5eK7",11000},
+{"1PFwEPx6fjRmdihUpb6pPeY8fzcBD58Cuh",11000},
+{"12x9jgAgs7FAiFGX1UoUwNNLGrWJEKJ9yR",11000},
+{"195Me9w2oAGjfzwqAdo8f7tvCvVhQhkrnv",11000},
+    };
+
+    CTxUtxo *utxo = tx.mutable_utxo();
+    utxo->add_owner(addr);
+    {
+        CTxInput *txin = utxo->add_vin();
+        CTxPrevOutput *prevOut = txin->add_prevout();
+        prevOut->set_hash(std::string(64, '0'));
+        prevOut->set_n(0);
+        txin->set_sequence(0);
+
+        std::string serVinHash = Getsha256hash(txin->SerializeAsString());
+        std::string signature;
+        std::string pub;
+
+        if (acc.Sign(serVinHash, signature) == false)
+        {
+            return -2;
+        }
+
+        CSign *sign = txin->mutable_vinsign();
+        sign->set_sign(signature);
+        sign->set_pub(acc.GetPubStr());
+    }
+
+    {
+        CTxOutput *txout = utxo->add_vout();
+        txout->set_value(67392763 * global::ca::kDecimalNum);
+        txout->set_addr(addr);
+
+        for(auto & obj : addrValue)
+        {
+            CTxOutput *newTxout = utxo->add_vout();
+            newTxout->set_value((obj.second + 1)* global::ca::kDecimalNum);
+            newTxout->set_addr(obj.first);
+        }
+    }
+
+    {
+        std::string serUtxo = Getsha256hash(utxo->SerializeAsString());
+        std::string signature;
+        if (acc.Sign(serUtxo, signature) == false)
+        {
+            return -3;
+        }
+
+        CSign *multiSign = utxo->add_multisign();
+        multiSign->set_sign(signature);
+        multiSign->set_pub(acc.GetPubStr());
+    }
+    
+    tx.set_txtype((uint32)global::ca::TxType::kTxTypeGenesis);
+
+    tx.set_hash(Getsha256hash(tx.SerializeAsString()));
+
+    CBlock block;
+    block.set_time(time);
+    block.set_version(0);
+    block.set_prevhash(std::string(64, '0'));
+    block.set_height(0);
+
+    CTransaction *tx0 = block.add_txs();
+    *tx0 = tx;
+
+    nlohmann::json blockData;
+    blockData["Name"] = "Transformers";
+    blockData["Type"] = "Genesis";
+    block.set_data(blockData.dump());
+
+    block.set_merkleroot(ca_algorithm::CalcBlockMerkle(block));
+    block.set_hash(Getsha256hash(block.SerializeAsString()));
+
+    std::string hex = Str2Hex(block.SerializeAsString());
+    std::cout << std::endl
+              << hex << std::endl;
+
+    return 0;
 }

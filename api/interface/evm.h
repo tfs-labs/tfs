@@ -44,7 +44,16 @@ namespace rpc_evm
       int RpcFillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType txType,
           const std::vector<TransferInfo> &transFerrings, const nlohmann::json &jTxInfo,
           uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info, const uint64_t& contractTip);
-      
+
+       /**
+       * @brief       
+       * 
+       */
+      int RpcFillOutTx_V33_1(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType txType,
+          const std::vector<TransferInfo> &transFerrings, const nlohmann::json &jTxInfo,
+          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info, const uint64_t& contractTip);
+    
+
       /**
        * @brief       
        * 
@@ -54,11 +63,32 @@ namespace rpc_evm
                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
                                                  TxHelper::vrfAgentType &type, Vrf &info);
 
+
+      /**
+       * @brief       
+       * 
+       */
+      int RpcCreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, const std::string &OwnerEvmAddr,
+                                                 const std::string &code, uint64_t height,
+                                                 const nlohmann::json &contractInfo, CTransaction &outTx,
+                                                 TxHelper::vrfAgentType &type, Vrf &info);
+
       /**
        * @brief       
        * 
        */
       int RpcCreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
+                                               const std::string &txHash,
+                                               const std::string &strInput, const std::string &OwnerEvmAddr,
+                                               uint64_t height,
+                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info,
+							      const uint64_t contractTip,const uint64_t contractTransfer,bool istochain);
+
+          /**
+       * @brief       
+       * 
+       */
+      int RpcCreateEvmCallContractTransaction_V33_1(const std::string &fromAddr, const std::string &toAddr,
                                                const std::string &txHash,
                                                const std::string &strInput, const std::string &OwnerEvmAddr,
                                                uint64_t height,

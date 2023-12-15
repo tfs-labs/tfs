@@ -51,6 +51,12 @@ extern BuildBlockBroadcastMsgDefaultTypeInternal _BuildBlockBroadcastMsg_default
 class BuildBlockBroadcastMsgAck;
 struct BuildBlockBroadcastMsgAckDefaultTypeInternal;
 extern BuildBlockBroadcastMsgAckDefaultTypeInternal _BuildBlockBroadcastMsgAck_default_instance_;
+class ContractPackagerMsg;
+struct ContractPackagerMsgDefaultTypeInternal;
+extern ContractPackagerMsgDefaultTypeInternal _ContractPackagerMsg_default_instance_;
+class ContractTxMsgReq;
+struct ContractTxMsgReqDefaultTypeInternal;
+extern ContractTxMsgReqDefaultTypeInternal _ContractTxMsgReq_default_instance_;
 class SignNodeMsg;
 struct SignNodeMsgDefaultTypeInternal;
 extern SignNodeMsgDefaultTypeInternal _SignNodeMsg_default_instance_;
@@ -69,6 +75,8 @@ extern VrfDefaultTypeInternal _Vrf_default_instance_;
 PROTOBUF_NAMESPACE_OPEN
 template<> ::BuildBlockBroadcastMsg* Arena::CreateMaybeMessage<::BuildBlockBroadcastMsg>(Arena*);
 template<> ::BuildBlockBroadcastMsgAck* Arena::CreateMaybeMessage<::BuildBlockBroadcastMsgAck>(Arena*);
+template<> ::ContractPackagerMsg* Arena::CreateMaybeMessage<::ContractPackagerMsg>(Arena*);
+template<> ::ContractTxMsgReq* Arena::CreateMaybeMessage<::ContractTxMsgReq>(Arena*);
 template<> ::SignNodeMsg* Arena::CreateMaybeMessage<::SignNodeMsg>(Arena*);
 template<> ::TxMsgAck* Arena::CreateMaybeMessage<::TxMsgAck>(Arena*);
 template<> ::TxMsgInfo* Arena::CreateMaybeMessage<::TxMsgInfo>(Arena*);
@@ -384,10 +392,35 @@ class TxMsgInfo final :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kContractStorageListFieldNumber = 4,
     kTxFieldNumber = 2,
     kHeightFieldNumber = 3,
     kTypeFieldNumber = 1,
   };
+  // repeated string contractStorageList = 4;
+  int contractstoragelist_size() const;
+  private:
+  int _internal_contractstoragelist_size() const;
+  public:
+  void clear_contractstoragelist();
+  const std::string& contractstoragelist(int index) const;
+  std::string* mutable_contractstoragelist(int index);
+  void set_contractstoragelist(int index, const std::string& value);
+  void set_contractstoragelist(int index, std::string&& value);
+  void set_contractstoragelist(int index, const char* value);
+  void set_contractstoragelist(int index, const char* value, size_t size);
+  std::string* add_contractstoragelist();
+  void add_contractstoragelist(const std::string& value);
+  void add_contractstoragelist(std::string&& value);
+  void add_contractstoragelist(const char* value);
+  void add_contractstoragelist(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& contractstoragelist() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_contractstoragelist();
+  private:
+  const std::string& _internal_contractstoragelist(int index) const;
+  std::string* _internal_add_contractstoragelist();
+  public:
+
   // bytes tx = 2;
   void clear_tx();
   const std::string& tx() const;
@@ -428,6 +461,7 @@ class TxMsgInfo final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> contractstoragelist_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tx_;
     uint64_t height_;
     uint32_t type_;
@@ -1518,6 +1552,418 @@ class BuildBlockBroadcastMsgAck final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_ca_5fprotomsg_2eproto;
 };
+// -------------------------------------------------------------------
+
+class ContractTxMsgReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ContractTxMsgReq) */ {
+ public:
+  inline ContractTxMsgReq() : ContractTxMsgReq(nullptr) {}
+  ~ContractTxMsgReq() override;
+  explicit PROTOBUF_CONSTEXPR ContractTxMsgReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ContractTxMsgReq(const ContractTxMsgReq& from);
+  ContractTxMsgReq(ContractTxMsgReq&& from) noexcept
+    : ContractTxMsgReq() {
+    *this = ::std::move(from);
+  }
+
+  inline ContractTxMsgReq& operator=(const ContractTxMsgReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ContractTxMsgReq& operator=(ContractTxMsgReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ContractTxMsgReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ContractTxMsgReq* internal_default_instance() {
+    return reinterpret_cast<const ContractTxMsgReq*>(
+               &_ContractTxMsgReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    7;
+
+  friend void swap(ContractTxMsgReq& a, ContractTxMsgReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ContractTxMsgReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ContractTxMsgReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ContractTxMsgReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ContractTxMsgReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ContractTxMsgReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ContractTxMsgReq& from) {
+    ContractTxMsgReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ContractTxMsgReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "ContractTxMsgReq";
+  }
+  protected:
+  explicit ContractTxMsgReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kContractDependentAddressFieldNumber = 3,
+    kVersionFieldNumber = 1,
+    kTxMsgReqFieldNumber = 2,
+  };
+  // repeated string contractDependentAddress = 3;
+  int contractdependentaddress_size() const;
+  private:
+  int _internal_contractdependentaddress_size() const;
+  public:
+  void clear_contractdependentaddress();
+  const std::string& contractdependentaddress(int index) const;
+  std::string* mutable_contractdependentaddress(int index);
+  void set_contractdependentaddress(int index, const std::string& value);
+  void set_contractdependentaddress(int index, std::string&& value);
+  void set_contractdependentaddress(int index, const char* value);
+  void set_contractdependentaddress(int index, const char* value, size_t size);
+  std::string* add_contractdependentaddress();
+  void add_contractdependentaddress(const std::string& value);
+  void add_contractdependentaddress(std::string&& value);
+  void add_contractdependentaddress(const char* value);
+  void add_contractdependentaddress(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& contractdependentaddress() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_contractdependentaddress();
+  private:
+  const std::string& _internal_contractdependentaddress(int index) const;
+  std::string* _internal_add_contractdependentaddress();
+  public:
+
+  // string version = 1;
+  void clear_version();
+  const std::string& version() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_version(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_version();
+  PROTOBUF_NODISCARD std::string* release_version();
+  void set_allocated_version(std::string* version);
+  private:
+  const std::string& _internal_version() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
+  std::string* _internal_mutable_version();
+  public:
+
+  // .TxMsgReq txMsgReq = 2;
+  bool has_txmsgreq() const;
+  private:
+  bool _internal_has_txmsgreq() const;
+  public:
+  void clear_txmsgreq();
+  const ::TxMsgReq& txmsgreq() const;
+  PROTOBUF_NODISCARD ::TxMsgReq* release_txmsgreq();
+  ::TxMsgReq* mutable_txmsgreq();
+  void set_allocated_txmsgreq(::TxMsgReq* txmsgreq);
+  private:
+  const ::TxMsgReq& _internal_txmsgreq() const;
+  ::TxMsgReq* _internal_mutable_txmsgreq();
+  public:
+  void unsafe_arena_set_allocated_txmsgreq(
+      ::TxMsgReq* txmsgreq);
+  ::TxMsgReq* unsafe_arena_release_txmsgreq();
+
+  // @@protoc_insertion_point(class_scope:ContractTxMsgReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> contractdependentaddress_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
+    ::TxMsgReq* txmsgreq_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_ca_5fprotomsg_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ContractPackagerMsg final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ContractPackagerMsg) */ {
+ public:
+  inline ContractPackagerMsg() : ContractPackagerMsg(nullptr) {}
+  ~ContractPackagerMsg() override;
+  explicit PROTOBUF_CONSTEXPR ContractPackagerMsg(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ContractPackagerMsg(const ContractPackagerMsg& from);
+  ContractPackagerMsg(ContractPackagerMsg&& from) noexcept
+    : ContractPackagerMsg() {
+    *this = ::std::move(from);
+  }
+
+  inline ContractPackagerMsg& operator=(const ContractPackagerMsg& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ContractPackagerMsg& operator=(ContractPackagerMsg&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ContractPackagerMsg& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ContractPackagerMsg* internal_default_instance() {
+    return reinterpret_cast<const ContractPackagerMsg*>(
+               &_ContractPackagerMsg_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    8;
+
+  friend void swap(ContractPackagerMsg& a, ContractPackagerMsg& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ContractPackagerMsg* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ContractPackagerMsg* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ContractPackagerMsg* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ContractPackagerMsg>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ContractPackagerMsg& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ContractPackagerMsg& from) {
+    ContractPackagerMsg::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ContractPackagerMsg* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "ContractPackagerMsg";
+  }
+  protected:
+  explicit ContractPackagerMsg(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTxMsgReqFieldNumber = 3,
+    kVersionFieldNumber = 1,
+    kSignFieldNumber = 2,
+    kVrfInfoFieldNumber = 4,
+  };
+  // repeated .TxMsgReq txMsgReq = 3;
+  int txmsgreq_size() const;
+  private:
+  int _internal_txmsgreq_size() const;
+  public:
+  void clear_txmsgreq();
+  ::TxMsgReq* mutable_txmsgreq(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxMsgReq >*
+      mutable_txmsgreq();
+  private:
+  const ::TxMsgReq& _internal_txmsgreq(int index) const;
+  ::TxMsgReq* _internal_add_txmsgreq();
+  public:
+  const ::TxMsgReq& txmsgreq(int index) const;
+  ::TxMsgReq* add_txmsgreq();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxMsgReq >&
+      txmsgreq() const;
+
+  // string version = 1;
+  void clear_version();
+  const std::string& version() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_version(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_version();
+  PROTOBUF_NODISCARD std::string* release_version();
+  void set_allocated_version(std::string* version);
+  private:
+  const std::string& _internal_version() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
+  std::string* _internal_mutable_version();
+  public:
+
+  // .CSign sign = 2;
+  bool has_sign() const;
+  private:
+  bool _internal_has_sign() const;
+  public:
+  void clear_sign();
+  const ::CSign& sign() const;
+  PROTOBUF_NODISCARD ::CSign* release_sign();
+  ::CSign* mutable_sign();
+  void set_allocated_sign(::CSign* sign);
+  private:
+  const ::CSign& _internal_sign() const;
+  ::CSign* _internal_mutable_sign();
+  public:
+  void unsafe_arena_set_allocated_sign(
+      ::CSign* sign);
+  ::CSign* unsafe_arena_release_sign();
+
+  // .Vrf vrfInfo = 4;
+  bool has_vrfinfo() const;
+  private:
+  bool _internal_has_vrfinfo() const;
+  public:
+  void clear_vrfinfo();
+  const ::Vrf& vrfinfo() const;
+  PROTOBUF_NODISCARD ::Vrf* release_vrfinfo();
+  ::Vrf* mutable_vrfinfo();
+  void set_allocated_vrfinfo(::Vrf* vrfinfo);
+  private:
+  const ::Vrf& _internal_vrfinfo() const;
+  ::Vrf* _internal_mutable_vrfinfo();
+  public:
+  void unsafe_arena_set_allocated_vrfinfo(
+      ::Vrf* vrfinfo);
+  ::Vrf* unsafe_arena_release_vrfinfo();
+
+  // @@protoc_insertion_point(class_scope:ContractPackagerMsg)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxMsgReq > txmsgreq_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
+    ::CSign* sign_;
+    ::Vrf* vrfinfo_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_ca_5fprotomsg_2eproto;
+};
 // ===================================================================
 
 
@@ -1771,6 +2217,81 @@ inline void TxMsgInfo::_internal_set_height(uint64_t value) {
 inline void TxMsgInfo::set_height(uint64_t value) {
   _internal_set_height(value);
   // @@protoc_insertion_point(field_set:TxMsgInfo.height)
+}
+
+// repeated string contractStorageList = 4;
+inline int TxMsgInfo::_internal_contractstoragelist_size() const {
+  return _impl_.contractstoragelist_.size();
+}
+inline int TxMsgInfo::contractstoragelist_size() const {
+  return _internal_contractstoragelist_size();
+}
+inline void TxMsgInfo::clear_contractstoragelist() {
+  _impl_.contractstoragelist_.Clear();
+}
+inline std::string* TxMsgInfo::add_contractstoragelist() {
+  std::string* _s = _internal_add_contractstoragelist();
+  // @@protoc_insertion_point(field_add_mutable:TxMsgInfo.contractStorageList)
+  return _s;
+}
+inline const std::string& TxMsgInfo::_internal_contractstoragelist(int index) const {
+  return _impl_.contractstoragelist_.Get(index);
+}
+inline const std::string& TxMsgInfo::contractstoragelist(int index) const {
+  // @@protoc_insertion_point(field_get:TxMsgInfo.contractStorageList)
+  return _internal_contractstoragelist(index);
+}
+inline std::string* TxMsgInfo::mutable_contractstoragelist(int index) {
+  // @@protoc_insertion_point(field_mutable:TxMsgInfo.contractStorageList)
+  return _impl_.contractstoragelist_.Mutable(index);
+}
+inline void TxMsgInfo::set_contractstoragelist(int index, const std::string& value) {
+  _impl_.contractstoragelist_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:TxMsgInfo.contractStorageList)
+}
+inline void TxMsgInfo::set_contractstoragelist(int index, std::string&& value) {
+  _impl_.contractstoragelist_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:TxMsgInfo.contractStorageList)
+}
+inline void TxMsgInfo::set_contractstoragelist(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.contractstoragelist_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:TxMsgInfo.contractStorageList)
+}
+inline void TxMsgInfo::set_contractstoragelist(int index, const char* value, size_t size) {
+  _impl_.contractstoragelist_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:TxMsgInfo.contractStorageList)
+}
+inline std::string* TxMsgInfo::_internal_add_contractstoragelist() {
+  return _impl_.contractstoragelist_.Add();
+}
+inline void TxMsgInfo::add_contractstoragelist(const std::string& value) {
+  _impl_.contractstoragelist_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:TxMsgInfo.contractStorageList)
+}
+inline void TxMsgInfo::add_contractstoragelist(std::string&& value) {
+  _impl_.contractstoragelist_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:TxMsgInfo.contractStorageList)
+}
+inline void TxMsgInfo::add_contractstoragelist(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.contractstoragelist_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:TxMsgInfo.contractStorageList)
+}
+inline void TxMsgInfo::add_contractstoragelist(const char* value, size_t size) {
+  _impl_.contractstoragelist_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:TxMsgInfo.contractStorageList)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+TxMsgInfo::contractstoragelist() const {
+  // @@protoc_insertion_point(field_list:TxMsgInfo.contractStorageList)
+  return _impl_.contractstoragelist_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+TxMsgInfo::mutable_contractstoragelist() {
+  // @@protoc_insertion_point(field_mutable_list:TxMsgInfo.contractStorageList)
+  return &_impl_.contractstoragelist_;
 }
 
 // -------------------------------------------------------------------
@@ -3088,9 +3609,501 @@ inline void BuildBlockBroadcastMsgAck::set_allocated_blockhash(std::string* bloc
   // @@protoc_insertion_point(field_set_allocated:BuildBlockBroadcastMsgAck.blockhash)
 }
 
+// -------------------------------------------------------------------
+
+// ContractTxMsgReq
+
+// string version = 1;
+inline void ContractTxMsgReq::clear_version() {
+  _impl_.version_.ClearToEmpty();
+}
+inline const std::string& ContractTxMsgReq::version() const {
+  // @@protoc_insertion_point(field_get:ContractTxMsgReq.version)
+  return _internal_version();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ContractTxMsgReq::set_version(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ContractTxMsgReq.version)
+}
+inline std::string* ContractTxMsgReq::mutable_version() {
+  std::string* _s = _internal_mutable_version();
+  // @@protoc_insertion_point(field_mutable:ContractTxMsgReq.version)
+  return _s;
+}
+inline const std::string& ContractTxMsgReq::_internal_version() const {
+  return _impl_.version_.Get();
+}
+inline void ContractTxMsgReq::_internal_set_version(const std::string& value) {
+  
+  _impl_.version_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ContractTxMsgReq::_internal_mutable_version() {
+  
+  return _impl_.version_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ContractTxMsgReq::release_version() {
+  // @@protoc_insertion_point(field_release:ContractTxMsgReq.version)
+  return _impl_.version_.Release();
+}
+inline void ContractTxMsgReq::set_allocated_version(std::string* version) {
+  if (version != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.version_.IsDefault()) {
+    _impl_.version_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ContractTxMsgReq.version)
+}
+
+// .TxMsgReq txMsgReq = 2;
+inline bool ContractTxMsgReq::_internal_has_txmsgreq() const {
+  return this != internal_default_instance() && _impl_.txmsgreq_ != nullptr;
+}
+inline bool ContractTxMsgReq::has_txmsgreq() const {
+  return _internal_has_txmsgreq();
+}
+inline void ContractTxMsgReq::clear_txmsgreq() {
+  if (GetArenaForAllocation() == nullptr && _impl_.txmsgreq_ != nullptr) {
+    delete _impl_.txmsgreq_;
+  }
+  _impl_.txmsgreq_ = nullptr;
+}
+inline const ::TxMsgReq& ContractTxMsgReq::_internal_txmsgreq() const {
+  const ::TxMsgReq* p = _impl_.txmsgreq_;
+  return p != nullptr ? *p : reinterpret_cast<const ::TxMsgReq&>(
+      ::_TxMsgReq_default_instance_);
+}
+inline const ::TxMsgReq& ContractTxMsgReq::txmsgreq() const {
+  // @@protoc_insertion_point(field_get:ContractTxMsgReq.txMsgReq)
+  return _internal_txmsgreq();
+}
+inline void ContractTxMsgReq::unsafe_arena_set_allocated_txmsgreq(
+    ::TxMsgReq* txmsgreq) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.txmsgreq_);
+  }
+  _impl_.txmsgreq_ = txmsgreq;
+  if (txmsgreq) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:ContractTxMsgReq.txMsgReq)
+}
+inline ::TxMsgReq* ContractTxMsgReq::release_txmsgreq() {
+  
+  ::TxMsgReq* temp = _impl_.txmsgreq_;
+  _impl_.txmsgreq_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::TxMsgReq* ContractTxMsgReq::unsafe_arena_release_txmsgreq() {
+  // @@protoc_insertion_point(field_release:ContractTxMsgReq.txMsgReq)
+  
+  ::TxMsgReq* temp = _impl_.txmsgreq_;
+  _impl_.txmsgreq_ = nullptr;
+  return temp;
+}
+inline ::TxMsgReq* ContractTxMsgReq::_internal_mutable_txmsgreq() {
+  
+  if (_impl_.txmsgreq_ == nullptr) {
+    auto* p = CreateMaybeMessage<::TxMsgReq>(GetArenaForAllocation());
+    _impl_.txmsgreq_ = p;
+  }
+  return _impl_.txmsgreq_;
+}
+inline ::TxMsgReq* ContractTxMsgReq::mutable_txmsgreq() {
+  ::TxMsgReq* _msg = _internal_mutable_txmsgreq();
+  // @@protoc_insertion_point(field_mutable:ContractTxMsgReq.txMsgReq)
+  return _msg;
+}
+inline void ContractTxMsgReq::set_allocated_txmsgreq(::TxMsgReq* txmsgreq) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.txmsgreq_;
+  }
+  if (txmsgreq) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(txmsgreq);
+    if (message_arena != submessage_arena) {
+      txmsgreq = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, txmsgreq, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.txmsgreq_ = txmsgreq;
+  // @@protoc_insertion_point(field_set_allocated:ContractTxMsgReq.txMsgReq)
+}
+
+// repeated string contractDependentAddress = 3;
+inline int ContractTxMsgReq::_internal_contractdependentaddress_size() const {
+  return _impl_.contractdependentaddress_.size();
+}
+inline int ContractTxMsgReq::contractdependentaddress_size() const {
+  return _internal_contractdependentaddress_size();
+}
+inline void ContractTxMsgReq::clear_contractdependentaddress() {
+  _impl_.contractdependentaddress_.Clear();
+}
+inline std::string* ContractTxMsgReq::add_contractdependentaddress() {
+  std::string* _s = _internal_add_contractdependentaddress();
+  // @@protoc_insertion_point(field_add_mutable:ContractTxMsgReq.contractDependentAddress)
+  return _s;
+}
+inline const std::string& ContractTxMsgReq::_internal_contractdependentaddress(int index) const {
+  return _impl_.contractdependentaddress_.Get(index);
+}
+inline const std::string& ContractTxMsgReq::contractdependentaddress(int index) const {
+  // @@protoc_insertion_point(field_get:ContractTxMsgReq.contractDependentAddress)
+  return _internal_contractdependentaddress(index);
+}
+inline std::string* ContractTxMsgReq::mutable_contractdependentaddress(int index) {
+  // @@protoc_insertion_point(field_mutable:ContractTxMsgReq.contractDependentAddress)
+  return _impl_.contractdependentaddress_.Mutable(index);
+}
+inline void ContractTxMsgReq::set_contractdependentaddress(int index, const std::string& value) {
+  _impl_.contractdependentaddress_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:ContractTxMsgReq.contractDependentAddress)
+}
+inline void ContractTxMsgReq::set_contractdependentaddress(int index, std::string&& value) {
+  _impl_.contractdependentaddress_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:ContractTxMsgReq.contractDependentAddress)
+}
+inline void ContractTxMsgReq::set_contractdependentaddress(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.contractdependentaddress_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:ContractTxMsgReq.contractDependentAddress)
+}
+inline void ContractTxMsgReq::set_contractdependentaddress(int index, const char* value, size_t size) {
+  _impl_.contractdependentaddress_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:ContractTxMsgReq.contractDependentAddress)
+}
+inline std::string* ContractTxMsgReq::_internal_add_contractdependentaddress() {
+  return _impl_.contractdependentaddress_.Add();
+}
+inline void ContractTxMsgReq::add_contractdependentaddress(const std::string& value) {
+  _impl_.contractdependentaddress_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:ContractTxMsgReq.contractDependentAddress)
+}
+inline void ContractTxMsgReq::add_contractdependentaddress(std::string&& value) {
+  _impl_.contractdependentaddress_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:ContractTxMsgReq.contractDependentAddress)
+}
+inline void ContractTxMsgReq::add_contractdependentaddress(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.contractdependentaddress_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:ContractTxMsgReq.contractDependentAddress)
+}
+inline void ContractTxMsgReq::add_contractdependentaddress(const char* value, size_t size) {
+  _impl_.contractdependentaddress_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:ContractTxMsgReq.contractDependentAddress)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+ContractTxMsgReq::contractdependentaddress() const {
+  // @@protoc_insertion_point(field_list:ContractTxMsgReq.contractDependentAddress)
+  return _impl_.contractdependentaddress_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+ContractTxMsgReq::mutable_contractdependentaddress() {
+  // @@protoc_insertion_point(field_mutable_list:ContractTxMsgReq.contractDependentAddress)
+  return &_impl_.contractdependentaddress_;
+}
+
+// -------------------------------------------------------------------
+
+// ContractPackagerMsg
+
+// string version = 1;
+inline void ContractPackagerMsg::clear_version() {
+  _impl_.version_.ClearToEmpty();
+}
+inline const std::string& ContractPackagerMsg::version() const {
+  // @@protoc_insertion_point(field_get:ContractPackagerMsg.version)
+  return _internal_version();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ContractPackagerMsg::set_version(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ContractPackagerMsg.version)
+}
+inline std::string* ContractPackagerMsg::mutable_version() {
+  std::string* _s = _internal_mutable_version();
+  // @@protoc_insertion_point(field_mutable:ContractPackagerMsg.version)
+  return _s;
+}
+inline const std::string& ContractPackagerMsg::_internal_version() const {
+  return _impl_.version_.Get();
+}
+inline void ContractPackagerMsg::_internal_set_version(const std::string& value) {
+  
+  _impl_.version_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ContractPackagerMsg::_internal_mutable_version() {
+  
+  return _impl_.version_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ContractPackagerMsg::release_version() {
+  // @@protoc_insertion_point(field_release:ContractPackagerMsg.version)
+  return _impl_.version_.Release();
+}
+inline void ContractPackagerMsg::set_allocated_version(std::string* version) {
+  if (version != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.version_.IsDefault()) {
+    _impl_.version_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ContractPackagerMsg.version)
+}
+
+// .CSign sign = 2;
+inline bool ContractPackagerMsg::_internal_has_sign() const {
+  return this != internal_default_instance() && _impl_.sign_ != nullptr;
+}
+inline bool ContractPackagerMsg::has_sign() const {
+  return _internal_has_sign();
+}
+inline const ::CSign& ContractPackagerMsg::_internal_sign() const {
+  const ::CSign* p = _impl_.sign_;
+  return p != nullptr ? *p : reinterpret_cast<const ::CSign&>(
+      ::_CSign_default_instance_);
+}
+inline const ::CSign& ContractPackagerMsg::sign() const {
+  // @@protoc_insertion_point(field_get:ContractPackagerMsg.sign)
+  return _internal_sign();
+}
+inline void ContractPackagerMsg::unsafe_arena_set_allocated_sign(
+    ::CSign* sign) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.sign_);
+  }
+  _impl_.sign_ = sign;
+  if (sign) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:ContractPackagerMsg.sign)
+}
+inline ::CSign* ContractPackagerMsg::release_sign() {
+  
+  ::CSign* temp = _impl_.sign_;
+  _impl_.sign_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::CSign* ContractPackagerMsg::unsafe_arena_release_sign() {
+  // @@protoc_insertion_point(field_release:ContractPackagerMsg.sign)
+  
+  ::CSign* temp = _impl_.sign_;
+  _impl_.sign_ = nullptr;
+  return temp;
+}
+inline ::CSign* ContractPackagerMsg::_internal_mutable_sign() {
+  
+  if (_impl_.sign_ == nullptr) {
+    auto* p = CreateMaybeMessage<::CSign>(GetArenaForAllocation());
+    _impl_.sign_ = p;
+  }
+  return _impl_.sign_;
+}
+inline ::CSign* ContractPackagerMsg::mutable_sign() {
+  ::CSign* _msg = _internal_mutable_sign();
+  // @@protoc_insertion_point(field_mutable:ContractPackagerMsg.sign)
+  return _msg;
+}
+inline void ContractPackagerMsg::set_allocated_sign(::CSign* sign) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.sign_);
+  }
+  if (sign) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(sign));
+    if (message_arena != submessage_arena) {
+      sign = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, sign, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.sign_ = sign;
+  // @@protoc_insertion_point(field_set_allocated:ContractPackagerMsg.sign)
+}
+
+// repeated .TxMsgReq txMsgReq = 3;
+inline int ContractPackagerMsg::_internal_txmsgreq_size() const {
+  return _impl_.txmsgreq_.size();
+}
+inline int ContractPackagerMsg::txmsgreq_size() const {
+  return _internal_txmsgreq_size();
+}
+inline void ContractPackagerMsg::clear_txmsgreq() {
+  _impl_.txmsgreq_.Clear();
+}
+inline ::TxMsgReq* ContractPackagerMsg::mutable_txmsgreq(int index) {
+  // @@protoc_insertion_point(field_mutable:ContractPackagerMsg.txMsgReq)
+  return _impl_.txmsgreq_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxMsgReq >*
+ContractPackagerMsg::mutable_txmsgreq() {
+  // @@protoc_insertion_point(field_mutable_list:ContractPackagerMsg.txMsgReq)
+  return &_impl_.txmsgreq_;
+}
+inline const ::TxMsgReq& ContractPackagerMsg::_internal_txmsgreq(int index) const {
+  return _impl_.txmsgreq_.Get(index);
+}
+inline const ::TxMsgReq& ContractPackagerMsg::txmsgreq(int index) const {
+  // @@protoc_insertion_point(field_get:ContractPackagerMsg.txMsgReq)
+  return _internal_txmsgreq(index);
+}
+inline ::TxMsgReq* ContractPackagerMsg::_internal_add_txmsgreq() {
+  return _impl_.txmsgreq_.Add();
+}
+inline ::TxMsgReq* ContractPackagerMsg::add_txmsgreq() {
+  ::TxMsgReq* _add = _internal_add_txmsgreq();
+  // @@protoc_insertion_point(field_add:ContractPackagerMsg.txMsgReq)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::TxMsgReq >&
+ContractPackagerMsg::txmsgreq() const {
+  // @@protoc_insertion_point(field_list:ContractPackagerMsg.txMsgReq)
+  return _impl_.txmsgreq_;
+}
+
+// .Vrf vrfInfo = 4;
+inline bool ContractPackagerMsg::_internal_has_vrfinfo() const {
+  return this != internal_default_instance() && _impl_.vrfinfo_ != nullptr;
+}
+inline bool ContractPackagerMsg::has_vrfinfo() const {
+  return _internal_has_vrfinfo();
+}
+inline void ContractPackagerMsg::clear_vrfinfo() {
+  if (GetArenaForAllocation() == nullptr && _impl_.vrfinfo_ != nullptr) {
+    delete _impl_.vrfinfo_;
+  }
+  _impl_.vrfinfo_ = nullptr;
+}
+inline const ::Vrf& ContractPackagerMsg::_internal_vrfinfo() const {
+  const ::Vrf* p = _impl_.vrfinfo_;
+  return p != nullptr ? *p : reinterpret_cast<const ::Vrf&>(
+      ::_Vrf_default_instance_);
+}
+inline const ::Vrf& ContractPackagerMsg::vrfinfo() const {
+  // @@protoc_insertion_point(field_get:ContractPackagerMsg.vrfInfo)
+  return _internal_vrfinfo();
+}
+inline void ContractPackagerMsg::unsafe_arena_set_allocated_vrfinfo(
+    ::Vrf* vrfinfo) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.vrfinfo_);
+  }
+  _impl_.vrfinfo_ = vrfinfo;
+  if (vrfinfo) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:ContractPackagerMsg.vrfInfo)
+}
+inline ::Vrf* ContractPackagerMsg::release_vrfinfo() {
+  
+  ::Vrf* temp = _impl_.vrfinfo_;
+  _impl_.vrfinfo_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::Vrf* ContractPackagerMsg::unsafe_arena_release_vrfinfo() {
+  // @@protoc_insertion_point(field_release:ContractPackagerMsg.vrfInfo)
+  
+  ::Vrf* temp = _impl_.vrfinfo_;
+  _impl_.vrfinfo_ = nullptr;
+  return temp;
+}
+inline ::Vrf* ContractPackagerMsg::_internal_mutable_vrfinfo() {
+  
+  if (_impl_.vrfinfo_ == nullptr) {
+    auto* p = CreateMaybeMessage<::Vrf>(GetArenaForAllocation());
+    _impl_.vrfinfo_ = p;
+  }
+  return _impl_.vrfinfo_;
+}
+inline ::Vrf* ContractPackagerMsg::mutable_vrfinfo() {
+  ::Vrf* _msg = _internal_mutable_vrfinfo();
+  // @@protoc_insertion_point(field_mutable:ContractPackagerMsg.vrfInfo)
+  return _msg;
+}
+inline void ContractPackagerMsg::set_allocated_vrfinfo(::Vrf* vrfinfo) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.vrfinfo_;
+  }
+  if (vrfinfo) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(vrfinfo);
+    if (message_arena != submessage_arena) {
+      vrfinfo = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, vrfinfo, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.vrfinfo_ = vrfinfo;
+  // @@protoc_insertion_point(field_set_allocated:ContractPackagerMsg.vrfInfo)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

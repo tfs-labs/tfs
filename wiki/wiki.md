@@ -17,7 +17,7 @@ To meet the above requirements, TFSC focuses on the following core concepts:
 #Compilation&Deployment 
 
 ###Setting up the development environment
-The following software packages need to be installed：
+The following software packages need to be installed:
 
 - gcc (v9.3)
 - cmake(v3.21)
@@ -30,7 +30,7 @@ The following software packages need to be installed：
 - perl-IPC-Cmd
 
 
-Dependent Libraries：
+Dependent Libraries:
 
 - zlib 
 - zlib-devel
@@ -232,7 +232,7 @@ Then display the staked utxo, paste it and enter it into the console:
 ```plaintext
 -- Current pledge amount: -- 
 utxo: 3f4607d9e1ca341b3bee45110eecd2aaf1be5bba60bbdfe3ca44d68afae1b570 value: 500000000000
-utxo：3f4607d9e1ca341b3bee45110eecd2aaf1be5bba60bbdfe3ca44d68afae1b570
+utxo:3f4607d9e1ca341b3bee45110eecd2aaf1be5bba60bbdfe3ca44d68afae1b570
 ```
 Enter[enter]
 
@@ -770,16 +770,16 @@ These transactions are traceable and irreversible.
 The purpose of smart contracts is to provide better security methods than traditional contracts and reduce other transaction costs related to contracts.
 
 ### **Features of smart contracts**
-**Normalization**：
+**Normalization**:
 The smart contract is based on computer code, which can minimize the ambiguity of the language and is presented through a strict logical structure.
 
-**Irreversibility**：
+**Irreversibility**:
 Once the conditions are met, the contract will automatically execute the expected plan. Under the given fact input, the smart contract will inevitably output the correct results and be visualized in the display horizon.
 
-**Non-default**：
+**Non-default**:
 The transaction information on the blockchain is open and transparent. Each node can trace the transaction process recorded on the blockchain. The probability of default is extremely low.
 
-**Anonymity**：
+**Anonymity**:
 According to the cryptography principle of asymmetric encryption, zero-knowledge proof, ring signature, blind signature and other technologies, on the blockchain, although the transaction process is public, the transaction parties are anonymous.
 
 ### **Advantages of smart contracts**

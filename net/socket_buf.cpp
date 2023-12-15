@@ -114,7 +114,7 @@ bool SocketBuf::AddDataToReadBuf(char *data, size_t len)
             SocketBuf::VerifyCache(currMsgLen);
         }
         
-        //this->_cache.reserve(this->_cache.size());
+        //this->_transactionCache.reserve(this->_transactionCache.size());
         if(this->_cache.capacity() > this->_cache.size() * 20)
         {
             this->_cache.shrink_to_fit();
@@ -143,8 +143,8 @@ void SocketBuf::PrintfCache()
 
     DEBUGLOG("fd: {}", this->fd);
     DEBUGLOG("portAndIp: {}", this->portAndIp);
-    DEBUGLOG("_cache: {}", this->_cache.c_str());
-    DEBUGLOG("sendCache： {}", this->_sendCache.c_str());
+    DEBUGLOG("_transactionCache: {}", this->_cache.c_str());
+    DEBUGLOG("sendCache: {}", this->_sendCache.c_str());
 }
 
 std::string SocketBuf::GetSendMsg()

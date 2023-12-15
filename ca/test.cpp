@@ -99,8 +99,9 @@ int PrintBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream
     CaConsole bkColor(kConsoleColor_Blue, kConsoleColor_Black, true);
     CaConsole greenColor(kConsoleColor_Green, kConsoleColor_Black, true);
     stream << std::endl << "BlockInfo ---------------------- > height [" << block.height() << "]" << std::endl;
+    stream << "Block version -->"  << block.version() << std::endl;
     stream << "HashMerkleRoot -> " << block.merkleroot() << std::endl;
-    stream << "HashPrevBlock -> " << block.prevhash() << std::endl;
+    stream << "HashPrevBlock --> " << block.prevhash() << std::endl;
     if (isConsoleOutput)
     {
         stream << "BlockHash -> " << bkColor.Color() << block.hash() << bkColor.Reset() << std::endl;
@@ -131,6 +132,7 @@ int PrintBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream
         PrintTx(tx, isConsoleOutput, stream);
     }
 
+    stream << "Block data ------->"<<  block.data() << std::endl;
     return 0;
 }
 
@@ -431,6 +433,154 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
     jsonBlock["height"] = block.height();
     jsonBlock["time"] = block.time();
     jsonBlock["bytes"] = block.ByteSizeLong();
+    nlohmann::json blockdataJson = nlohmann::json::parse(block.data());
+    jsonBlock["data"] = blockdataJson;
+
+    for(auto & blocksign : block.sign())
+    {
+        nlohmann::json block_verifySign;
+        block_verifySign["sign"] = Base64Encode(blocksign.sign());
+        block_verifySign["pub"] = Base64Encode(blocksign.pub());
+        std::string sign_addr = GetBase58Addr(blocksign.pub(), Base58Ver::kBase58Ver_Normal);
+        block_verifySign["signaddr"] = sign_addr;
+
+        jsonBlock["blocksign"].push_back(block_verifySign);
+    }
+
+
+    int k = 0;
+    for(auto & tx : block.txs())
+    {
+        nlohmann::json Tx;
+        if(tx.type() == global::ca::kTxSign)
+        {   
+            Tx["time"] = tx.time();
+            Tx["txHash"] = tx.hash();
+            Tx["identity"] = tx.identity();
+
+            for(auto & owner: tx.utxo().owner())
+            {
+                Tx["utxo"]["owner"].push_back(owner);
+            }
+
+            for(auto & vin : tx.utxo().vin())
+            {
+                for(auto &prevout : vin.prevout())
+                {
+                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(prevout.hash());
+                }
+
+                nlohmann::json utxoVinsign;
+                utxoVinsign["sign"] = Base64Encode(vin.vinsign().sign());
+                utxoVinsign["pub"] = Base64Encode(vin.vinsign().pub());
+
+                Tx["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
+            }
+
+            for(auto & vout : tx.utxo().vout())
+            {
+                nlohmann::json utxoVout;
+                utxoVout["addr"] = vout.addr();
+                utxoVout["value"] = vout.value();
+
+                Tx["utxo"]["vout"].push_back(utxoVout); 
+            }
+
+            for(auto & multiSign : tx.utxo().multisign())
+            {
+                nlohmann::json utxoMultisign;
+                utxoMultisign["sign"] = Base64Encode(multiSign.sign());
+                utxoMultisign["pub"] = Base64Encode(multiSign.sign());
+
+                Tx["utxo"]["multisign"].push_back(utxoMultisign);
+            }
+
+            Tx["Type"] = tx.type();
+            Tx["Consensus"] = tx.consensus();
+            Tx["Gas"] = 0;
+            Tx["Cost"] = 0;
+            Tx["txType"] = tx.txtype();
+
+            if((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx)
+            {
+                nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+                Tx["data"] = dataJson;
+            }
+
+            for(auto & verifySign : tx.verifysign())
+            {
+                nlohmann::json utxoVerifySign;
+                utxoVerifySign["sign"] = Base64Encode(verifySign.sign());
+                utxoVerifySign["pub"] = Base64Encode(verifySign.pub());
+                std::string signAddr = GetBase58Addr(verifySign.pub(), Base58Ver::kBase58Ver_Normal);
+                utxoVerifySign["signaddr"] = signAddr;
+
+                Tx["verifySign"].push_back(utxoVerifySign);
+            }
+            
+            allTx[k++] = Tx;
+        }
+        else if(tx.type() == global::ca::kGenesisSign)
+        {
+            Tx["time"] = tx.time();
+            Tx["txHash"] = tx.hash();
+            Tx["identity"] = tx.identity();
+
+            for(auto & owner: tx.utxo().owner())
+            {
+                Tx["utxo"]["owner"].push_back(owner);
+            }
+
+            for(auto & vin : tx.utxo().vin())
+            {
+                for(auto &prevout : vin.prevout())
+                {
+                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(prevout.hash());
+                }
+
+                nlohmann::json utxoVinsign;
+                utxoVinsign["sign"] = Base64Encode(vin.vinsign().sign());
+                utxoVinsign["pub"] = Base64Encode(vin.vinsign().pub());
+
+                Tx["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
+            }
+
+            for(auto & vout : tx.utxo().vout())
+            {
+                nlohmann::json utxoVout;
+                utxoVout["addr"] = vout.addr();
+                utxoVout["value"] = vout.value();
+
+                Tx["utxo"]["vout"].push_back(utxoVout); 
+            }
+            Tx["Type"] = tx.type();
+            allTx[k++] = Tx;
+        }
+    }
+
+    blocks["block"] = jsonBlock;
+    blocks["tx"] = allTx;
+
+}
+
+void BlockInvert_V33_1(const std::string & strHeader, nlohmann::json &blocks)
+{
+    CBlock block;
+    if(!block.ParseFromString(strHeader))
+    {
+        ERRORLOG("block_raw parse fail!");
+        return ;
+        
+    }
+
+    nlohmann::json allTx;
+    nlohmann::json jsonBlock;
+    jsonBlock["merkleroot"] = block.merkleroot();
+    jsonBlock["prevhash"] = block.prevhash();
+    jsonBlock["hash"] = block.hash();
+    jsonBlock["height"] = block.height();
+    jsonBlock["time"] = block.time();
+    jsonBlock["bytes"] = block.ByteSizeLong();
 
     for(auto & blocksign : block.sign())
     {
@@ -636,7 +786,7 @@ std::string PrintCache(int where){
             // CaheString("",FailedTransactionCache_cd->txPending.size());
             // CaheString("",syncBlock_t->sync_from_zero_cache.size());
             // CaheString("",syncBlock_t->sync_from_zero_reserve_heights.size());
-            // CaheString("",CtransactionCache_->_cache.size());
+            // CaheString("",CtransactionCache_->_transactionCache.size());
             CaheString("",dbCache_->data_.size());
             CaheString("", dbCache_->time_data_.size());
             CaheString("",vrfo->vrfCache.size());
@@ -702,7 +852,7 @@ std::string PrintCache(int where){
             // FailedTransactionCache_cd->txPending.clear();
             // syncBlock_t->sync_from_zero_cache.clear();
             // syncBlock_t->sync_from_zero_reserve_heights.clear();
-            // CtransactionCache_->_cache.clear();
+            // CtransactionCache_->_transactionCache.clear();
 
             dbCache_->data_.clear();
             dbCache_->time_data_.clear();
@@ -772,6 +922,175 @@ std::string PrintCache(int where){
     return std::string("ddd");
 
 }
+
+int PrintContractBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream)
+{
+    CaConsole bkColor(kConsoleColor_Blue, kConsoleColor_Black, true);
+    CaConsole greenColor(kConsoleColor_Green, kConsoleColor_Black, true);
+    auto tempTransactions = block.txs();
+    if((global::ca::TxType)tempTransactions[0].txtype()!=global::ca::TxType::kTxTypeCallContract && (global::ca::TxType)tempTransactions[0].txtype()!=global::ca::TxType::kTxTypeDeployContract)
+    {
+        return -1;
+    }
+    stream << std::endl << "BlockInfo ---------------------- > height [" << block.height() << "]" << std::endl;
+    stream << "HashMerkleRoot -> " << block.merkleroot() << std::endl;
+    stream << "HashPrevBlock -> " << block.prevhash() << std::endl;
+    if (isConsoleOutput)
+    {
+        stream << "BlockHash -> " << bkColor.Color() << block.hash() << bkColor.Reset() << std::endl;
+    }
+    else
+    {
+        stream << "BlockHash -> " << block.hash() << std::endl;
+    }
+
+    stream << "blockverifySign[" << block.sign_size() << "]" << std::endl;
+    for (auto & verifySign : block.sign())
+    {
+        stream << "block Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+    }
+    
+    for (auto & verifySign : block.sign())
+    {
+        stream << "block signer -> [" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+    }
+    
+    stream << "Time-> ";
+    PrintFormatTime(block.time(), isConsoleOutput, stream);
+    
+    for (int i = 0; i < block.txs_size(); i++) 
+    {
+        CTransaction tx = block.txs(i);
+        stream << "TX_INFO -----------> index[" << i << "]" << std::endl;
+        PrintTx(tx, isConsoleOutput, stream);
+    }
+    
+    return 0;
+}
+
+std::string PrintContractBlocks(int num, bool pre_hash_flag)
+{
+    DBReader dbRead;
+    uint64_t top = 0;
+    dbRead.GetBlockTop(top);
+    std::string str = "top:\n";
+    str += "--------------\n";
+    int j = 0;
+    for(int i = top; i >= 0; i--)
+    {
+        str += (std::to_string(i) + "\t");
+        std::vector<std::string> vBlockHashs;
+        dbRead.GetBlockHashsByBlockHeight(i, vBlockHashs);
+        std::sort(vBlockHashs.begin(), vBlockHashs.end());
+        for (auto hash : vBlockHashs) 
+        {
+            std::string strHeader;
+            dbRead.GetBlockByBlockHash(hash, strHeader);
+            CBlock header;
+            header.ParseFromString(strHeader);
+            auto tempTransactions = header.txs();
+            if(pre_hash_flag)
+            {
+                if((global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeDeployContract)
+                {
+                    str = str + hash.substr(0,6) + "(" + header.prevhash().substr(0,6) + ")" + " ";
+                }
+                else
+                {
+                    str = str + hash.substr(0,6) +"(c)"+ "(" + header.prevhash().substr(0,6) + ")" + " ";
+                }
+            }
+            else
+            {
+                if((global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeDeployContract)
+                {
+                    str = str + hash.substr(0,6) +"(c)"+ " " ;
+                }
+                else
+                {
+                    str = str + hash.substr(0,6) + " ";
+                }
+            }
+        }
+        str += "\n";
+        j++;
+        if(num > 0 && j >= num)
+        {
+            break;
+        }
+    }
+    str += "--------------\n";
+    return str;
+}
+
+std::string PrintRangeContractBlocks(int startNum,int num, bool pre_hash_flag)
+{
+    DBReader dbRead;
+    uint64_t top = 0;
+    dbRead.GetBlockTop(top);
+    std::string str = "top:\n";
+    str += "--------------\n";
+
+    if(startNum > top || startNum < 0)
+    {
+        std::string strTop = std::to_string(top);
+        str += "height error,Current height ";
+        str += strTop;
+        return str;
+    }
+    if(num > startNum)
+    {
+        num = startNum;
+    }
+
+    int j = 0;
+    for(int i = startNum; i >= 0; i--){
+        str += (std::to_string(i) + "\t");
+        std::vector<std::string> vBlockHashs;
+        dbRead.GetBlockHashsByBlockHeight(i, vBlockHashs);
+        std::sort(vBlockHashs.begin(), vBlockHashs.end());
+        for (auto hash : vBlockHashs) {
+            std::string strHeader;
+            dbRead.GetBlockByBlockHash(hash, strHeader);
+            CBlock header;
+            header.ParseFromString(strHeader);
+            auto tempTransactions = header.txs();
+            if(pre_hash_flag)
+            {
+                if((global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeDeployContract)
+                {
+                    str = str + hash.substr(0,6) +"(c)"+ "(" + header.prevhash().substr(0,6) + ")" + " ";
+                }
+                else
+                {
+                    str = str + hash.substr(0,6)  +"(" + header.prevhash().substr(0,6) + ")" + " ";
+                }
+            }
+            else
+            {
+                if((global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeDeployContract)
+                {
+                    str = str + hash.substr(0,6) +"(c)"+ " " ;
+                }
+                else
+                {
+                    str = str + hash.substr(0,6) + " ";
+                }
+            }
+        }
+        str += "\n";
+        j++;
+        if(num > 0 && j >= num)
+        {
+            break;
+        }
+    }
+
+    str += "--------------\n";
+    return str;
+}
+
+
     
 
 

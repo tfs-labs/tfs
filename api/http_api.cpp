@@ -165,6 +165,8 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/printblock", ApiPrintAllBlocks);
     HttpServer::RegisterCallback("/printCalcHash", ApiPrintCalc1000SumHash);
     HttpServer::RegisterCallback("/setCalcTopHeight", ApiSetCalc1000TopHeight);
+    HttpServer::RegisterCallback("/blockc", ApiPrintContractBlock);
+
 
 #endif // #ifndef NDEBUG
     HttpServer::RegisterCallback("/ip", ApiIp);
@@ -173,8 +175,9 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/get_height", JsonRpcGetHeight);
     HttpServer::RegisterCallback("/get_balance", JsonrpcGetBalance);
 
+    
     HttpServer::RegisterCallback("/deploy_contract_req", DeployContract);
-    HttpServer::RegisterCallback("/call_contract_req", CallContract);
+    HttpServer::RegisterCallback("/call_contract_req",CallContract);
 
     HttpServer::RegisterCallback("/get_transaction_req", GetTransaction);
     HttpServer::RegisterCallback("/get_stakeutxo_req", GetStakeUtxo);
@@ -186,6 +189,8 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/get_rates_info", ApiGetRatesInfo);
 
     HttpServer::RegisterCallback("/get_bonus_req", GetBonus);
+    //SendContractMessage
+    HttpServer::RegisterCallback("/SendContractMessage", SendContractMessage);
     HttpServer::RegisterCallback("/SendMessage", SendMessage);
 
     HttpServer::RegisterCallback("/get_rsa_pub_req", GetRsaPub);
@@ -199,7 +204,7 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/get_restinverst_req", GetRestInvest);
     HttpServer::RegisterCallback("/GetAllStakeNodeListAck",GetAllStakeNodeListAcknowledge);
 
-   HttpServer::RegisterCallback("/tfscrpc",TfsRpcParse);
+//    HttpServer::RegisterCallback("/tfscrpc",TfsRpcParse);
 
     HttpServer::Start();
 }
@@ -810,7 +815,6 @@ void ApiNormal(const Request & req, Response & res)
 
         if(counts.size() > 2)
         {
-
             uint64_t quarterNum = counts.size() * 0.25;
             uint64_t threeQuarterNum = counts.size() * 0.75;
             if (quarterNum == threeQuarterNum)
@@ -955,7 +959,14 @@ void ApiGetBlock(const Request &req, Response &res) {
             {
                 return;
             }
-            BlockInvert(strHeader, block);
+            if(myTop <= global::ca::OldVersionSmartContractFailureHeight)
+            {
+                BlockInvert_V33_1(strHeader, block);
+            }
+            else
+            {
+                BlockInvert(strHeader, block);
+            }
             blocks[k++] = block;
         }
     }
@@ -1513,14 +1524,41 @@ void JsonrpcGetBalance(const Request &req, Response &res) {
 
 void DeployContract(const Request &req, Response &res) {
     deploy_contract_req req_t;
-    tx_ack ack_t;
+    contract_ack ack_t;
     CHECK_PASE_REQ_T
-
-    std::string ret = RpcDeployContract((void *)&req_t, &ack_t);
-    if (ret != "0") {
-        ack_t.ErrorCode = "-1";
-        ack_t.ErrorMessage = ret;
+    std::string ret;
+    //add condition of height and version
+	uint64_t selfNodeHeight = 0;
+	DBReader dbReader;
+	auto status = dbReader.GetBlockTop(selfNodeHeight);
+	if (DBStatus::DB_SUCCESS != status)
+	{
+		ERRORLOG("Get block top error");
+		return ;
+	}
+	if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+        ret = RpcDeployContract_V33_1((void *)&req_t, &ack_t);
     }
+    else
+    {
+        ret = RpcDeployContract((void *)&req_t, &ack_t);
+    }
+    
+    if (ret != "0") {
+        auto rpcError=GetRpcError();
+        if(rpcError.first!="0"){
+            ack_t.ErrorMessage = rpcError.second;
+            ack_t.ErrorCode = rpcError.first;
+        }else{
+            ack_t.ErrorMessage = ret;
+            ack_t.ErrorCode = "-1";
+        }
+    }
+       
+    ack_t.type = "deploy_contract_req";
+    ack_t.ErrorCode = "0";
+
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -1581,6 +1619,7 @@ void GetTransaction(const Request &req, Response &res)
     tx_ack ack_t;
     tx_req req_t;
     ack_t.ErrorCode = "0";
+    //req_t.paseFromJson(req.body);
 
     CHECK_PASE_REQ_T
    
@@ -1783,10 +1822,34 @@ void CallContract(const Request &req, Response &res)
 {
     RpcErrorClear();
     call_contract_req req_t;
-    tx_ack ack_t;
+    contract_ack ack_t;
     CHECK_PASE_REQ_T;
+    
+    ack_t.type = "call_contract_ack";
+    ack_t.ErrorCode = "0";
 
-    std::string ret = RpcCallContract((void *)&req_t, &ack_t);
+    std::string ret;
+    
+    
+    //add condition of height and version
+	uint64_t selfNodeHeight = 0;
+	DBReader dbReader;
+	auto status = dbReader.GetBlockTop(selfNodeHeight);
+	if (DBStatus::DB_SUCCESS != status)
+	{
+		ERRORLOG("Get block top error");
+		return ;
+	}
+	if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+        ret = RpcCallContract_V33_1((void *)&req_t, &ack_t);
+    }
+    else
+    {
+        ret = RpcCallContract((void *)&req_t, &ack_t);
+    }
+    
+
     if (ret != "0") {
         auto rpcError=GetRpcError();
         if(rpcError.first!="0"){
@@ -1799,6 +1862,28 @@ void CallContract(const Request &req, Response &res)
     }
     res.set_content(ack_t.paseToString(), "application/json");
 }
+
+void CallContract_V33_1(const Request &req, Response &res) 
+{
+    RpcErrorClear();
+    call_contract_req req_t;
+    tx_ack ack_t;
+    CHECK_PASE_REQ_T;
+
+    std::string ret = RpcCallContract_V33_1((void *)&req_t, &ack_t);
+    if (ret != "0") {
+        auto rpcError=GetRpcError();
+        if(rpcError.first!="0"){
+            ack_t.ErrorMessage = rpcError.second;
+            ack_t.ErrorCode = rpcError.first;
+        }else{
+            ack_t.ErrorMessage = ret;
+            ack_t.ErrorCode = "-1";
+        }
+    }
+    res.set_content(ack_t.paseToString(), "application/json");
+}
+
 
 void GetRsaPub(const Request &req, Response &res) 
 {
@@ -1835,6 +1920,41 @@ void SendMessage(const Request &req, Response &res)
     std::string back = ack_t.paseToString();
 
     res.set_content(back, "application/json");
+}
+
+void SendContractMessage(const Request & req,Response & res){
+    contract_ack ack;
+
+    rpc_ack ack_t;
+    //debugL(req.body);
+    if(ack.paseFromJson(req.body)!="OK"){
+        errorL("pase fail");
+        return;
+    }
+    ContractTxMsgReq ContractMsg;
+    CTransaction tx;
+    google::protobuf::util::JsonStringToMessage(ack.contractJs, &ContractMsg);
+    google::protobuf::util::JsonStringToMessage(ack.txJs, &tx);
+
+    std::string txHash = Getsha256hash(tx.SerializeAsString());
+    tx.set_hash(txHash);
+    
+    ack_t.txhash=txHash;
+    ack_t.type = "SendContractMessage";
+    ack_t.ErrorCode = "0";
+
+   TxMsgReq txReq= ContractMsg.txmsgreq();
+   TxMsgInfo info=txReq.txmsginfo();
+   info.set_tx(tx.SerializeAsString());
+   txReq.clear_txmsginfo();
+   TxMsgInfo *info_p=txReq.mutable_txmsginfo();
+   info_p->CopyFrom(info);
+   ContractMsg.clear_txmsgreq();
+   TxMsgReq * txReq_p=ContractMsg.mutable_txmsgreq();
+   txReq_p->CopyFrom(txReq);
+    auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
+   DropCallShippingTx(msg,tx);
+    res.set_content(ack_t.paseToString(), "application/json");
 }
 
 void GetIsOnChain(const Request &req, Response &res) 
@@ -2248,656 +2368,652 @@ bool CheckRpcField(std::vector<std::tuple<std::string, std::string,int>> cFeild,
     return true;
 }
 
-void TfsRpcParse(const Request &req,Response &res){
+// void TfsRpcParse(const Request &req,Response &res){
 
+//   //  debugL("comm");
+//     std::string ret;
+//     std::vector<std::string> fields={"tfsrpc",
+//                                      "method",
+//                                      "body",
+//                                      "message",
+//                                      "error"};
+//     nlohmann::json obj;
+//     nlohmann::json jsonRet=CreateJsonObj
+//         <std::string,std::string,std::string,std::string,std::string>(fields,"0.0.1","unkown","","","0");
+//     try{
+//         obj=nlohmann::json::parse(req.body);
+//     }catch(std::exception & e){
+//         ret=Sutil::Format("TfsRpcParse error:%s", e.what());
+//         jsonRet["message"]=ret;
+//         jsonRet["error"]=std::to_string((int)RPCERROR::PASE_ERROR);
+//         res.set_content(jsonRet.dump(), "application/json");
+//         return ;
+//     }
 
+//    if(!CheckRpcField({{"tfsrpc","0.0.1",(int)RPCERROR::FIELD_REEOR}},obj)){
+//         jsonRet["message"]=GetError();
+//         jsonRet["error"]=std::to_string(GetErrorNum());
+//         res.set_content(jsonRet.dump(), "application/json");
+//         return ;
+//    }
 
-    
+//     nlohmann::json params=obj["params"];
+//     std::string method_string=obj["method"];
+//     debugL("method:%s",method_string);
 
-  //  debugL("comm");
-    std::string ret;
-    std::vector<std::string> fields={"tfsrpc",
-                                     "method",
-                                     "body",
-                                     "message",
-                                     "error"};
-    nlohmann::json obj;
-    nlohmann::json jsonRet=CreateJsonObj
-        <std::string,std::string,std::string,std::string,std::string>(fields,"0.0.1","unkown","","","0");
-    try{
-        obj=nlohmann::json::parse(req.body);
-    }catch(std::exception & e){
-        ret=Sutil::Format("TfsRpcParse error:%s", e.what());
-        jsonRet["message"]=ret;
-        jsonRet["error"]=std::to_string((int)RPCERROR::PASE_ERROR);
-        res.set_content(jsonRet.dump(), "application/json");
-        return ;
-    }
+//     debugL("body :%s",req.body);
 
-   if(!CheckRpcField({{"tfsrpc","0.0.1",(int)RPCERROR::FIELD_REEOR}},obj)){
-        jsonRet["message"]=GetError();
-        jsonRet["error"]=std::to_string(GetErrorNum());
-        res.set_content(jsonRet.dump(), "application/json");
-        return ;
-   }
+//     auto clearHash =[](CTransaction & tx) {
+//             tx.clear_hash();
+//             std::set<std::string> Miset;
+//             Base64 base;
+//             auto txUtxo = tx.mutable_utxo();
+//             int index = 0;
+//             auto vin = txUtxo->mutable_vin();
+//             for (auto &owner : txUtxo->owner()) {
 
-    nlohmann::json params=obj["params"];
-    std::string method_string=obj["method"];
-    debugL("method:%s",method_string);
+//                 Miset.insert(owner);
+//                 auto vin_t = vin->Mutable(index);
+//                 vin_t->clear_vinsign();
+//                 index++;
+//             }
+//             for (auto &owner : Miset) {
+//                 CTxUtxo *txUtxo = tx.mutable_utxo();
+//                 CTxUtxo copyTxUtxo = *txUtxo;
+//                 copyTxUtxo.clear_multisign();
+//                 txUtxo->clear_multisign();
+//             }
+//     };
 
-    debugL("body :%s",req.body);
-
-    auto clearHash =[](CTransaction & tx) {
-            tx.clear_hash();
-            std::set<std::string> Miset;
-            Base64 base;
-            auto txUtxo = tx.mutable_utxo();
-            int index = 0;
-            auto vin = txUtxo->mutable_vin();
-            for (auto &owner : txUtxo->owner()) {
-
-                Miset.insert(owner);
-                auto vin_t = vin->Mutable(index);
-                vin_t->clear_vinsign();
-                index++;
-            }
-            for (auto &owner : Miset) {
-                CTxUtxo *txUtxo = tx.mutable_utxo();
-                CTxUtxo copyTxUtxo = *txUtxo;
-                copyTxUtxo.clear_multisign();
-                txUtxo->clear_multisign();
-            }
-    };
-
-    auto transaction_func =
-        [](const nlohmann::json &obj_func, nlohmann::json &out_json) -> bool {
+//     auto transaction_func =
+//         [](const nlohmann::json &obj_func, nlohmann::json &out_json) -> bool {
         
-        tx_ack ack_t;
-        std::tuple<std::string,std::string,std::string> target=
-        GetRpcParams<std::string,std::string,std::string>(obj_func);
+//         tx_ack ack_t;
+//         std::tuple<std::string,std::string,std::string> target=
+//         GetRpcParams<std::string,std::string,std::string>(obj_func);
 
-        std::string FromAddr=std::get<0>(target);
-        std::string ToAddr=std::get<1>(target);
-        std::string value=std::get<2>(target);
-        std::regex pattern("(^[1-9]\\d*\\.\\d+$|^0\\.\\d+$|^[1-9]\\d*$|^0$)");\
-        if (!std::regex_match(value, pattern)){
-            out_json["message"]=Sutil::Format("field:%s is no a number", "value");
-            out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
-            return false;
-        }
-        std::map<std::string, int64_t> toAddr;
-        std::vector<std::string> _fromaddr;
-        _fromaddr.push_back(FromAddr);
+//         std::string FromAddr=std::get<0>(target);
+//         std::string ToAddr=std::get<1>(target);
+//         std::string value=std::get<2>(target);
+//         std::regex pattern("(^[1-9]\\d*\\.\\d+$|^0\\.\\d+$|^[1-9]\\d*$|^0$)");\
+//         if (!std::regex_match(value, pattern)){
+//             out_json["message"]=Sutil::Format("field:%s is no a number", "value");
+//             out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
+//             return false;
+//         }
+//         std::map<std::string, int64_t> toAddr;
+//         std::vector<std::string> _fromaddr;
+//         _fromaddr.push_back(FromAddr);
     
        
-        toAddr[ToAddr] =
-            (std::stod(value) + global::ca::kFixDoubleMinPrecision) *
-            global::ca::kDecimalNum;
+//         toAddr[ToAddr] =
+//             (std::stod(value) + global::ca::kFixDoubleMinPrecision) *
+//             global::ca::kDecimalNum;
 
-        std::string strError =
-            TxHelper::ReplaceCreateTxTransaction(_fromaddr, toAddr, &ack_t);
-            debugL("strError:%s",strError);
-        if (strError != "0") {
-            out_json["message"]=strError;
-            out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"] = ack_t.paseToString();
-        out_json["error"] = "0";
-        debugL("fainsh");
-        return true;
-    };
+//         std::string strError =
+//             TxHelper::ReplaceCreateTxTransaction(_fromaddr, toAddr, &ack_t);
+//             debugL("strError:%s",strError);
+//         if (strError != "0") {
+//             out_json["message"]=strError;
+//             out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"] = ack_t.paseToString();
+//         out_json["error"] = "0";
+//         debugL("fainsh");
+//         return true;
+//     };
 
-    auto stake_func=[](const nlohmann::json & obj_func,nlohmann::json & out_json)->bool
-    {
-        debugL("stake_func");
-        tx_ack ack_t;
-       // std::tuple<std::string,std::string,std::string> params=GetRpcParams<std::string,std::string,std::string>(obj_func);
-        std::string FromAddr=obj_func[0];
-        std::string stake_amount=obj_func[1];
-        std::string strCommission = obj_func[2];
+//     auto stake_func=[](const nlohmann::json & obj_func,nlohmann::json & out_json)->bool
+//     {
+//         debugL("stake_func");
+//         tx_ack ack_t;
+//        // std::tuple<std::string,std::string,std::string> params=GetRpcParams<std::string,std::string,std::string>(obj_func);
+//         std::string FromAddr=obj_func[0];
+//         std::string stake_amount=obj_func[1];
+//         std::string strCommission = obj_func[2];
         
-        debugL("FromAddr:%s",FromAddr);
-        debugL("stake_amount:%s",stake_amount);
-        int type=0;
-        std::regex pattern("(^[1-9]\\d*\\.\\d+$|^0\\.\\d+$|^[1-9]\\d*$|^0$)");\
-        if (!std::regex_match(stake_amount, pattern)){
-            out_json["message"]=Sutil::Format("field:%s is no a number", "stake_amount");
-            out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
-            debugL("fail");
-            return false;
-        }
-        uint64_t stake_amount_s =
-        (std::stod(stake_amount) + global::ca::kFixDoubleMinPrecision) *
-        global::ca::kDecimalNum;
+//         debugL("FromAddr:%s",FromAddr);
+//         debugL("stake_amount:%s",stake_amount);
+//         int type=0;
+//         std::regex pattern("(^[1-9]\\d*\\.\\d+$|^0\\.\\d+$|^[1-9]\\d*$|^0$)");\
+//         if (!std::regex_match(stake_amount, pattern)){
+//             out_json["message"]=Sutil::Format("field:%s is no a number", "stake_amount");
+//             out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
+//             debugL("fail");
+//             return false;
+//         }
+//         uint64_t stake_amount_s =
+//         (std::stod(stake_amount) + global::ca::kFixDoubleMinPrecision) *
+//         global::ca::kDecimalNum;
 
-        double commission = std::stold(strCommission);
-        debugL(stake_amount_s);
-         std::string strError = TxHelper::ReplaceCreateStakeTransaction(FromAddr, stake_amount_s, 0, &ack_t, commission);
-         debugL("strError:%s",strError);
-        if (strError != "0") {
-            out_json["message"]=strError;
-            out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"]=ack_t.paseToString();
-        out_json["error"]="0";
-        return true;
+//         double commission = std::stold(strCommission);
+//         debugL(stake_amount_s);
+//          std::string strError = TxHelper::ReplaceCreateStakeTransaction(FromAddr, stake_amount_s, 0, &ack_t, commission);
+//          debugL("strError:%s",strError);
+//         if (strError != "0") {
+//             out_json["message"]=strError;
+//             out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"]=ack_t.paseToString();
+//         out_json["error"]="0";
+//         return true;
 
-    };
+//     };
 
-    auto unstake=[](const nlohmann::json & obj_func,nlohmann::json & out_json)->bool
-    {
-        tx_ack ack_t;
-        std::tuple<std::string,std::string> params=GetRpcParams<std::string,std::string>(obj_func);
-        std::string addr=std::get<0>(params);
-        std::string utxohash=std::get<1>(params);
+//     auto unstake=[](const nlohmann::json & obj_func,nlohmann::json & out_json)->bool
+//     {
+//         tx_ack ack_t;
+//         std::tuple<std::string,std::string> params=GetRpcParams<std::string,std::string>(obj_func);
+//         std::string addr=std::get<0>(params);
+//         std::string utxohash=std::get<1>(params);
 
-        std::string strError =
-        TxHelper::ReplaceCreatUnstakeTransaction(addr, utxohash, &ack_t);
-        if (strError != "0") {
-            out_json["message"]=strError;
-            out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"]=ack_t.paseToString();
-        out_json["error"]="0";
-        return true;
-    };
+//         std::string strError =
+//         TxHelper::ReplaceCreatUnstakeTransaction(addr, utxohash, &ack_t);
+//         if (strError != "0") {
+//             out_json["message"]=strError;
+//             out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"]=ack_t.paseToString();
+//         out_json["error"]="0";
+//         return true;
+//     };
 
-    auto invest_func=[](const nlohmann::json & obj_func,nlohmann::json & out_json)->bool
-    {
-        tx_ack ack_t;
-        std::tuple<std::string,std::string,std::string> params=GetRpcParams<std::string,std::string,std::string>(obj_func);
-        std::string fAddr=std::get<0>(params);
-        std::string tAddr=std::get<1>(params);
-        std::string value=std::get<2>(params);
-        debugL("f:%s,t:%s,v:%s",fAddr,tAddr,value);
+//     auto invest_func=[](const nlohmann::json & obj_func,nlohmann::json & out_json)->bool
+//     {
+//         tx_ack ack_t;
+//         std::tuple<std::string,std::string,std::string> params=GetRpcParams<std::string,std::string,std::string>(obj_func);
+//         std::string fAddr=std::get<0>(params);
+//         std::string tAddr=std::get<1>(params);
+//         std::string value=std::get<2>(params);
+//         debugL("f:%s,t:%s,v:%s",fAddr,tAddr,value);
 
-        std::regex pattern("(^[1-9]\\d*\\.\\d+$|^0\\.\\d+$|^[1-9]\\d*$|^0$)");\
-        if (!std::regex_match(value, pattern)){
-            out_json["message"]=Sutil::Format("field:%s is no a number", "stake_amount");
-            out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
-            return false;
-        }
+//         std::regex pattern("(^[1-9]\\d*\\.\\d+$|^0\\.\\d+$|^[1-9]\\d*$|^0$)");\
+//         if (!std::regex_match(value, pattern)){
+//             out_json["message"]=Sutil::Format("field:%s is no a number", "stake_amount");
+//             out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
+//             return false;
+//         }
 
         
-        uint64_t investAmout =
-        (std::stod(value) + global::ca::kFixDoubleMinPrecision) *
-        global::ca::kDecimalNum;
-        int32_t investType = 0;
+//         uint64_t investAmout =
+//         (std::stod(value) + global::ca::kFixDoubleMinPrecision) *
+//         global::ca::kDecimalNum;
+//         int32_t investType = 0;
 
-        std::string strError = TxHelper::ReplaceCreateInvestTransaction(fAddr,tAddr, investAmout, investType, &ack_t);
-        debugL("strError",strError);
-        if (strError != "0") {
-            out_json["message"]=strError;
-            out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"]=ack_t.paseToString();
-        out_json["error"]="0";
-        return true;
-    };
+//         std::string strError = TxHelper::ReplaceCreateInvestTransaction(fAddr,tAddr, investAmout, investType, &ack_t);
+//         debugL("strError",strError);
+//         if (strError != "0") {
+//             out_json["message"]=strError;
+//             out_json["error"]=std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"]=ack_t.paseToString();
+//         out_json["error"]="0";
+//         return true;
+//     };
 
-    auto disinvest_func = [](const nlohmann::json &obj_func,
-                             nlohmann::json &out_json) -> bool {
-        tx_ack ack_t;
-        std::tuple<std::string, std::string, std::string> params =
-            GetRpcParams<std::string, std::string, std::string>(obj_func);
-        std::string fAddr = std::get<0>(params);
-        std::string tAddr = std::get<1>(params);
-        std::string utxo = std::get<2>(params);
+//     auto disinvest_func = [](const nlohmann::json &obj_func,
+//                              nlohmann::json &out_json) -> bool {
+//         tx_ack ack_t;
+//         std::tuple<std::string, std::string, std::string> params =
+//             GetRpcParams<std::string, std::string, std::string>(obj_func);
+//         std::string fAddr = std::get<0>(params);
+//         std::string tAddr = std::get<1>(params);
+//         std::string utxo = std::get<2>(params);
 
-        std::string strError = TxHelper::ReplaceCreateDisinvestTransaction(
-            fAddr, tAddr, utxo, &ack_t);
+//         std::string strError = TxHelper::ReplaceCreateDisinvestTransaction(
+//             fAddr, tAddr, utxo, &ack_t);
 
-        if (strError != "0") {
-            out_json["message"] = strError;
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"] = ack_t.paseToString();
-        out_json["error"] = "0";
-        return true;
-    };
-    auto bonus_func = [](const nlohmann::json &obj_func,
-                    nlohmann::json &out_json) -> bool {
-        tx_ack ack_t;
-        std::tuple<std::string> params = GetRpcParams<std::string>(obj_func);
-        std::string addr = std::get<0>(params);
-        std::string strError =
-            TxHelper::ReplaceCreateBonusTransaction(addr, &ack_t);
-        if (strError != "0") {
-            out_json["message"] = strError;
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"] = ack_t.paseToString();
-        out_json["error"] = "0";
-        return true;
-    };
+//         if (strError != "0") {
+//             out_json["message"] = strError;
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"] = ack_t.paseToString();
+//         out_json["error"] = "0";
+//         return true;
+//     };
+//     auto bonus_func = [](const nlohmann::json &obj_func,
+//                     nlohmann::json &out_json) -> bool {
+//         tx_ack ack_t;
+//         std::tuple<std::string> params = GetRpcParams<std::string>(obj_func);
+//         std::string addr = std::get<0>(params);
+//         std::string strError =
+//             TxHelper::ReplaceCreateBonusTransaction(addr, &ack_t);
+//         if (strError != "0") {
+//             out_json["message"] = strError;
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"] = ack_t.paseToString();
+//         out_json["error"] = "0";
+//         return true;
+//     };
 
-    auto deploycontract_func = [clearHash](const nlohmann::json &obj_func,
-                                           nlohmann::json &out_json) -> bool {
-        tx_ack ack_t;
-        std::tuple<std::string,    // base58
-                   std::string,    // contracttype
-                   nlohmann::json, // info
-                   std::string,    // contract,
-                   std::string,    // data
-                   std::string     // pubstrbase64
-                   >
-            params=
-                GetRpcParams<std::string, std::string, nlohmann::json,
-                             std::string, std::string, std::string>(obj_func);
+//     auto deploycontract_func = [clearHash](const nlohmann::json &obj_func,
+//                                            nlohmann::json &out_json) -> bool {
+//         tx_ack ack_t;
+//         std::tuple<std::string,    // base58
+//                    std::string,    // contracttype
+//                    nlohmann::json, // info
+//                    std::string,    // contract,
+//                    std::string,    // data
+//                    std::string     // pubstrbase64
+//                    >
+//             params=
+//                 GetRpcParams<std::string, std::string, nlohmann::json,
+//                              std::string, std::string, std::string>(obj_func);
 
-        std::string strFromAddr = std::get<0>(params);
-        std::string type_C = std::get<1>(params);
-        nlohmann::json info_t_con = std::get<2>(params);
-        std::string contract_str = std::get<3>(params);
-        std::string inputStr = std::get<4>(params);
-        std::string pubstrBase64 = std::get<5>(params);
+//         std::string strFromAddr = std::get<0>(params);
+//         std::string type_C = std::get<1>(params);
+//         nlohmann::json info_t_con = std::get<2>(params);
+//         std::string contract_str = std::get<3>(params);
+//         std::string inputStr = std::get<4>(params);
+//         std::string pubstrBase64 = std::get<5>(params);
 
-     //   nlohmann::json str=obj_func[2];
+//      //   nlohmann::json str=obj_func[2];
 
-        int ret = 0;
-        if (!CheckBase58Addr(strFromAddr)) {
-            out_json["message"] = DSTR "base58 error!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//         int ret = 0;
+//         if (!CheckBase58Addr(strFromAddr)) {
+//             out_json["message"] = DSTR "base58 error!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        DBReader dataReader;
-        uint64_t top = 0;
-        if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top)) {
+//         DBReader dataReader;
+//         uint64_t top = 0;
+//         if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top)) {
 
-            out_json["message"] = DSTR "db get top failed!!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//             out_json["message"] = DSTR "db get top failed!!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        uint32_t nContractType = std::stoi(type_C);
+//         uint32_t nContractType = std::stoi(type_C);
 
        
 
-        CTransaction outTx;
-        TxHelper::vrfAgentType isNeedAgent_flag;
-        Vrf info_;
-        if (nContractType == 0) {
+//         CTransaction outTx;
+//         TxHelper::vrfAgentType isNeedAgent_flag;
+//         Vrf info_;
+//         if (nContractType == 0) {
 
-            std::string code = contract_str;
+//             std::string code = contract_str;
 
-            if (code.empty()) {
-                out_json["message"] = DSTR "code is empty!";
-                out_json["error"] =
-                    std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-                return false;
-            }
+//             if (code.empty()) {
+//                 out_json["message"] = DSTR "code is empty!";
+//                 out_json["error"] =
+//                     std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//                 return false;
+//             }
 
-            std::string strInput = inputStr;
+//             std::string strInput = inputStr;
 
-            if (strInput == "0") {
-                strInput.clear();
-            } else if (strInput.substr(0, 2) == "0x") {
-                strInput = strInput.substr(2);
-                code += strInput;
-            }
-            // Account launchAccount;
-            Base64 base;
-            std::string pubstr =
-                base.Decode(pubstrBase64.c_str(), pubstrBase64.size());
-            std::string OwnerEvmAddr = evm_utils::GenerateEvmAddr(pubstr);
+//             if (strInput == "0") {
+//                 strInput.clear();
+//             } else if (strInput.substr(0, 2) == "0x") {
+//                 strInput = strInput.substr(2);
+//                 code += strInput;
+//             }
+//             // Account launchAccount;
+//             Base64 base;
+//             std::string pubstr =
+//                 base.Decode(pubstrBase64.c_str(), pubstrBase64.size());
+//             std::string OwnerEvmAddr = evm_utils::GenerateEvmAddr(pubstr);
 
-            ret = rpc_evm::RpcCreateEvmDeployContractTransaction(
-                strFromAddr, OwnerEvmAddr, code, top + 1, info_t_con, outTx,
-                isNeedAgent_flag, info_);
-            if (ret != 0) {
+//             ret = rpc_evm::RpcCreateEvmDeployContractTransaction(
+//                 strFromAddr, OwnerEvmAddr, code, top + 1, info_t_con, outTx,
+//                 isNeedAgent_flag, info_);
+//             if (ret != 0) {
 
-                out_json["message"] =
-                    DSTR Sutil::Format("Failed to create DeployContract "
-                                       "transaction! The error code is:%s",
-                                       ret);
-                out_json["error"] =
-                    std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-                return false;
-            }
-        } else {
-            out_json["message"] = DSTR "unknow error";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        // tx_ack *ack_t=(tx_ack*)ack;
-        clearHash(outTx);
-        std::string txJsonString;
-        std::string vrfJsonString;
-        google::protobuf::util::Status status =
-            google::protobuf::util::MessageToJsonString(outTx, &txJsonString);
-        status =
-            google::protobuf::util::MessageToJsonString(info_, &vrfJsonString);
-        ack_t.txJson = txJsonString;
-        ack_t.vrfJson = vrfJsonString;
-        ack_t.ErrorCode = "0";
-        ack_t.height = std::to_string(top);
-        ack_t.txType = std::to_string((int)isNeedAgent_flag);
+//                 out_json["message"] =
+//                     DSTR Sutil::Format("Failed to create DeployContract "
+//                                        "transaction! The error code is:%s",
+//                                        ret);
+//                 out_json["error"] =
+//                     std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//                 return false;
+//             }
+//         } else {
+//             out_json["message"] = DSTR "unknow error";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         // tx_ack *ack_t=(tx_ack*)ack;
+//         clearHash(outTx);
+//         std::string txJsonString;
+//         std::string vrfJsonString;
+//         google::protobuf::util::Status status =
+//             google::protobuf::util::MessageToJsonString(outTx, &txJsonString);
+//         status =
+//             google::protobuf::util::MessageToJsonString(info_, &vrfJsonString);
+//         ack_t.txJson = txJsonString;
+//         ack_t.vrfJson = vrfJsonString;
+//         ack_t.ErrorCode = "0";
+//         ack_t.height = std::to_string(top);
+//         ack_t.txType = std::to_string((int)isNeedAgent_flag);
 
-        if (ret != 0) {
-            out_json["message"] = std::to_string(ret);
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        out_json["body"] = ack_t.paseToString();
-        out_json["error"] = "0";
+//         if (ret != 0) {
+//             out_json["message"] = std::to_string(ret);
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         out_json["body"] = ack_t.paseToString();
+//         out_json["error"] = "0";
 
-        return true;
-    };
+//         return true;
+//     };
 
-    auto callcontract_func = [clearHash](const nlohmann::json &obj_func,nlohmann::json &out_json) -> bool {
-        tx_ack ack_t;
-        std::string addr = obj_func[0];
-        std::string deployer = obj_func[1];
-        std::string deployutxo = obj_func[2];
-        std::string args = obj_func[3];
-        std::string pubstrBase64 = obj_func[4];
-        std::string tip = obj_func[5];
-        std::string money = obj_func[6];
+//     auto callcontract_func = [clearHash](const nlohmann::json &obj_func,nlohmann::json &out_json) -> bool {
+//         tx_ack ack_t;
+//         std::string addr = obj_func[0];
+//         std::string deployer = obj_func[1];
+//         std::string deployutxo = obj_func[2];
+//         std::string args = obj_func[3];
+//         std::string pubstrBase64 = obj_func[4];
+//         std::string tip = obj_func[5];
+//         std::string money = obj_func[6];
 
-        if (!CheckBase58Addr(addr)) {
+//         if (!CheckBase58Addr(addr)) {
 
-            out_json["message"] = DSTR "base58 addr error!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//             out_json["message"] = DSTR "base58 addr error!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        std::string strInput = args;
-        // std::string strToAddr=ret_t->deployer;
+//         std::string strInput = args;
+//         // std::string strToAddr=ret_t->deployer;
 
-        DBReader dataReader;
+//         DBReader dataReader;
 
-        if (!CheckBase58Addr(deployer)) {
-            out_json["message"] = DSTR "base58 addr error!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//         if (!CheckBase58Addr(deployer)) {
+//             out_json["message"] = DSTR "base58 addr error!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        if (strInput.substr(0, 2) == "0x") {
-            strInput = strInput.substr(2);
-        }
+//         if (strInput.substr(0, 2) == "0x") {
+//             strInput = strInput.substr(2);
+//         }
 
-        std::string contractTipStr = tip;
+//         std::string contractTipStr = tip;
 
-        std::regex pattern("^\\d+(\\.\\d+)?$");
-        if (!std::regex_match(contractTipStr, pattern)) {
-            out_json["message"] = DSTR "input contract tip error ! ";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//         std::regex pattern("^\\d+(\\.\\d+)?$");
+//         if (!std::regex_match(contractTipStr, pattern)) {
+//             out_json["message"] = DSTR "input contract tip error ! ";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        std::string contractTransferStr = money;
-        if (!std::regex_match(contractTransferStr, pattern)) {
+//         std::string contractTransferStr = money;
+//         if (!std::regex_match(contractTransferStr, pattern)) {
 
-            out_json["message"] = DSTR "input contract transfer error ! ";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        uint64_t contractTip =
-            (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) *
-            global::ca::kDecimalNum;
-        uint64_t contractTransfer = (std::stod(contractTransferStr) +
-                                     global::ca::kFixDoubleMinPrecision) *
-                                    global::ca::kDecimalNum;
-        uint64_t top = 0;
-        if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top)) {
+//             out_json["message"] = DSTR "input contract transfer error ! ";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         uint64_t contractTip =
+//             (std::stod(contractTipStr) + global::ca::kFixDoubleMinPrecision) *
+//             global::ca::kDecimalNum;
+//         uint64_t contractTransfer = (std::stod(contractTransferStr) +
+//                                      global::ca::kFixDoubleMinPrecision) *
+//                                     global::ca::kDecimalNum;
+//         uint64_t top = 0;
+//         if (DBStatus::DB_SUCCESS != dataReader.GetBlockTop(top)) {
 
-            out_json["message"] = DSTR "db get top failed!!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//             out_json["message"] = DSTR "db get top failed!!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        CTransaction outTx;
-        CTransaction tx;
-        std::string tx_raw;
-        if (DBStatus::DB_SUCCESS !=
-            dataReader.GetTransactionByHash(deployutxo, tx_raw)) {
-            out_json["message"] = DSTR "get contract transaction failed!!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
-        if (!tx.ParseFromString(tx_raw)) {
+//         CTransaction outTx;
+//         CTransaction tx;
+//         std::string tx_raw;
+//         if (DBStatus::DB_SUCCESS !=
+//             dataReader.GetTransactionByHash(deployutxo, tx_raw)) {
+//             out_json["message"] = DSTR "get contract transaction failed!!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
+//         if (!tx.ParseFromString(tx_raw)) {
 
-            out_json["message"] = DSTR "contract transaction parse failed!!";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//             out_json["message"] = DSTR "contract transaction parse failed!!";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        nlohmann::json dataJson = nlohmann::json::parse(tx.data());
-        nlohmann::json tx_info = dataJson["TxInfo"].get<nlohmann::json>();
-        int vm_type = tx_info["VmType"].get<int>();
+//         nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+//         nlohmann::json tx_info = dataJson["TxInfo"].get<nlohmann::json>();
+//         int vm_type = tx_info["VmType"].get<int>();
 
-        int ret = 0;
-        TxHelper::vrfAgentType isNeedAgent_flag;
-        Vrf info_;
-        if (vm_type == global::ca::VmType::EVM) {
-            Base64 base;
-            std::string pubstr_ =
-                base.Decode(pubstrBase64.c_str(), pubstrBase64.size());
-            std::string OwnerEvmAddr = evm_utils::GenerateEvmAddr(pubstr_);
-            ret = rpc_evm::RpcCreateEvmCallContractTransaction(
-                addr, deployer, deployutxo, strInput, OwnerEvmAddr, top + 1,
-                outTx, isNeedAgent_flag, info_, contractTip, contractTransfer,true);
-            if (ret != 0) {
-                out_json["message"] = DSTR Sutil::Format(
-                    "Create call contract transaction failed! ret: %s", ret);
-                out_json["error"] =
-                    std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-                return false;
-            }
-        } else {
+//         int ret = 0;
+//         TxHelper::vrfAgentType isNeedAgent_flag;
+//         Vrf info_;
+//         if (vm_type == global::ca::VmType::EVM) {
+//             Base64 base;
+//             std::string pubstr_ =
+//                 base.Decode(pubstrBase64.c_str(), pubstrBase64.size());
+//             std::string OwnerEvmAddr = evm_utils::GenerateEvmAddr(pubstr_);
+//             ret = rpc_evm::RpcCreateEvmCallContractTransaction(
+//                 addr, deployer, deployutxo, strInput, OwnerEvmAddr, top + 1,
+//                 outTx, isNeedAgent_flag, info_, contractTip, contractTransfer,true);
+//             if (ret != 0) {
+//                 out_json["message"] = DSTR Sutil::Format(
+//                     "Create call contract transaction failed! ret: %s", ret);
+//                 out_json["error"] =
+//                     std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//                 return false;
+//             }
+//         } else {
 
-            out_json["message"] = DSTR "not EVM";
-            out_json["error"] =
-                std::to_string((int)RPCERROR::TRANSACTION_ERROR);
-            return false;
-        }
+//             out_json["message"] = DSTR "not EVM";
+//             out_json["error"] =
+//                 std::to_string((int)RPCERROR::TRANSACTION_ERROR);
+//             return false;
+//         }
 
-        // errorL("VVVVVVVRRRRFDATA:%s",info_.data());
-        clearHash(outTx);
-        std::string txJsonString;
-        std::string vrfJsonString;
-        google::protobuf::util::Status status =
-            google::protobuf::util::MessageToJsonString(outTx, &txJsonString);
-        status =
-            google::protobuf::util::MessageToJsonString(info_, &vrfJsonString);
-        ack_t.txJson = txJsonString;
-        ack_t.vrfJson = vrfJsonString;
-        ack_t.ErrorCode = "0";
-        ack_t.height = std::to_string(top);
-        ack_t.txType = std::to_string((int)isNeedAgent_flag);
-        out_json["body"] = ack_t.paseToString();
-        out_json["error"] = "0";
+//         // errorL("VVVVVVVRRRRFDATA:%s",info_.data());
+//         clearHash(outTx);
+//         std::string txJsonString;
+//         std::string vrfJsonString;
+//         google::protobuf::util::Status status =
+//             google::protobuf::util::MessageToJsonString(outTx, &txJsonString);
+//         status =
+//             google::protobuf::util::MessageToJsonString(info_, &vrfJsonString);
+//         ack_t.txJson = txJsonString;
+//         ack_t.vrfJson = vrfJsonString;
+//         ack_t.ErrorCode = "0";
+//         ack_t.height = std::to_string(top);
+//         ack_t.txType = std::to_string((int)isNeedAgent_flag);
+//         out_json["body"] = ack_t.paseToString();
+//         out_json["error"] = "0";
 
-        return true;
-    };
-
-    
-    auto get_height=[](const nlohmann::json &obj_func,nlohmann::json &out_json) {
-        the_top ack_t;
-        DBReader dbReader;
-        uint64_t top = 0;
-        dbReader.GetBlockTop(top);
-        ack_t.top = std::to_string(top);
-        out_json["height"]=top;
-        out_json["message"]="";
-        return true;
-    };
-
-    auto getbalance_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
-    {
-        std::string addr=obj_func[0];
-        if (!CheckBase58Addr(addr)) {
-            out_json["message"]="check base error";
-            out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
-            return false;
-        }
-
-        uint64_t balance = 0;
-        if (GetBalanceByUtxo(addr.c_str(), balance) != 0) {
-            out_json["message"]="find addr error";
-            out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
-            return false;
-        
-        }
-        out_json["balance"]=std::to_string(balance);
-        return true;
-    };
-
-    auto getstakeutxo_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
-    {
-         std::string addr=obj_func[0];
-        DBReader dbReader;
-        std::vector<string> utxos;
-        dbReader.GetStakeAddressUtxo(addr, utxos);
-        std::reverse(utxos.begin(), utxos.end());
-        std::map<std::string, uint64_t> outPut;
-
-        for (auto &utxo : utxos) {
-            std::string txRaw;
-            dbReader.GetTransactionByHash(utxo, txRaw);
-            CTransaction tx;
-            tx.ParseFromString(txRaw);
-            uint64_t value = 0;
-            for (auto &vout : tx.utxo().vout()) {
-                if (vout.addr() == global::ca::kVirtualStakeAddr) {
-                    value = vout.value();
-                }
-                outPut[utxo] = value;
-            }
-        }
-        nlohmann::json utxos_json;
-        for(auto & n:outPut){
-            nlohmann::json utxo_json;
-            utxo_json["utxo"]=n.first;
-            utxo_json["value"]=n.second;
-            utxos_json.push_back(utxo_json);
-        }
-        out_json["utxos"]=utxos_json;
-        return true;
+//         return true;
+//     };
 
     
-    };
+//     auto get_height=[](const nlohmann::json &obj_func,nlohmann::json &out_json) {
+//         the_top ack_t;
+//         DBReader dbReader;
+//         uint64_t top = 0;
+//         dbReader.GetBlockTop(top);
+//         ack_t.top = std::to_string(top);
+//         out_json["height"]=top;
+//         out_json["message"]="";
+//         return true;
+//     };
 
-    auto getdeployutxo_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
-    {
-        DBReader dataReader;
-        std::string addr=obj_func[0];
-        std::vector<std::string> vecDeployUtxos;
-        dataReader.GetDeployUtxoByDeployerAddr(addr, vecDeployUtxos);
-        std::cout << "=====================deployed utxos====================="
-              << std::endl;
-        for (auto &deploy_utxo : vecDeployUtxos) {
-            std::cout << "deployed utxo: " << deploy_utxo << std::endl;
-        }
-        std::cout << "=====================deployed utxos====================="
-              << std::endl;
-        //ack_t.utxos = vecDeployUtxos;
-         nlohmann::json utxos_json;
-        for(auto & n:vecDeployUtxos){
-            nlohmann::json utxo_json;
-            utxo_json["utxo"]=n;
-            utxos_json.push_back(utxo_json);
-        }
-        out_json["utxos"]=utxos_json;
-        return true;
+//     auto getbalance_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
+//     {
+//         std::string addr=obj_func[0];
+//         if (!CheckBase58Addr(addr)) {
+//             out_json["message"]="check base error";
+//             out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
+//             return false;
+//         }
 
-    };
+//         uint64_t balance = 0;
+//         if (GetBalanceByUtxo(addr.c_str(), balance) != 0) {
+//             out_json["message"]="find addr error";
+//             out_json["error"]=(int)RPCERROR::NUMBER_ERROR;
+//             return false;
+        
+//         }
+//         out_json["balance"]=std::to_string(balance);
+//         return true;
+//     };
 
-    auto getinvestutxo_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
-    {
-       std::string faddr=obj_func[0];
-       std::string taddr=obj_func[1];
+//     auto getstakeutxo_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
+//     {
+//          std::string addr=obj_func[0];
+//         DBReader dbReader;
+//         std::vector<string> utxos;
+//         dbReader.GetStakeAddressUtxo(addr, utxos);
+//         std::reverse(utxos.begin(), utxos.end());
+//         std::map<std::string, uint64_t> outPut;
+
+//         for (auto &utxo : utxos) {
+//             std::string txRaw;
+//             dbReader.GetTransactionByHash(utxo, txRaw);
+//             CTransaction tx;
+//             tx.ParseFromString(txRaw);
+//             uint64_t value = 0;
+//             for (auto &vout : tx.utxo().vout()) {
+//                 if (vout.addr() == global::ca::kVirtualStakeAddr) {
+//                     value = vout.value();
+//                 }
+//                 outPut[utxo] = value;
+//             }
+//         }
+//         nlohmann::json utxos_json;
+//         for(auto & n:outPut){
+//             nlohmann::json utxo_json;
+//             utxo_json["utxo"]=n.first;
+//             utxo_json["value"]=n.second;
+//             utxos_json.push_back(utxo_json);
+//         }
+//         out_json["utxos"]=utxos_json;
+//         return true;
+
+    
+//     };
+
+//     auto getdeployutxo_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
+//     {
+//         DBReader dataReader;
+//         std::string addr=obj_func[0];
+//         std::vector<std::string> vecDeployUtxos;
+//         dataReader.GetDeployUtxoByDeployerAddr(addr, vecDeployUtxos);
+//         std::cout << "=====================deployed utxos====================="
+//               << std::endl;
+//         for (auto &deploy_utxo : vecDeployUtxos) {
+//             std::cout << "deployed utxo: " << deploy_utxo << std::endl;
+//         }
+//         std::cout << "=====================deployed utxos====================="
+//               << std::endl;
+//         //ack_t.utxos = vecDeployUtxos;
+//          nlohmann::json utxos_json;
+//         for(auto & n:vecDeployUtxos){
+//             nlohmann::json utxo_json;
+//             utxo_json["utxo"]=n;
+//             utxos_json.push_back(utxo_json);
+//         }
+//         out_json["utxos"]=utxos_json;
+//         return true;
+
+//     };
+
+//     auto getinvestutxo_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
+//     {
+//        std::string faddr=obj_func[0];
+//        std::string taddr=obj_func[1];
 
         
 
 
-        DBReader dbReader;
-        std::vector<string> vecUtxos;
-        dbReader.GetBonusAddrInvestUtxosByBonusAddr(taddr, faddr,
-                                                 vecUtxos);
-        std::reverse(vecUtxos.begin(), vecUtxos.end());
+//         DBReader dbReader;
+//         std::vector<string> vecUtxos;
+//         dbReader.GetBonusAddrInvestUtxosByBonusAddr(taddr, faddr,
+//                                                  vecUtxos);
+//         std::reverse(vecUtxos.begin(), vecUtxos.end());
 
 
-          nlohmann::json utxos_json;
-        for(auto & n:vecUtxos){
-            nlohmann::json utxo_json;
-            utxo_json["utxo"]=n;
-            utxos_json.push_back(utxo_json);
-        }
-        out_json["utxos"]=utxos_json;
-        return true;
+//           nlohmann::json utxos_json;
+//         for(auto & n:vecUtxos){
+//             nlohmann::json utxo_json;
+//             utxo_json["utxo"]=n;
+//             utxos_json.push_back(utxo_json);
+//         }
+//         out_json["utxos"]=utxos_json;
+//         return true;
 
-    };
-    auto sendtransation_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
-    {
-        rpc_ack ack_back;
-        tx_ack ack_t;
-        ack_t.paseFromJson(obj_func[0]);
-        std::string vlaue=obj_func[0];
-        debugL("vlaue:%s------------->",vlaue);
-        CTransaction tx;
-        Vrf info;
-        int height;
-        TxHelper::vrfAgentType type;
-        google::protobuf::util::Status status =
-        google::protobuf::util::JsonStringToMessage(ack_t.txJson, &tx);
-        status = google::protobuf::util::JsonStringToMessage(ack_t.vrfJson, &info);
+//     };
+//     auto sendtransation_func=[](const nlohmann::json &obj_func,nlohmann::json &out_json)->bool
+//     {
+//         rpc_ack ack_back;
+//         tx_ack ack_t;
+//         ack_t.paseFromJson(obj_func[0]);
+//         std::string vlaue=obj_func[0];
+//         debugL("vlaue:%s------------->",vlaue);
+//         CTransaction tx;
+//         Vrf info;
+//         int height;
+//         TxHelper::vrfAgentType type;
+//         google::protobuf::util::Status status =
+//         google::protobuf::util::JsonStringToMessage(ack_t.txJson, &tx);
+//         status = google::protobuf::util::JsonStringToMessage(ack_t.vrfJson, &info);
    
 
-        height = std::stoi(ack_t.height);
-        type = (TxHelper::vrfAgentType)std::stoi(ack_t.txType);
-        std::string txHash = Getsha256hash(tx.SerializeAsString());
-        ack_back.txhash = txHash;
-        int ret = TxHelper::SendMessage(tx, height, info, type);
-        ack_back.ErrorCode = std::to_string(ret);
+//         height = std::stoi(ack_t.height);
+//         type = (TxHelper::vrfAgentType)std::stoi(ack_t.txType);
+//         std::string txHash = Getsha256hash(tx.SerializeAsString());
+//         ack_back.txhash = txHash;
+//         int ret = TxHelper::SendMessage(tx, height, info, type);
+//         ack_back.ErrorCode = std::to_string(ret);
 
-        std::string back = ack_back.paseToString();
-        out_json["message"]=back;
-        out_json["error"]="0";
-        return true;
-    };
+//         std::string back = ack_back.paseToString();
+//         out_json["message"]=back;
+//         out_json["error"]="0";
+//         return true;
+//     };
 
-    static std::map<std::string ,std::function<bool(const nlohmann::json &,nlohmann::json &)>> method_table=
-    {
-        {"transaction",transaction_func},
-        {"stake",stake_func},
-        {"unstake",unstake},
-        {"invest",invest_func},
-        {"disinvest",disinvest_func},
-        {"bonus",bonus_func},
-        {"deploycontract",deploycontract_func},
-        {"callcontract",callcontract_func},
-        {"sendtransation",sendtransation_func},
-        {"getinvestutxo",getinvestutxo_func},
-        {"getdeployutxo",getdeployutxo_func},
-        {"getstakeutxo",getstakeutxo_func}
-        };
+//     static std::map<std::string ,std::function<bool(const nlohmann::json &,nlohmann::json &)>> method_table=
+//     {
+//         {"transaction",transaction_func},
+//         {"stake",stake_func},
+//         {"unstake",unstake},
+//         {"invest",invest_func},
+//         {"disinvest",disinvest_func},
+//         {"bonus",bonus_func},
+//         {"deploycontract",deploycontract_func},
+//         {"callcontract",callcontract_func},
+//         {"sendtransation",sendtransation_func},
+//         {"getinvestutxo",getinvestutxo_func},
+//         {"getdeployutxo",getdeployutxo_func},
+//         {"getstakeutxo",getstakeutxo_func}
+//         };
 
-    method_table[method_string](params,jsonRet);
+//     method_table[method_string](params,jsonRet);
 
-    res.set_content(jsonRet.dump(), "application/json");
+//     res.set_content(jsonRet.dump(), "application/json");
 
-}
+// }
 
 #endif
 
@@ -2999,3 +3115,38 @@ void ApiSetCalc1000TopHeight(const Request &req,Response &res)
     res.set_content("SetBlockComHashHeight success", "text/plain");
 
 }
+
+void ApiPrintContractBlock(const Request & req, Response & res)
+{
+    {
+    int num = 100;
+    if (req.has_param("num")) {
+        num = atol(req.get_param_value("num").c_str());
+    }
+    int startNum = 0;
+    if (req.has_param("height")) {
+        startNum = atol(req.get_param_value("height").c_str());
+    }
+    int hash = 0;
+    if (req.has_param("hash")) {
+        hash = atol(req.get_param_value("hash").c_str());
+    }
+
+    std::string str;
+
+    if (hash) {
+        str = PrintBlocksHash(num, req.has_param("pre_hash_flag"));
+        res.set_content(str, "text/plain");
+        return;
+    }
+
+    if (startNum == 0)
+        str = PrintContractBlocks(num, req.has_param("pre_hash_flag"));
+    else
+        str = PrintRangeContractBlocks(startNum, num, req.has_param("pre_hash_flag"));
+
+    res.set_content(str, "text/plain");
+}
+}
+
+

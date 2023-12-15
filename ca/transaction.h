@@ -65,6 +65,9 @@ TransactionType GetTransactionType(const CTransaction & tx);
  */
 int HandleTx( const std::shared_ptr<TxMsgReq>& msg, const MsgData& msgdata );
 
+int HandleContractTx( const std::shared_ptr<ContractTxMsgReq>& msg, const MsgData& msgdata );
+
+
 /**
  * @brief       
  * 
@@ -73,6 +76,7 @@ int HandleTx( const std::shared_ptr<TxMsgReq>& msg, const MsgData& msgdata );
  * @return      int 
  */
 int DoHandleTx( const std::shared_ptr<TxMsgReq>& msg, CTransaction & outTx);
+int DoHandleTx_V33_1(const std::shared_ptr<TxMsgReq> &msg, CTransaction &outTx);
 
 /**
  * @brief       
@@ -106,6 +110,7 @@ int VerifyBlockSign(const CBlock &block);
  * @return      int 
  */
 int DoHandleBlock(const std::shared_ptr<BlockMsg>& msg);
+int DoHandleBlock_V33_1(const std::shared_ptr<BlockMsg>& msg);
 
 /**
  * @brief       
@@ -136,6 +141,26 @@ int FindSignNode(const CTransaction & tx, const std::shared_ptr<TxMsgReq> &msg, 
  */
 int GetBlockPackager(std::string &packager,const std::string & hash,Vrf & info);
 
+
+
+/**
+ * @brief       Get the Contract Block Packager object
+ * 
+ * @param       packager: 
+ * @param       txTime: 
+ * @param       txHeight: 
+ * @param       packager:
+ * @param       info: 
+ * @return      int 
+ */
+
+int GetVrfDataSourceByTime(const uint64_t& txTime, const uint64_t& txHeight, std::string &txHash, std::vector<std::string>& targetAddrs);
+
+int CalculateThePackerByTime(const uint64_t& txTime, const uint64_t& txHeight, std::string& packager, std::string& proof, std::string &txHash);
+
+int GetContractBlockPackager(const uint64_t& txTime, const uint64_t& txHeight, std::string& packager, Vrf& info);
+
+int IsContractVrfVerifyNode(const CTransaction& tx, const uint64_t& height, const Vrf& vrfInfo);
 /**
  * @brief       
  * 
@@ -240,6 +265,7 @@ int IsQualifiedToDisinvest(const std::string& fromAddr, const std::string& toAdd
  * @return      int 
  */
 int VerifyTxTimeOut(const CTransaction &tx);
+int VerifyTxTimeOut_V33_1(const CTransaction &tx);
 
 /**
  * @brief       
@@ -373,6 +399,8 @@ int HandleAddBlockAck(const std::shared_ptr<BuildBlockBroadcastMsgAck>& msg, con
  */
 int DropshippingTx(const std::shared_ptr<TxMsgReq> & txMsg,const CTransaction &tx);
 
+int DropCallShippingTx(const std::shared_ptr<ContractTxMsgReq> & txMsg,const CTransaction &tx);
+
 /**
  * @brief       
  * 
@@ -430,6 +458,8 @@ int getVrfdata(const Vrf &vrf, std::string &hash, std::string &targetAddr);
  */
 void ClearVRF(const CBlock &block);
 
+int GetContractRootHash(const std::string& contractAddress, std::string& rootHash);
+
 /**
  * @brief       
  * 
@@ -447,5 +477,13 @@ static void FilterConsensusNodeList(const CTransaction & tx, std::vector<Node> &
  * @return      int 
  */
 static int FilterSendList(int & endPos,Cycliclist<std::string> &list, std::vector<std::string> &targetAddrs);
+
+bool IsContractBlock(const CBlock & block);
+
+static int CalculatePackNode(const std::vector<Node> &nodes, const double &randNum, const bool& isVerify, std::vector<std::string>& targetAddrs);
+
+int FindContractPackNode(const std::string & txHash, std::string &targetAddr, Vrf& vrfInfo);
+
+int VerifyContractPackNode(const double& randNum, const std::string& targetAddr);
 
 #endif

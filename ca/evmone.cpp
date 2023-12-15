@@ -4,6 +4,7 @@
 #include <evmone/evmone.h>
 #include "utils/json.hpp"
 #include "utils/console.h"
+#include <ostream>
 #include <proto/transaction.pb.h>
 #include <db/db_api.h>
 #include "transaction.h"
@@ -12,6 +13,8 @@
 #include "include/logging.h"
 #include "utils/contract_utils.h"
 #include "algorithm.h"
+#include "transaction_cache.h"
+#include "api/interface/rpc_error.h"
 #include <future>
 #include <chrono>
 
@@ -87,6 +90,189 @@ int Evmone::DeployContract(const std::string &fromAddr, const std::string &owner
 
 int
 Evmone::CallContract(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &strDeployer, const std::string &strDeployHash,
+                     const std::string &strInput, std::string &strOutput, TfsHost &host, int64_t &gasCost, const uint64_t& contractTransfer)
+{
+    // check whether the addr has deployed the tx hash
+    DBReader data_reader;
+    std::vector<std::string> vecDeployHashs;
+    auto ret = data_reader.GetDeployUtxoByDeployerAddr(strDeployer, vecDeployHashs);
+    if(ret != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetDeployUtxoByDeployerAddr failed!:{}",strDeployer);
+        return -1;
+    }
+    auto iter = std::find(vecDeployHashs.cbegin(), vecDeployHashs.cend(), strDeployHash);
+    if(iter == vecDeployHashs.cend())
+    {
+        ERRORLOG("Transaction has not been deployed at this address!");
+        return -2;
+    }
+    std::string contractAddress = evm_utils::GenerateContractAddr(strDeployer + strDeployHash);
+    std::cout<<"contractAddress:" << contractAddress << std::endl;
+    std::string deployHash;
+    if(data_reader.GetContractDeployUtxoByContractAddr(contractAddress, deployHash) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetContractDeployUtxoByContractAddr failed!");
+        return -3;
+    }
+    std::string txRaw;
+    if(data_reader.GetTransactionByHash(deployHash, txRaw) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetTransactionByHash failed!");
+        return -4;
+    }
+    CTransaction deployTx;
+    if(!deployTx.ParseFromString(txRaw))
+    {
+        ERRORLOG("Transaction Parse failed!");
+        return -5;
+    }
+
+    std::string block_hash;
+    if(data_reader.GetBlockHashByTransactionHash(deployTx.hash(), block_hash) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetBlockHashByTransactionHash failed!");
+        return -6;
+    }
+    std::string str_block;
+    if(data_reader.GetBlockByBlockHash(block_hash, str_block) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetBlockByBlockHash failed!");
+        return -7;
+    }
+
+    CBlock block;
+    if(!block.ParseFromString(str_block))
+    {
+        ERRORLOG("Block Parse failed!");
+        return -8;
+    }
+    uint64_t selfNodeHeight = 0;
+    auto status = data_reader.GetBlockTop(selfNodeHeight);
+    if (DBStatus::DB_SUCCESS != status)
+    {
+        std::cout << "Get block top error,please try again: "<< std::endl;
+        return -9;
+    }
+    if(selfNodeHeight > global::ca::OldVersionSmartContractFailureHeight && block.height() <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+        ERRORLOG("Smart contracts Failure!");
+        std::cout << "deployed block height: " << block.height() << std::endl;
+        std::cout << "Smart contracts deployed before height " << global::ca::OldVersionSmartContractFailureHeight << " have expired" << std::endl;
+        return -10;
+    }
+
+    std::string strCode;
+    evmc::bytes code;
+    evmc::bytes input;
+    try
+    {
+        nlohmann::json dataJson = nlohmann::json::parse(deployTx.data());
+        nlohmann::json txInfo = dataJson["TxInfo"].get<nlohmann::json>();
+        strCode = txInfo["Output"].get<std::string>();
+        if(strCode.empty())
+        {
+            return -11;
+        }
+        code = evmc::from_hex(strCode);
+        input = evmc::from_hex(strInput);
+
+    }
+    catch(const std::exception& e)
+    {
+        ERRORLOG("can't parse deploy contract transaction");
+        return -12;
+    }
+    // msg
+    evmc_address&& evmAddr = evm_utils::StringToEvmAddr(ownerEvmAddr);
+    evmc_message msg{};
+    msg.kind = EVMC_CALL;
+    msg.input_data = input.data();
+    msg.input_size = input.size();
+    msg.recipient = evm_utils::StringToEvmAddr(evm_utils::GenerateEvmAddr(strDeployer + strDeployHash));
+    msg.sender = evmAddr;
+    uint64_t balance = 0;
+    GetBalanceByUtxo(fromAddr, balance);
+    msg.gas = balance;
+
+    dev::u256 value = contractTransfer;
+    if(value > 0)
+    {
+       dev::bytes by = dev::fromHex(dev::toCompactHex(value, 32));
+       memcpy(msg.value.bytes, &by[0], by.size() * sizeof(uint8_t));
+    }
+
+    host.coin_transferrings.emplace_back(evm_utils::EvmAddrToBase58(msg.sender), evm_utils::EvmAddrToBase58(msg.recipient), contractTransfer);
+    struct evmc_tx_context tx_context = {
+        .tx_origin = evmAddr
+    };
+    host.tx_context = tx_context;
+
+    // host
+//    std::string strPrevTxHash;
+//	ret = data_reader.GetLatestUtxoByContractAddr(contractAddress, strPrevTxHash);
+//    if(ret != DBStatus::DB_SUCCESS)
+//    {
+//		ERRORLOG("GetLatestUtxoByContractAddr failed!");
+//        return -8;
+//    }
+//
+//    CTransaction PrevTx;
+//    std::string transactionRaw;
+//	ret = data_reader.GetTransactionByHash(strPrevTxHash, transactionRaw);
+//
+//    if(ret != DBStatus::DB_SUCCESS)
+//    {
+//		ERRORLOG("GetTransactionByHash failed!");
+//        return -9;
+//    }
+//
+//    if(!PrevTx.ParseFromString(transactionRaw))
+//    {
+//		ERRORLOG("parse failed!");
+//        return -10;
+//    }
+//
+//	std::string rootHash;
+//    try
+//    {
+//        nlohmann::json jPrevData = nlohmann::json::parse(PrevTx.data());
+//        nlohmann::json jPrevStorage = jPrevData["TxInfo"]["Storage"];
+//        if(!jPrevStorage.is_null())
+//        {
+//            auto tx_type = (global::ca::TxType)PrevTx.txtype();
+//            if(tx_type == global::ca::TxType::kTxTypeDeployContract)
+//            {
+//                rootHash = jPrevStorage[std::string("_") + "rootHash"].get<std::string>();
+//            }
+//            else
+//            {
+//                rootHash = jPrevStorage[contractAddress + "_" + "rootHash"].get<std::string>();
+//            }
+//        }
+//
+//    }
+//    catch(...)
+//    {
+//		ERRORLOG("Parsing failed!");
+//        return -11;
+//    }
+
+    std::string rootHash;
+    int retVal = GetContractRootHash(contractAddress, rootHash);
+    if (retVal != 0)
+    {
+        return retVal;
+    }
+    host.accounts[msg.recipient].CreateTrie(rootHash, contractAddress);
+    host.accounts[msg.recipient].set_code(code);
+    int res = ExecuteByEvmone(msg, code, host, strOutput, gasCost);
+    DEBUGLOG("evm execute ret: {}", res);
+    return res;
+}
+
+int
+Evmone::CallContract_V33_1(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &strDeployer, const std::string &strDeployHash,
                      const std::string &strInput, std::string &strOutput, TfsHost &host, int64_t &gasCost, const uint64_t& contractTransfer)
 {
     // check whether the addr has deployed the tx hash
@@ -236,7 +422,23 @@ void Evmone::GetStorage(const TfsHost& host, nlohmann::json& jStorage, std::set<
         std::map<std::string, std::string> dirtyhash;
         std::shared_ptr<Trie> root = account.second.storageRoot;
         root->Save();
-        root->GetBlockStorage(rootHash, dirtyhash);
+        
+        uint64_t selfNodeHeight = 0;
+        DBReader dbReader;
+        auto status = dbReader.GetBlockTop(selfNodeHeight);
+        if (DBStatus::DB_SUCCESS != status)
+        {
+            DEBUGLOG("Get block top error");
+            return;
+        }
+        if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+        {
+            root->GetBlockStorage_V33_1(rootHash, dirtyhash);
+        }
+        else
+        {
+             root->GetBlockStorage(rootHash, dirtyhash);
+        }
 
         if(!dirtyhash.empty())
         {
@@ -261,6 +463,14 @@ void Evmone::GetStorage(const TfsHost& host, nlohmann::json& jStorage, std::set<
     }
 }
 
+void Evmone::GetCalledContract(const TfsHost& host, std::vector<std::string>& calledContract)
+{
+    for(const auto &account : host.accounts)
+    {
+        calledContract.push_back(evm_utils::EvmAddrToBase58(account.first));
+    }
+}
+
 void Evmone::GetSelfdestructs(const TfsHost& host, nlohmann::json& jSelfdestructs)
 {
     DBReader data_reader;
@@ -277,7 +487,80 @@ void Evmone::GetSelfdestructs(const TfsHost& host, nlohmann::json& jSelfdestruct
     }
 }
 
-int Evmone::ContractInfoAdd(const TfsHost& host, nlohmann::json& jTxInfo, global::ca::TxType TxType)
+int Evmone::ContractInfoAdd(const TfsHost &host, const std::string &txHash, global::ca::TxType TxType,
+                            uint32_t transactionVersion,
+                            nlohmann::json &jTxInfo, std::map<std::string, std::string> &contractPreHashCache)
+{
+    nlohmann::json jStorage;
+    std::set<address> dirtyContract;
+    GetStorage(host, jStorage, dirtyContract);
+    jTxInfo["Storage"] = jStorage;
+
+    DBReader data_reader;
+    std::map<std::string,std::string> items;
+    evmc::address createAddress = {{0,1,2}};
+    for(auto &account : host.accounts)
+    {
+        if(TxType == global::ca::TxType::kTxTypeDeployContract && account.first == createAddress)
+        {
+            continue;
+        }
+
+        if(dirtyContract.find(account.first) == dirtyContract.end())
+        {
+            continue;
+        }
+
+        std::string callAddress = account.second.storageRoot->contractAddr;
+        std::string strPrevTxHash;
+        if (transactionVersion == global::ca::kInitTransactionVersion)
+        {
+            if (data_reader.GetLatestUtxoByContractAddr(callAddress, strPrevTxHash) != DBStatus::DB_SUCCESS)
+            {
+                ERRORLOG("GetLatestUtxo of ContractAddr {} fail", callAddress);
+                return -1;
+            }
+        }
+        else if (transactionVersion == global::ca::kCurrentTransactionVersion)
+        {
+            strPrevTxHash = MagicSingleton<TransactionCache>::GetInstance()->GetAndUpdateContractPreHash(
+                    callAddress, txHash, contractPreHashCache);
+        }
+
+        items[callAddress] = strPrevTxHash;
+    }
+    jTxInfo["PrevHash"] = items;
+
+    for(auto &it : host.recorded_logs)
+    {
+        nlohmann::json logmap;
+        logmap["creator"] = evm_utils::EvmAddrToString(it.creator);
+        logmap["data"] = evmc::hex({it.data.data(), it.data.size()});
+        for(auto& topic : it.topics)
+        {
+            logmap["topics"].push_back(evmc::hex({topic.bytes, sizeof(topic.bytes)}));
+        }
+        jTxInfo["log"].push_back(logmap);
+    }
+
+    std::map<std::string,std::string> destructItems;
+    for(auto &it : host.recorded_selfdestructs)
+    {
+        std::string contractAddress = evm_utils::EvmAddrToBase58(evmc::hex({it.selfdestructed.bytes,sizeof(it.selfdestructed.bytes)}));
+        std::string deployHash;
+        if(data_reader.GetContractDeployUtxoByContractAddr(contractAddress, deployHash) != DBStatus::DB_SUCCESS)
+        {
+            DEBUGLOG("GetContractDeployUtxoByContractAddr failed!, base58Addr:{}", contractAddress);
+            return -2;
+        }
+        destructItems[contractAddress] = deployHash;
+
+    }
+    jTxInfo["selfdestructs"] = destructItems;
+    return 0;
+}
+
+int Evmone::ContractInfoAdd_V33_1(const TfsHost& host, nlohmann::json& jTxInfo, global::ca::TxType TxType)
 {
     nlohmann::json jStorage;
     std::set<address> dirtyContract;
@@ -387,17 +670,17 @@ int Evmone::GenVin(const std::vector<std::string>& vecfromAddr,CTxUtxo * txUtxo,
 
         if(isSign)
         {
-            std::string serVinHash = Getsha256hash(vin->SerializeAsString());
-            std::string signature;
-            std::string pub;
-            if (TxHelper::Sign(owner, serVinHash, signature, pub) != 0)
-            {
-                return -8;
-            }
-
-            CSign * vinSign = vin->mutable_vinsign();
-            vinSign->set_sign(signature);
-            vinSign->set_pub(pub);
+            // std::string serVinHash = Getsha256hash(vin->SerializeAsString());
+            // std::string signature;
+            // std::string pub;
+            // if (TxHelper::Sign(owner, serVinHash, signature, pub) != 0)
+            // {
+            //     return -8;
+            // }
+      
+            // CSign * vinSign = vin->mutable_vinsign();
+            // vinSign->set_sign(signature);
+            // vinSign->set_pub(pub);
         }
         else
         {
@@ -437,20 +720,100 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
         return -3;
     }
 
-    //ca_algorithm::PrintTx(outTx);
-
     auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    TxHelper::GetTxStartIdentity(std::vector<std::string>(),height,currentTime,type);
+    
+    if(global::ca::TxType::kTxTypeCallContract == tx_type || global::ca::TxType::kTxTypeDeployContract == tx_type)
+    {
+        type = TxHelper::vrfAgentType_vrf;
+    }
+    else
+    {
+         TxHelper::GetTxStartIdentity(height,currentTime,type);
+    }
+   
     if(type == TxHelper::vrfAgentType_unknow)
     {
     //This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
         type = TxHelper::vrfAgentType_defalut;
     }
 
-    if (TxHelper::AddMutilSign(fromAddr, outTx) != 0)
+    // if (TxHelper::AddMutilSign(fromAddr, outTx) != 0)
+    // {
+    //     return -11;
+    // }
+
+    outTx.set_time(currentTime);
+    //Determine whether dropshipping is default or local dropshipping
+    if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
     {
-        return -11;
+        outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
     }
+    else
+    {
+        std::string identity;
+        int ret = GetContractBlockPackager(outTx.time(), height - 1, identity, info_);
+        if(ret != 0)
+        {
+            ERRORLOG("GetContractBlockPackager fail ret: {}", ret);
+            return ret -= 300;
+        }
+        outTx.set_identity(identity);
+        DEBUGLOG("@@@@@ owner = {} , packager = {} , txhash = {}",fromAddr, identity,outTx.hash());
+    }
+
+    outTx.set_version(global::ca::kCurrentTransactionVersion);
+    outTx.set_txtype((uint32_t)tx_type);
+    outTx.set_consensus(global::ca::kConsensus);
+
+   // std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    //outTx.set_hash(txHash);
+
+    return 0;
+}
+
+static int
+FillOutTx_V33_1(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType tx_type,
+          const std::vector<TransferInfo> &transferrings, const nlohmann::json &jTxInfo,
+          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info_, const uint64_t& contractTip)
+{
+    if(toAddr.empty())
+    {
+        return -1;
+    }
+
+    if(contractTip != 0 && fromAddr == toAddr)
+    {
+        return -2;
+    }
+
+    outTx.set_type(global::ca::kTxSign);
+    nlohmann::json data;
+    data["TxInfo"] = jTxInfo;
+    std::string s = data.dump();
+    outTx.set_data(s);
+    
+    std::vector<std::string> utxoHashs;
+    int ret = Evmone::GenCallOutTx(fromAddr, toAddr, transferrings, gasCost, outTx, contractTip, utxoHashs);
+    if(ret < 0)
+    {
+        ERRORLOG("GenCallOutTx fail !!! ret:{}", ret);
+        return -3;
+    } 
+
+    //ca_algorithm::PrintTx(outTx);
+
+    auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    TxHelper::GetTxStartIdentity_V33_1(std::vector<std::string>(),height,currentTime,type);
+    if(type == TxHelper::vrfAgentType_unknow)
+    {
+    //This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
+        type = TxHelper::vrfAgentType_defalut;
+    }
+
+    // if (TxHelper::AddMutilSign(fromAddr, outTx) != 0)
+    // {
+    //     return -11;
+    // }
     
 
 
@@ -482,11 +845,12 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
     outTx.set_txtype((uint32_t)tx_type);
     outTx.set_consensus(global::ca::kConsensus);
 
-    std::string txHash = Getsha256hash(outTx.SerializeAsString());
-    outTx.set_hash(txHash);
+    // std::string txHash = Getsha256hash(outTx.SerializeAsString());
+    // outTx.set_hash(txHash);
 
     return 0;
 }
+
 
 int Evmone::GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
                   const std::vector<TransferInfo> &transferrings, int64_t gasCost, 
@@ -618,6 +982,7 @@ int Evmone::GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
 
     if (contractTip != 0 && contractTip < gas)
     {
+        SetRpcError("-72018",Sutil::Format("contractTip %s < gas %s",contractTip, gas));
         ERRORLOG("contractTip {} < gas {}" , contractTip, gas);
         return -11;
     }
@@ -626,6 +991,7 @@ int Evmone::GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
     if(fromBalance[fromAddr] < expend)
     {
         ERRORLOG("The total cost = {} is less than the cost = {}", fromBalance[fromAddr], expend);
+        SetRpcError("-72013", Sutil::Format("The total cost = %s is less than the cost = %s", fromBalance[fromAddr], expend));
         return -10;
     }
 
@@ -678,9 +1044,28 @@ int Evmone::FillCallOutTx(const std::string &fromAddr, const std::string &toAddr
         return -1;
     }
 
-    return FillOutTx(fromAddr, toAddr,
+    uint64_t selfNodeHeight = 0;
+    DBReader dbReader;
+    auto status = dbReader.GetBlockTop(selfNodeHeight);
+    if (DBStatus::DB_SUCCESS != status)
+    {
+        ERRORLOG("Get block top error");
+        return -1000;
+    }
+
+    if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+         return FillOutTx_V33_1(fromAddr, toAddr,
                      global::ca::TxType::kTxTypeCallContract, transferrings, jTxInfo, height, gasCost, outTx, type,
                      info_, contractTip);
+    }
+    else
+    {
+         return FillOutTx(fromAddr, toAddr,
+                     global::ca::TxType::kTxTypeCallContract, transferrings, jTxInfo, height, gasCost, outTx, type,
+                     info_, contractTip);
+    }
+
 }
 
 int Evmone::FillDeployOutTx(const std::string &fromAddr, const std::string &toAddr,
@@ -688,9 +1073,28 @@ int Evmone::FillDeployOutTx(const std::string &fromAddr, const std::string &toAd
                             const nlohmann::json &jTxInfo, int64_t gasCost, uint64_t height, CTransaction &outTx,
                             TxHelper::vrfAgentType &type, Vrf &info_)
 {
-    return FillOutTx(fromAddr, toAddr,
-                     global::ca::TxType::kTxTypeDeployContract, transferrings, jTxInfo, height, gasCost, outTx, type,
-                     info_, 0);
+    uint64_t selfNodeHeight = 0;
+    DBReader dbReader;
+    auto status = dbReader.GetBlockTop(selfNodeHeight);
+    if (DBStatus::DB_SUCCESS != status)
+    {
+        ERRORLOG("Get block top error");
+        return -1000;
+    }
+
+    if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+        return FillOutTx_V33_1(fromAddr, toAddr,
+                        global::ca::TxType::kTxTypeDeployContract, transferrings, jTxInfo, height, gasCost, outTx, type,
+                        info_, 0);
+    }
+    else
+    {
+        return FillOutTx(fromAddr, toAddr,
+                        global::ca::TxType::kTxTypeDeployContract, transferrings, jTxInfo, height, gasCost, outTx, type,
+                        info_, 0);
+    }
+
 }
 
 void TestAddressMapping()

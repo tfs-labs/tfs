@@ -280,7 +280,80 @@ int RpcFillOutTx(const std::string &fromAddr, const std::string &toAddr, global:
     //ca_algorithm::PrintTx(outTx);
 
     auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    TxHelper::GetTxStartIdentity(std::vector<std::string>(),height,currentTime,type);
+    if(global::ca::TxType::kTxTypeCallContract == txType || global::ca::TxType::kTxTypeDeployContract == txType)
+    {
+        type = TxHelper::vrfAgentType_vrf;
+    }
+    else
+    {
+         TxHelper::GetTxStartIdentity(height,currentTime,type);
+    }
+    if(type == TxHelper::vrfAgentType_unknow)
+    {
+    //This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
+        type = TxHelper::vrfAgentType_defalut;
+    }
+
+    debugL("type:%s",(int)type);
+
+    outTx.set_time(currentTime);
+    if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
+    {
+        outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+    }
+    else
+    {
+        std::string identity;
+        int ret = GetContractBlockPackager(outTx.time(), height - 1, identity, info);
+        if(ret != 0)
+        {
+            ERRORLOG("GetContractBlockPackager fail ret: {}", ret);
+            return ret -= 300;
+        }
+        outTx.set_identity(identity);
+    }
+
+    outTx.set_version(0);
+    outTx.set_txtype((uint32_t)txType);
+    outTx.set_consensus(global::ca::kConsensus);
+
+    return 0;
+}
+
+
+int RpcFillOutTx_V33_1(const std::string &fromAddr, const std::string &toAddr, global::ca::TxType txType,
+          const std::vector<TransferInfo> &transFerrings, const nlohmann::json &jTxInfo,
+          uint64_t height, int64_t gasCost, CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info, const uint64_t& contractTip)
+{
+    if(toAddr.empty())
+    {
+        return -1;
+    }
+
+    if(contractTip != 0 && fromAddr == toAddr)
+    {
+        debugL("tip:%s,fromAddr:%s,toAddr:%s",contractTip,fromAddr,toAddr);
+        return -2;
+    }
+
+    outTx.set_type(global::ca::kTxSign);
+    nlohmann::json data;
+    data["TxInfo"] = jTxInfo;
+    std::string s = data.dump();
+    outTx.set_data(s);
+    
+    std::vector<std::string> utxoHashs;
+    int ret = rpc_evm::RpcGenCallOutTx(fromAddr, toAddr, transFerrings, gasCost, outTx, contractTip, utxoHashs);
+    if(ret < 0)
+    {
+        ERRORLOG("GenCallOutTx fail !!! ret:{}", ret);
+        return -3;
+    }
+
+    //ca_algorithm::PrintTx(outTx);
+
+    auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    TxHelper::GetTxStartIdentity_V33_1(std::vector<std::string>(),height,currentTime,type);
     if(type == TxHelper::vrfAgentType_unknow)
     {
     //This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
@@ -324,8 +397,35 @@ int RpcFillOutTx(const std::string &fromAddr, const std::string &toAddr, global:
 }
 
 
-
 int RpcCreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
+                                                 const std::string &code, uint64_t height,
+                                                 const nlohmann::json &contractInfo, CTransaction &outTx,
+                                                 TxHelper::vrfAgentType &type, Vrf &info)
+{
+    std::string strOutput;
+    TfsHost host;
+    int64_t gasCost = 0;
+    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
+    if (ret != 0)
+    {
+        ERRORLOG("Evmone failed to deploy contract!");
+        ret -= 10;
+        return ret;
+    }
+
+    nlohmann::json jTxInfo;
+    jTxInfo["Version"] = 0;
+    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+    jTxInfo["VmType"] = global::ca::VmType::EVM;
+    jTxInfo["Code"] = code;
+    jTxInfo["Output"] = strOutput;
+ 
+
+    ret = rpc_evm::RpcFillOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,global::ca::TxType::kTxTypeDeployContract,host.coin_transferrings, jTxInfo ,height,gasCost, outTx, type, info,0);
+    return ret;
+}
+
+int RpcCreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, const std::string &OwnerEvmAddr,
                                                  const std::string &code, uint64_t height,
                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
                                                  TxHelper::vrfAgentType &type, Vrf &info)
@@ -349,7 +449,7 @@ int RpcCreateEvmDeployContractTransaction(const std::string &fromAddr, const std
     jTxInfo["Output"] = strOutput;
     jTxInfo["Info"] = contractInfo;
 
-    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
+    ret = Evmone::ContractInfoAdd_V33_1(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
     if(ret != 0)
     {
         DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
@@ -394,7 +494,88 @@ int RpcCreateEvmCallContractTransaction(const std::string &fromAddr, const std::
         jTxInfo["contractTip"] = contractTip;
         jTxInfo["contractTransfer"] = contractTransfer;
 
-        ret = Evmone::ContractInfoAdd(host, jTxInfo,
+    //    ret = Evmone::ContractInfoAdd(host, "", jTxInfo,
+    //                                  global::ca::TxType::kTxTypeCallContract);
+    //    if (ret != 0) {
+    //        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
+    //        return -1;
+    //    }
+
+        ret = Evmone::FillCallOutTx(fromAddr, toAddr,
+        host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
+                                    info, contractTip);
+
+        // ret = rpc_evm::RpcFillOutTx(fromAddr, toAddr,
+        //                              global::ca::TxType::kTxTypeCallContract,
+        //                              host.coin_transferrings, jTxInfo, height,
+        //                              gasCost, outTx, type, info, contractTip);
+        if (ret != 0) {
+            ERRORLOG("FillCallOutTx fail ret: {}", ret);
+        }
+        return ret;
+
+    }else{
+        ret = RpcECallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
+
+        if (ret != 0) {
+            SetRpcError("-72019", Sutil::Format("Evmone failed to call contract! %s",ret));
+            ERRORLOG("Evmone failed to call contract!");
+            ret -= 10;
+            return ret;
+        }
+
+        nlohmann::json jTxInfo;
+        jTxInfo["Version"] = 0;
+        jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+        jTxInfo["VmType"] = global::ca::VmType::EVM;
+        jTxInfo["DeployerAddr"] = toAddr;
+        jTxInfo["DeployHash"] = txHash;
+        jTxInfo["Input"] = strInput;
+        jTxInfo["Output"] = strOutput;
+        jTxInfo["contractTip"] = contractTip;
+        jTxInfo["contractTransfer"] = contractTransfer;
+
+        outTx.set_data(jTxInfo.dump());
+
+        return ret;
+
+    }
+    return 0;
+     
+    
+}
+int RpcCreateEvmCallContractTransaction_V33_1(const std::string &fromAddr, const std::string &toAddr,
+                                               const std::string &txHash,
+                                               const std::string &strInput, const std::string &OwnerEvmAddr,
+                                               uint64_t height,
+                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &info,
+											   const uint64_t contractTip,const uint64_t contractTransfer,bool istochain)
+{
+    std::string strOutput;
+    TfsHost host;
+    int64_t gasCost = 0;
+     int ret=0;
+    if(istochain){
+        ret = Evmone::CallContract_V33_1(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
+        if (ret != 0) {
+            SetRpcError("-72019", Sutil::Format("Evmone failed to call contract! %s",ret));
+            ERRORLOG("Evmone failed to call contract!");
+            ret -= 10;
+            return ret;
+        }
+
+        nlohmann::json jTxInfo;
+        jTxInfo["Version"] = 0;
+        jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+        jTxInfo["VmType"] = global::ca::VmType::EVM;
+        jTxInfo["DeployerAddr"] = toAddr;
+        jTxInfo["DeployHash"] = txHash;
+        jTxInfo["Input"] = strInput;
+        jTxInfo["Output"] = strOutput;
+        jTxInfo["contractTip"] = contractTip;
+        jTxInfo["contractTransfer"] = contractTransfer;
+
+        ret = Evmone::ContractInfoAdd_V33_1(host, jTxInfo,
                                       global::ca::TxType::kTxTypeCallContract);
         if (ret != 0) {
             DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
@@ -444,6 +625,7 @@ int RpcCreateEvmCallContractTransaction(const std::string &fromAddr, const std::
      
     
 }
+
 
 
 int RpcECallContract(const std::string &fromAddr, const std::string &OwnerEvmAddr, const std::string &strDeployer, const std::string &strDeployHash,

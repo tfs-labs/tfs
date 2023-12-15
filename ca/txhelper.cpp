@@ -426,7 +426,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 
-	GetTxStartIdentity(fromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	DEBUGLOG("GetTxStartIdentity currentTime = {} type = {}",currentTime ,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
@@ -468,7 +468,8 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	}
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeTx);
 	// Determine whether dropshipping is default or local dropshipping
@@ -663,7 +664,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 	// At this point, it indicates that the current node does not meet the pledge and investment requirements within 30 seconds beyond the height of 50. At this time, the pledge operation can be initiated
@@ -696,7 +697,8 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 			return -11;
 		}
 	}
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);
@@ -858,7 +860,8 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
 	outTx.set_type(global::ca::kTxSign);	
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 
 	uint64_t gas = 0;
 	//The filled quantity only participates in the calculation and does not affect others
@@ -880,7 +883,7 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	uint64_t cost = 0;// Packing fee
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 	// At this point, it indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the pledge cancellation operation
@@ -920,7 +923,8 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	}
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeUnstake);
 
@@ -1096,7 +1100,7 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 		type = TxHelper::vrfAgentType_defalut;
@@ -1131,7 +1135,8 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 		}
 	}
 	
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeInvest);
@@ -1312,7 +1317,7 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 	// At this point, it indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can issue the investment cancellation operation
@@ -1350,7 +1355,8 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	}
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDisinvest);
 
@@ -1530,7 +1536,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 		ERRORLOG(" +++++++vrfAgentType_unknow +++++");
@@ -1546,7 +1552,8 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	}
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeBonus);
 	// Fill vout
@@ -1624,9 +1631,48 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
                                                  const std::string &code, uint64_t height,
                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
+                                                 std::vector<std::string> &dirtyContract,
                                                  TxHelper::vrfAgentType &type, Vrf &information)
 {
     std::string strOutput;
+    TfsHost host;
+    int64_t gasCost = 0;
+    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
+    if (ret != 0)
+    {
+		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s",ret));
+        ERRORLOG("Evmone failed to deploy contract!");
+        ret -= 10;
+        return ret;
+    }
+
+    nlohmann::json jTxInfo;
+    jTxInfo["Version"] = 0;
+    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+    jTxInfo["VmType"] = global::ca::VmType::EVM;
+    jTxInfo["Code"] = code;
+    jTxInfo["Output"] = strOutput;
+//    jTxInfo["Info"] = contractInfo;
+//
+//    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
+//    if(ret != 0)
+//    {
+//        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
+//        return -1;
+//    }
+
+    Evmone::GetCalledContract(host, dirtyContract);
+    ret = Evmone::FillDeployOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, information);
+    return ret;
+}
+
+
+int TxHelper::CreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, const std::string &OwnerEvmAddr,
+												const std::string &code, uint64_t height,
+												const nlohmann::json &contractInfo, CTransaction &outTx,
+												TxHelper::vrfAgentType &type, Vrf &information)
+{
+	std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
     int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
@@ -1645,7 +1691,7 @@ int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, co
     jTxInfo["Output"] = strOutput;
     jTxInfo["Info"] = contractInfo;
 
-    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
+    ret = Evmone::ContractInfoAdd_V33_1(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
     if(ret != 0)
     {
         DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
@@ -1656,7 +1702,56 @@ int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, co
     return ret;
 }
 
+
 int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
+                                               const std::string &txHash, const std::string &strInput,
+                                               const std::string &OwnerEvmAddr, uint64_t height,
+                                               CTransaction &outTx, TxHelper::vrfAgentType &type,
+                                               Vrf &information, const uint64_t contractTip,
+                                               const uint64_t contractTransfer,
+                                               std::vector<std::string> &dirtyContract)
+{
+    std::string strOutput;
+    TfsHost host;
+    int64_t gasCost = 0;
+    int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
+    if (ret != 0)
+    {
+		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s",ret));
+        ERRORLOG("Evmone failed to call contract!");
+        ret -= 10;
+        return ret;
+    }
+
+    nlohmann::json jTxInfo;
+    jTxInfo["Version"] = 0;
+    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
+    jTxInfo["VmType"] = global::ca::VmType::EVM;
+    jTxInfo["DeployerAddr"] = toAddr;
+    jTxInfo["DeployHash"] = txHash;
+    jTxInfo["Input"] = strInput;
+    jTxInfo["Output"] = strOutput;
+	jTxInfo["contractTip"] = contractTip;
+    jTxInfo["contractTransfer"] = contractTransfer;
+
+//    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
+//    if(ret != 0)
+//    {
+//        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
+//        return -1;
+//    }
+    Evmone::GetCalledContract(host, dirtyContract);
+    ret = Evmone::FillCallOutTx(fromAddr, toAddr, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
+                                information, contractTip);
+    if (ret != 0)
+    {
+        ERRORLOG("FillCallOutTx fail ret: {}", ret);
+    }
+    return ret;
+}
+
+
+int TxHelper::CreateEvmCallContractTransaction_V33_1(const std::string &fromAddr, const std::string &toAddr,
                                                const std::string &txHash,
                                                const std::string &strInput, const std::string &OwnerEvmAddr,
                                                uint64_t height,
@@ -1666,7 +1761,7 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
+    int ret = Evmone::CallContract_V33_1(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
     if (ret != 0)
     {
         ERRORLOG("Evmone failed to call contract!");
@@ -1685,10 +1780,10 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
 	jTxInfo["contractTip"] = contractTip;
     jTxInfo["contractTransfer"] = contractTransfer;
 
-    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
+    ret = Evmone::ContractInfoAdd_V33_1(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
     if(ret != 0)
     {
-        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
+        DEBUGLOG("ContractInfoAdd_V33_1 error! ret:{}", ret);
         return -1;
     }
 
@@ -1911,7 +2006,42 @@ TxHelper::vrfAgentType TxHelper::GetVrfAgentType(const CTransaction &tx, uint64_
 	return TxHelper::vrfAgentType::vrfAgentType_unknow;
 }
 
-void TxHelper::GetTxStartIdentity(const std::vector<std::string> &fromaddr,const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type)
+void TxHelper::GetTxStartIdentity(const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type)
+{
+		
+	// Judge whether the time is within 30 seconds
+
+	// 1. Within 30 seconds
+
+	// Find the packager (if the packager finds himself, the transaction will fail) and use vrf to send the transaction
+
+	// 2. Within 30 seconds
+
+	// Judge whether the initiating node meets the pledge and investment requirements
+
+	// If the default account is not satisfied, judge whether the default account is satisfied with pledge and investment, and initiate transaction and broadcast from the default account
+
+	// If the initiating account and other accounts fail to meet the requirements of pledge and investment, there is no qualification for initiating the transaction
+
+	//	Previous height of the initiator
+	uint64_t preHeight = height -1;
+	
+	if(CheckTxTimeOut(currentTime,global::ca::TxTimeoutMin, preHeight) == true)
+	{//Beyond 30 seconds
+
+		//Conditional power generation beyond 50 altitude
+		type=vrfAgentType_defalut;
+		return;
+	}
+	else
+	{//	Within 30 seconds
+		type = vrfAgentType_vrf;
+		return;
+	}
+	type = vrfAgentType_unknow;
+}
+
+void TxHelper::GetTxStartIdentity_V33_1(const std::vector<std::string> &fromaddr,const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type)
 {
 		
 	// Judge whether the time is within 30 seconds
@@ -2103,7 +2233,7 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 
 	TxHelper::vrfAgentType type;
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(fromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	DEBUGLOG("GetTxStartIdentity currentTime = {} type = {}",currentTime ,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
@@ -2134,8 +2264,10 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
 	voutBurn->set_value(gas);
 
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	// outTx.set_version(global::ca::kCurrentTransactionVersion); 
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeTx);
 	// Determine whether dropshipping is default or local dropshipping
@@ -2317,7 +2449,7 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	TxHelper::vrfAgentType type;
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 	// At this point, it indicates that the current node does not meet the pledge and investment requirements within 30 seconds beyond the height of 50. At this time, the pledge operation can be initiated
@@ -2348,7 +2480,8 @@ std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr
 	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
 	voutBurn->set_value(gas);
 
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);	
@@ -2493,7 +2626,8 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
 	outTx.set_type(global::ca::kTxSign);	
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 
 	uint64_t gas = 0;
 	// 	The filled quantity only participates in the calculation and does not affect others
@@ -2515,7 +2649,7 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	TxHelper::vrfAgentType type;
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 	// At this point, it indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the pledge cancellation operation
@@ -2547,7 +2681,8 @@ std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr
 	voutBurn->set_value(gas);
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeUnstake);
 
@@ -2723,7 +2858,7 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 	// This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
@@ -2754,7 +2889,8 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
 	voutBurn->set_value(gas);
 	
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeInvest);
@@ -2917,7 +3053,7 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 		type = TxHelper::vrfAgentType_defalut;
@@ -2947,7 +3083,8 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	voutBurn->set_value(gas);
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDisinvest);
 
@@ -3158,7 +3295,7 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 
-    GetTxStartIdentity(vecFromAddr, height, currentTime, type);
+    GetTxStartIdentity(height, currentTime, type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 		return "-20 +++++++vrfAgentType_unknow +++++";
@@ -3212,7 +3349,8 @@ std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromad
 		outTx.set_identity(id);
 	}
 
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDeclaration);
 
@@ -3364,7 +3502,7 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(vecfromAddr,height,currentTime,type);
+	GetTxStartIdentity(height,currentTime,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
 		return DSTR" +++++++vrfAgentType_unknow +++++";
@@ -3381,7 +3519,8 @@ std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, vo
 	}
 
 	outTx.set_time(currentTime);
-	outTx.set_version(0);
+	ReplaceTxVersion(outTx);
+	//outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeBonus);
 
@@ -3517,4 +3656,24 @@ std::string TxHelper::GetEligibleNodes(){
 	DEBUGLOG("GetEligibleNodes: rumdom: {}",rumdom);
     
 	return result_node[rumdom];
+}
+
+void TxHelper::ReplaceTxVersion(CTransaction& outTx)
+{
+	uint64_t selfNodeHeight;
+	DBReader dbReader;
+	auto status = dbReader.GetBlockTop(selfNodeHeight);
+	if (DBStatus::DB_SUCCESS != status)
+	{
+		ERRORLOG("Get block top error");
+		return ;
+	}
+	if(selfNodeHeight + 1 <= global::ca::OldVersionSmartContractFailureHeight)
+	{
+		outTx.set_version(global::ca::kOldTransactionVersion);
+	}
+	else
+	{
+		outTx.set_version(global::ca::kCurrentTransactionVersion);
+	}
 }

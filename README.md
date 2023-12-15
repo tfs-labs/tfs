@@ -3,14 +3,14 @@ The special architecture design of TFSC leads to the potential competition of no
 
 ## Installation
 
-### The minimum recommended hardware specification for nodes connected to Mainnet is：
+### The minimum recommended hardware specification for nodes connected to Mainnet is:
 
 ```
 cpu  :Intel CPU series or higher with 8 or more cores are recommended.
 RAM	 :At least 16 GB.
 Disk :Disk A high-performance solid state drive with at least 1 terabyte of available space.
 System : CentOS(Community Enterprise Operating System) 7.
-Net：25+ MBit/ s to download Internet service.
+Net:25+ MBit/ s to download Internet service.
 ```
 
 ### Required package
@@ -92,7 +92,7 @@ cd build_dev_debug/bin
 ./tfs_xx_xx_devnet
 ```
 
-### The official website link and the official Twitter link are as follows：
+### The official website link and the official Twitter link are as follows:
 
 [TFSC](https://www.tfsc.io/)
 

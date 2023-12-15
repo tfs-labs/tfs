@@ -1,3 +1,10 @@
+/*
+ * @Author: HaoXuDong 2848973813@qq.com
+ * @Date: 2023-12-06 16:33:00
+ * @LastEditors: HaoXuDong 2848973813@qq.com
+ * @LastEditTime: 2023-12-06 16:53:29
+ * @FilePath: /tfs/ca/checker.h
+ */
 /**
  * *****************************************************************************
  * @file        checker.h
@@ -17,6 +24,7 @@
 #include "block_helper.h"
 #include "ca/transaction.h"
 #include "ca/transaction_entity.h"
+#include "ca/transaction_entity_V33_1.h"
 
 namespace Checker 
 {
@@ -28,8 +36,17 @@ namespace Checker
      * @return      true 
      * @return      false 
      */
-    bool CheckConflict(const CTransaction &tx, const std::map<uint64_t, std::list<TransactionEntity>> &cache);
-    
+    bool CheckConflict(const CTransaction &tx, const std::map<uint64_t ,std::list<CTransaction>> &cache);
+    bool CheckConflict_V33_1(const CTransaction &tx, const std::map<uint64_t, std::list<TransactionEntity_V33_1>> &cache);
+    /**
+     * @brief
+     *
+     * @param       tx:
+     * @param       cache:
+     * @return      true
+     * @return      false
+     */
+    bool CheckConflict(const CTransaction &tx, const std::vector<TransactionEntity>  &cache);
     /**
      * @brief       
      * 

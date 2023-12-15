@@ -35,6 +35,12 @@ x_uint64_t TimeUtil::GetUTCTimestamp()
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
+x_uint64_t TimeUtil::GetTheTimestampPerUnitOfTime(const x_uint64_t& utcTime)
+{
+    x_uint64_t minutes = utcTime / 30000000;  // Convert timestamp
+    return minutes * 30000000;
+}
+
 x_uint64_t TimeUtil::GetTimestamp()
 {
     x_uint64_t time = GetNtpTimestamp();

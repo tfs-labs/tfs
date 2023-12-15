@@ -1,5 +1,6 @@
 #include "main.h"
 
+#include <cstdint>
 #include <regex>
 #include <iostream>
 
@@ -42,7 +43,7 @@ void Menu()
 		std::string strKey;
 		std::cout << "Please input your choice: "<< std::endl;
 		std::cin >> strKey;	    
-		std::regex pattern("^[0-9]|([1][0])|(99)|(100)$");
+		std::regex pattern("^[0-9]|([1][0])$");
 		if(!std::regex_match(strKey, pattern))
         {
             std::cout << "Invalid input." << std::endl;
@@ -78,10 +79,44 @@ void Menu()
 				PrintBasicInfo();
 				break;
       		case 8:
-				HandleDeployContract();
+				{
+					uint64_t selfNodeHeight = 0;
+                    DBReader dbReader;
+                    auto status = dbReader.GetBlockTop(selfNodeHeight);
+                    if (DBStatus::DB_SUCCESS != status)
+                    {
+						std::cout << "Get block top error,please try again: "<< std::endl;
+                        break;
+                    }
+					if(selfNodeHeight < global::ca::OldVersionSmartContractFailureHeight)
+					{
+						HandleDeployContract_V33_1();
+					}
+					else
+					{
+						HandleDeployContract();
+					}
+				}
 				break;
 			case 9:
-				HandleCallContract();
+				{
+					uint64_t selfNodeHeight = 0;
+                    DBReader dbReader;
+                    auto status = dbReader.GetBlockTop(selfNodeHeight);
+                    if (DBStatus::DB_SUCCESS != status)
+                    {
+						std::cout << "Get block top error,please try again: "<< std::endl;
+                        break;
+                    }
+					if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+					{
+						HandleCallContract_V33_1();
+					}
+					else
+					{
+						HandleCallContract();
+					}
+				}
 				break;
 			case 10:
 				HandleAccountManger();
@@ -100,7 +135,6 @@ bool Init()
 	srand(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
 	
 	// Initialize configuration
-	// if (!InitConfig())
 
 	if(!InitConfig())
 	{
@@ -198,7 +232,7 @@ bool InitRocksDb()
         dbReadWriter.SetBlockHashByBlockHeight(block.height(), block.hash(), true);
         dbReadWriter.SetBlockByBlockHash(block.hash(), block.SerializeAsString());
         dbReadWriter.SetBlockTop(0);
-
+//        dbReadWriter.SetLatestContractBlockHash(block.hash());
 		
 		for(int i = 0; i < tx.utxo().vout_size(); ++i)
 		{

@@ -18,12 +18,12 @@ class TransactionEntity
 {
     private:
         CTransaction _transaction;
-        TxMsgReq _msg;
-        time_t _timestamp;
+        uint64_t _height;
+        bool _executedBefore;
     
     public:
-        TransactionEntity(CTransaction transaction, TxMsgReq msg, time_t timestamp)
-			 : _transaction(transaction), _msg(msg), _timestamp(timestamp){};
+        TransactionEntity(CTransaction transaction, uint64_t height, bool executedBefore)
+			 : _transaction(transaction), _height(height), _executedBefore(executedBefore){};
 		TransactionEntity() = default;
         ~TransactionEntity() = default;
 
@@ -32,7 +32,7 @@ class TransactionEntity
 		 * 
 		 * @return      CTransaction 
 		 */
-        CTransaction GetTransaction() const 
+        inline CTransaction GetTransaction() const
 		{
 			return _transaction;
 		}
@@ -42,9 +42,9 @@ class TransactionEntity
 		 * 
 		 * @return      TxMsgReq 
 		 */
-		TxMsgReq GetTxmsg() const
+		inline uint64_t GetHeight() const
 		{
-			return _msg;
+			return _height;
 		}
 
 		/**
@@ -52,9 +52,9 @@ class TransactionEntity
 		 * 
 		 * @return      time_t 
 		 */
-		time_t GetTimestamp() const
+		inline bool GetExecutedBefore() const
 		{
-			return _timestamp;
+			return _executedBefore;
 		}
 
 		/**
@@ -62,7 +62,7 @@ class TransactionEntity
 		 * 
 		 * @param       transaction: 
 		 */
-		void SetTransaction(const CTransaction& transaction)
+		inline void SetTransaction(const CTransaction& transaction)
 		{
 			_transaction = transaction;
 		}
@@ -72,9 +72,9 @@ class TransactionEntity
 		 * 
 		 * @param       msg: 
 		 */
-		void SetTxmsg(const TxMsgReq& msg) 
+        inline void SetHeight(uint64_t height)
 		{
-			_msg = msg;
+            _height = height;
 		}
 
 		/**
@@ -82,9 +82,9 @@ class TransactionEntity
 		 * 
 		 * @param       timestamp: 
 		 */
-		void SetTimestamp(const time_t& timestamp)
+        inline void SetExecutedBefore(bool executedBefore)
 		{
-			_timestamp = timestamp;
+            _executedBefore = executedBefore;
 		}
 };
 

@@ -146,6 +146,11 @@ std::string gas;
 std::string pumpingPercentage;
 UCTE
 
+UCTS_ACK(contract_ack)
+std::string contractJs;
+std::string txJs;
+UCTE
+
 
 
 UCTS_REQ(get_stake_req)

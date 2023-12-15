@@ -376,6 +376,88 @@ int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs)
     return 0;
 }
 
+int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string& contractBlockStr)
+{
+    DEBUGLOG("SeekBlockByContractPreHashReq Start");
+    std::vector<std::string> sendNodeIds;
+
+    uint64_t chainHeight = 0;
+    if(!BlockHelper::ObtainChainHeight(chainHeight))
+    {
+        return -1;
+    }
+    uint64_t selfNodeHeight = 0;
+    std::vector<std::string> pledgeAddr;
+    {
+        DBReader dbReader;
+        auto status = dbReader.GetBlockTop(selfNodeHeight);
+        if (DBStatus::DB_SUCCESS != status)
+        {
+            return -2;
+        }
+        status = dbReader.GetStakeAddress(pledgeAddr);
+        if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+        {
+            return -3;
+        }
+    }
+    
+    if (GetUtxoFindNode(5, chainHeight, pledgeAddr, sendNodeIds) != 0)
+    {
+        ERRORLOG("get sync node fail");
+        return -4;
+    }
+
+
+    std::string msgId;
+    size_t sendNum = sendNodeIds.size();
+    if (!GLOBALDATAMGRPTR.CreateWait(2, sendNum / 2, msgId))
+    {
+        return -5;
+    }
+    GetBlockByHashReq req;
+    auto missingHash = req.add_missinghashs();
+    missingHash->set_hash(seekBlockHash);
+    missingHash->set_tx_or_block(false);
+    
+    std::string selfNodeId = NetGetSelfNodeId();
+    req.set_addr(selfNodeId);
+    req.set_msg_id(msgId);
+
+    for (auto &node_id : sendNodeIds)
+    {
+        NetSendMessage<GetBlockByHashReq>(node_id, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+    }
+
+    std::vector<std::string> retDatas;
+    if (!GLOBALDATAMGRPTR.WaitData(msgId, retDatas))
+    {
+        if(!SyncBlock::check_byzantine(sendNum, retDatas.size()))
+        {
+            ERRORLOG("wait sync height time out send:{} recv:{}", sendNum, retDatas.size());
+            return -6;
+        }
+    }
+
+    GetBlockByHashAck ack;
+    std::map<std::string, std::pair<std::string, uint32_t>> seekBlockHashes;
+    for (auto &retData : retDatas)
+    {
+        ack.Clear();
+        if (!ack.ParseFromString(retData))
+        {
+            continue;
+        }
+        for (auto &iter : ack.blocks())
+        {
+            contractBlockStr = iter.block_raw();
+            return 0;
+        }
+    }
+
+    return -7;
+}
+
 int SendBlockByHashAck(const std::map<std::string, bool> &missingHashs, const std::string &addr, const std::string &msgId)
 {
     DBReader dbReader;
@@ -438,7 +520,7 @@ int HandleBlockByHashAck(const std::shared_ptr<GetBlockByHashAck> &msg, const Ms
 
 int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus)
 {
-    if(block.version() != 0)
+    if(block.version() != global::ca::kInitBlockVersion && block.version() != global::ca::kCurrentBlockVersion)
 	{
 		return -1;
 	}
@@ -540,7 +622,18 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
     }
     auto startT5 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
     DEBUGLOG("verifying block {} , isVerify:{}", blockHash.substr(0, 6), isVerify);
-	auto ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus);
+    
+    int ret;
+    //add condition of height and version
+	if(blockHeight <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+         ret = ca_algorithm::VerifyBlock_V33_1(block, false, true, isVerify, blockStatus);
+    }
+    else
+    {
+         ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus);
+    }
+	
 	if (0 != ret)
 	{
 		ERRORLOG("verify block fail ret:{}:{}:{}", ret, blockHeight, blockHash);
@@ -572,6 +665,7 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
     int ret = 0;
     std::string blockRaw;
     std::string blockHash = block.hash();
+    int blockHeight = block.height();
     ret = dbWriterPtr->GetBlockByBlockHash(block.hash(), blockRaw);
     if (DBStatus::DB_SUCCESS == ret)
     {
@@ -587,14 +681,31 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         return ret;
     }
     DEBUGLOG("PreSaveProcess doubleSpendCheck ret:{}", ret);
-    if(ret == 1 || ret == 2) //doubleSpend error
+    
+    //add condition of height and version
+	if(block.height() <= global::ca::OldVersionSmartContractFailureHeight)
     {
-        return 0;
+        if(ret == 1 || ret == 2) //doubleSpend error
+        {
+            return 0;
+        }
     }
     
+    // if(ret == 1) //doubleSpend error
+    // {
+    //     return 0;
+    // }
+    
     ResetMissingPrehash();
-    uint64_t blockHeight = block.height();
-    ret = ca_algorithm::SaveBlock(*dbWriterPtr, block, saveType, obtainMean);
+    //add condition of height and version
+	if(block.height() <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+        ret = ca_algorithm::SaveBlock_V33_1(*dbWriterPtr, block, saveType, obtainMean);
+    }
+    else
+    {
+        ret = ca_algorithm::SaveBlock(*dbWriterPtr, block, saveType, obtainMean);
+    }
     if (0 != ret)
     {
         delete dbWriterPtr;
@@ -817,7 +928,17 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
     {
         DEBUGLOG("verifying block {}", blockHash.substr(0, 6));
         ResetMissingPrehash();
-        auto ret = ca_algorithm::VerifyBlock(block, true, false);
+        int ret;
+        //add condition of height and version
+	    if(blockHeight <= global::ca::OldVersionSmartContractFailureHeight)
+        {
+            ret = ca_algorithm::VerifyBlock_V33_1(block, true, false);
+        }
+        else
+        {
+            ret = ca_algorithm::VerifyBlock(block, true, false);
+        }
+        
         if (0 != ret)
         {
             ERRORLOG("verify block ret:{}:{}:{}", ret, blockHeight, blockHash);
@@ -841,19 +962,25 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
         uint64_t nodeHeight = 0;
         if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(nodeHeight))
         {
-            return -1;
+            return -4;
         }
         if(obtainMean == global::ca::BlockObtainMean::Normal && blockHeight + 50 < nodeHeight)
         {
             DEBUGLOG("blockHeight + 50 < nodeHeight");
-            return -2;
+            return -5;
         }
 
         if(ca_algorithm::VerifyPreSaveBlock(block) < 0)
         {
             ERRORLOG("Verify PreSave Block fail!");
-            return -9;
+            return -6;
         }
+        // bool isRollback;
+        // checkContractBlockConflicts(block, isRollback);
+        // if(isRollback)
+        // {
+        //     return 1;
+        // }
         
         for (auto& tx : block.txs())
         {
@@ -874,7 +1001,7 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
                         auto doubleSpendInfo = DealDoubleSpend(block, tx , missingUtxo);
                         if(doubleSpendInfo.first == doubleSpendType::newDoubleSpend)
                         {
-                            return -3;
+                            return -7;
                         }
                         else if(doubleSpendInfo.first == doubleSpendType::oldDoubleSpend)
                         {
@@ -883,11 +1010,11 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
                         }
                         else if(doubleSpendInfo.first == doubleSpendType::invalidDoubleSpend)
                         {
-                            return -5;
+                            return -8;
                         }
                         else
                         {
-                            return -6;
+                            return -9;
                         }
                     }
                     else
@@ -916,6 +1043,16 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
 
 void BlockHelper::PostTransactionProcess(const CBlock &block)
 {
+    
+    //add condition of height and version
+	if(block.height() > global::ca::OldVersionSmartContractFailureHeight)
+    { 
+    if (IsContractBlock(block))
+    {
+        MagicSingleton<TransactionCache>::GetInstance()->ContractBlockNotify(block.hash());
+    }
+    }
+
     for (int i = 0; i < block.txs_size(); i++)
     {
         CTransaction tx = block.txs(i);
@@ -947,9 +1084,60 @@ void BlockHelper::PostSaveProcess(const CBlock &block)
         auto target_end = blocks.upper_bound(block.hash());
         for (; targetBegin != target_end ; targetBegin++)
         {
-            DEBUGLOG("_pendingBlocks Add block height:{}, hash:{}", targetBegin->second.height(), targetBegin->second.hash());
+            DEBUGLOG("_pendingBlocks Add block height:{}, hash:{}", targetBegin->second.height(), targetBegin->second.hash().substr(0,6));
             SaveBlock(targetBegin->second, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::ByPreHash);
         }     
+    }
+    //add condition of height and version
+	// uint64_t selfNodeHeight = 0;
+	// DBReader dbReader;
+	// auto status = dbReader.GetBlockTop(selfNodeHeight);
+	// if (DBStatus::DB_SUCCESS != status)
+	// {
+	// 	ERRORLOG("Get block top error");
+	// 	return ;
+	// }
+	if(block.height() > global::ca::OldVersionSmartContractFailureHeight)
+    {
+    for(auto& tx : block.txs())
+    {
+        if ((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeDeployContract)
+        {
+            break;
+        }
+        auto contractBlockIter = _contractBlocks.find(tx.hash());
+        if(contractBlockIter != _contractBlocks.end())
+        {
+            auto contractBlock = contractBlockIter->second;
+            std::string contractTxPreHash;
+            auto ret = checkContractBlock(contractBlock, contractTxPreHash);
+            if(ret < 0)
+            {
+                DEBUGLOG("checkContractBlock error, contractBlockHash:{}, contractTxPreHash:{}",contractBlock.hash().substr(0,6), contractTxPreHash);
+                break;
+            }
+            if(ret == 0)
+            {
+                if(!contractTxPreHash.empty())
+                {
+                    DEBUGLOG("Still can't find contractTxPreHash, contractBlockHash:{}, contractTxPreHash:{}",contractBlock.hash().substr(0,6), contractTxPreHash);
+                    break;
+                }
+                else
+                {
+                    std::string blockRaw;
+                    DBReader dbReader;
+                    if(DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(contractBlock.prevhash(), blockRaw))
+                    {
+                        AddPendingBlock(contractBlock);
+                        return;
+                    }
+                    DEBUGLOG("__contractBlocks Add block height:{}, hash:{}", contractBlockIter->second.height(), contractBlockIter->second.hash().substr(0,6));
+                    SaveBlock(contractBlockIter->second, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::ByPreHash);
+                }
+            }
+        }
+    }
     }
     PostMembershipCancellationProcess(block);
 }
@@ -1105,6 +1293,21 @@ void BlockHelper::Process()
                 ++iter;
             }
         }
+        if(newTop > global::ca::OldVersionSmartContractFailureHeight)
+        {
+        for(auto iter = _contractBlocks.begin(); iter != _contractBlocks.end();)
+        {
+            if(newTop >= iter->second.height() + 10 || nowTime >= iter->second.time() + 30 * 1000000ull)
+            {
+                _contractBlocks.erase(iter++);
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+        }
+                
     };
 
 
@@ -1420,7 +1623,351 @@ void BlockHelper::MakeTxStatusMsg(const CBlock &oldBlock, const CBlock &newBlock
         
 }
 
+ContractPreHashStatus BlockHelper::CheckContractPreHashStatus(const std::string& contractAddr, const std::string& MEMContractPreHash, const uint64_t blockTime, std::string& DBBlockHash)
+{
+    if(MEMContractPreHash.empty() || contractAddr.empty())
+    {
+        return ContractPreHashStatus::Err;
+    }
+
+    DBReader dbReader;
+    std::string DBContractPreHash;
+    if (DBStatus::DB_SUCCESS != dbReader.GetLatestUtxoByContractAddr(contractAddr, DBContractPreHash))
+    {
+        return ContractPreHashStatus::Err;
+    }
+    if(DBContractPreHash == MEMContractPreHash)
+    {
+        return ContractPreHashStatus::Normal;
+    }
+
+    std::string strPrevBlockHash;
+    if(dbReader.GetBlockHashByTransactionHash(DBContractPreHash, strPrevBlockHash) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetBlockHashByTransactionHash failed!");
+        return ContractPreHashStatus::Err;
+    }
+
+    std::string blockRaw;
+    if(dbReader.GetBlockByBlockHash(strPrevBlockHash, blockRaw) != DBStatus::DB_SUCCESS)
+    {
+        ERRORLOG("GetBlockByBlockHash failed!");
+        return ContractPreHashStatus::Err;
+    }
+
+    CBlock block;
+    if(!block.ParseFromString(blockRaw))
+    {
+        ERRORLOG("parse failed!");
+        return ContractPreHashStatus::Err;
+    }
+
+    DBBlockHash = block.hash();
+
+    try
+    {
+        nlohmann::json jPrevData = nlohmann::json::parse(block.data());
+
+        for (const auto&[key, value] : jPrevData.items())
+        {
+            if(key == DBContractPreHash)
+            {
+                for(auto &it : value["PrevHash"].items())
+                {
+                    if(it.key() == contractAddr && MEMContractPreHash == it.value())
+                    {
+                        if(blockTime > block.time())
+                        {
+                            return ContractPreHashStatus::MemBlockException;
+                        }
+                        else
+                        {
+                            return ContractPreHashStatus::DbBlockException;
+                        }
+                    }
+                }
+                return ContractPreHashStatus::Waiting;
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return ContractPreHashStatus::Err;
+    }
+    return ContractPreHashStatus::Err;
+}
+int BlockHelper::checkContractBlockCache(const CBlock& block, const std::string& contractTxPreHash)
+{
+    auto contractBlockIter = _contractBlocks.find(contractTxPreHash);
+    if(contractBlockIter != _contractBlocks.end())
+    {
+        if(contractBlockIter->second.time() > block.time())
+        {
+            AddContractBlock(block, contractTxPreHash);
+            DEBUGLOG("delete mem oldContractBlock ,contractTxPreHash:{}, oldblockHash:{}, newblockHash:{}", contractTxPreHash, contractBlockIter->second.hash().substr(0,6), block.hash().substr(0,6));
+            return 0;
+        }
+        else
+        {
+            DEBUGLOG("delete mem newContractBlock ,contractTxPreHash:{}, oldblockHash:{}, newblockHash:{}", contractTxPreHash, contractBlockIter->second.hash().substr(0,6), block.hash().substr(0,6));
+            return -1;
+        }
+    }
+    else
+    {
+        AddContractBlock(block, contractTxPreHash);
+    }
+    return 0;
+}
+int BlockHelper::checkContractBlock(const CBlock& block, std::string& contractTxPreHash)
+{
+    DBReader dbReader;
+    uint64_t selfNodeHeight;
+    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(selfNodeHeight))
+    {
+        DEBUGLOG("Get selfNodeHeight error");
+        return -1;
+    }
+
+    try
+    {
+        std::unordered_map<std::string, std::vector<std::string>> contractTxPreHashMap;
+        nlohmann::json dataJson = nlohmann::json::parse(block.data());
+        for (const auto&[key, value] : dataJson.items())
+        {
+            for(auto &it : value["PrevHash"].items())
+            {
+                contractTxPreHashMap[it.key()].push_back(it.value());
+            }
+        }
+
+        for(auto& iter : contractTxPreHashMap)
+        {
+            for(auto& preHash : iter.second)
+            {
+                auto found = std::find(iter.second.begin(), iter.second.end(), preHash);
+                if(found != iter.second.end())
+                {
+                    continue;
+                }
+
+                std::string DBBlockHash;
+                auto preHashStatus = CheckContractPreHashStatus(iter.first, preHash, block.time(), DBBlockHash);
+                if(preHashStatus == ContractPreHashStatus::Normal)
+                {
+                    if(checkContractBlockCache(block, preHash) != 0)
+                    {
+                        return -2;
+                    }
+                    continue;
+                }
+                else if(preHashStatus == ContractPreHashStatus::MemBlockException)
+                {
+                    DEBUGLOG("contractBlockConflicts DBBlockHash :{}, blockHash:{}", DBBlockHash.substr(0,6), block.hash().substr(0,6));
+                    return -3;
+                }
+                else if(preHashStatus == ContractPreHashStatus::DbBlockException)
+                {
+                    DEBUGLOG("contractBlock rollback RollBlockHash:{},blockHash:{}", DBBlockHash.substr(0,6), block.hash().substr(0,6));
+                    auto ret = ca_algorithm::RollBackByHash(DBBlockHash);
+                    if (ret != 0)
+                    {
+                        ERRORLOG("contractBlock rollback hash {} fail, ret:{}", DBBlockHash, ret);
+                        return -4;
+                    }
+                    continue;
+                }
+                else if(preHashStatus == ContractPreHashStatus::Waiting)
+                {
+                    if(checkContractBlockCache(block, preHash) != 0)
+                    {
+                        return -5;
+                    }
+                    contractTxPreHash = preHash;
+                    break;
+                }
+            }
+
+            if(!contractTxPreHash.empty())
+            {
+                if(block.height() <= selfNodeHeight + 3)
+                {
+                    DEBUGLOG("_missingContractBlocks.insert height:{}, hash:{}, contractTxPreHash:{}, ", block.height(), block.hash().substr(0,6), contractTxPreHash.substr(0,6));
+                    uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+                    std::unique_lock<std::mutex> locker(_seekMutex);
+                    _missingBlocks.insert({contractTxPreHash, nowTime, 1});
+                }
+                return 0;
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return -6;
+    }
+    return 0;
+}
+
+void BlockHelper::AddPendingBlock(const CBlock& block)
+{
+    DBReader dbReader;
+    uint64_t selfNodeHeight;
+    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(selfNodeHeight))
+    {
+        DEBUGLOG("Get selfNodeHeight error");
+        return;
+    }
+
+    uint64_t blockHeight = block.height();
+    INFOLOG("_pendingBlocks height:{}, hash:{}", blockHeight, block.hash().substr(0,6));
+    if(_pendingBlocks.size() < 1000)
+    {
+        _pendingBlocks[blockHeight].insert({block.prevhash(), block}); 
+    }
+    
+    if(blockHeight > selfNodeHeight + 3)
+    {
+        return;
+    }
+
+    DEBUGLOG("_missingBlocks.insert height:{}, hash:{}, prevhash:{}, ", blockHeight, block.hash().substr(0,6), block.prevhash().substr(0,6));
+    uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    std::unique_lock<std::mutex> locker(_seekMutex);
+    _missingBlocks.insert({block.prevhash(), nowTime, 0});
+}
+
+void BlockHelper::AddContractBlock(const CBlock& block, const std::string& contractTxPreHash)
+{
+    INFOLOG("_contractBlocks height:{}, hash:{}, contractTxPreHash:{}", block.height(), block.hash().substr(0,6), contractTxPreHash);
+    if(_contractBlocks.size() < 1000)
+    {
+        _contractBlocks[contractTxPreHash] = block;
+    }
+    return;
+}
+
 void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
+{
+
+    std::lock_guard<std::mutex> lock_low1(_helperMutexLow1);
+    std::lock_guard<std::mutex> lock(_helperMutex);
+    
+    if(_duplicateChecker.find(block.hash()) != _duplicateChecker.end())
+    {
+        DEBUGLOG("+++Duplicate Block hash:{}, status:{}", block.hash().substr(0,6), status);
+        if(status) _duplicateChecker[block.hash()] = {status, block.time()};
+        return;
+    }
+
+    if(_doubleSpendBlocks.find(block.hash()) != _doubleSpendBlocks.end())
+    {
+        DEBUGLOG("_doubleSpendBlocks blockHash:{}", block.hash().substr(0, 6));
+        return;
+    }
+
+    DEBUGLOG("Duplicate Block hash:{}, status:{}", block.hash().substr(0,6), status);
+    _duplicateChecker[block.hash()] = {status, block.time()};
+
+    for (auto it = _broadcastBlocks.begin(); it != _broadcastBlocks.end(); ++it) 
+    {
+        auto &curr_block = *it;
+        bool ret = Checker::CheckConflict(curr_block, block);
+        if(ret)   // Conflicting
+        {
+            if((curr_block.height() == block.height() && curr_block.time() <= block.time()) || (curr_block.height() < block.height()))
+            {
+                if(status)
+                {
+                    MagicSingleton<TaskPool>::GetInstance()->CommitCaTask(std::bind(&BlockHelper::MakeTxStatusMsg, this, curr_block, block));
+                } 
+                INFOLOG("block {} has conflict, discard!", block.hash().substr(0,6));
+                return;
+            }
+            else
+            {
+                auto result = _duplicateChecker.find(curr_block.hash());
+                if(result != _duplicateChecker.end() && result->second.first)
+                {
+                    MagicSingleton<TaskPool>::GetInstance()->CommitCaTask(std::bind(&BlockHelper::MakeTxStatusMsg, this, block, curr_block));
+                }
+                INFOLOG("blockHash:{}, deleteBlockHash:{}", block.hash().substr(0,6), curr_block.hash().substr(0,6));
+                it = _broadcastBlocks.erase(it);
+                break;
+            }
+        }
+    }
+    DEBUGLOG("_broadcastBlocks _broadcastBlocks.size:{}", _broadcastBlocks.size());
+    
+    DBReader dbReader;
+    uint64_t selfNodeHeight;
+    auto res = dbReader.GetBlockTop(selfNodeHeight);
+    if (DBStatus::DB_SUCCESS != res)
+    {
+        DEBUGLOG("Get selfNodeHeight error");
+        return;
+    }
+
+    std::string blockRaw;
+    auto prevHashStatus = dbReader.GetBlockByBlockHash(block.prevhash(), blockRaw);
+    bool ContractPrevHashStatus = true;
+    std::string contractPrevBlockHash;
+    
+    bool isContractBlock = false;
+    if(IsContractBlock(block))
+    {
+        std::string contractTxPreHash;
+        auto ret = checkContractBlock(block, contractTxPreHash);
+        if(ret < 0)
+        {
+            DEBUGLOG("checkContractBlock error, contractBlockHash:{}, contractTxPreHash:{}",block.hash().substr(0,6), contractTxPreHash);
+            return;
+        }
+        if(ret == 0 && !contractTxPreHash.empty())
+        {
+            ContractPrevHashStatus = false;
+        }
+        isContractBlock = true;
+    }
+
+    if(!isContractBlock)
+    {
+        if(DBStatus::DB_SUCCESS == prevHashStatus)
+        {
+            INFOLOG("_broadcastBlocks height:{}, hash:{}, status:{}", block.height(), block.hash().substr(0,6), status);
+            if(block.height() <= selfNodeHeight + 1000)
+            {
+                _broadcastBlocks.insert(block);
+            }
+        }
+        else
+        {
+            AddPendingBlock(block);
+        }
+    }
+
+    if(isContractBlock)
+    {
+        if(ContractPrevHashStatus)
+        {
+            if(DBStatus::DB_SUCCESS == prevHashStatus)
+            {
+                INFOLOG("_broadcastBlocks height:{}, hash:{}, status:{}", block.height(), block.hash().substr(0,6), status);
+                if(block.height() <= selfNodeHeight + 1000)
+                {
+                    _broadcastBlocks.insert(block);
+                }
+            }
+            else
+            {
+                AddPendingBlock(block);
+            }
+        }
+    }
+}
+
+void BlockHelper::AddBroadcastBlock_V33_1(const CBlock& block, bool status)
 {
 
     std::lock_guard<std::mutex> lock_low1(_helperMutexLow1);

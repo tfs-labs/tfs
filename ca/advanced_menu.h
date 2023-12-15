@@ -15,6 +15,8 @@
 #include "db/db_api.h"
 
 
+
+
 /**
  * @brief       
  */
@@ -34,6 +36,7 @@ void GetStakeList();
  * @brief      Get a list of addresses that can claim bonuses
  */
 int GetBounsAddrInfo();
+
 
 
 /**
@@ -89,6 +92,12 @@ void GetBalanceByUtxo();
  * @brief       
  */
 int ImitateCreateTxStruct();
+
+
+/**
+ * @brief       
+ */
+int ImitateCreateTxStruct_V33_1();
 
 /**
  * @brief       

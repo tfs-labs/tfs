@@ -267,6 +267,21 @@ TO_JSON(time)
 TO_JSON(gas)
 D_END_R
 
+PAUSE_D_ACK(contract_ack)
+PARSE_JSON(contractJs)
+PARSE_JSON(txJs);
+D_END
+
+
+DOUMP_D_ACK(contract_ack)
+TO_JSON(contractJs)
+TO_JSON(txJs);
+D_END_R
+
+
+
+
+
 PAUSE_D_REQ(get_stake_req)
 PARSE_JSON(fromAddr)
 PARSE_JSON(stake_amount)

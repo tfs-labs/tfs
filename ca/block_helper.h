@@ -60,6 +60,14 @@ struct MissingBlock
 	}
 };
 
+enum ContractPreHashStatus {
+    Normal,
+    DbBlockException,
+    MemBlockException,
+    Waiting,
+    Err
+};
+
 enum class doubleSpendType
 {
     repeatenDoubleSpend,
@@ -146,6 +154,14 @@ class BlockHelper
          */
         void AddBroadcastBlock(const CBlock& block, bool status = false);
 
+        /**
+         * @brief       
+         * 
+         * @param       block: 
+         * @param       status: 
+         */
+        void AddBroadcastBlock_V33_1(const CBlock& block, bool status = false);
+        
         /**
          * @brief       
          * 
@@ -245,6 +261,48 @@ class BlockHelper
         void StopSaveBlock() { _stopBlocking = false; }
 
     private:
+
+        /**
+         * @brief       
+         * 
+         * @param       contractAddr: 
+         * @param       MEMContractPreHash: 
+         * @param       blockTime: 
+         * @param       DBBlockHash: 
+         */
+        ContractPreHashStatus CheckContractPreHashStatus(const std::string& contractAddr, const std::string& MEMContractPreHash, const uint64_t blockTime, std::string& DBBlockHash);
+        /**
+         * @brief       
+         * 
+         * @param       block: 
+         * @param       contractTxPreHash: 
+         */
+        int checkContractBlock(const CBlock& block, std::string& contractTxPreHash);
+
+        /**
+         * @brief       
+         * 
+         * @param       block: 
+         * @param       contractTxPreHash: 
+         */
+        int checkContractBlockCache(const CBlock& block, const std::string& contractTxPreHash);
+
+        /**
+         * @brief       
+         * 
+         * @param       block: 
+         * @param       selfNodeHeight: 
+         */
+        void AddPendingBlock(const CBlock& block);
+
+        /**
+         * @brief       
+         * 
+         * @param       block: 
+         * @param       contractTxPreHash: 
+         */
+        void AddContractBlock(const CBlock& block, const std::string& contractTxPreHash);
+
        /**
         * @brief       
         * 
@@ -323,6 +381,7 @@ class BlockHelper
         std::set<MissingBlock> _missingBlocks; // Wait for the hash polling to trigger the block finding protocol
         std::map<std::string, CBlock> _doubleSpendBlocks;
         std::map<std::string, std::pair<bool, uint64_t>> _duplicateChecker;
+        std::unordered_map<std::string, CBlock> _contractBlocks;
         const static int _kMaxMissingBlockSize = 10;
         const static int _kMaxMissingUxtoSize = 10;
         const static int _kSyncSaveFailTolerance = 2;
@@ -388,6 +447,15 @@ int HandleBlockByUtxoAck(const std::shared_ptr<GetBlockByUtxoAck> &msg, const Ms
  * @return      int 
  */
 int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs);
+
+/**
+ * @brief       
+ * 
+ * @param       seekBlockHash: 
+ * @param       contractBlockStr: 
+ * @return      int 
+ */
+int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string& contractBlockStr);
 
 /**
  * @brief       

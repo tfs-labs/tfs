@@ -17,6 +17,7 @@ message TxMsgInfo
   uint32    type = 1; //Transaction flow type
   bytes     tx = 2; //Transaction Information
   uint64    height = 3; //The height value of the initiating transaction node
+  repeated string contractStorageList = 4;
 }
 
 //PC-side transaction information body
@@ -65,3 +66,18 @@ message BuildBlockBroadcastMsgAck
   string blockhash		    = 4;				          		//Block information
 }
 
+message ContractTxMsgReq
+{
+  string version = 1;
+  TxMsgReq txMsgReq = 2;
+  repeated string contractDependentAddress = 3;
+}
+
+
+message ContractPackagerMsg
+{
+  string version = 1;
+  CSign  sign = 2;
+  repeated TxMsgReq txMsgReq = 3;
+  Vrf    vrfInfo  = 4;
+}

@@ -13,6 +13,9 @@
 #include <memory>
 #include <iostream>
 #include <map>
+#include <string>
+#include <unordered_map>
+#include <shared_mutex>
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/uuid/detail/sha1.hpp>
@@ -20,6 +23,10 @@
 #include "node.h"
 #include "common.h"
 #include "rlp.h"
+
+#include "utils/json.hpp"
+#include "utils/time_util.h"
+#include "utils/magic_singleton.h"
 struct ReturnVal 
 {
 public:
@@ -33,29 +40,49 @@ public:
     nodePtr valueNode;
     nodePtr newNode;
 };
-class VirtualDB
+
+class ContractDataCache
 {
 public:
-    static std::map<std::string, std::string> db;
-public:
-    static void Insert(std::string k, std::string v) { db[k] = v; }
-    static std::string Get(std::string k) 
-    { 
-        if (db.find(k) != db.end())
+
+    void lock()
+    {
+        mapMutex.lock();
+    }
+
+    void unlock()
+    {
+        mapMutex.unlock();
+    }
+
+    void set(const nlohmann::json& jStorage)
+    {
+        for (auto it = jStorage.begin(); it != jStorage.end(); ++it)
         {
-            return db.at(k);
+            contractDataMap[it.key()] = it.value();
         }
-        return "";
+        return;
     }
-    static void Getdb(std::map<std::string, std::string>& mdb)
+
+    bool get(const std::string& key, std::string& value)
     {
-        mdb = db;
+        auto it = contractDataMap.find(key);
+        if (it != contractDataMap.end())
+        {
+            value = it->second;
+            return true;
+        }
+        return false;
     }
-    static std::map<std::string, std::string> Createdb()
+
+    void clear()
     {
-        std::map<std::string, std::string> Tempdb;
-        return Tempdb;
+        contractDataMap.clear();
     }
+
+private:
+    std::unordered_map<std::string, std::string> contractDataMap;
+    std::mutex mapMutex;
 };
 
 class Trie
@@ -93,6 +120,7 @@ public:
     nodePtr Update(std::string key, std::string value);
 
     nodePtr DescendKey(std::string key) const;
+    nodePtr DescendKey_V33_1(std::string key) const;
     nodePtr DecodeShort(std::string hash, dev::RLP const& r) const;
     nodePtr DecodeFull(std::string hash, dev::RLP const& r) const;
     nodePtr DecodeRef(dev::RLP const& r) const;
@@ -117,6 +145,7 @@ public:
     int Toint(char c) const;
 
     void GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash);
+    void GetBlockStorage_V33_1(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash);
 public:
     mutable nodePtr root;
     std::string contractAddr;

@@ -210,11 +210,9 @@ int CheckBlocks::_ToCheck()
             return -6;
         }
 
-
         auto compare = [](const std::pair<std::string, uint64_t>& a, const std::pair<std::string, uint64_t>& b) {
             return a.second < b.second;
         };
-
 
         auto maxIterator = std::max_element(consensusMap.begin(), consensusMap.end(), compare);
 

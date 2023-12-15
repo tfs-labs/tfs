@@ -99,7 +99,7 @@ void CBlockCache::CacheRemove(uint64_t blockHeight)
     }
     else
     {
-        INFOLOG("not found block height {} in the _cache",blockHeight);
+        INFOLOG("not found block height {} in the _transactionCache",blockHeight);
     }
 }
 
@@ -120,7 +120,7 @@ int CBlockCache::Remove(const uint64_t blockHeight, const std::string & blockHas
                 if(_cache.size() >= 1000 && iter->second.size() == 1)
                 {
                     _cache.erase(blockHeight);
-                    DEBUGLOG("Remove delete _cache block hash :{}", blockHash);
+                    DEBUGLOG("Remove delete _transactionCache block hash :{}", blockHash);
 
                     uint64_t lowHeight = _cache.begin()->first-1;
                     std::vector<std::string> blockHashes;
@@ -154,7 +154,7 @@ int CBlockCache::Remove(const uint64_t blockHeight, const std::string & blockHas
     }
     else
     {
-        INFOLOG("not found block height {} in the _cache",blockHeight);
+        INFOLOG("not found block height {} in the _transactionCache",blockHeight);
     }
     
     return 0;

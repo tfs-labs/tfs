@@ -25,7 +25,12 @@ namespace Evmone
      * @param       TxType: 
      * @return      int 
      */
-    int ContractInfoAdd(const TfsHost& host, nlohmann::json& jTxInfo, global::ca::TxType TxType);
+    int
+    ContractInfoAdd(const TfsHost &host, const std::string &txHash, global::ca::TxType TxType,
+                    uint32_t transactionVersion,
+                    nlohmann::json &jTxInfo, std::map<std::string, std::string> &contractPreHashCache);
+
+    int ContractInfoAdd_V33_1(const TfsHost& host, nlohmann::json& jTxInfo, global::ca::TxType TxType);
 
     /**
      * @brief       
@@ -118,7 +123,9 @@ namespace Evmone
     int CallContract(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &strDeployer, 
                     const std::string &strDeployHash,const std::string &strInput, std::string &strOutput, 
                     TfsHost &host, int64_t &gasCost, const uint64_t& contractTransfer);
-
+    int CallContract_V33_1(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &strDeployer, 
+                    const std::string &strDeployHash,const std::string &strInput, std::string &strOutput, 
+                    TfsHost &host, int64_t &gasCost, const uint64_t& contractTransfer);
     /**
      * @brief       Get the Storage object
      * 
@@ -126,7 +133,9 @@ namespace Evmone
      * @param       jStorage: 
      * @param       dirtyContract: 
      */
-    void GetStorage(const TfsHost& host, nlohmann::json& jStorage, std::set<address>& dirtyContract);
+    void GetStorage(const TfsHost &host, nlohmann::json &jStorage, std::set<address> &dirtyContract);
+
+    void GetCalledContract(const TfsHost& host, std::vector<std::string>& calledContract);
 
     /**
      * @brief       Get the Selfdestructs object

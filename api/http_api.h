@@ -50,7 +50,7 @@ void ApiGetRatesInfo(const Request &req,Response &res);
 void ApiPrintAllBlocks(const Request &req,Response &res);
 void ApiPrintCalc1000SumHash(const Request &req,Response &res);
 void ApiSetCalc1000TopHeight(const Request &req,Response &res);
-
+void ApiPrintContractBlock(const Request & req, Response & res);
 #endif
 
 bool ApiStatusAutoTxTest(Response & res);
@@ -70,9 +70,11 @@ void GetRsaPub(const Request & req, Response & res);
 void DeployContract(const Request & req, Response & res);
 void CallContract(const Request & req, Response & res);
 void SendMessage(const Request & req, Response & res);
+void SendContractMessage(const Request & req,Response & res);
 void GetIsOnChain(const Request & req, Response & res);
 void GetDeployer(const Request & req, Response & res);
 void GetDeployerUtxo(const Request & req, Response & res);
+
 // void get_base58_from_evm(const Request & req, Response & res);
 // void get_evmaddr_from_pubstr(const Request & req,Response & res);
 void GetRestInvest(const Request & req, Response & res);
@@ -80,7 +82,8 @@ void ApiIp(const Request &req, Response & res);
 void ApiNormal(const Request & req, Response & res);
 void GetAllStakeNodeListAcknowledge(const Request & req,Response & res);
 void ApiGetRatesInfo(const Request &req,Response &res);
-void TfsRpcParse(const Request &req,Response &res);
+// void TfsRpcParse(const Request &req,Response &res);
+
 
 enum RPCERROR:int
 {

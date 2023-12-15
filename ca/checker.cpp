@@ -2,7 +2,23 @@
 
 #include "utils/base58.h"
 
-bool Checker::CheckConflict(const CTransaction &tx, const std::map<uint64_t, std::list<TransactionEntity>> &cache)
+bool Checker::CheckConflict(const CTransaction &tx, const std::map<uint64_t ,std::list<CTransaction>> &cache)
+{
+    for(const auto& pairHeightTxs : cache)
+    {
+        for(const auto& txEntity : pairHeightTxs.second)
+        {
+            if(CheckConflict(txEntity, tx) == true)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool Checker::CheckConflict_V33_1(const CTransaction &tx, const std::map<uint64_t, std::list<TransactionEntity_V33_1>> &cache)
 {
     CTransaction curTx;
     for(const auto& pairHeightTxs : cache)
@@ -14,6 +30,19 @@ bool Checker::CheckConflict(const CTransaction &tx, const std::map<uint64_t, std
             {
                 return true;
             }
+        }
+    }
+
+    return false;
+}
+
+bool Checker::CheckConflict(const CTransaction &tx, const std::vector<TransactionEntity>  &cache)
+{
+    for(const auto& txEntity : cache)
+    {
+        if(CheckConflict(txEntity.GetTransaction(), tx))
+        {
+            return true;
         }
     }
 

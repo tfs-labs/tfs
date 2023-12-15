@@ -392,7 +392,6 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
 
     DEBUGLOG("GetConsensusNodeList : maxCnt = {} , item->second.size = {}, maxElem = {}", maxCnt, item->second.size(), maxElem);
 
-
     counts.erase(std::remove_if(counts.begin(), counts.end(),[maxElem](int x){ return x == maxElem;}), counts.end());
     if(counts.size() < 2)
     {
@@ -442,6 +441,7 @@ std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeL
             }
         }
     }
+
 
     for(auto & node : nodeList)
     {

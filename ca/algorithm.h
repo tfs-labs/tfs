@@ -10,6 +10,7 @@
 #ifndef TFS_CA_ALGORITHM_H_
 #define TFS_CA_ALGORITHM_H_
 
+#include <utils/json.hpp>
 #include "global.h"
 #include "db/db_api.h"
 #include "proto/block.pb.h"
@@ -96,6 +97,17 @@ int MemVerifyTransactionTx(const CTransaction &tx);
 int VerifyTransactionTx(const CTransaction &tx, uint64_t txHeight, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true);
 
 /**
+ * @brief       Verification transaction
+ * 
+ * @param       tx: 
+ * @param       tx_height: 
+ * @param       turn_on_missing_block_protocol: 
+ * @param       verify_abnormal: 
+ * @return      int 
+ */
+int VerifyTransactionTx_V33_1(const CTransaction &tx, uint64_t txHeight, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true);
+
+/**
  * @brief       
  * 
  * @param       block: 
@@ -120,7 +132,13 @@ int VerifySign(const CSign & sign, const std::string & serHash);
  * @param       blockStatus: 
  * @return      int 
  */
-int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* blockStatus = nullptr);
+int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* blockStat = nullptr);
+
+
+
+int VerifyContractStorage(const nlohmann::json& txInfo, const nlohmann::json& expectedTxInfo);
+
+int VerifyContractBlock(const CBlock &block);
 
 /**
  * @brief       Check block
@@ -134,7 +152,7 @@ int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* block
  */
 int VerifyBlock(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr);
 // int VerifyBlock(const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean, bool verify_abnormal = true);
-
+int VerifyBlock_V33_1(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr);
 /**
  * @brief       
  * 
@@ -146,6 +164,18 @@ int VerifyBlock(const CBlock &block, bool turnOnMissingBlockProtocol = false, bo
  */
 int SaveBlock(DBReadWriter &dbWriter, const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean);
 
+
+/**
+ * @brief       
+ * 
+ * @param       dbWriter: 
+ * @param       block: 
+ * @param       saveType: 
+ * @param       obtainMean: 
+ * @return      int 
+ */
+int SaveBlock_V33_1(DBReadWriter &dbWriter, const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean);
+
 /**
  * @brief       
  * 
@@ -154,6 +184,16 @@ int SaveBlock(DBReadWriter &dbWriter, const CBlock &block, global::ca::SaveType 
  * @return      int 
  */
 int DeleteBlock(DBReadWriter &dbWriter, const std::string &blockHash);
+
+
+/**
+ * @brief       
+ * 
+ * @param       dbWriter: 
+ * @param       blockHash: 
+ * @return      int 
+ */
+int DeleteBlock_V33_1(DBReadWriter &dbWriter, const std::string &blockHash);
 
 /**
  * @brief       When calling, pay attention not to have too much difference between the height and the maximum height. The memory occupation is too large, and the process is easy to be killed
@@ -270,6 +310,8 @@ bool CalculateHeightSumHash(uint64_t startHeight, uint64_t endHeight, DBReadWrit
  * @return      int 0 success
  */
 int GetCommissionPercentage(const std::string& addr, double& commission);
+
+int GetCallContractFromAddr(const CTransaction& transaction, bool isMultiSign, std::string& fromAddr);
 }; // namespace ca_algorithm
 
 #endif

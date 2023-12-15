@@ -1,4 +1,5 @@
 #include "ca/block_stroage.h"
+#include "global.h"
 #include "utils/vrf.hpp"
 #include "utils/tfs_bench_mark.h"
 #include "ca/sync_block.h"
@@ -199,7 +200,7 @@ void BlockStroage::_BlockCheck()
             }
 
             //After the verification is passed, the broadcast block is directly built
-            if(block.version() >=0)
+            if(block.version() >= global::ca::kInitBlockVersion)
             {
                 if(_blockStatusMap.find(block.hash()) == _blockStatusMap.end())
                 {
@@ -720,6 +721,15 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
         {
             continue;
         }
+        
+        if(oldBlock.height() > global::ca::OldVersionSmartContractFailureHeight)
+        {
+            if((global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeCallContract ||
+            (global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeDeployContract)
+            {
+                return;
+            }
+        }
 
         if(txsStatus.find(tx.hash()) != txsStatus.end() && txsStatus[tx.hash()] >= FailThreshold)
         {
@@ -801,7 +811,14 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
 
 int BlockStroage::InitNewBlock(const CBlock& oldBlock, CBlock& newBlock)
 {
-	newBlock.set_version(0);
+    if(oldBlock.height() <= global::ca::OldVersionSmartContractFailureHeight)
+    {
+        newBlock.set_version(0);
+    }
+    else
+    {
+        newBlock.set_version(global::ca::kCurrentBlockVersion);
+    }
 	newBlock.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
 	newBlock.set_height(oldBlock.height());
     newBlock.set_prevhash(oldBlock.prevhash());

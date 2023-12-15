@@ -583,6 +583,42 @@ public:
             ERRORLOG("Transaction Parse failed!");
             return result{evmc_failure_result};
         }
+
+        std::string block_hash;
+        if(data_reader.GetBlockHashByTransactionHash(deployTx.hash(), block_hash) != DBStatus::DB_SUCCESS)
+        {
+            ERRORLOG("GetBlockHashByTransactionHash failed!");
+            return result{evmc_failure_result};
+        }
+        std::string str_block;
+        if(data_reader.GetBlockByBlockHash(block_hash, str_block) != DBStatus::DB_SUCCESS)
+        {
+            ERRORLOG("GetBlockByBlockHash failed!");
+            return result{evmc_failure_result};
+        }
+
+        CBlock block;
+        if(!block.ParseFromString(str_block))
+        {
+            ERRORLOG("Block Parse failed!");
+            return result{evmc_failure_result};
+        }
+        uint64_t selfNodeHeight = 0;
+        auto status = data_reader.GetBlockTop(selfNodeHeight);
+        if (DBStatus::DB_SUCCESS != status)
+        {
+            std::cout << "Get block top error,please try again: "<< std::endl;
+            return result{evmc_failure_result};
+        }
+        if(selfNodeHeight > global::ca::OldVersionSmartContractFailureHeight && block.height() <= global::ca::OldVersionSmartContractFailureHeight)
+        {
+            ERRORLOG("Smart contracts Failure!");
+            std::cout << "deployed block height: " << block.height() << std::endl;
+            std::cout << "Smart contracts deployed before height " << global::ca::OldVersionSmartContractFailureHeight << " have expired" << std::endl;
+            return result{evmc_failure_result};
+        }
+
+
         std::string strCode;
         evmc::bytes code;
         try
@@ -598,56 +634,80 @@ public:
             return result{evmc_failure_result};
         }
 
+        // uint64_t selfNodeHeight = 0;
+        // DBReader dbReader;
+        // auto status = dbReader.GetBlockTop(selfNodeHeight);
+        // if (DBStatus::DB_SUCCESS != status)
+        // {
+        //     std::cout << "Get block top error,please try again: "<< std::endl;
+        //     return result{evmc_failure_result};
+        // }
+
+
         if(msg.kind == EVMC_CALL)
         {
-            DEBUGLOG("EVMC_CALL:");
-            std::string rootHash;
+            if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
+            {
+                DEBUGLOG("EVMC_CALL:");
+                std::string rootHash;
 
-            std::string strPrevTxHash;
-            auto ret = data_reader.GetLatestUtxoByContractAddr(ContractAddress, strPrevTxHash);
-            if(ret != DBStatus::DB_SUCCESS)
-            {
-                ERRORLOG("GetLatestUtxoByContractAddr failed!");
-                return result{evmc_failure_result};
-            }
-
-            CTransaction PrevTx;
-            std::string deployTxRaw;
-            ret = data_reader.GetTransactionByHash(strPrevTxHash, deployTxRaw);
-            if(ret != DBStatus::DB_SUCCESS)    
-            {
-                ERRORLOG("GetTransactionByHash failed!");
-                return result{evmc_failure_result}; 
-            }
-            if(!PrevTx.ParseFromString(deployTxRaw))
-            {
-                ERRORLOG("Transaction Parse failed!");
-                return result{evmc_failure_result}; 
-            }
-            try
-            {
-                nlohmann::json jPrevData = nlohmann::json::parse(PrevTx.data());
-                nlohmann::json jPrevStorage = jPrevData["TxInfo"]["Storage"];
-                if(!jPrevStorage.is_null())
+                std::string strPrevTxHash;
+                auto ret = data_reader.GetLatestUtxoByContractAddr(ContractAddress, strPrevTxHash);
+                if(ret != DBStatus::DB_SUCCESS)
                 {
-                    auto tx_type = (global::ca::TxType)PrevTx.txtype();
-                    if(tx_type == global::ca::TxType::kTxTypeDeployContract)
+                    ERRORLOG("GetLatestUtxoByContractAddr failed!");
+                    return result{evmc_failure_result};
+                }
+
+                CTransaction PrevTx;
+                std::string deployTxRaw;
+                ret = data_reader.GetTransactionByHash(strPrevTxHash, deployTxRaw);
+                if(ret != DBStatus::DB_SUCCESS)    
+                {
+                    ERRORLOG("GetTransactionByHash failed!");
+                    return result{evmc_failure_result}; 
+                }
+                if(!PrevTx.ParseFromString(deployTxRaw))
+                {
+                    ERRORLOG("Transaction Parse failed!");
+                    return result{evmc_failure_result}; 
+                }
+                try
+                {
+                    nlohmann::json jPrevData = nlohmann::json::parse(PrevTx.data());
+                    nlohmann::json jPrevStorage = jPrevData["TxInfo"]["Storage"];
+                    if(!jPrevStorage.is_null())
                     {
-                        rootHash = jPrevStorage[std::string("_") + "rootHash"].get<std::string>();
-                    }
-                    else
-                    {
-                        rootHash = jPrevStorage[ContractAddress + "_" + "rootHash"].get<std::string>();
+                        auto tx_type = (global::ca::TxType)PrevTx.txtype();
+                        if(tx_type == global::ca::TxType::kTxTypeDeployContract)
+                        {
+                            rootHash = jPrevStorage[std::string("_") + "rootHash"].get<std::string>();
+                        }
+                        else
+                        {
+                            rootHash = jPrevStorage[ContractAddress + "_" + "rootHash"].get<std::string>();
+                        }
                     }
                 }
-            }
-            catch(...)
-            {
-                ERRORLOG("Parsing failed!");  
-                return result{evmc_failure_result};
-            }
+                catch(...)
+                {
+                    ERRORLOG("Parsing failed!");  
+                    return result{evmc_failure_result};
+                }
 
-            this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+                this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+            }
+            else
+            {
+                DEBUGLOG("EVMC_CALL:");
+                std::string rootHash;
+                int ret = GetContractRootHash(ContractAddress, rootHash);
+                if (ret != 0)
+                {
+                    return result{evmc_failure_result};
+                }
+                this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+            }
         }
         else if (msg.kind == EVMC_DELEGATECALL)
         {
