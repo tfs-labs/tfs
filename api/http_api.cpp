@@ -959,7 +959,7 @@ void ApiGetBlock(const Request &req, Response &res) {
             {
                 return;
             }
-            if(myTop <= global::ca::OldVersionSmartContractFailureHeight)
+            if(top <= global::ca::OldVersionSmartContractFailureHeight)
             {
                 BlockInvert_V33_1(strHeader, block);
             }
