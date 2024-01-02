@@ -34,6 +34,7 @@ class ContractDispatcher{
         struct msgInfo
         {
             std::vector<TxMsgReq> txMsgReq;
+            std::set<std::string> nodelist;
             Vrf info; 
         };
 
@@ -43,7 +44,7 @@ class ContractDispatcher{
         std::vector<std::vector<TxMsgReq>> GetDependentData();
         std::vector<std::vector<TxMsgReq>> GroupDependentData(const std::vector<std::vector<TxMsgReq>> & txMsgVec);
         int DistributionContractTx(std::multimap<std::string, msgInfo>& distribution);
-        int SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsmsg);
+        int SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsmsg,const std::set<std::string> nodelist);
 
     private:
         std::thread _dispatcherThread;

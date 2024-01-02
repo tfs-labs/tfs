@@ -12,7 +12,7 @@ constexpr int MAXLINE				= 10240l;
 			   
 constexpr int HEART_INTVL     =  60;   // detect how many times to start sending heartbeat packets,
 constexpr int HEART_PROBES    =  3;   //If the other party does not respond after sending several heartbeat packets, the connection is close
-
+constexpr int HEART_BEGIN_NUM =  1;
 
 typedef int int32;
 typedef unsigned int uint32;

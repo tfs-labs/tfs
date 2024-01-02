@@ -51,6 +51,8 @@ PROTOBUF_CONSTEXPR BlockMsg::BlockMsg(
   , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.block_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.vrfdatasource_)*/nullptr
+  , /*decltype(_impl_.sign_)*/nullptr
   , /*decltype(_impl_.time_)*/uint64_t{0u}
   , /*decltype(_impl_.code_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
@@ -189,6 +191,8 @@ const uint32_t TableStruct_block_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pr
   PROTOBUF_FIELD_OFFSET(::BlockMsg, _impl_.block_),
   PROTOBUF_FIELD_OFFSET(::BlockMsg, _impl_.vrfinfo_),
   PROTOBUF_FIELD_OFFSET(::BlockMsg, _impl_.txvrfinfo_),
+  PROTOBUF_FIELD_OFFSET(::BlockMsg, _impl_.vrfdatasource_),
+  PROTOBUF_FIELD_OFFSET(::BlockMsg, _impl_.sign_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::TxStatus, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -247,12 +251,12 @@ const uint32_t TableStruct_block_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pr
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::CBlock)},
   { 18, -1, -1, sizeof(::BlockMsg)},
-  { 31, -1, -1, sizeof(::TxStatus)},
-  { 39, -1, -1, sizeof(::BlockStatus)},
-  { 49, -1, -1, sizeof(::SeekPreHashByHightReq)},
-  { 58, -1, -1, sizeof(::SeekPreHashByHightAck)},
-  { 68, -1, -1, sizeof(::SeekContractPreHashReq)},
-  { 76, -1, -1, sizeof(::SeekContractPreHashAck)},
+  { 33, -1, -1, sizeof(::TxStatus)},
+  { 41, -1, -1, sizeof(::BlockStatus)},
+  { 51, -1, -1, sizeof(::SeekPreHashByHightReq)},
+  { 60, -1, -1, sizeof(::SeekPreHashByHightAck)},
+  { 70, -1, -1, sizeof(::SeekContractPreHashReq)},
+  { 78, -1, -1, sizeof(::SeekContractPreHashAck)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -274,22 +278,24 @@ const char descriptor_table_protodef_block_2eproto[] PROTOBUF_SECTION_VARIABLE(p
   "kleRoot\030\006 \001(\t\022\032\n\003txs\030\007 \003(\0132\r.CTransactio"
   "n\022\014\n\004data\030\010 \001(\t\022\014\n\004info\030\t \001(\t\022\024\n\004sign\030\n "
   "\003(\0132\006.CSign\022\020\n\010reserve0\030\013 \001(\t\022\020\n\010reserve"
-  "1\030\014 \001(\t\"\207\001\n\010BlockMsg\022\017\n\007version\030\001 \001(\t\022\014\n"
+  "1\030\014 \001(\t\"\304\001\n\010BlockMsg\022\017\n\007version\030\001 \001(\t\022\014\n"
   "\004code\030\002 \001(\021\022\017\n\007message\030\003 \001(\t\022\014\n\004time\030\004 \001"
   "(\004\022\r\n\005block\030\005 \001(\014\022\025\n\007vrfInfo\030\006 \003(\0132\004.Vrf"
-  "\022\027\n\ttxvrfInfo\030\007 \003(\0132\004.Vrf\"*\n\010TxStatus\022\016\n"
-  "\006txHash\030\001 \001(\t\022\016\n\006status\030\002 \001(\005\"Y\n\013BlockSt"
-  "atus\022\021\n\tblockHash\030\001 \001(\t\022\016\n\006status\030\002 \001(\005\022"
-  "\033\n\010txStatus\030\003 \003(\0132\t.TxStatus\022\n\n\002id\030\004 \001(\t"
-  "\"R\n\025SeekPreHashByHightReq\022\024\n\014self_node_i"
-  "d\030\001 \001(\t\022\016\n\006msg_id\030\002 \001(\t\022\023\n\013seek_height\030\003"
-  " \001(\004\"e\n\025SeekPreHashByHightAck\022\024\n\014self_no"
-  "de_id\030\001 \001(\t\022\016\n\006msg_id\030\002 \001(\t\022\023\n\013seek_heig"
-  "ht\030\003 \001(\004\022\021\n\tprehashes\030\004 \003(\t\">\n\026SeekContr"
-  "actPreHashReq\022\024\n\014self_node_id\030\001 \001(\t\022\016\n\006m"
-  "sg_id\030\002 \001(\t\"W\n\026SeekContractPreHashAck\022\024\n"
-  "\014self_node_id\030\001 \001(\t\022\016\n\006msg_id\030\002 \001(\t\022\027\n\017C"
-  "ontractPreHash\030\003 \001(\tb\006proto3"
+  "\022\027\n\ttxvrfInfo\030\007 \003(\0132\004.Vrf\022%\n\rvrfDataSour"
+  "ce\030\010 \001(\0132\016.VrfDataSource\022\024\n\004sign\030\t \001(\0132\006"
+  ".CSign\"*\n\010TxStatus\022\016\n\006txHash\030\001 \001(\t\022\016\n\006st"
+  "atus\030\002 \001(\005\"Y\n\013BlockStatus\022\021\n\tblockHash\030\001"
+  " \001(\t\022\016\n\006status\030\002 \001(\005\022\033\n\010txStatus\030\003 \003(\0132\t"
+  ".TxStatus\022\n\n\002id\030\004 \001(\t\"R\n\025SeekPreHashByHi"
+  "ghtReq\022\024\n\014self_node_id\030\001 \001(\t\022\016\n\006msg_id\030\002"
+  " \001(\t\022\023\n\013seek_height\030\003 \001(\004\"e\n\025SeekPreHash"
+  "ByHightAck\022\024\n\014self_node_id\030\001 \001(\t\022\016\n\006msg_"
+  "id\030\002 \001(\t\022\023\n\013seek_height\030\003 \001(\004\022\021\n\tprehash"
+  "es\030\004 \003(\t\">\n\026SeekContractPreHashReq\022\024\n\014se"
+  "lf_node_id\030\001 \001(\t\022\016\n\006msg_id\030\002 \001(\t\"W\n\026Seek"
+  "ContractPreHashAck\022\024\n\014self_node_id\030\001 \001(\t"
+  "\022\016\n\006msg_id\030\002 \001(\t\022\027\n\017ContractPreHash\030\003 \001("
+  "\tb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_block_2eproto_deps[3] = {
   &::descriptor_table_ca_5fprotomsg_2eproto,
@@ -298,7 +304,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_block_2eproto_deps[
 };
 static ::_pbi::once_flag descriptor_table_block_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_block_2eproto = {
-    false, false, 908, descriptor_table_protodef_block_2eproto,
+    false, false, 969, descriptor_table_protodef_block_2eproto,
     "block.proto",
     &descriptor_table_block_2eproto_once, descriptor_table_block_2eproto_deps, 3, 8,
     schemas, file_default_instances, TableStruct_block_2eproto::offsets,
@@ -977,13 +983,35 @@ void CBlock::InternalSwap(CBlock* other) {
 
 class BlockMsg::_Internal {
  public:
+  static const ::VrfDataSource& vrfdatasource(const BlockMsg* msg);
+  static const ::CSign& sign(const BlockMsg* msg);
 };
 
+const ::VrfDataSource&
+BlockMsg::_Internal::vrfdatasource(const BlockMsg* msg) {
+  return *msg->_impl_.vrfdatasource_;
+}
+const ::CSign&
+BlockMsg::_Internal::sign(const BlockMsg* msg) {
+  return *msg->_impl_.sign_;
+}
 void BlockMsg::clear_vrfinfo() {
   _impl_.vrfinfo_.Clear();
 }
 void BlockMsg::clear_txvrfinfo() {
   _impl_.txvrfinfo_.Clear();
+}
+void BlockMsg::clear_vrfdatasource() {
+  if (GetArenaForAllocation() == nullptr && _impl_.vrfdatasource_ != nullptr) {
+    delete _impl_.vrfdatasource_;
+  }
+  _impl_.vrfdatasource_ = nullptr;
+}
+void BlockMsg::clear_sign() {
+  if (GetArenaForAllocation() == nullptr && _impl_.sign_ != nullptr) {
+    delete _impl_.sign_;
+  }
+  _impl_.sign_ = nullptr;
 }
 BlockMsg::BlockMsg(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -1000,6 +1028,8 @@ BlockMsg::BlockMsg(const BlockMsg& from)
     , decltype(_impl_.version_){}
     , decltype(_impl_.message_){}
     , decltype(_impl_.block_){}
+    , decltype(_impl_.vrfdatasource_){nullptr}
+    , decltype(_impl_.sign_){nullptr}
     , decltype(_impl_.time_){}
     , decltype(_impl_.code_){}
     , /*decltype(_impl_._cached_size_)*/{}};
@@ -1029,6 +1059,12 @@ BlockMsg::BlockMsg(const BlockMsg& from)
     _this->_impl_.block_.Set(from._internal_block(), 
       _this->GetArenaForAllocation());
   }
+  if (from._internal_has_vrfdatasource()) {
+    _this->_impl_.vrfdatasource_ = new ::VrfDataSource(*from._impl_.vrfdatasource_);
+  }
+  if (from._internal_has_sign()) {
+    _this->_impl_.sign_ = new ::CSign(*from._impl_.sign_);
+  }
   ::memcpy(&_impl_.time_, &from._impl_.time_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.code_) -
     reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.code_));
@@ -1045,6 +1081,8 @@ inline void BlockMsg::SharedCtor(
     , decltype(_impl_.version_){}
     , decltype(_impl_.message_){}
     , decltype(_impl_.block_){}
+    , decltype(_impl_.vrfdatasource_){nullptr}
+    , decltype(_impl_.sign_){nullptr}
     , decltype(_impl_.time_){uint64_t{0u}}
     , decltype(_impl_.code_){0}
     , /*decltype(_impl_._cached_size_)*/{}
@@ -1079,6 +1117,8 @@ inline void BlockMsg::SharedDtor() {
   _impl_.version_.Destroy();
   _impl_.message_.Destroy();
   _impl_.block_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.vrfdatasource_;
+  if (this != internal_default_instance()) delete _impl_.sign_;
 }
 
 void BlockMsg::SetCachedSize(int size) const {
@@ -1096,6 +1136,14 @@ void BlockMsg::Clear() {
   _impl_.version_.ClearToEmpty();
   _impl_.message_.ClearToEmpty();
   _impl_.block_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.vrfdatasource_ != nullptr) {
+    delete _impl_.vrfdatasource_;
+  }
+  _impl_.vrfdatasource_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.sign_ != nullptr) {
+    delete _impl_.sign_;
+  }
+  _impl_.sign_ = nullptr;
   ::memset(&_impl_.time_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.code_) -
       reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.code_));
@@ -1176,6 +1224,22 @@ const char* BlockMsg::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx)
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<58>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // .VrfDataSource vrfDataSource = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+          ptr = ctx->ParseMessage(_internal_mutable_vrfdatasource(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .CSign sign = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 74)) {
+          ptr = ctx->ParseMessage(_internal_mutable_sign(), ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -1262,6 +1326,20 @@ uint8_t* BlockMsg::_InternalSerialize(
         InternalWriteMessage(7, repfield, repfield.GetCachedSize(), target, stream);
   }
 
+  // .VrfDataSource vrfDataSource = 8;
+  if (this->_internal_has_vrfdatasource()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(8, _Internal::vrfdatasource(this),
+        _Internal::vrfdatasource(this).GetCachedSize(), target, stream);
+  }
+
+  // .CSign sign = 9;
+  if (this->_internal_has_sign()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(9, _Internal::sign(this),
+        _Internal::sign(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1313,6 +1391,20 @@ size_t BlockMsg::ByteSizeLong() const {
         this->_internal_block());
   }
 
+  // .VrfDataSource vrfDataSource = 8;
+  if (this->_internal_has_vrfdatasource()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.vrfdatasource_);
+  }
+
+  // .CSign sign = 9;
+  if (this->_internal_has_sign()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.sign_);
+  }
+
   // uint64 time = 4;
   if (this->_internal_time() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_time());
@@ -1351,6 +1443,14 @@ void BlockMsg::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTO
   }
   if (!from._internal_block().empty()) {
     _this->_internal_set_block(from._internal_block());
+  }
+  if (from._internal_has_vrfdatasource()) {
+    _this->_internal_mutable_vrfdatasource()->::VrfDataSource::MergeFrom(
+        from._internal_vrfdatasource());
+  }
+  if (from._internal_has_sign()) {
+    _this->_internal_mutable_sign()->::CSign::MergeFrom(
+        from._internal_sign());
   }
   if (from._internal_time() != 0) {
     _this->_internal_set_time(from._internal_time());
@@ -1394,9 +1494,9 @@ void BlockMsg::InternalSwap(BlockMsg* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(BlockMsg, _impl_.code_)
       + sizeof(BlockMsg::_impl_.code_)
-      - PROTOBUF_FIELD_OFFSET(BlockMsg, _impl_.time_)>(
-          reinterpret_cast<char*>(&_impl_.time_),
-          reinterpret_cast<char*>(&other->_impl_.time_));
+      - PROTOBUF_FIELD_OFFSET(BlockMsg, _impl_.vrfdatasource_)>(
+          reinterpret_cast<char*>(&_impl_.vrfdatasource_),
+          reinterpret_cast<char*>(&other->_impl_.vrfdatasource_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata BlockMsg::GetMetadata() const {

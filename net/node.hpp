@@ -6,6 +6,9 @@
 #include <sstream>
 #include "define.h"
 #include "ip_port.h"
+#include "utils/time_util.h"
+#include "utils/magic_singleton.h"
+#include "common/global.h"
 
 
 enum ConnKind
@@ -34,7 +37,7 @@ public:
 	uint64_t        timeStamp				  = 0;
 	ConnKind 	    connKind                = NOTYET;
 	int32_t         fd                       = -1;
-	int32_t         heartProbes             = HEART_PROBES;
+	int32_t         heartProbes            = HEART_PROBES;
 
 	Node(){}
 	Node(std::string nodeBase58Address)

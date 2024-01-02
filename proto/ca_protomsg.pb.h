@@ -72,6 +72,9 @@ extern TxMsgReqDefaultTypeInternal _TxMsgReq_default_instance_;
 class Vrf;
 struct VrfDefaultTypeInternal;
 extern VrfDefaultTypeInternal _Vrf_default_instance_;
+class VrfDataSource;
+struct VrfDataSourceDefaultTypeInternal;
+extern VrfDataSourceDefaultTypeInternal _VrfDataSource_default_instance_;
 PROTOBUF_NAMESPACE_OPEN
 template<> ::BuildBlockBroadcastMsg* Arena::CreateMaybeMessage<::BuildBlockBroadcastMsg>(Arena*);
 template<> ::BuildBlockBroadcastMsgAck* Arena::CreateMaybeMessage<::BuildBlockBroadcastMsgAck>(Arena*);
@@ -82,6 +85,7 @@ template<> ::TxMsgAck* Arena::CreateMaybeMessage<::TxMsgAck>(Arena*);
 template<> ::TxMsgInfo* Arena::CreateMaybeMessage<::TxMsgInfo>(Arena*);
 template<> ::TxMsgReq* Arena::CreateMaybeMessage<::TxMsgReq>(Arena*);
 template<> ::Vrf* Arena::CreateMaybeMessage<::Vrf>(Arena*);
+template<> ::VrfDataSource* Arena::CreateMaybeMessage<::VrfDataSource>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 
 // ===================================================================
@@ -1753,6 +1757,169 @@ class ContractTxMsgReq final :
 };
 // -------------------------------------------------------------------
 
+class VrfDataSource final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:VrfDataSource) */ {
+ public:
+  inline VrfDataSource() : VrfDataSource(nullptr) {}
+  ~VrfDataSource() override;
+  explicit PROTOBUF_CONSTEXPR VrfDataSource(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  VrfDataSource(const VrfDataSource& from);
+  VrfDataSource(VrfDataSource&& from) noexcept
+    : VrfDataSource() {
+    *this = ::std::move(from);
+  }
+
+  inline VrfDataSource& operator=(const VrfDataSource& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline VrfDataSource& operator=(VrfDataSource&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const VrfDataSource& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const VrfDataSource* internal_default_instance() {
+    return reinterpret_cast<const VrfDataSource*>(
+               &_VrfDataSource_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    8;
+
+  friend void swap(VrfDataSource& a, VrfDataSource& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(VrfDataSource* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(VrfDataSource* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  VrfDataSource* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<VrfDataSource>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const VrfDataSource& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const VrfDataSource& from) {
+    VrfDataSource::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(VrfDataSource* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "VrfDataSource";
+  }
+  protected:
+  explicit VrfDataSource(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVrfNodelistFieldNumber = 1,
+  };
+  // repeated string vrfNodelist = 1;
+  int vrfnodelist_size() const;
+  private:
+  int _internal_vrfnodelist_size() const;
+  public:
+  void clear_vrfnodelist();
+  const std::string& vrfnodelist(int index) const;
+  std::string* mutable_vrfnodelist(int index);
+  void set_vrfnodelist(int index, const std::string& value);
+  void set_vrfnodelist(int index, std::string&& value);
+  void set_vrfnodelist(int index, const char* value);
+  void set_vrfnodelist(int index, const char* value, size_t size);
+  std::string* add_vrfnodelist();
+  void add_vrfnodelist(const std::string& value);
+  void add_vrfnodelist(std::string&& value);
+  void add_vrfnodelist(const char* value);
+  void add_vrfnodelist(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& vrfnodelist() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_vrfnodelist();
+  private:
+  const std::string& _internal_vrfnodelist(int index) const;
+  std::string* _internal_add_vrfnodelist();
+  public:
+
+  // @@protoc_insertion_point(class_scope:VrfDataSource)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> vrfnodelist_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_ca_5fprotomsg_2eproto;
+};
+// -------------------------------------------------------------------
+
 class ContractPackagerMsg final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ContractPackagerMsg) */ {
  public:
@@ -1801,7 +1968,7 @@ class ContractPackagerMsg final :
                &_ContractPackagerMsg_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    9;
 
   friend void swap(ContractPackagerMsg& a, ContractPackagerMsg& b) {
     a.Swap(&b);
@@ -1878,6 +2045,7 @@ class ContractPackagerMsg final :
     kVersionFieldNumber = 1,
     kSignFieldNumber = 2,
     kVrfInfoFieldNumber = 4,
+    kVrfDataSourceFieldNumber = 5,
   };
   // repeated .TxMsgReq txMsgReq = 3;
   int txmsgreq_size() const;
@@ -1947,6 +2115,24 @@ class ContractPackagerMsg final :
       ::Vrf* vrfinfo);
   ::Vrf* unsafe_arena_release_vrfinfo();
 
+  // .VrfDataSource vrfDataSource = 5;
+  bool has_vrfdatasource() const;
+  private:
+  bool _internal_has_vrfdatasource() const;
+  public:
+  void clear_vrfdatasource();
+  const ::VrfDataSource& vrfdatasource() const;
+  PROTOBUF_NODISCARD ::VrfDataSource* release_vrfdatasource();
+  ::VrfDataSource* mutable_vrfdatasource();
+  void set_allocated_vrfdatasource(::VrfDataSource* vrfdatasource);
+  private:
+  const ::VrfDataSource& _internal_vrfdatasource() const;
+  ::VrfDataSource* _internal_mutable_vrfdatasource();
+  public:
+  void unsafe_arena_set_allocated_vrfdatasource(
+      ::VrfDataSource* vrfdatasource);
+  ::VrfDataSource* unsafe_arena_release_vrfdatasource();
+
   // @@protoc_insertion_point(class_scope:ContractPackagerMsg)
  private:
   class _Internal;
@@ -1959,6 +2145,7 @@ class ContractPackagerMsg final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::CSign* sign_;
     ::Vrf* vrfinfo_;
+    ::VrfDataSource* vrfdatasource_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -3830,6 +4017,85 @@ ContractTxMsgReq::mutable_contractdependentaddress() {
 
 // -------------------------------------------------------------------
 
+// VrfDataSource
+
+// repeated string vrfNodelist = 1;
+inline int VrfDataSource::_internal_vrfnodelist_size() const {
+  return _impl_.vrfnodelist_.size();
+}
+inline int VrfDataSource::vrfnodelist_size() const {
+  return _internal_vrfnodelist_size();
+}
+inline void VrfDataSource::clear_vrfnodelist() {
+  _impl_.vrfnodelist_.Clear();
+}
+inline std::string* VrfDataSource::add_vrfnodelist() {
+  std::string* _s = _internal_add_vrfnodelist();
+  // @@protoc_insertion_point(field_add_mutable:VrfDataSource.vrfNodelist)
+  return _s;
+}
+inline const std::string& VrfDataSource::_internal_vrfnodelist(int index) const {
+  return _impl_.vrfnodelist_.Get(index);
+}
+inline const std::string& VrfDataSource::vrfnodelist(int index) const {
+  // @@protoc_insertion_point(field_get:VrfDataSource.vrfNodelist)
+  return _internal_vrfnodelist(index);
+}
+inline std::string* VrfDataSource::mutable_vrfnodelist(int index) {
+  // @@protoc_insertion_point(field_mutable:VrfDataSource.vrfNodelist)
+  return _impl_.vrfnodelist_.Mutable(index);
+}
+inline void VrfDataSource::set_vrfnodelist(int index, const std::string& value) {
+  _impl_.vrfnodelist_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:VrfDataSource.vrfNodelist)
+}
+inline void VrfDataSource::set_vrfnodelist(int index, std::string&& value) {
+  _impl_.vrfnodelist_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:VrfDataSource.vrfNodelist)
+}
+inline void VrfDataSource::set_vrfnodelist(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.vrfnodelist_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:VrfDataSource.vrfNodelist)
+}
+inline void VrfDataSource::set_vrfnodelist(int index, const char* value, size_t size) {
+  _impl_.vrfnodelist_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:VrfDataSource.vrfNodelist)
+}
+inline std::string* VrfDataSource::_internal_add_vrfnodelist() {
+  return _impl_.vrfnodelist_.Add();
+}
+inline void VrfDataSource::add_vrfnodelist(const std::string& value) {
+  _impl_.vrfnodelist_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:VrfDataSource.vrfNodelist)
+}
+inline void VrfDataSource::add_vrfnodelist(std::string&& value) {
+  _impl_.vrfnodelist_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:VrfDataSource.vrfNodelist)
+}
+inline void VrfDataSource::add_vrfnodelist(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.vrfnodelist_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:VrfDataSource.vrfNodelist)
+}
+inline void VrfDataSource::add_vrfnodelist(const char* value, size_t size) {
+  _impl_.vrfnodelist_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:VrfDataSource.vrfNodelist)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+VrfDataSource::vrfnodelist() const {
+  // @@protoc_insertion_point(field_list:VrfDataSource.vrfNodelist)
+  return _impl_.vrfnodelist_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+VrfDataSource::mutable_vrfnodelist() {
+  // @@protoc_insertion_point(field_mutable_list:VrfDataSource.vrfNodelist)
+  return &_impl_.vrfnodelist_;
+}
+
+// -------------------------------------------------------------------
+
 // ContractPackagerMsg
 
 // string version = 1;
@@ -4097,9 +4363,101 @@ inline void ContractPackagerMsg::set_allocated_vrfinfo(::Vrf* vrfinfo) {
   // @@protoc_insertion_point(field_set_allocated:ContractPackagerMsg.vrfInfo)
 }
 
+// .VrfDataSource vrfDataSource = 5;
+inline bool ContractPackagerMsg::_internal_has_vrfdatasource() const {
+  return this != internal_default_instance() && _impl_.vrfdatasource_ != nullptr;
+}
+inline bool ContractPackagerMsg::has_vrfdatasource() const {
+  return _internal_has_vrfdatasource();
+}
+inline void ContractPackagerMsg::clear_vrfdatasource() {
+  if (GetArenaForAllocation() == nullptr && _impl_.vrfdatasource_ != nullptr) {
+    delete _impl_.vrfdatasource_;
+  }
+  _impl_.vrfdatasource_ = nullptr;
+}
+inline const ::VrfDataSource& ContractPackagerMsg::_internal_vrfdatasource() const {
+  const ::VrfDataSource* p = _impl_.vrfdatasource_;
+  return p != nullptr ? *p : reinterpret_cast<const ::VrfDataSource&>(
+      ::_VrfDataSource_default_instance_);
+}
+inline const ::VrfDataSource& ContractPackagerMsg::vrfdatasource() const {
+  // @@protoc_insertion_point(field_get:ContractPackagerMsg.vrfDataSource)
+  return _internal_vrfdatasource();
+}
+inline void ContractPackagerMsg::unsafe_arena_set_allocated_vrfdatasource(
+    ::VrfDataSource* vrfdatasource) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.vrfdatasource_);
+  }
+  _impl_.vrfdatasource_ = vrfdatasource;
+  if (vrfdatasource) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:ContractPackagerMsg.vrfDataSource)
+}
+inline ::VrfDataSource* ContractPackagerMsg::release_vrfdatasource() {
+  
+  ::VrfDataSource* temp = _impl_.vrfdatasource_;
+  _impl_.vrfdatasource_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::VrfDataSource* ContractPackagerMsg::unsafe_arena_release_vrfdatasource() {
+  // @@protoc_insertion_point(field_release:ContractPackagerMsg.vrfDataSource)
+  
+  ::VrfDataSource* temp = _impl_.vrfdatasource_;
+  _impl_.vrfdatasource_ = nullptr;
+  return temp;
+}
+inline ::VrfDataSource* ContractPackagerMsg::_internal_mutable_vrfdatasource() {
+  
+  if (_impl_.vrfdatasource_ == nullptr) {
+    auto* p = CreateMaybeMessage<::VrfDataSource>(GetArenaForAllocation());
+    _impl_.vrfdatasource_ = p;
+  }
+  return _impl_.vrfdatasource_;
+}
+inline ::VrfDataSource* ContractPackagerMsg::mutable_vrfdatasource() {
+  ::VrfDataSource* _msg = _internal_mutable_vrfdatasource();
+  // @@protoc_insertion_point(field_mutable:ContractPackagerMsg.vrfDataSource)
+  return _msg;
+}
+inline void ContractPackagerMsg::set_allocated_vrfdatasource(::VrfDataSource* vrfdatasource) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.vrfdatasource_;
+  }
+  if (vrfdatasource) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(vrfdatasource);
+    if (message_arena != submessage_arena) {
+      vrfdatasource = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, vrfdatasource, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.vrfdatasource_ = vrfdatasource;
+  // @@protoc_insertion_point(field_set_allocated:ContractPackagerMsg.vrfDataSource)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -1,5 +1,6 @@
 #include "./peer_node.h"
 
+#include <cstdint>
 #include <sys/time.h>
 #include <chrono>
 #include <bitset>
@@ -81,7 +82,7 @@ void PeerNode::DeleteNode(std::string base58Addr)
 			ERRORLOG(RED "DeleteBuffer ERROR ip:({}), port:({}) " RESET, IpPort::IpSz(ip), port);
 		}
 
-		MagicSingleton<UnregisterNode>::GetInstance()->DeleteConsensusNode(nodeIt->first);			
+		MagicSingleton<UnregisterNode>::GetInstance()->DeleteSpiltNodeList(nodeIt->first);			
 		nodeIt = _nodeMap.erase(nodeIt);
 	}
 	else
@@ -112,7 +113,7 @@ void PeerNode::DeleteByFd(int fd)
 			ERRORLOG(RED "DeleteBuffer ERROR ip:({}), port:({})" RESET, IpPort::IpSz(ip), port);
 		}
 
-		MagicSingleton<UnregisterNode>::GetInstance()->DeleteConsensusNode(nodeIt->first);		
+		MagicSingleton<UnregisterNode>::GetInstance()->DeleteSpiltNodeList(nodeIt->first);		
 		nodeIt = _nodeMap.erase(nodeIt);
 	}
 	else
@@ -226,6 +227,37 @@ vector<Node> PeerNode::GetNodelist(NodeType type, bool mustAlive)
 	}
 	return rst;
 }
+std::vector<Node> PeerNode::GetNodelistByHeartBeat(NodeType type, bool mustAlive)
+{
+	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
+	vector<Node> rst;
+	auto cb = _nodeMap.cbegin(), ce = _nodeMap.cend();
+	uint32_t continueNum = 0;
+	for (; cb != ce; ++cb)
+	{
+		if(cb->second.heartProbes < HEART_PROBES)
+		{
+			++continueNum;
+			continue;
+		}
+
+		if(type == NODE_ALL || (type == NODE_PUBLIC))
+		{
+			if(mustAlive)
+			{
+				if(cb->second.IsConnected())
+				{
+					rst.push_back(cb->second);
+				}
+			}else{
+				rst.push_back(cb->second);
+			}
+		}
+	}
+	DEBUGLOG("GetNodelistByHeartBeat continueNum: {}", continueNum);
+	return rst;
+}
+
 void PeerNode::GetNodelist(std::map<std::string, bool>& nodeAddrs, NodeType type, bool mustAlive)
 {
 	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
@@ -288,8 +320,7 @@ void PeerNode::NodelistSwitchThreadFun()
 		// else
 		// {
 			MagicSingleton<UnregisterNode>::GetInstance()->StartSyncNode();
-		// }	
-
+		// }
 	} while (true);
 }
 
@@ -355,6 +386,31 @@ int PeerNode::DisconnectNode(Node & node)
 	{
 		ERRORLOG(RED "DeleteBuffer ERROR ip:({}), port:({})" RESET, IpPort::IpSz(node.publicIp), node.publicPort);
 	}			
+	return 0;
+}
+
+int PeerNode::DeleteOldVersionNode()
+{
+	// std::vector<Node> nodeList = this->GetNodelist();
+	// for(auto& t : nodeList)
+	// {
+	// 	std::vector<std::string> vRecvVersion;
+	// 	StringUtil::SplitString(t.ver, "_", vRecvVersion);
+	// 	if (vRecvVersion.size() < 1 || vRecvVersion.size() > 3 )
+	// 	{
+	// 		ERRORLOG(" version error: -2");
+	// 		return -1;
+	// 	}
+	// 	if(vRecvVersion[1] < global::kLinuxCompatible)
+	// 	{
+	// 		int ret = this->DisconnectNode(t);
+	// 		if(ret)
+	// 		{	
+	// 			ERRORLOG("DisconnectNode error, error num:{}", ret);
+	// 			return ret;
+	// 		}
+	// 	}
+	// }
 	return 0;
 }
 

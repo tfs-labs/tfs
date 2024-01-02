@@ -64,27 +64,37 @@ int ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &h
 int Evmone::DeployContract(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &code_str,
                            std::string &strOutput, TfsHost &host, int64_t &gasCost)
 {
-    // code
-    const auto code = evmc::from_hex(code_str);
+    int ret = -1;
+    try
+    {
+        // code
+        const auto code = evmc::from_hex(code_str);
 
-    // msg
-    evmc_address&& evmAddr = evm_utils::StringToEvmAddr(ownerEvmAddr);
-    evmc::address createAddress = {{0,1,2}};
-    evmc_message createMsg{};
-    createMsg.kind = EVMC_CREATE;
-    createMsg.recipient = createAddress;
-    createMsg.sender = evmAddr;
-    uint64_t balance = 0;
-    GetBalanceByUtxo(fromAddr, balance);
-    createMsg.gas = balance;
+        // msg
+        evmc_address&& evmAddr = evm_utils::StringToEvmAddr(ownerEvmAddr);
+        evmc::address createAddress = {{0,1,2}};
+        evmc_message createMsg{};
+        createMsg.kind = EVMC_CREATE;
+        createMsg.recipient = createAddress;
+        createMsg.sender = evmAddr;
+        uint64_t balance = 0;
+        GetBalanceByUtxo(fromAddr, balance);
+        createMsg.gas = balance;
 
-    struct evmc_tx_context txContext = {
-        .tx_origin = evmAddr
-    };
-    host.tx_context = txContext;
+        struct evmc_tx_context txContext = {
+            .tx_origin = evmAddr
+        };
+        host.tx_context = txContext;
 
-    int ret = ExecuteByEvmone(createMsg, code, host, strOutput, gasCost);
-    DEBUGLOG("evm execute ret: {}", ret);
+        ret = ExecuteByEvmone(createMsg, code, host, strOutput, gasCost);
+        DEBUGLOG("evm execute ret: {}", ret);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        ERRORLOG("evmc::from_hex(code_str) fail!!! code_str:{} ", code_str);
+    }
+
     return ret;
 }
 

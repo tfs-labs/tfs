@@ -71,6 +71,7 @@ public:
 	 * @return      std::vector<Node> 
 	 */
 	std::vector<Node> GetNodelist(NodeType type = NODE_ALL, bool mustAlive = false);
+	std::vector<Node> GetNodelistByHeartBeat(NodeType type = NODE_ALL, bool mustAlive = false);
 
 	/**
 	 * @brief       Get the Nodelist object
@@ -196,6 +197,13 @@ public:
 	 * @return      int 
 	 */
 	int DisconnectNode(Node & node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @return      int 
+	 */
+	int DeleteOldVersionNode(); 
 
 	/**
 	 * @brief       

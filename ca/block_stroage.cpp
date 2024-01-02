@@ -493,7 +493,7 @@ RetType BlockStroage::_SeekPreHashByNode(
         {
             if (prehash.second >= verifyNum)
             {
-                uint16_t percentage = prehash.second / succentCount * 100;
+                uint16_t percentage = prehash.second / (double)succentCount * 100;
                 if(maxPercentage < percentage)
                 {
                     maxPercentage = percentage;
@@ -501,7 +501,7 @@ RetType BlockStroage::_SeekPreHashByNode(
                 }
             }
         }
-        if(maxPercentage >= 80 || maxPercentage >= 70)
+        if(maxPercentage >= 70)
         {
             DEBUGLOG("_SeekPreHashByNode <success> !!! ,seekHeight:{}, maxPercentage:{} > 70% , maxPercentagePrehash:{}", iter.first, maxPercentage, maxPercentagePrehash);
             return {maxPercentagePrehash, maxPercentage};
@@ -771,6 +771,7 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
             *newBlock.add_txs() = tx;
         } 
     }
+    
     lck.unlock();
     if(newBlock.txs_size() == 0)
     {
@@ -789,6 +790,22 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
     blockmsg.set_version(global::kVersion);
     blockmsg.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
     blockmsg.set_block(newBlock.SerializeAsString());
+
+    BlockMsg _cpMsg = blockmsg;
+    _cpMsg.clear_block();
+
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    std::string _cpMsgHash = Getsha256hash(_cpMsg.SerializeAsString());
+	std::string signature;
+	std::string pub;
+	if (TxHelper::Sign(defaultBase58Addr, _cpMsgHash, signature, pub) != 0)
+	{
+		return;
+	}
+
+	CSign * sign = blockmsg.mutable_sign();
+	sign->set_sign(signature);
+	sign->set_pub(pub);
 
     auto msg = make_shared<BlockMsg>(blockmsg);
 	auto ret = DoHandleBlock(msg);
@@ -852,6 +869,7 @@ void SendSeekGetPreHashAck(SeekPreHashByHightAck& ack,const std::string &nodeId,
     std::vector<std::string> blockHashes;
     if(seekHeight > selfNodeHeight)
     {
+        DEBUGLOG("seekHeight:{} > selfNodeHeight:{}", seekHeight, selfNodeHeight);
         return;
     }
 

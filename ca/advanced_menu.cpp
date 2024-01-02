@@ -244,7 +244,6 @@ void ContrackInvke(contractJob job){
         txMsgInfo->add_contractstoragelist(addr);
     }
 
-
     if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
         Vrf * newInfo=txMsg->mutable_vrfinfo();
@@ -254,7 +253,7 @@ void ContrackInvke(contractJob job){
  
     auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
+    if(isNeedAgentFlag == TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
         ret = DropCallShippingTx(msg,outTx);
     }
@@ -393,7 +392,6 @@ int GetBounsAddrInfo()
 }
 
 #pragma region netMenu
-
 void SendMessageToUser()
 {
     if (net_com::SendOneMessageByInput() == 0){
@@ -1686,10 +1684,12 @@ void ThreadTest::TestCreateTx_2(const std::string &from, const std::string &to)
     {
 
         ret = DropshippingTx(msg, outTx);
+        MagicSingleton<BlockMonitor>::GetInstance()->addDropshippingTxVec(outTx.hash());
     }
     else
     {
         ret = DoHandleTx(msg, outTx);
+        MagicSingleton<BlockMonitor>::GetInstance()->addDoHandleTxTxVec(outTx.hash());
     }
     global::ca::TxNumber++;
     DEBUGLOG("Transaction result,ret:{}  txHash:{}, TxNumber:{}", ret, outTx.hash(), global::ca::TxNumber);

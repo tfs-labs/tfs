@@ -5,6 +5,10 @@
 #include "./util.h"
 #include "common/global.h"
 #include "logging.h"
+#include "net/peer_node.h"
+#include "utils/time_util.h"
+#include "utils/magic_singleton.h"
+
 uint32_t Util::adler32(const unsigned char *data, size_t len) 
 {
     const uint32_t MOD_ADLER = 65521;
@@ -176,26 +180,39 @@ int Util::IsVersionCompatible( std::string recvVersion )
 		ERRORLOG(" version error: -3");
 		return -4;
 	}
-	
+
+	// auto nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+	// if(nowTime > global::g_OldVersionFailureTime && vRecvVersion[1] < global::kLinuxCompatible)
+	// {
+	// 	static std::once_flag s_flag;
+	// 	std::call_once(s_flag, [&]() {
+	// 		std::cout << "call once" << std::endl;
+	// 		MagicSingleton<PeerNode>::GetInstance()->DeleteOldVersionNode();
+	// 	});
+	// 	std::cout << "Old version failure timeout" << std::endl;
+	// 	ERRORLOG("Old version failure timeout");
+	// 	return -5;
+	// }
+
 	switch(versionPrefix)
 	{
 		case 1:
 		{
 			if ( 0 != IsLinuxVersionCompatible(vRecvVersion) )
 			{
-				return -5;
+				return -6;
 			}
 			break;
 		}
 		case 2:
 		{
-			return -6;
+			return -7;
 		}
 		case 3:
 		{
 			if ( 0 != IsOtherVersionCompatible(vRecvVersion[1], false) )
 			{
-				return -7;
+				return -8;
 			}
 			break;
 		}
@@ -203,13 +220,13 @@ int Util::IsVersionCompatible( std::string recvVersion )
 		{
 			if ( 0 != IsOtherVersionCompatible(vRecvVersion[1], true) )
 			{
-				return -8;
+				return -9;
 			}
 			break;
 		}
 		default:
 		{
-			return -9;
+			return -10;
 		}
 	}
 	return 0;

@@ -138,8 +138,8 @@ bool Init()
 
 	if(!InitConfig())
 	{
-		ERRORLOG("Failed to initialize log!");
-		std::cout << "Failed to initialize log!" << std::endl;
+		ERRORLOG("Failed to initialize config!");
+		std::cout << "Failed to initialize config!" << std::endl;
 		return false;
 	}
 

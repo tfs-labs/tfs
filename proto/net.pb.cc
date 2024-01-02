@@ -111,6 +111,7 @@ PROTOBUF_CONSTEXPR SyncNodeAck::SyncNodeAck(
     /*decltype(_impl_.nodes_)*/{}
   , /*decltype(_impl_.ids_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.sign_)*/nullptr
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct SyncNodeAckDefaultTypeInternal {
   PROTOBUF_CONSTEXPR SyncNodeAckDefaultTypeInternal()
@@ -334,6 +335,7 @@ const uint32_t TableStruct_net_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(prot
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::SyncNodeAck, _impl_.nodes_),
+  PROTOBUF_FIELD_OFFSET(::SyncNodeAck, _impl_.sign_),
   PROTOBUF_FIELD_OFFSET(::SyncNodeAck, _impl_.ids_),
   PROTOBUF_FIELD_OFFSET(::SyncNodeAck, _impl_.msg_id_),
   ~0u,  // no _has_bits_
@@ -429,16 +431,16 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 37, -1, -1, sizeof(::RegisterNodeAck)},
   { 48, -1, -1, sizeof(::SyncNodeReq)},
   { 56, -1, -1, sizeof(::SyncNodeAck)},
-  { 65, -1, -1, sizeof(::BroadcastMsgReq)},
-  { 74, -1, -1, sizeof(::PingReq)},
-  { 81, -1, -1, sizeof(::PongReq)},
-  { 88, -1, -1, sizeof(::EchoReq)},
-  { 96, -1, -1, sizeof(::EchoAck)},
-  { 104, -1, -1, sizeof(::NodeHeightChangedReq)},
-  { 113, -1, -1, sizeof(::NodeSign)},
-  { 121, -1, -1, sizeof(::NodeBase58AddrChangedReq)},
-  { 130, -1, -1, sizeof(::TestNetAck)},
-  { 140, -1, -1, sizeof(::TestNetReq)},
+  { 66, -1, -1, sizeof(::BroadcastMsgReq)},
+  { 75, -1, -1, sizeof(::PingReq)},
+  { 82, -1, -1, sizeof(::PongReq)},
+  { 89, -1, -1, sizeof(::EchoReq)},
+  { 97, -1, -1, sizeof(::EchoAck)},
+  { 105, -1, -1, sizeof(::NodeHeightChangedReq)},
+  { 114, -1, -1, sizeof(::NodeSign)},
+  { 122, -1, -1, sizeof(::NodeBase58AddrChangedReq)},
+  { 131, -1, -1, sizeof(::TestNetAck)},
+  { 141, -1, -1, sizeof(::TestNetReq)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -475,30 +477,30 @@ const char descriptor_table_protodef_net_2eproto[] PROTOBUF_SECTION_VARIABLE(pro
   "\n\005nodes\030\001 \003(\0132\t.NodeInfo\022\016\n\006msg_id\030\002 \001(\t"
   "\022\017\n\007from_ip\030\003 \001(\r\022\021\n\tfrom_port\030\004 \001(\r\022\n\n\002"
   "fd\030\005 \001(\r\"*\n\013SyncNodeReq\022\013\n\003ids\030\001 \001(\t\022\016\n\006"
-  "msg_id\030\003 \001(\t\"D\n\013SyncNodeAck\022\030\n\005nodes\030\001 \003"
-  "(\0132\t.NodeInfo\022\013\n\003ids\030\002 \001(\t\022\016\n\006msg_id\030\003 \001"
-  "(\t\"J\n\017BroadcastMsgReq\022\027\n\004from\030\001 \001(\0132\t.No"
-  "deInfo\022\014\n\004data\030\002 \001(\014\022\020\n\010priority\030\003 \001(\r\"\025"
-  "\n\007PingReq\022\n\n\002id\030\001 \001(\t\"\025\n\007PongReq\022\n\n\002id\030\001"
-  " \001(\t\"&\n\007EchoReq\022\n\n\002id\030\001 \001(\t\022\017\n\007message\030\002"
-  " \001(\t\"&\n\007EchoAck\022\n\n\002id\030\001 \001(\t\022\017\n\007message\030\002"
-  " \001(\t\"H\n\024NodeHeightChangedReq\022\n\n\002id\030\001 \001(\t"
-  "\022\016\n\006height\030\002 \001(\r\022\024\n\004sign\030\003 \001(\0132\006.CSign\"%"
-  "\n\010NodeSign\022\014\n\004sign\030\001 \001(\014\022\013\n\003pub\030\002 \001(\014\"c\n"
-  "\030NodeBase58AddrChangedReq\022\017\n\007version\030\001 \001"
-  "(\t\022\032\n\007oldSign\030\002 \001(\0132\t.NodeSign\022\032\n\007newSig"
-  "n\030\003 \001(\0132\t.NodeSign\"B\n\nTestNetAck\022\014\n\004data"
-  "\030\001 \001(\t\022\014\n\004hash\030\002 \001(\t\022\014\n\004time\030\003 \001(\004\022\n\n\002id"
-  "\030\004 \001(\t\"B\n\nTestNetReq\022\014\n\004data\030\001 \001(\t\022\014\n\004ha"
-  "sh\030\002 \001(\t\022\014\n\004time\030\003 \001(\004\022\n\n\002id\030\004 \001(\tb\006prot"
-  "o3"
+  "msg_id\030\003 \001(\t\"Z\n\013SyncNodeAck\022\030\n\005nodes\030\001 \003"
+  "(\0132\t.NodeInfo\022\024\n\004sign\030\002 \001(\0132\006.CSign\022\013\n\003i"
+  "ds\030\003 \001(\t\022\016\n\006msg_id\030\004 \001(\t\"J\n\017BroadcastMsg"
+  "Req\022\027\n\004from\030\001 \001(\0132\t.NodeInfo\022\014\n\004data\030\002 \001"
+  "(\014\022\020\n\010priority\030\003 \001(\r\"\025\n\007PingReq\022\n\n\002id\030\001 "
+  "\001(\t\"\025\n\007PongReq\022\n\n\002id\030\001 \001(\t\"&\n\007EchoReq\022\n\n"
+  "\002id\030\001 \001(\t\022\017\n\007message\030\002 \001(\t\"&\n\007EchoAck\022\n\n"
+  "\002id\030\001 \001(\t\022\017\n\007message\030\002 \001(\t\"H\n\024NodeHeight"
+  "ChangedReq\022\n\n\002id\030\001 \001(\t\022\016\n\006height\030\002 \001(\r\022\024"
+  "\n\004sign\030\003 \001(\0132\006.CSign\"%\n\010NodeSign\022\014\n\004sign"
+  "\030\001 \001(\014\022\013\n\003pub\030\002 \001(\014\"c\n\030NodeBase58AddrCha"
+  "ngedReq\022\017\n\007version\030\001 \001(\t\022\032\n\007oldSign\030\002 \001("
+  "\0132\t.NodeSign\022\032\n\007newSign\030\003 \001(\0132\t.NodeSign"
+  "\"B\n\nTestNetAck\022\014\n\004data\030\001 \001(\t\022\014\n\004hash\030\002 \001"
+  "(\t\022\014\n\004time\030\003 \001(\004\022\n\n\002id\030\004 \001(\t\"B\n\nTestNetR"
+  "eq\022\014\n\004data\030\001 \001(\t\022\014\n\004hash\030\002 \001(\t\022\014\n\004time\030\003"
+  " \001(\004\022\n\n\002id\030\004 \001(\tb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_net_2eproto_deps[1] = {
   &::descriptor_table_sign_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_net_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_net_2eproto = {
-    false, false, 1202, descriptor_table_protodef_net_2eproto,
+    false, false, 1224, descriptor_table_protodef_net_2eproto,
     "net.proto",
     &descriptor_table_net_2eproto_once, descriptor_table_net_2eproto_deps, 1, 16,
     schemas, file_default_instances, TableStruct_net_2eproto::offsets,
@@ -2290,8 +2292,19 @@ void SyncNodeReq::InternalSwap(SyncNodeReq* other) {
 
 class SyncNodeAck::_Internal {
  public:
+  static const ::CSign& sign(const SyncNodeAck* msg);
 };
 
+const ::CSign&
+SyncNodeAck::_Internal::sign(const SyncNodeAck* msg) {
+  return *msg->_impl_.sign_;
+}
+void SyncNodeAck::clear_sign() {
+  if (GetArenaForAllocation() == nullptr && _impl_.sign_ != nullptr) {
+    delete _impl_.sign_;
+  }
+  _impl_.sign_ = nullptr;
+}
 SyncNodeAck::SyncNodeAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -2305,6 +2318,7 @@ SyncNodeAck::SyncNodeAck(const SyncNodeAck& from)
       decltype(_impl_.nodes_){from._impl_.nodes_}
     , decltype(_impl_.ids_){}
     , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.sign_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2324,6 +2338,9 @@ SyncNodeAck::SyncNodeAck(const SyncNodeAck& from)
     _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
       _this->GetArenaForAllocation());
   }
+  if (from._internal_has_sign()) {
+    _this->_impl_.sign_ = new ::CSign(*from._impl_.sign_);
+  }
   // @@protoc_insertion_point(copy_constructor:SyncNodeAck)
 }
 
@@ -2335,6 +2352,7 @@ inline void SyncNodeAck::SharedCtor(
       decltype(_impl_.nodes_){arena}
     , decltype(_impl_.ids_){}
     , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.sign_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.ids_.InitDefault();
@@ -2361,6 +2379,7 @@ inline void SyncNodeAck::SharedDtor() {
   _impl_.nodes_.~RepeatedPtrField();
   _impl_.ids_.Destroy();
   _impl_.msg_id_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.sign_;
 }
 
 void SyncNodeAck::SetCachedSize(int size) const {
@@ -2376,6 +2395,10 @@ void SyncNodeAck::Clear() {
   _impl_.nodes_.Clear();
   _impl_.ids_.ClearToEmpty();
   _impl_.msg_id_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.sign_ != nullptr) {
+    delete _impl_.sign_;
+  }
+  _impl_.sign_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2398,9 +2421,17 @@ const char* SyncNodeAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // string ids = 2;
+      // .CSign sign = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_sign(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string ids = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           auto str = _internal_mutable_ids();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
@@ -2408,9 +2439,9 @@ const char* SyncNodeAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // string msg_id = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+      // string msg_id = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
           auto str = _internal_mutable_msg_id();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
@@ -2455,24 +2486,31 @@ uint8_t* SyncNodeAck::_InternalSerialize(
         InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // string ids = 2;
+  // .CSign sign = 2;
+  if (this->_internal_has_sign()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::sign(this),
+        _Internal::sign(this).GetCachedSize(), target, stream);
+  }
+
+  // string ids = 3;
   if (!this->_internal_ids().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_ids().data(), static_cast<int>(this->_internal_ids().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "SyncNodeAck.ids");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_ids(), target);
+        3, this->_internal_ids(), target);
   }
 
-  // string msg_id = 3;
+  // string msg_id = 4;
   if (!this->_internal_msg_id().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "SyncNodeAck.msg_id");
     target = stream->WriteStringMaybeAliased(
-        3, this->_internal_msg_id(), target);
+        4, this->_internal_msg_id(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2498,18 +2536,25 @@ size_t SyncNodeAck::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // string ids = 2;
+  // string ids = 3;
   if (!this->_internal_ids().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_ids());
   }
 
-  // string msg_id = 3;
+  // string msg_id = 4;
   if (!this->_internal_msg_id().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_msg_id());
+  }
+
+  // .CSign sign = 2;
+  if (this->_internal_has_sign()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.sign_);
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -2536,6 +2581,10 @@ void SyncNodeAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   }
   if (!from._internal_msg_id().empty()) {
     _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  if (from._internal_has_sign()) {
+    _this->_internal_mutable_sign()->::CSign::MergeFrom(
+        from._internal_sign());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2565,6 +2614,7 @@ void SyncNodeAck::InternalSwap(SyncNodeAck* other) {
       &_impl_.msg_id_, lhs_arena,
       &other->_impl_.msg_id_, rhs_arena
   );
+  swap(_impl_.sign_, other->_impl_.sign_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SyncNodeAck::GetMetadata() const {

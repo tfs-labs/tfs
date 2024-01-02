@@ -13,8 +13,10 @@
 #include <shared_mutex>
 #include <map>
 #include <set>
+#include <vector>
 #include "utils/timer.hpp"
 #include "node.hpp"
+#include "utils/account_manager.h"
 
 class UnregisterNode
 {
@@ -26,6 +28,24 @@ public:
     UnregisterNode &operator=(const UnregisterNode &) = delete;
     ~UnregisterNode();
 public:
+
+    static std::vector<Node> intersect(const std::vector<Node>& vec1, const std::vector<Node>& vec2)
+    {
+        std::vector<Node> result;
+
+        std::vector<Node> sortedVec1 = vec1;
+        std::vector<Node> sortedVec2 = vec2;
+        std::sort(sortedVec1.begin(), sortedVec1.end(),NodeCompare());
+        std::sort(sortedVec2.begin(), sortedVec2.end(),NodeCompare());
+
+        std::set_intersection(sortedVec1.begin(), sortedVec1.end(),
+                              sortedVec2.begin(), sortedVec2.end(),
+                              std::back_inserter(result),NodeCompare());
+
+        return result;
+    }
+
+
     /**
      * @brief       
      * 
@@ -74,51 +94,61 @@ public:
         }
     };
 
+    static bool compareStructs(const Node& x1, const Node& x2) {
+    return (x1.base58Address == x2.base58Address);
+    }
+
     /**
      * @brief       Get the Ip Map object
      * 
      * @param       m1 
      */
     void GetIpMap(std::map<uint64_t, std::map<Node,int, NodeCompare>> & m1); 
+    void GetIpMap(std::map<uint64_t, std::map<std::string, int>> & m1,std::map<uint64_t, std::map<std::string, int>> & m2);
     
     /**
      * @brief       Get the Consensus Node List object
      * 
-     * @param       nodeList 
-     * @return      std::vector<Node> 
+     * @param       tergetNodeAddr 
+     * @param       conNodeList 
      */
-    std::vector<Node> GetConsensusNodeList(std::vector<Node> & nodeList);
     
+
     /**
      * @brief       
      * 
      * @param       base58 
      */
-    void DeleteConsensusNode(const std::string & base58);
+    void DeleteSpiltNodeList(const std::string & base58);
 
     /**
      * @brief       
      * 
      * @param       syncNodeCount 
      */
-    void AddConsensusNode(const std::map<Node, int, NodeCompare>  syncNodeCount);
 
     /**
      * @brief       
      * 
      */
-    void ClearConsensusNodeList();
 
+    int verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight);
+    void splitAndInsertData(const std::map<Node, int, NodeCompare>  syncNodeCount);
+    void ClearSplitNodeListData();
 
 private:
     friend std::string PrintCache(int where);
     std::shared_mutex _mutexForNodes;
     std::shared_mutex _mutexConsensusNodes;
+    std::mutex _mutexvrfNodelist;
+    std::mutex _mutexStakelist;
     std::map<std::string, Node> _nodes;
 
     //The IP address and the corresponding number of times are stored once and synchronized once
     std::map<uint64_t, std::map<Node,int, NodeCompare>> _consensusNodeList;
 
+    std::map<uint64_t,std::map<std::string,int>> stakeNodelist;
+    std::map<uint64_t,std::map<std::string,int>> unStakeNodelist;
 };
 
 #endif 

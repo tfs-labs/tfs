@@ -170,7 +170,6 @@ void CaRegisterHttpCallbacks() {
 
 #endif // #ifndef NDEBUG
     HttpServer::RegisterCallback("/ip", ApiIp);
-    HttpServer::RegisterCallback("/normal", ApiNormal);
 
     HttpServer::RegisterCallback("/get_height", JsonRpcGetHeight);
     HttpServer::RegisterCallback("/get_balance", JsonrpcGetBalance);
@@ -758,12 +757,12 @@ void ApiJsonRpc(const Request &req, Response &res)
 void ApiIp(const Request &req, Response &res) 
 {
     std::ostringstream oss;
-    std::map<uint64_t,
-             std::map<Node, int, UnregisterNode::NodeCompare>>
-        result;
-    MagicSingleton<UnregisterNode>::GetInstance()->GetIpMap(result);
-    oss << "size: " << result.size() << std::endl;
-    for (auto &item : result) 
+    std::map<uint64_t,std::map<std::string, int>> stakeResult;
+    std::map<uint64_t,std::map<std::string, int>> unStakeResult;
+    MagicSingleton<UnregisterNode>::GetInstance()->GetIpMap(stakeResult,unStakeResult);
+    oss << "total size:" << stakeResult.size() + unStakeResult.size() << std::endl;
+    oss << "stake size: " << stakeResult.size() << std::endl;
+    for (auto &item : stakeResult) 
     {
         oss << "---------------------------------------------------------------"
                "----------------------"
@@ -773,7 +772,23 @@ void ApiIp(const Request &req, Response &res)
             << std::endl;
         for (auto i : item.second) 
         {
-            oss << "IP: " << IpPort::IpSz(i.first.publicIp)
+            oss << "Addr: " << i.first
+                << "  Count: " << i.second << std::endl;
+        }
+    }
+
+    oss << "unstake size: " << unStakeResult.size() << std::endl;
+    for (auto &item : unStakeResult) 
+    {
+        oss << "---------------------------------------------------------------"
+               "----------------------"
+            << std::endl;
+        oss << MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(
+                   item.first)
+            << std::endl;
+        for (auto i : item.second) 
+        {
+            oss << "Addr: " << i.first
                 << "  Count: " << i.second << std::endl;
         }
     }
@@ -781,72 +796,6 @@ void ApiIp(const Request &req, Response &res)
     res.set_content(oss.str(), "text/plain");
 }
 
-void ApiNormal(const Request & req, Response & res)
-{
-    std::ostringstream oss;
-    std::map<uint64_t, std::map<Node,int,UnregisterNode::NodeCompare>> result;
-    MagicSingleton<UnregisterNode>::GetInstance()->GetIpMap(result);
-    oss << "Remove the IP address of the abnormal number of times : " << std::endl;
-    for(auto item = result.begin(); item != result.end(); ++item)
-    {
-        oss << "-------------------------------------------------------------------------------------" << std::endl;
-        oss << MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(item->first) << std::endl;
-
-        std::map<int,int> mapCnts; 
-        std::vector<uint64_t> counts;
-        for(auto iter : item->second)
-        {
-            counts.push_back(iter.second);
-            ++mapCnts[iter.second];
-        }
-
-        int maxElem = 0, maxCnt = 0;
-        for(auto iter : mapCnts)
-        {
-            if(maxCnt <  iter.second)
-            {
-                maxElem = iter.first;
-                maxCnt = iter.second;
-            }
-        }
-
-        int64_t slowerLimitValue = 0;
-        counts.erase(std::remove_if(counts.begin(), counts.end(),[maxElem](int x){ return x == maxElem;}), counts.end());
-
-        if(counts.size() > 2)
-        {
-            uint64_t quarterNum = counts.size() * 0.25;
-            uint64_t threeQuarterNum = counts.size() * 0.75;
-            if (quarterNum == threeQuarterNum)
-            {
-                oss << "Number of exceptions quarterNum :" << quarterNum << " threeQuarterNum: " << threeQuarterNum << std::endl;
-                return; 
-            }
-
-            std::sort(counts.begin(), counts.end());
-
-            uint64_t quarterNumValue = counts.at(quarterNum);
-            uint64_t threeQuarterNumValue = counts.at(threeQuarterNum);
-            slowerLimitValue = quarterNumValue -
-                                                ((threeQuarterNumValue - quarterNumValue) * 1.5);
-        }
-        else
-        {
-            slowerLimitValue = maxElem;
-        }
-
-        for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
-        {
-            if (iter->second < slowerLimitValue)
-            {
-                continue;
-            }
-            oss << "IP: " << IpPort::IpSz(iter->first.publicIp) << "  Count: " << iter->second << std::endl;
-        }
-    
-    }
-    res.set_content(oss.str(), "text/plain");
-}
 
 void ApiPrintBlock(const Request &req, Response &res) 
 {
@@ -905,7 +854,7 @@ void ApiInfo(const Request &req, Response &res)
     oss << "Public PeerNode size is: " << nodeList.size() << std::endl;
     oss << MagicSingleton<PeerNode>::GetInstance()->NodelistInfo(nodeList);
 
-    oss << std::endl << std::endl;
+    oss << std::endl << std::endl; 
 
     res.set_content(oss.str(), "text/plain");
 }

@@ -23,6 +23,7 @@
 #include "evmone.h"
 #include "utils/time_util.h"
 #include "common/global_data.h"
+#include "../../net/unregister_node.h"
 #include <chrono>
 
 class ContractDataCache;
@@ -193,6 +194,22 @@ int BuildBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight, 
         blockmsg.add_txvrfinfo()->CopyFrom(vrf.second);
     }
     
+    BlockMsg _cpMsg = blockmsg;
+    _cpMsg.clear_block();
+
+    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    std::string _cpMsgHash = Getsha256hash(_cpMsg.SerializeAsString());
+	std::string signature;
+	std::string pub;
+	if (TxHelper::Sign(defaultBase58Addr, _cpMsgHash, signature, pub) != 0)
+	{
+		return -8;
+	}
+
+	CSign * sign = blockmsg.mutable_sign();
+	sign->set_sign(signature);
+	sign->set_pub(pub);
+
     auto msg = make_shared<BlockMsg>(blockmsg);
 	ret = DoHandleBlock(msg);
     if(ret != 0)
@@ -461,7 +478,9 @@ void TransactionCache::ProcessContract()
     }
     if (top > topTransactionHeight)
     {
+        MagicSingleton<BlockStroage>::GetInstance()->CommitSeekTask(top);
         topTransactionHeight = top;
+        DEBUGLOG("top:{} > topTransactionHeight:{}", top, topTransactionHeight);
     }
     if (buildTxs.empty())
     {
@@ -933,9 +952,19 @@ int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, c
     Vrf vrfInfo = msg->vrfinfo();
     std::string hash;
     int range;
-	if(getVrfdata(vrfInfo, hash, range) != 0)
+    uint64_t verifyHeight;
+    try
 	{
-		return -3;
+		auto json = nlohmann::json::parse(vrfInfo.data());
+		hash = json["hash"];
+		range = json["range"];
+        verifyHeight = json["height"];
+
+	}
+	catch (std::exception & e)
+	{
+        ERRORLOG("VRF PARSE ERROR:{}",e.what());
+		return -100;
 	}
 
 	EVP_PKEY *pkey = nullptr;
@@ -966,13 +995,36 @@ int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, c
 		ERRORLOG(RED "HandleBuildBlockBroadcastMsg Verify VRF Info fail" RESET);
 		return -5;
 	}
-	double randNum = MagicSingleton<VRF>::GetInstance()->GetRandNum(result);
+
+    std::vector<Node> _vrfNodelist;
+    for(auto & item : msg->vrfdatasource().vrfnodelist())
+    {
+        Node x;
+        x.base58Address = item;
+        _vrfNodelist.push_back(x);
+    }
+
+    auto ret = MagicSingleton<UnregisterNode>::GetInstance()->verifyVrfDataSource(_vrfNodelist,verifyHeight);
+    if(ret != 0)
+    {
+        ERRORLOG("verifyVrfDataSource fail ! ,ret:{}", ret);
+        return -6;
+    }
+
+	
+    Node node;
+	if (!MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(msgdata.fd, node))
+	{
+		return -7;
+	}
+
+    double randNum = MagicSingleton<VRF>::GetInstance()->GetRandNum(result);
     std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    auto ret = VerifyContractPackNode(randNum, defaultAddr);
+    ret = VerifyContractPackNode(node.base58Address, randNum, defaultAddr,_vrfNodelist);
     if(ret != 0)
     {
         ERRORLOG("VerifyContractPackNode ret  {}", ret);
-        return -6;
+        return -8;
     }
 
     std::map<std::string, future<int>> taskResults;
@@ -1181,7 +1233,7 @@ int BuildBlock_V33_1(std::vector<TransactionEntity_V33_1>& txs, bool build_first
     }
     
     auto msg = make_shared<BlockMsg>(blockmsg);
-	ret = DoHandleBlock_V33_1(msg);
+	// ret = DoHandleBlock_V33_1(msg);
     if(ret != 0)
     {
         ERRORLOG("DoHandleBlock failed The error code is {}",ret);

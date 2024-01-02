@@ -19,6 +19,50 @@ uint32_t BlockMonitor::_maxSendSize = 100;
 //     return 0;
 // }
 
+void BlockMonitor::checkTxSuccessRate()
+{
+	std::unique_lock<std::mutex> lck(mutex_);
+	DBReader reader;
+	int DropshippingTxVecFail = 0;
+	for(const auto& txHash : DropshippingTxVec)
+	{
+		std::string blockHash;
+		reader.GetBlockHashByTransactionHash(txHash, blockHash);
+
+		if (blockHash.empty())
+		{
+			DropshippingTxVecFail++;
+			continue;
+		}
+	}
+	DEBUGLOG("addDropshippingTxVec Txsize{}, DropshippingTxVecFail size:{}", DropshippingTxVec.size(), DropshippingTxVecFail);
+	int DoHandleTxVecFail = 0;
+	for(const auto& txHash : DoHandleTxVec)
+	{
+		std::string blockHash;
+		reader.GetBlockHashByTransactionHash(txHash, blockHash);
+
+		if (blockHash.empty())
+		{
+			DoHandleTxVecFail++;
+			continue;
+		}
+	}
+	DEBUGLOG("addDoHandleTxTxVec Txsize{}, DoHandleTxVecFailFail size:{}", DoHandleTxVec.size(), DoHandleTxVecFail);
+}
+
+void BlockMonitor::addDropshippingTxVec(const std::string& txHash)
+{
+	std::unique_lock<std::mutex> lck(mutex_);
+	DropshippingTxVec.push_back(txHash);
+}
+void BlockMonitor::addDoHandleTxTxVec(const std::string& txHash)
+{
+	std::unique_lock<std::mutex> lck(mutex_);
+	DoHandleTxVec.push_back(txHash);
+}
+
+
 int BlockMonitor::SendBroadcastAddBlock(std::string strBlock, uint64_t blockHeight,uint64_t sendSize)
 {
     std::vector<Node> list;

@@ -57,9 +57,10 @@ message SyncNodeReq
 
 message SyncNodeAck 
 {
-  repeated NodeInfo nodes = 1;   
-  string ids              = 2;
-  string msg_id           = 3;
+  repeated NodeInfo nodes = 1;
+  CSign  sign             = 2; 
+  string ids              = 3;
+  string msg_id           = 4;
 }
 
 message BroadcastMsgReq

@@ -3,6 +3,7 @@ syntax = "proto3";
 
 /*************************************Transaction-related agreements*************************************/
 import "sign.proto";
+// import "block.proto";
 
 
 message SignNodeMsg
@@ -73,6 +74,10 @@ message ContractTxMsgReq
   repeated string contractDependentAddress = 3;
 }
 
+message VrfDataSource
+{
+  repeated  string  vrfNodelist  = 1;
+}
 
 message ContractPackagerMsg
 {
@@ -80,4 +85,6 @@ message ContractPackagerMsg
   CSign  sign = 2;
   repeated TxMsgReq txMsgReq = 3;
   Vrf    vrfInfo  = 4;
+  VrfDataSource vrfDataSource = 5;
+
 }

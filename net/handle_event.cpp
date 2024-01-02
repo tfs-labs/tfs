@@ -34,6 +34,7 @@
 #include "../utils/hex_code.h"
 #include "../utils/magic_singleton.h"
 #include "../utils/tmp_log.h"
+#include "../ca/txhelper.h"
 
 int HandlePrintMsgReq(const std::shared_ptr<PrintMsgReq> &printMsgReq, const MsgData &from)
 {
@@ -457,7 +458,7 @@ int HandleSyncNodeReq(const std::shared_ptr<SyncNodeReq> &syncNodeReq, const Msg
 		return 0;
 	}
 	//Put your own id into syncNodeAck->ids
-	syncNodeAck.set_ids(std::move(self_base58addr));
+	syncNodeAck.set_ids(self_base58addr);
 	syncNodeAck.set_msg_id(syncNodeReq->msg_id());
 	//Place the nodes in the nodeList into syncNodeAck->nodes
 	for (auto &node : nodeList)
@@ -480,6 +481,17 @@ int HandleSyncNodeReq(const std::shared_ptr<SyncNodeReq> &syncNodeReq, const Msg
 		nodeInfo->set_version(node.ver);
 	}
 
+	std::string serVinHash = Getsha256hash(syncNodeAck.SerializeAsString());
+	std::string signature;
+	std::string pub;
+	if (TxHelper::Sign(self_base58addr, serVinHash, signature, pub) != 0)
+	{
+		return -8;
+	}
+
+	CSign * sign = syncNodeAck.mutable_sign();
+	sign->set_sign(signature);
+	sign->set_pub(pub);
 	net_com::SendMessage(from, syncNodeAck, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
 	return 0;
 }

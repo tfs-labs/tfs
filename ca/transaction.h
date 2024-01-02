@@ -110,7 +110,7 @@ int VerifyBlockSign(const CBlock &block);
  * @return      int 
  */
 int DoHandleBlock(const std::shared_ptr<BlockMsg>& msg);
-int DoHandleBlock_V33_1(const std::shared_ptr<BlockMsg>& msg);
+// int DoHandleBlock_V33_1(const std::shared_ptr<BlockMsg>& msg);
 
 /**
  * @brief       
@@ -366,12 +366,13 @@ int VerifyTxMsgReq(const TxMsgReq & msg);
 /**
  * @brief       
  * 
+ * @param       vrfNodelist:
  * @param       tx: 
  * @param       randNum: 
  * @param       targetAddr: 
  * @return      int 
  */
-int VerifyTxFlowSignNode(const CTransaction &tx , const double & randNum, std::string & targetAddr);
+int VerifyTxFlowSignNode(const vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight, const CTransaction &tx , const double & randNum, std::string & targetAddr);
 
 /**
  * @brief       
@@ -463,10 +464,11 @@ int GetContractRootHash(const std::string& contractAddress, std::string& rootHas
 /**
  * @brief       
  * 
+ * @param		vrfNodelist:
  * @param       tx: 
  * @param       outAddrs: 
  */
-static void FilterConsensusNodeList(const CTransaction & tx, std::vector<Node> &outAddrs);
+static void FilterConsensusNodeList(const vector<std::string>& vrfNodelist, const CTransaction & tx, std::vector<std::string> &outAddrs);
 
 /**
  * @brief       
@@ -482,8 +484,8 @@ bool IsContractBlock(const CBlock & block);
 
 static int CalculatePackNode(const std::vector<Node> &nodes, const double &randNum, const bool& isVerify, std::vector<std::string>& targetAddrs);
 
-int FindContractPackNode(const std::string & txHash, std::string &targetAddr, Vrf& vrfInfo);
+int FindContractPackNode(const std::string & txHash, std::string &targetAddr, Vrf& vrfInfo,std::set<std::string> & out_nodelist);
 
-int VerifyContractPackNode(const double& randNum, const std::string& targetAddr);
+int VerifyContractPackNode(const std::string& dispatchNodeAddr, const double& randNum, const std::string& targetAddr,const std::vector<Node> & _vrfNodelist);
 
 #endif

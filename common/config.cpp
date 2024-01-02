@@ -29,9 +29,14 @@ int Config::InitFile()
     {
         std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
         tmpJson = nlohmann::json::parse(str);
-        if(_Parse(tmpJson) == -1)
-        {
+        if(_Parse(tmpJson) != 0)
+        {   
             return -1;
+        }
+        if(_version != kNewConfigName)
+        {
+            std::cout<<"Please make sure that you've delete the config file,and reboot the program." << std::endl;
+            return -3;
         }
     }
     f.close();
@@ -43,9 +48,14 @@ int Config::InitFile()
         std::ofstream outFile(Config::kConfigFilename);
         tmpJson = nlohmann::json::parse(global::ca::kConfigJson);
 
-        if(_Parse(tmpJson) == -1)
+        if(_Parse(tmpJson) != 0)
         {
-            return -1;
+            return -2;
+        }
+        if(_version != kNewConfigName)
+        {
+            std::cout<<"Please make sure that you've delete the config file,and reboot the program." << std::endl;
+            return -3;
         }
         outFile << tmpJson.dump(4);
         outFile.close();    
@@ -75,7 +85,8 @@ int Config::_Parse(nlohmann::json json)
         return -1;
         }
 
-        try {
+        try 
+        {
         _ip = json[kCfgIp].get<std::string>();
         _httpCallback.ip = json[kCfgHttpCallback][kCfgHttpCallbackIp].get<std::string>();
         _httpCallback.port = json[kCfgHttpCallback][kCfgHttpCallbackPort].get<uint32_t>();
@@ -93,11 +104,18 @@ int Config::_Parse(nlohmann::json json)
             _server.insert(server.get<std::string>());
         }
        _serverPort = json[kCfgServerPort].get<uint32_t>();
+
        _version = json[kCfgKeyVersion].get<std::string>();  
-        } 
+        if(_version != kNewConfigName)
+        {
+            std::cout<<"Please make sure that you've delete the config file,and reboot the program." << std::endl;
+            return -2;
+        }
+
+        }
+
         catch(const std::exception& e) 
         {
-  
          std::cout << e.what() << std::endl; 
         }
                 

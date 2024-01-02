@@ -69,7 +69,7 @@ void CTimer::Cancel()
     pthread_cancel(handle);        
 #endif
     
-    m_ThreadCon.notify_all();     
+    m_ThreadCon.notify_all();      
     m_Thread->join();              
 }
 

@@ -1978,6 +1978,12 @@ bool TxHelper::CheckTxTimeOut(const uint64_t & txTime, const uint64_t & timeout,
 
 TxHelper::vrfAgentType TxHelper::GetVrfAgentType(const CTransaction &tx, uint64_t &preHeight)
 {
+	global::ca::TxType txType = (global::ca::TxType)tx.txtype();
+	if (global::ca::TxType::kTxTypeDeployContract == txType || global::ca::TxType::kTxTypeCallContract == txType)
+	{
+		return TxHelper::vrfAgentType::vrfAgentType_vrf;
+	}
+
 	std::vector<std::string> owners(tx.utxo().owner().begin(), tx.utxo().owner().end());
 
 	//If it is within 30s and you do not find it, it is VRF dropshipping

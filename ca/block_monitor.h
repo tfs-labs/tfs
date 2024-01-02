@@ -62,6 +62,9 @@ public:
     // void RemoveCache(const std::string& bolckraw);
     // void RemoveRespon(const std::string& bolckraw);
 
+    void addDropshippingTxVec(const std::string& txHash);
+    void addDoHandleTxTxVec(const std::string& txHash);
+    void checkTxSuccessRate();
 
 private:
     static uint32_t _maxSendSize;
@@ -88,6 +91,10 @@ private:
     // std::map<std::string, std::map<std::string,std::string>> _Self; //The initiating node stores the key and its own ID and success
 
     // std::map<std::string, std::string> blockCache;
+
+    std::mutex mutex_;
+    std::vector<std::string> DropshippingTxVec;
+    std::vector<std::string> DoHandleTxVec;
 
 };  
 

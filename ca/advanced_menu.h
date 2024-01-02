@@ -16,7 +16,6 @@
 
 
 
-
 /**
  * @brief       
  */
@@ -36,6 +35,7 @@ void GetStakeList();
  * @brief      Get a list of addresses that can claim bonuses
  */
 int GetBounsAddrInfo();
+
 
 
 

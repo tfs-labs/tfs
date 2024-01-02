@@ -532,6 +532,8 @@ class BlockMsg final :
     kVersionFieldNumber = 1,
     kMessageFieldNumber = 3,
     kBlockFieldNumber = 5,
+    kVrfDataSourceFieldNumber = 8,
+    kSignFieldNumber = 9,
     kTimeFieldNumber = 4,
     kCodeFieldNumber = 2,
   };
@@ -613,6 +615,42 @@ class BlockMsg final :
   std::string* _internal_mutable_block();
   public:
 
+  // .VrfDataSource vrfDataSource = 8;
+  bool has_vrfdatasource() const;
+  private:
+  bool _internal_has_vrfdatasource() const;
+  public:
+  void clear_vrfdatasource();
+  const ::VrfDataSource& vrfdatasource() const;
+  PROTOBUF_NODISCARD ::VrfDataSource* release_vrfdatasource();
+  ::VrfDataSource* mutable_vrfdatasource();
+  void set_allocated_vrfdatasource(::VrfDataSource* vrfdatasource);
+  private:
+  const ::VrfDataSource& _internal_vrfdatasource() const;
+  ::VrfDataSource* _internal_mutable_vrfdatasource();
+  public:
+  void unsafe_arena_set_allocated_vrfdatasource(
+      ::VrfDataSource* vrfdatasource);
+  ::VrfDataSource* unsafe_arena_release_vrfdatasource();
+
+  // .CSign sign = 9;
+  bool has_sign() const;
+  private:
+  bool _internal_has_sign() const;
+  public:
+  void clear_sign();
+  const ::CSign& sign() const;
+  PROTOBUF_NODISCARD ::CSign* release_sign();
+  ::CSign* mutable_sign();
+  void set_allocated_sign(::CSign* sign);
+  private:
+  const ::CSign& _internal_sign() const;
+  ::CSign* _internal_mutable_sign();
+  public:
+  void unsafe_arena_set_allocated_sign(
+      ::CSign* sign);
+  ::CSign* unsafe_arena_release_sign();
+
   // uint64 time = 4;
   void clear_time();
   uint64_t time() const;
@@ -644,6 +682,8 @@ class BlockMsg final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr block_;
+    ::VrfDataSource* vrfdatasource_;
+    ::CSign* sign_;
     uint64_t time_;
     int32_t code_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -2516,6 +2556,176 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::Vrf >&
 BlockMsg::txvrfinfo() const {
   // @@protoc_insertion_point(field_list:BlockMsg.txvrfInfo)
   return _impl_.txvrfinfo_;
+}
+
+// .VrfDataSource vrfDataSource = 8;
+inline bool BlockMsg::_internal_has_vrfdatasource() const {
+  return this != internal_default_instance() && _impl_.vrfdatasource_ != nullptr;
+}
+inline bool BlockMsg::has_vrfdatasource() const {
+  return _internal_has_vrfdatasource();
+}
+inline const ::VrfDataSource& BlockMsg::_internal_vrfdatasource() const {
+  const ::VrfDataSource* p = _impl_.vrfdatasource_;
+  return p != nullptr ? *p : reinterpret_cast<const ::VrfDataSource&>(
+      ::_VrfDataSource_default_instance_);
+}
+inline const ::VrfDataSource& BlockMsg::vrfdatasource() const {
+  // @@protoc_insertion_point(field_get:BlockMsg.vrfDataSource)
+  return _internal_vrfdatasource();
+}
+inline void BlockMsg::unsafe_arena_set_allocated_vrfdatasource(
+    ::VrfDataSource* vrfdatasource) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.vrfdatasource_);
+  }
+  _impl_.vrfdatasource_ = vrfdatasource;
+  if (vrfdatasource) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:BlockMsg.vrfDataSource)
+}
+inline ::VrfDataSource* BlockMsg::release_vrfdatasource() {
+  
+  ::VrfDataSource* temp = _impl_.vrfdatasource_;
+  _impl_.vrfdatasource_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::VrfDataSource* BlockMsg::unsafe_arena_release_vrfdatasource() {
+  // @@protoc_insertion_point(field_release:BlockMsg.vrfDataSource)
+  
+  ::VrfDataSource* temp = _impl_.vrfdatasource_;
+  _impl_.vrfdatasource_ = nullptr;
+  return temp;
+}
+inline ::VrfDataSource* BlockMsg::_internal_mutable_vrfdatasource() {
+  
+  if (_impl_.vrfdatasource_ == nullptr) {
+    auto* p = CreateMaybeMessage<::VrfDataSource>(GetArenaForAllocation());
+    _impl_.vrfdatasource_ = p;
+  }
+  return _impl_.vrfdatasource_;
+}
+inline ::VrfDataSource* BlockMsg::mutable_vrfdatasource() {
+  ::VrfDataSource* _msg = _internal_mutable_vrfdatasource();
+  // @@protoc_insertion_point(field_mutable:BlockMsg.vrfDataSource)
+  return _msg;
+}
+inline void BlockMsg::set_allocated_vrfdatasource(::VrfDataSource* vrfdatasource) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.vrfdatasource_);
+  }
+  if (vrfdatasource) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(vrfdatasource));
+    if (message_arena != submessage_arena) {
+      vrfdatasource = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, vrfdatasource, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.vrfdatasource_ = vrfdatasource;
+  // @@protoc_insertion_point(field_set_allocated:BlockMsg.vrfDataSource)
+}
+
+// .CSign sign = 9;
+inline bool BlockMsg::_internal_has_sign() const {
+  return this != internal_default_instance() && _impl_.sign_ != nullptr;
+}
+inline bool BlockMsg::has_sign() const {
+  return _internal_has_sign();
+}
+inline const ::CSign& BlockMsg::_internal_sign() const {
+  const ::CSign* p = _impl_.sign_;
+  return p != nullptr ? *p : reinterpret_cast<const ::CSign&>(
+      ::_CSign_default_instance_);
+}
+inline const ::CSign& BlockMsg::sign() const {
+  // @@protoc_insertion_point(field_get:BlockMsg.sign)
+  return _internal_sign();
+}
+inline void BlockMsg::unsafe_arena_set_allocated_sign(
+    ::CSign* sign) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.sign_);
+  }
+  _impl_.sign_ = sign;
+  if (sign) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:BlockMsg.sign)
+}
+inline ::CSign* BlockMsg::release_sign() {
+  
+  ::CSign* temp = _impl_.sign_;
+  _impl_.sign_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::CSign* BlockMsg::unsafe_arena_release_sign() {
+  // @@protoc_insertion_point(field_release:BlockMsg.sign)
+  
+  ::CSign* temp = _impl_.sign_;
+  _impl_.sign_ = nullptr;
+  return temp;
+}
+inline ::CSign* BlockMsg::_internal_mutable_sign() {
+  
+  if (_impl_.sign_ == nullptr) {
+    auto* p = CreateMaybeMessage<::CSign>(GetArenaForAllocation());
+    _impl_.sign_ = p;
+  }
+  return _impl_.sign_;
+}
+inline ::CSign* BlockMsg::mutable_sign() {
+  ::CSign* _msg = _internal_mutable_sign();
+  // @@protoc_insertion_point(field_mutable:BlockMsg.sign)
+  return _msg;
+}
+inline void BlockMsg::set_allocated_sign(::CSign* sign) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.sign_);
+  }
+  if (sign) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(sign));
+    if (message_arena != submessage_arena) {
+      sign = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, sign, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.sign_ = sign;
+  // @@protoc_insertion_point(field_set_allocated:BlockMsg.sign)
 }
 
 // -------------------------------------------------------------------

@@ -54,7 +54,7 @@ void ContractDispatcher::_DispatcherProcessingFunc()
             for(auto & item : distribution)
             {
                 DEBUGLOG("-0-0-0-0-0-0-0-0- send packager : {}", item.first);
-                SendTxInfoToPackager(item.first,item.second.info,item.second.txMsgReq);
+                SendTxInfoToPackager(item.first,item.second.info,item.second.txMsgReq,item.second.nodelist);
             }
 
             
@@ -105,7 +105,7 @@ bool ContractDispatcher::HasDuplicate(const std::vector<std::string>& v1, const 
 
 }
 
-int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsmsg)
+int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsmsg, const std::set<std::string> nodelist)
 {
     DEBUGLOG("***** SendTxInfoToPackager *****");
     ContractPackagerMsg msg;
@@ -119,6 +119,13 @@ int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const 
     {
         TxMsgReq * _Msg = msg.add_txmsgreq();
         _Msg -> CopyFrom(msgreq);
+    }
+
+    VrfDataSource *data = msg.mutable_vrfdatasource();
+    for (const auto& addr : nodelist)
+    {
+        data->add_vrfnodelist(addr);
+        DEBUGLOG("add addr = {}",addr);
     }
     
     std::string owner = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
@@ -149,6 +156,7 @@ int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const 
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 {
+
     DEBUGLOG("DependencyGrouping");
     std::vector<std::set<std::string>> res;
 
@@ -182,6 +190,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 					break;
 				}
 			}
+
 			if (!foundDuplicate) {
 				res.push_back(commonKeys);
 			}
@@ -203,8 +212,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const std::vector<std::vector<TxMsgReq>> & txMsgVec)
 {
-    
-    int size = txMsgVec.size(); 
+    int size = txMsgVec.size(); //
 
     std::vector<std::vector<TxMsgReq>> groupTxMsg;
     if(size <= 4)
@@ -218,7 +226,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
     {
         int parts = 4;
         int perPart = size / parts; 
-        int remain = size % parts; 
+        int remain = size % parts;  
 
         int index = 0;
 
@@ -288,9 +296,10 @@ int ContractDispatcher::DistributionContractTx(std::multimap<std::string, msgInf
     
         std::string vrfInput = Getsha256hash(contractHash);
 
+        std::set<std::string>  out_nodelist;
         std::string packAddr;
         Vrf vrf;
-        auto ret = FindContractPackNode(vrfInput ,packAddr,vrf);
+        auto ret = FindContractPackNode(vrfInput ,packAddr,vrf,out_nodelist);
         if(ret != 0)
         {
             ERRORLOG("DistributionContractTx ret :{}", ret);
@@ -300,6 +309,7 @@ int ContractDispatcher::DistributionContractTx(std::multimap<std::string, msgInf
         msgInfo msg;
         msg.info = vrf;
         msg.txMsgReq = txMsgData;
+        msg.nodelist = out_nodelist;
         distribution.insert(std::make_pair(packAddr, msg));
     }
     

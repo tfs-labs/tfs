@@ -1,4 +1,3 @@
-
 #include "unregister_node.h"
 
 #include "./handle_event.h"
@@ -10,6 +9,9 @@
 #include "../common/global_data.h"
 #include "../common/config.h"
 #include "../proto/net.pb.h"
+#include "../ca/algorithm.h"
+#include "../utils/account_manager.h"
+#include "../ca/transaction.h"
 
 UnregisterNode::UnregisterNode()
 {
@@ -246,6 +248,8 @@ bool UnregisterNode::StartSyncNode()
     SyncNodeAck syncNodeAck;
     std::map<uint32_t, Node> nodeMap;
     std::vector<Node> syncNodes;
+    std::map<std::string, std::vector<Node>> _vrfNodelist;
+
     for (auto &retData : returnDatas)
     {
         syncNodeAck.Clear();
@@ -253,6 +257,17 @@ bool UnregisterNode::StartSyncNode()
         {
             continue;
         }
+        auto copySyncNodeAck = syncNodeAck;
+        copySyncNodeAck.clear_sign();
+        std::string serVinHash = Getsha256hash(copySyncNodeAck.SerializeAsString());
+
+        int verifySignRet = ca_algorithm::VerifySign(syncNodeAck.sign(), serVinHash);
+        if (verifySignRet != 0)
+        {
+            ERRORLOG("targetNodelist VerifySign fail!!!");
+            continue;
+        }
+        std::vector<Node> targetAddrList;
         for (int i = 0; i < syncNodeAck.nodes_size(); i++)
 	    {
             const NodeInfo &nodeinfo = syncNodeAck.nodes(i);
@@ -272,9 +287,20 @@ bool UnregisterNode::StartSyncNode()
             {
                 nodeMap[nodeinfo.public_ip()] = node;
             }
-            //Add the nodes brought back by synchronizing the nodes to the array
-            syncNodes.push_back(node);
+            targetAddrList.push_back(node);
 
+        }
+        _vrfNodelist[syncNodeAck.ids()] = targetAddrList;
+    }
+    for(auto & item : _vrfNodelist)
+    {
+        std::sort(item.second.begin(), item.second.end(), compareStructs);
+        auto last = std::unique(item.second.begin(), item.second.end(), compareStructs);
+        item.second.erase(last, item.second.end());
+        
+        for(auto & i : item.second)
+        {
+            syncNodes.push_back(i);
         }
     }
 
@@ -285,15 +311,15 @@ bool UnregisterNode::StartSyncNode()
         {
             syncNodeCount[*it]++;
         }
-        AddConsensusNode(syncNodeCount);
+        splitAndInsertData(syncNodeCount);
         syncNodes.clear();
         syncNodeCount.clear();
     }
 
     //Only the latest elements are stored in the maintenance map map
-    if(_consensusNodeList.size() == 2)
+    if(stakeNodelist.size() == 2 || unStakeNodelist.size() == 2)
     {
-        ClearConsensusNodeList();
+        ClearSplitNodeListData();
     }
 
     if(nodeMap.empty())
@@ -317,34 +343,43 @@ bool UnregisterNode::StartSyncNode()
     return true;
 }
 
-void UnregisterNode::GetIpMap(std::map<uint64_t, std::map<Node, int, NodeCompare>> & m1)
+
+
+void UnregisterNode::GetIpMap(std::map<uint64_t, std::map<std::string, int>> & m1,std::map<uint64_t, std::map<std::string, int>> & m2)
 {
-    std::shared_lock<std::shared_mutex> lck(_mutexConsensusNodes);
-    m1 = _consensusNodeList;
+    std::unique_lock<std::mutex> locker(_mutexStakelist);
+    m1 = stakeNodelist;
+    m2 = unStakeNodelist;
 }
 
-void UnregisterNode::AddConsensusNode(const std::map<Node, int, NodeCompare>  syncNodeCount)
-{
-    std::unique_lock<std::shared_mutex> lck(_mutexConsensusNodes);
-    uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    _consensusNodeList[currentTime] = syncNodeCount;
-}
 
-void UnregisterNode::DeleteConsensusNode(const std::string & base58)
+void UnregisterNode::DeleteSpiltNodeList(const std::string & base58)
 {
-    std::unique_lock<std::shared_mutex> lck(_mutexConsensusNodes);
-    auto iter1 = _consensusNodeList.begin();
-    if(_consensusNodeList.empty() || iter1->second.empty() )
+    std::unique_lock<std::mutex> locker(_mutexStakelist);
+    if(stakeNodelist.empty() || unStakeNodelist.empty())
     {
-        ERRORLOG("_consensusNodeList is empty");
+        ERRORLOG("list is empty!");
         return;
     }
 
-    for(auto & [_ , iter]: _consensusNodeList)
+    for(auto & [_,iter] : stakeNodelist)
     {
-        for(auto iter2 = iter.begin(); iter2 != iter.end(); ++iter2)
+        for(auto iter2 = iter.begin();iter2 != iter.end(); ++iter2)
         {
-            if(iter2->first.base58Address == base58)
+            if(iter2->first == base58)
+            {
+                iter2 = iter.erase(iter2);
+                return;
+            }
+        }
+    }
+
+
+    for(auto & [_,iter] : unStakeNodelist)
+    {
+        for(auto iter2 = iter.begin();iter2 != iter.end(); ++iter2)
+        {
+            if(iter2->first == base58)
             {
                 iter2 = iter.erase(iter2);
                 return;
@@ -353,109 +388,184 @@ void UnregisterNode::DeleteConsensusNode(const std::string & base58)
     }
 }
 
-void UnregisterNode::ClearConsensusNodeList()
+
+void UnregisterNode::ClearSplitNodeListData()
 {
-    std::unique_lock<std::shared_mutex> lck(_mutexConsensusNodes);
-    auto it = _consensusNodeList.begin();
-    _consensusNodeList.erase(it);
+    std::unique_lock<std::mutex> lck(_mutexStakelist);
+    auto it = stakeNodelist.begin();
+    stakeNodelist.erase(it);
+
+    auto _it = unStakeNodelist.begin();
+    unStakeNodelist.erase(_it);
+    DEBUGLOG("ClearSplitNodeListData @@@@@ ");
 }
 
-std::vector<Node> UnregisterNode::GetConsensusNodeList(std::vector<Node> & nodeList)
+static int calculateAverage(const std::vector<int>& vec)
 {
-    std::shared_lock<std::shared_mutex> lck(_mutexConsensusNodes);
-    std::vector<Node> nodes;
-
-    if(_consensusNodeList.empty())
-    {
-        return nodes;
+    if (vec.empty()) {
+        std::cout << "Error: Vector is empty." << std::endl;
+        return 0;
     }
 
-    auto item = _consensusNodeList.begin();
-
-    std::map<int,int> mapCnts; 
-    std::vector<uint64_t> counts;
-    for(auto iter : item->second)
+    int sum = 0;
+    
+    for (int num : vec)
     {
-        counts.push_back(iter.second);
-        ++mapCnts[iter.second];
+        sum += num;
     }
+    
+    int average = static_cast<double>(sum) / vec.size();
+    
+    return average;
+}
 
-    int maxElem = 0, maxCnt = 0;
-    for(auto iter : mapCnts)
+
+
+void UnregisterNode::splitAndInsertData(const std::map<Node, int, NodeCompare>  syncNodeCount)
+{
+    std::unique_lock<std::mutex> locker(_mutexStakelist);
+    std::map<std::string, int>  stakeSyncNodeCount;
+    std::map<std::string, int>  UnstakeSyncNodeCount;
+    DEBUGLOG("splitAndInsertData @@@@@ ");
+    for(auto & item : syncNodeCount)
     {
-        if(maxCnt <  iter.second)
+        //Verification of investment and pledge
+        int ret = VerifyBonusAddr(item.first.base58Address);
+        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(item.first.base58Address, global::ca::StakeType::kStakeType_Node);
+        if (stakeTime > 0 && ret == 0)
         {
-            maxElem = iter.first;
-            maxCnt = iter.second;
+            stakeSyncNodeCount.insert(std::make_pair(item.first.base58Address,item.second));
+        }
+        else
+        {
+            UnstakeSyncNodeCount.insert(std::make_pair(item.first.base58Address,item.second));
         }
     }
 
-    DEBUGLOG("GetConsensusNodeList : maxCnt = {} , item->second.size = {}, maxElem = {}", maxCnt, item->second.size(), maxElem);
+    uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    stakeNodelist[nowTime] = stakeSyncNodeCount;
+    unStakeNodelist[nowTime] = UnstakeSyncNodeCount;
+}
 
-    counts.erase(std::remove_if(counts.begin(), counts.end(),[maxElem](int x){ return x == maxElem;}), counts.end());
-    if(counts.size() < 2)
+int UnregisterNode::verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight)
+{
+    if(vrfNodelist.empty())
     {
-        for(auto i : item->second)
+        return -1;
+    }
+    std::set<std::string> vrfStakeNodelist;
+    std::set<std::string> vrfUnStakeNodelist;
+    for(const auto& node : vrfNodelist)
+    {
+        int ret = VerifyBonusAddr(node.base58Address);
+		int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.base58Address, global::ca::StakeType::kStakeType_Node);
+		if (stakeTime > 0 && ret == 0)
+		{
+			vrfStakeNodelist.insert(node.base58Address);
+		}
+        else
         {
-            if(i.second == maxElem)
+            vrfUnStakeNodelist.insert(node.base58Address);
+        }
+    }
+
+    std::unique_lock<std::mutex> locker(_mutexStakelist);
+    if(vrfStakeNodelist.size() >= global::ca::kNeed_node_threshold)
+    {
+        if(stakeNodelist.empty())
+        {
+            return -2;
+        }
+        std::set<std::string> consensusStakeNodelist;
+        for(const auto& it : stakeNodelist.rbegin()->second)
+        {
+            Node node;
+            if(MagicSingleton<PeerNode>::GetInstance()->FindNode(it.first, node))
             {
-                nodes.push_back(i.first);
-            }
-        }
-    }
-    else
-    {
-
-        uint64_t quarterNum = counts.size() * 0.25;
-        uint64_t threeQuarterNum = counts.size() * 0.75;
-        if (quarterNum == threeQuarterNum)
-        {
-            ERRORLOG("Number of exceptions quarterNum = {}, threeQuarterNum = {}", quarterNum, threeQuarterNum);
-            return nodes;
-        }
-
-        std::sort(counts.begin(), counts.end());
-
-        uint64_t quarterNumValue = counts.at(quarterNum);
-        uint64_t threeQuarterNumValue = counts.at(threeQuarterNum);
-        int64_t slowerLimitValue = quarterNumValue -
-                                            ((threeQuarterNumValue - quarterNumValue) * 1.5);
-
-        if(slowerLimitValue > maxElem)
-        {
-            DEBUGLOG("Modify the value of the number of exceptions : {} , slowerLimitValue: {}", maxElem, slowerLimitValue);
-            slowerLimitValue = maxElem;
-        }
-
-        if(slowerLimitValue >= 0)
-        {
-            for (auto iter = item->second.begin(); iter != item->second.end(); ++iter)
-            {
-                if (iter->second < slowerLimitValue)
+                if(node.height >= vrfTxHeight)
                 {
-                    DEBUGLOG("slowerLimitValue : {}, iter->second", slowerLimitValue, iter->second);
-                    continue;
+                    consensusStakeNodelist.insert(it.first);
                 }
-
-                nodes.push_back(iter->first);
+                continue;
             }
+            consensusStakeNodelist.insert(it.first);
         }
-    }
-
-
-    for(auto & node : nodeList)
-    {
-        for(auto & iter : nodes)
+        if(consensusStakeNodelist.empty())
         {
-            if(node.base58Address == iter.base58Address)
+            ERRORLOG("consensusStakeNodelist.empty() == true");
+            return -3;
+        }
+        std::set<std::string> difference;
+        std::set_difference(consensusStakeNodelist.begin(), consensusStakeNodelist.end(),
+                            vrfStakeNodelist.begin(), vrfStakeNodelist.end(),
+                            std::inserter(difference, difference.begin()));
+
+        for(auto& id : difference)
+        {
+            DEBUGLOG("difference, id:{}", id);
+        }
+
+        double differenceRatio = static_cast<double>(difference.size()) / consensusStakeNodelist.size();
+
+        DEBUGLOG("difference size:{}, vrfStakeNodelist size:{}, consensusStakeNodelist size:{}, differenceRatio:{}", difference.size(), vrfStakeNodelist.size(), consensusStakeNodelist.size(), differenceRatio);
+        if (differenceRatio <= 0.25)
+        {
+            return 0;
+        }
+        else
+        {
+            return -4;
+        }
+
+    }
+    else if(!vrfUnStakeNodelist.empty())
+    {
+        if(unStakeNodelist.empty())
+        {
+            return -5;
+        }
+        std::set<std::string> consensusUnStakeNodelist;
+        for(const auto& it : unStakeNodelist.rbegin()->second)
+        {
+            Node node;
+            if(MagicSingleton<PeerNode>::GetInstance()->FindNode(it.first, node))
             {
-                iter.height = node.height;
+                if(node.height >= vrfTxHeight)
+                {
+                    consensusUnStakeNodelist.insert(it.first);
+                }
+                continue;
             }
+            consensusUnStakeNodelist.insert(it.first);
+        }
+
+        if(consensusUnStakeNodelist.empty())
+        {
+            ERRORLOG("consensusUnStakeNodelist.empty() == true");
+            return -6;
+        }
+
+        std::set<std::string> difference;
+        std::set_difference(consensusUnStakeNodelist.begin(), consensusUnStakeNodelist.end(),
+                            vrfUnStakeNodelist.begin(), vrfUnStakeNodelist.end(),
+                            std::inserter(difference, difference.begin()));
+
+        for(auto& id : difference)
+        {
+            DEBUGLOG("difference, id:{}", id);
+        }
+
+        double differenceRatio = static_cast<double>(difference.size()) / consensusUnStakeNodelist.size();
+
+        DEBUGLOG("difference size:{}, vrfUnStakeNodelist size:{}, consensusUnStakeNodelist size:{}, differenceRatio:{}",difference.size(), vrfUnStakeNodelist.size(), consensusUnStakeNodelist.size(), differenceRatio);
+        if (differenceRatio <= 0.25)
+        {
+            return 0;
+        }
+        else
+        {
+            return -7;
         }
     }
-
-    return nodes;
+    return -8;
 }
-
-
-

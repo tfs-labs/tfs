@@ -1234,7 +1234,8 @@ void HandleDeployContract()
             code += strInput;
         }
         Account launchAccount;
-        if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0)
+        code.erase(std::remove_if(code.begin(), code.end(), ::isspace), code.end());
+        if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(strFromAddr, launchAccount) != 0) 
         {
             ERRORLOG("Failed to find account {}", strFromAddr);
             return;
@@ -1494,6 +1495,11 @@ void HandleCallContract()
         newInfo -> CopyFrom(info);
 
     }
+
+    
+
+    
+
  
     auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();

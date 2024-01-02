@@ -1290,8 +1290,9 @@ class SyncNodeAck final :
 
   enum : int {
     kNodesFieldNumber = 1,
-    kIdsFieldNumber = 2,
-    kMsgIdFieldNumber = 3,
+    kIdsFieldNumber = 3,
+    kMsgIdFieldNumber = 4,
+    kSignFieldNumber = 2,
   };
   // repeated .NodeInfo nodes = 1;
   int nodes_size() const;
@@ -1311,7 +1312,7 @@ class SyncNodeAck final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::NodeInfo >&
       nodes() const;
 
-  // string ids = 2;
+  // string ids = 3;
   void clear_ids();
   const std::string& ids() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
@@ -1325,7 +1326,7 @@ class SyncNodeAck final :
   std::string* _internal_mutable_ids();
   public:
 
-  // string msg_id = 3;
+  // string msg_id = 4;
   void clear_msg_id();
   const std::string& msg_id() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
@@ -1339,6 +1340,24 @@ class SyncNodeAck final :
   std::string* _internal_mutable_msg_id();
   public:
 
+  // .CSign sign = 2;
+  bool has_sign() const;
+  private:
+  bool _internal_has_sign() const;
+  public:
+  void clear_sign();
+  const ::CSign& sign() const;
+  PROTOBUF_NODISCARD ::CSign* release_sign();
+  ::CSign* mutable_sign();
+  void set_allocated_sign(::CSign* sign);
+  private:
+  const ::CSign& _internal_sign() const;
+  ::CSign* _internal_mutable_sign();
+  public:
+  void unsafe_arena_set_allocated_sign(
+      ::CSign* sign);
+  ::CSign* unsafe_arena_release_sign();
+
   // @@protoc_insertion_point(class_scope:SyncNodeAck)
  private:
   class _Internal;
@@ -1350,6 +1369,7 @@ class SyncNodeAck final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::NodeInfo > nodes_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr ids_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
+    ::CSign* sign_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -4192,7 +4212,92 @@ SyncNodeAck::nodes() const {
   return _impl_.nodes_;
 }
 
-// string ids = 2;
+// .CSign sign = 2;
+inline bool SyncNodeAck::_internal_has_sign() const {
+  return this != internal_default_instance() && _impl_.sign_ != nullptr;
+}
+inline bool SyncNodeAck::has_sign() const {
+  return _internal_has_sign();
+}
+inline const ::CSign& SyncNodeAck::_internal_sign() const {
+  const ::CSign* p = _impl_.sign_;
+  return p != nullptr ? *p : reinterpret_cast<const ::CSign&>(
+      ::_CSign_default_instance_);
+}
+inline const ::CSign& SyncNodeAck::sign() const {
+  // @@protoc_insertion_point(field_get:SyncNodeAck.sign)
+  return _internal_sign();
+}
+inline void SyncNodeAck::unsafe_arena_set_allocated_sign(
+    ::CSign* sign) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.sign_);
+  }
+  _impl_.sign_ = sign;
+  if (sign) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:SyncNodeAck.sign)
+}
+inline ::CSign* SyncNodeAck::release_sign() {
+  
+  ::CSign* temp = _impl_.sign_;
+  _impl_.sign_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::CSign* SyncNodeAck::unsafe_arena_release_sign() {
+  // @@protoc_insertion_point(field_release:SyncNodeAck.sign)
+  
+  ::CSign* temp = _impl_.sign_;
+  _impl_.sign_ = nullptr;
+  return temp;
+}
+inline ::CSign* SyncNodeAck::_internal_mutable_sign() {
+  
+  if (_impl_.sign_ == nullptr) {
+    auto* p = CreateMaybeMessage<::CSign>(GetArenaForAllocation());
+    _impl_.sign_ = p;
+  }
+  return _impl_.sign_;
+}
+inline ::CSign* SyncNodeAck::mutable_sign() {
+  ::CSign* _msg = _internal_mutable_sign();
+  // @@protoc_insertion_point(field_mutable:SyncNodeAck.sign)
+  return _msg;
+}
+inline void SyncNodeAck::set_allocated_sign(::CSign* sign) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.sign_);
+  }
+  if (sign) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(sign));
+    if (message_arena != submessage_arena) {
+      sign = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, sign, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.sign_ = sign;
+  // @@protoc_insertion_point(field_set_allocated:SyncNodeAck.sign)
+}
+
+// string ids = 3;
 inline void SyncNodeAck::clear_ids() {
   _impl_.ids_.ClearToEmpty();
 }
@@ -4242,7 +4347,7 @@ inline void SyncNodeAck::set_allocated_ids(std::string* ids) {
   // @@protoc_insertion_point(field_set_allocated:SyncNodeAck.ids)
 }
 
-// string msg_id = 3;
+// string msg_id = 4;
 inline void SyncNodeAck::clear_msg_id() {
   _impl_.msg_id_.ClearToEmpty();
 }

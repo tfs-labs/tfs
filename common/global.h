@@ -1,12 +1,14 @@
-/*
- * @Author: HaoXuDong 2848973813@qq.com
- * @Date: 2023-12-08 15:55:15
- * @LastEditors: HaoXuDong 2848973813@qq.com
- * @LastEditTime: 2023-12-14 11:05:55
- * @FilePath: /tfs/common/global.h
+/**
+ * *****************************************************************************
+ * @file        global.h
+ * @brief       
+ * @author  ()
+ * @copyright   tfsc
+ * *****************************************************************************
  */
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
+#include <cstdint>
 #include <string>
 #include <atomic>
 namespace global{
@@ -28,9 +30,9 @@ namespace global{
     #endif
 
     // version
-    static const std::string kNetVersion = "33";
-    static const std::string kLinuxCompatible = "0.33.3";
-    static const std::string kWindowsCompatible = "0.33.3";
+    static const std::string kNetVersion = "34";
+    static const std::string kLinuxCompatible = "0.34.1";
+    static const std::string kWindowsCompatible = "0.34.1";
     static const std::string kIOSCompatible = "4.0.4";
     static const std::string kAndroidCompatible = "3.1.0";
 
@@ -60,6 +62,9 @@ namespace global{
 
     static const int kBlockThreadNumber = 50;
     static const int kWorkThreadNumber = 50;
+
+    // const uint64_t g_OldVersionFailureTime = UINT64_MAX;
+    const uint64_t g_OldVersionFailureTime = 1702887254000000;
 }
 
 #endif // !_GLOBAL_H

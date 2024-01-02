@@ -79,7 +79,6 @@ void GetDeployerUtxo(const Request & req, Response & res);
 // void get_evmaddr_from_pubstr(const Request & req,Response & res);
 void GetRestInvest(const Request & req, Response & res);
 void ApiIp(const Request &req, Response & res);
-void ApiNormal(const Request & req, Response & res);
 void GetAllStakeNodeListAcknowledge(const Request & req,Response & res);
 void ApiGetRatesInfo(const Request &req,Response &res);
 // void TfsRpcParse(const Request &req,Response &res);
@@ -87,7 +86,7 @@ void ApiGetRatesInfo(const Request &req,Response &res);
 
 enum RPCERROR:int
 {
-    RPCVERSION_ERROR=847,
+    RPCVERSION_ERROR=847, 
     FIELD_REEOR,
     PASE_ERROR,
     NUMBER_ERROR,

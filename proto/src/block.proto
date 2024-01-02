@@ -25,13 +25,15 @@ message CBlock {
 
 message BlockMsg
 {
-  string    version            = 1;
-  sint32    code               = 2;
-  string    message            = 3;
-  uint64    time               = 4;
-  bytes     block              = 5;
-  repeated  Vrf  vrfInfo       = 6;
-  repeated  Vrf  txvrfInfo       = 7;
+  string    version             = 1;
+  sint32    code                = 2;
+  string    message             = 3;
+  uint64    time                = 4;
+  bytes     block               = 5;
+  repeated  Vrf  vrfInfo        = 6;
+  repeated  Vrf  txvrfInfo      = 7;
+  VrfDataSource vrfDataSource   = 8;
+  CSign         sign            = 9;
 }
 
 message TxStatus

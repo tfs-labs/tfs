@@ -68,7 +68,7 @@ public:
     const std::string kCfgLogConsole = "console";
     const std::string kCfgServerPort = "server_port";
     const std::string kCfgKeyVersion = "version";
-
+    const std::string kNewConfigName = "0.34";
     nlohmann::json tmpJson ;
     int count = 0;
 
@@ -279,6 +279,7 @@ private:
      * 
      */
     void _Check();
+
  
 private:
 
