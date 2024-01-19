@@ -22,6 +22,7 @@
 #include "ca/block_http_callback.h"
 #include "ca/block_stroage.h"
 
+
 void Menu()
 {
 	PrintBasicInfo();
@@ -161,7 +162,7 @@ bool Init()
 	}
 	
 	// Initialize database
-    if(!InitRocksDb())
+    if(InitRocksDb() != 0)
 	{
 		ERRORLOG("Failed to initialize database!");
 		std::cout << "Failed to initialize database!" << std::endl;
@@ -196,11 +197,12 @@ bool InitAccount()
 	return true;
 }
 
-bool InitRocksDb()
+int InitRocksDb()
 {
     if (!DBInit("./data.db"))
     {
-        return false;
+		ERRORLOG("DBInit is error");
+        return -1;
     }
 
     DBReadWriter dbReadWriter;
@@ -215,17 +217,20 @@ bool InitRocksDb()
         CBlock block;
         if(!block.ParseFromString(serBlock))
 		{
-			return false;
+			ERRORLOG("block parsefromsring is error");
+			return -2;
 		}
         
         if (block.txs_size() == 0)
         {
-            return false;
+			ERRORLOG("the transactions in block are empty");
+            return -3;
         }
         CTransaction tx = block.txs(0);
         if (tx.utxo().vout_size() == 0)
         {
-            return false;
+			ERRORLOG("vouts in utxo are empty");
+            return -4;
         }
 
         dbReadWriter.SetBlockHeightByBlockHash(block.hash(), block.height());
@@ -261,14 +266,41 @@ bool InitRocksDb()
         uint64_t totalCirculation = global::ca::kM2 * global::ca::kDecimalNum;
         dbReadWriter.SetTotalCirculation(totalCirculation);
     }
-    dbReadWriter.SetInitVer(global::kVersion);
-    if (DBStatus::DB_SUCCESS != dbReadWriter.TransactionCommit())
+	// if (DBStatus::DB_SUCCESS != dbReadWriter.SetInitVer(global::kVersion))
+	// {
+	// 	ERRORLOG("(rocksdb init) set InitVer failed !");
+	// 	return false;
+	// }
+	std::string version;
+	if (DBStatus::DB_SUCCESS != dbReadWriter.GetInitVer(version))
+	{
+		ERRORLOG("(rocksdb init) get InitVer failed !");
+	}
+	
+	if(global::kVersion != version)
+	{
+		std::cout <<"Database version now is:"<< version << std::endl;
+		if(version == "")
+		{
+			ERRORLOG("rocksdb date version is empty");
+			std::cout << "Please replace the database with the latest "<< std::endl;
+			return -5;
+		}
+		else
+		{
+		ERRORLOG("(rocksdb init) date version is not qulified current version failed !");
+		std::cout <<"Please replace the database with the latest "<<std::endl;
+		return -6;
+		}
+	}
+	if (DBStatus::DB_SUCCESS != dbReadWriter.TransactionCommit())
     {
         ERRORLOG("(rocksdb init) TransactionCommit failed !");
-        return false;
+        return -7;
     }
-    return true;
+    return 0;
 }
+
 
 
 bool Check()

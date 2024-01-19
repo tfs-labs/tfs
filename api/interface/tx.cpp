@@ -72,11 +72,15 @@
 
 // the_top
 PAUSE_D_ACK(the_top)
-PARSE_JSON(top)
+PARSE_JSON(height)
+PARSE_JSON(identity)
+PARSE_JSON(ip)
 D_END
 
 DOUMP_D_REQ(the_top)
-TO_JSON(top)
+TO_JSON(height)
+TO_JSON(identity)
+TO_JSON(ip)
 D_END_R
 
 
@@ -457,6 +461,31 @@ DOUMP_D_ACK(get_isonchain_ack)
 TO_JSON(txhash)
 TO_JSON(pro)
 D_END_R
+
+PAUSE_D_REQ(confirm_transaction_req)
+PARSE_JSON(txhash)
+PARSE_JSON(height)
+D_END
+
+DOUMP_D_REQ(confirm_transaction_req)
+TO_JSON(txhash)
+TO_JSON(height)
+D_END_R
+
+PAUSE_D_ACK(confirm_transaction_ack)
+PARSE_JSON(txhash)
+PARSE_JSON(percent)
+PARSE_JSON(sendsize)
+PARSE_JSON(receivedsize)
+D_END
+
+DOUMP_D_ACK(confirm_transaction_ack)
+TO_JSON(txhash)
+TO_JSON(percent)
+TO_JSON(sendsize)
+TO_JSON(receivedsize)
+D_END_R
+
 
 PAUSE_D_REQ(get_restinverst_req)
 PARSE_JSON(addr);

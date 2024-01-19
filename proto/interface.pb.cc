@@ -756,6 +756,41 @@ struct IsOnChainAckDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 IsOnChainAckDefaultTypeInternal _IsOnChainAck_default_instance_;
+PROTOBUF_CONSTEXPR ConfirmTransactionReq::ConfirmTransactionReq(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.txhash_)*/{}
+  , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.time_)*/uint64_t{0u}
+  , /*decltype(_impl_.height_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct ConfirmTransactionReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ConfirmTransactionReqDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ConfirmTransactionReqDefaultTypeInternal() {}
+  union {
+    ConfirmTransactionReq _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfirmTransactionReqDefaultTypeInternal _ConfirmTransactionReq_default_instance_;
+PROTOBUF_CONSTEXPR ConfirmTransactionAck::ConfirmTransactionAck(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.percentage_)*/{}
+  , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.time_)*/uint64_t{0u}
+  , /*decltype(_impl_.code_)*/0
+  , /*decltype(_impl_.send_size_)*/0u
+  , /*decltype(_impl_.received_size_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct ConfirmTransactionAckDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ConfirmTransactionAckDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ConfirmTransactionAckDefaultTypeInternal() {}
+  union {
+    ConfirmTransactionAck _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfirmTransactionAckDefaultTypeInternal _ConfirmTransactionAck_default_instance_;
 PROTOBUF_CONSTEXPR CorresHash::CorresHash(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.hash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -832,7 +867,7 @@ struct GetRestInvestAmountAckDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetRestInvestAmountAckDefaultTypeInternal _GetRestInvestAmountAck_default_instance_;
-static ::_pb::Metadata file_level_metadata_interface_2eproto[51];
+static ::_pb::Metadata file_level_metadata_interface_2eproto[53];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_interface_2eproto[1];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_interface_2eproto = nullptr;
 
@@ -1296,6 +1331,29 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.time_),
   PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.percentage_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionReq, _impl_.version_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionReq, _impl_.txhash_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionReq, _impl_.time_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionReq, _impl_.height_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.version_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.code_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.message_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.time_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.percentage_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.send_size_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.received_size_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::CorresHash, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -1389,11 +1447,13 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 430, -1, -1, sizeof(::SuccessRate)},
   { 438, -1, -1, sizeof(::IsOnChainReq)},
   { 447, -1, -1, sizeof(::IsOnChainAck)},
-  { 458, -1, -1, sizeof(::CorresHash)},
-  { 466, -1, -1, sizeof(::CheckTxReq)},
-  { 475, -1, -1, sizeof(::CheckTxAck)},
-  { 485, -1, -1, sizeof(::GetRestInvestAmountReq)},
-  { 493, -1, -1, sizeof(::GetRestInvestAmountAck)},
+  { 458, -1, -1, sizeof(::ConfirmTransactionReq)},
+  { 468, -1, -1, sizeof(::ConfirmTransactionAck)},
+  { 481, -1, -1, sizeof(::CorresHash)},
+  { 489, -1, -1, sizeof(::CheckTxReq)},
+  { 498, -1, -1, sizeof(::CheckTxAck)},
+  { 508, -1, -1, sizeof(::GetRestInvestAmountReq)},
+  { 516, -1, -1, sizeof(::GetRestInvestAmountAck)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -1443,6 +1503,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::_SuccessRate_default_instance_._instance,
   &::_IsOnChainReq_default_instance_._instance,
   &::_IsOnChainAck_default_instance_._instance,
+  &::_ConfirmTransactionReq_default_instance_._instance,
+  &::_ConfirmTransactionAck_default_instance_._instance,
   &::_CorresHash_default_instance_._instance,
   &::_CheckTxReq_default_instance_._instance,
   &::_CheckTxAck_default_instance_._instance,
@@ -1554,26 +1616,32 @@ const char descriptor_table_protodef_interface_2eproto[] PROTOBUF_SECTION_VARIAB
   "sh\030\002 \003(\t\022\014\n\004time\030\003 \001(\004\"n\n\014IsOnChainAck\022\017"
   "\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message"
   "\030\003 \001(\t\022\014\n\004time\030\004 \001(\004\022 \n\npercentage\030\005 \003(\013"
-  "2\014.SuccessRate\"(\n\nCorresHash\022\014\n\004hash\030\001 \001"
-  "(\t\022\014\n\004flag\030\002 \001(\r\"=\n\nCheckTxReq\022\017\n\007versio"
-  "n\030\001 \001(\t\022\016\n\006txhash\030\002 \003(\t\022\016\n\006msg_id\030\003 \001(\t\""
-  "`\n\nCheckTxAck\022\017\n\007version\030\001 \001(\t\022\035\n\010flagha"
-  "sh\030\002 \003(\0132\013.CorresHash\022\016\n\006msg_id\030\003 \001(\t\022\022\n"
-  "\nbase58addr\030\004 \001(\t\"9\n\026GetRestInvestAmount"
-  "Req\022\017\n\007version\030\001 \001(\t\022\016\n\006base58\030\002 \001(\t\"h\n\026"
-  "GetRestInvestAmountAck\022\017\n\007version\030\001 \001(\t\022"
-  "\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001(\t\022\016\n\006amount"
-  "\030\004 \001(\004\022\016\n\006base58\030\005 \001(\t*\205\001\n\006TxType\022\021\n\rTxT"
-  "ypeUnknown\020\000\022\014\n\010TxTypeTx\020\001\022\017\n\013TxTypeStak"
-  "e\020\002\022\021\n\rTxTypeUnstake\020\003\022\020\n\014TxTypeInvest\020\004"
-  "\022\023\n\017TxTypeDisinvest\020\005\022\017\n\013TxTypeBonus\020\006b\006"
-  "proto3"
+  "2\014.SuccessRate\"V\n\025ConfirmTransactionReq\022"
+  "\017\n\007version\030\001 \001(\t\022\016\n\006txhash\030\002 \003(\t\022\014\n\004time"
+  "\030\003 \001(\004\022\016\n\006height\030\004 \001(\004\"\241\001\n\025ConfirmTransa"
+  "ctionAck\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022"
+  "\017\n\007message\030\003 \001(\t\022\014\n\004time\030\004 \001(\004\022 \n\npercen"
+  "tage\030\005 \003(\0132\014.SuccessRate\022\021\n\tsend_size\030\006 "
+  "\001(\r\022\025\n\rreceived_size\030\007 \001(\r\"(\n\nCorresHash"
+  "\022\014\n\004hash\030\001 \001(\t\022\014\n\004flag\030\002 \001(\r\"=\n\nCheckTxR"
+  "eq\022\017\n\007version\030\001 \001(\t\022\016\n\006txhash\030\002 \003(\t\022\016\n\006m"
+  "sg_id\030\003 \001(\t\"`\n\nCheckTxAck\022\017\n\007version\030\001 \001"
+  "(\t\022\035\n\010flaghash\030\002 \003(\0132\013.CorresHash\022\016\n\006msg"
+  "_id\030\003 \001(\t\022\022\n\nbase58addr\030\004 \001(\t\"9\n\026GetRest"
+  "InvestAmountReq\022\017\n\007version\030\001 \001(\t\022\016\n\006base"
+  "58\030\002 \001(\t\"h\n\026GetRestInvestAmountAck\022\017\n\007ve"
+  "rsion\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001"
+  "(\t\022\016\n\006amount\030\004 \001(\004\022\016\n\006base58\030\005 \001(\t*\205\001\n\006T"
+  "xType\022\021\n\rTxTypeUnknown\020\000\022\014\n\010TxTypeTx\020\001\022\017"
+  "\n\013TxTypeStake\020\002\022\021\n\rTxTypeUnstake\020\003\022\020\n\014Tx"
+  "TypeInvest\020\004\022\023\n\017TxTypeDisinvest\020\005\022\017\n\013TxT"
+  "ypeBonus\020\006b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_interface_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_interface_2eproto = {
-    false, false, 4646, descriptor_table_protodef_interface_2eproto,
+    false, false, 4898, descriptor_table_protodef_interface_2eproto,
     "interface.proto",
-    &descriptor_table_interface_2eproto_once, nullptr, 0, 51,
+    &descriptor_table_interface_2eproto_once, nullptr, 0, 53,
     schemas, file_default_instances, TableStruct_interface_2eproto::offsets,
     file_level_metadata_interface_2eproto, file_level_enum_descriptors_interface_2eproto,
     file_level_service_descriptors_interface_2eproto,
@@ -16229,6 +16297,703 @@ void IsOnChainAck::InternalSwap(IsOnChainAck* other) {
 
 // ===================================================================
 
+class ConfirmTransactionReq::_Internal {
+ public:
+};
+
+ConfirmTransactionReq::ConfirmTransactionReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:ConfirmTransactionReq)
+}
+ConfirmTransactionReq::ConfirmTransactionReq(const ConfirmTransactionReq& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ConfirmTransactionReq* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.txhash_){from._impl_.txhash_}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.time_){}
+    , decltype(_impl_.height_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_version().empty()) {
+    _this->_impl_.version_.Set(from._internal_version(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.time_, &from._impl_.time_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.height_) -
+    reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.height_));
+  // @@protoc_insertion_point(copy_constructor:ConfirmTransactionReq)
+}
+
+inline void ConfirmTransactionReq::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.txhash_){arena}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.time_){uint64_t{0u}}
+    , decltype(_impl_.height_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+ConfirmTransactionReq::~ConfirmTransactionReq() {
+  // @@protoc_insertion_point(destructor:ConfirmTransactionReq)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ConfirmTransactionReq::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.txhash_.~RepeatedPtrField();
+  _impl_.version_.Destroy();
+}
+
+void ConfirmTransactionReq::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ConfirmTransactionReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:ConfirmTransactionReq)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.txhash_.Clear();
+  _impl_.version_.ClearToEmpty();
+  ::memset(&_impl_.time_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.height_) -
+      reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.height_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ConfirmTransactionReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string version = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_version();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "ConfirmTransactionReq.version"));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated string txhash = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_txhash();
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            CHK_(::_pbi::VerifyUTF8(str, "ConfirmTransactionReq.txhash"));
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 time = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.time_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 height = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.height_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* ConfirmTransactionReq::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ConfirmTransactionReq)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "ConfirmTransactionReq.version");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_version(), target);
+  }
+
+  // repeated string txhash = 2;
+  for (int i = 0, n = this->_internal_txhash_size(); i < n; i++) {
+    const auto& s = this->_internal_txhash(i);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "ConfirmTransactionReq.txhash");
+    target = stream->WriteString(2, s, target);
+  }
+
+  // uint64 time = 3;
+  if (this->_internal_time() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_time(), target);
+  }
+
+  // uint64 height = 4;
+  if (this->_internal_height() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_height(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:ConfirmTransactionReq)
+  return target;
+}
+
+size_t ConfirmTransactionReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:ConfirmTransactionReq)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated string txhash = 2;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.txhash_.size());
+  for (int i = 0, n = _impl_.txhash_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+      _impl_.txhash_.Get(i));
+  }
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_version());
+  }
+
+  // uint64 time = 3;
+  if (this->_internal_time() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_time());
+  }
+
+  // uint64 height = 4;
+  if (this->_internal_height() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_height());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConfirmTransactionReq::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ConfirmTransactionReq::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConfirmTransactionReq::GetClassData() const { return &_class_data_; }
+
+
+void ConfirmTransactionReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ConfirmTransactionReq*>(&to_msg);
+  auto& from = static_cast<const ConfirmTransactionReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:ConfirmTransactionReq)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.txhash_.MergeFrom(from._impl_.txhash_);
+  if (!from._internal_version().empty()) {
+    _this->_internal_set_version(from._internal_version());
+  }
+  if (from._internal_time() != 0) {
+    _this->_internal_set_time(from._internal_time());
+  }
+  if (from._internal_height() != 0) {
+    _this->_internal_set_height(from._internal_height());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ConfirmTransactionReq::CopyFrom(const ConfirmTransactionReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:ConfirmTransactionReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ConfirmTransactionReq::IsInitialized() const {
+  return true;
+}
+
+void ConfirmTransactionReq::InternalSwap(ConfirmTransactionReq* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.txhash_.InternalSwap(&other->_impl_.txhash_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.version_, lhs_arena,
+      &other->_impl_.version_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ConfirmTransactionReq, _impl_.height_)
+      + sizeof(ConfirmTransactionReq::_impl_.height_)
+      - PROTOBUF_FIELD_OFFSET(ConfirmTransactionReq, _impl_.time_)>(
+          reinterpret_cast<char*>(&_impl_.time_),
+          reinterpret_cast<char*>(&other->_impl_.time_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ConfirmTransactionReq::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
+      file_level_metadata_interface_2eproto[46]);
+}
+
+// ===================================================================
+
+class ConfirmTransactionAck::_Internal {
+ public:
+};
+
+ConfirmTransactionAck::ConfirmTransactionAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:ConfirmTransactionAck)
+}
+ConfirmTransactionAck::ConfirmTransactionAck(const ConfirmTransactionAck& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  ConfirmTransactionAck* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.percentage_){from._impl_.percentage_}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.message_){}
+    , decltype(_impl_.time_){}
+    , decltype(_impl_.code_){}
+    , decltype(_impl_.send_size_){}
+    , decltype(_impl_.received_size_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_version().empty()) {
+    _this->_impl_.version_.Set(from._internal_version(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.message_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.message_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_message().empty()) {
+    _this->_impl_.message_.Set(from._internal_message(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.time_, &from._impl_.time_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.received_size_) -
+    reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.received_size_));
+  // @@protoc_insertion_point(copy_constructor:ConfirmTransactionAck)
+}
+
+inline void ConfirmTransactionAck::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.percentage_){arena}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.message_){}
+    , decltype(_impl_.time_){uint64_t{0u}}
+    , decltype(_impl_.code_){0}
+    , decltype(_impl_.send_size_){0u}
+    , decltype(_impl_.received_size_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.message_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.message_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+ConfirmTransactionAck::~ConfirmTransactionAck() {
+  // @@protoc_insertion_point(destructor:ConfirmTransactionAck)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void ConfirmTransactionAck::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.percentage_.~RepeatedPtrField();
+  _impl_.version_.Destroy();
+  _impl_.message_.Destroy();
+}
+
+void ConfirmTransactionAck::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void ConfirmTransactionAck::Clear() {
+// @@protoc_insertion_point(message_clear_start:ConfirmTransactionAck)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.percentage_.Clear();
+  _impl_.version_.ClearToEmpty();
+  _impl_.message_.ClearToEmpty();
+  ::memset(&_impl_.time_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.received_size_) -
+      reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.received_size_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ConfirmTransactionAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string version = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_version();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "ConfirmTransactionAck.version"));
+        } else
+          goto handle_unusual;
+        continue;
+      // int32 code = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.code_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string message = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_message();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "ConfirmTransactionAck.message"));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 time = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.time_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .SuccessRate percentage = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_percentage(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 send_size = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.send_size_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 received_size = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
+          _impl_.received_size_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* ConfirmTransactionAck::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ConfirmTransactionAck)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "ConfirmTransactionAck.version");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_version(), target);
+  }
+
+  // int32 code = 2;
+  if (this->_internal_code() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_code(), target);
+  }
+
+  // string message = 3;
+  if (!this->_internal_message().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_message().data(), static_cast<int>(this->_internal_message().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "ConfirmTransactionAck.message");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_message(), target);
+  }
+
+  // uint64 time = 4;
+  if (this->_internal_time() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_time(), target);
+  }
+
+  // repeated .SuccessRate percentage = 5;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_percentage_size()); i < n; i++) {
+    const auto& repfield = this->_internal_percentage(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(5, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // uint32 send_size = 6;
+  if (this->_internal_send_size() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(6, this->_internal_send_size(), target);
+  }
+
+  // uint32 received_size = 7;
+  if (this->_internal_received_size() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(7, this->_internal_received_size(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:ConfirmTransactionAck)
+  return target;
+}
+
+size_t ConfirmTransactionAck::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:ConfirmTransactionAck)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .SuccessRate percentage = 5;
+  total_size += 1UL * this->_internal_percentage_size();
+  for (const auto& msg : this->_impl_.percentage_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_version());
+  }
+
+  // string message = 3;
+  if (!this->_internal_message().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_message());
+  }
+
+  // uint64 time = 4;
+  if (this->_internal_time() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_time());
+  }
+
+  // int32 code = 2;
+  if (this->_internal_code() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_code());
+  }
+
+  // uint32 send_size = 6;
+  if (this->_internal_send_size() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_send_size());
+  }
+
+  // uint32 received_size = 7;
+  if (this->_internal_received_size() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_received_size());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConfirmTransactionAck::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    ConfirmTransactionAck::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConfirmTransactionAck::GetClassData() const { return &_class_data_; }
+
+
+void ConfirmTransactionAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<ConfirmTransactionAck*>(&to_msg);
+  auto& from = static_cast<const ConfirmTransactionAck&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:ConfirmTransactionAck)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.percentage_.MergeFrom(from._impl_.percentage_);
+  if (!from._internal_version().empty()) {
+    _this->_internal_set_version(from._internal_version());
+  }
+  if (!from._internal_message().empty()) {
+    _this->_internal_set_message(from._internal_message());
+  }
+  if (from._internal_time() != 0) {
+    _this->_internal_set_time(from._internal_time());
+  }
+  if (from._internal_code() != 0) {
+    _this->_internal_set_code(from._internal_code());
+  }
+  if (from._internal_send_size() != 0) {
+    _this->_internal_set_send_size(from._internal_send_size());
+  }
+  if (from._internal_received_size() != 0) {
+    _this->_internal_set_received_size(from._internal_received_size());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void ConfirmTransactionAck::CopyFrom(const ConfirmTransactionAck& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:ConfirmTransactionAck)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ConfirmTransactionAck::IsInitialized() const {
+  return true;
+}
+
+void ConfirmTransactionAck::InternalSwap(ConfirmTransactionAck* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.percentage_.InternalSwap(&other->_impl_.percentage_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.version_, lhs_arena,
+      &other->_impl_.version_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.message_, lhs_arena,
+      &other->_impl_.message_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ConfirmTransactionAck, _impl_.received_size_)
+      + sizeof(ConfirmTransactionAck::_impl_.received_size_)
+      - PROTOBUF_FIELD_OFFSET(ConfirmTransactionAck, _impl_.time_)>(
+          reinterpret_cast<char*>(&_impl_.time_),
+          reinterpret_cast<char*>(&other->_impl_.time_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ConfirmTransactionAck::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
+      file_level_metadata_interface_2eproto[47]);
+}
+
+// ===================================================================
+
 class CorresHash::_Internal {
  public:
 };
@@ -16454,7 +17219,7 @@ void CorresHash::InternalSwap(CorresHash* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CorresHash::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[46]);
+      file_level_metadata_interface_2eproto[48]);
 }
 
 // ===================================================================
@@ -16746,7 +17511,7 @@ void CheckTxReq::InternalSwap(CheckTxReq* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CheckTxReq::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[47]);
+      file_level_metadata_interface_2eproto[49]);
 }
 
 // ===================================================================
@@ -17083,7 +17848,7 @@ void CheckTxAck::InternalSwap(CheckTxAck* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CheckTxAck::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[48]);
+      file_level_metadata_interface_2eproto[50]);
 }
 
 // ===================================================================
@@ -17336,7 +18101,7 @@ void GetRestInvestAmountReq::InternalSwap(GetRestInvestAmountReq* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GetRestInvestAmountReq::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[49]);
+      file_level_metadata_interface_2eproto[51]);
 }
 
 // ===================================================================
@@ -17699,7 +18464,7 @@ void GetRestInvestAmountAck::InternalSwap(GetRestInvestAmountAck* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GetRestInvestAmountAck::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[50]);
+      file_level_metadata_interface_2eproto[52]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -17887,6 +18652,14 @@ Arena::CreateMaybeMessage< ::IsOnChainReq >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::IsOnChainAck*
 Arena::CreateMaybeMessage< ::IsOnChainAck >(Arena* arena) {
   return Arena::CreateMessageInternal< ::IsOnChainAck >(arena);
+}
+template<> PROTOBUF_NOINLINE ::ConfirmTransactionReq*
+Arena::CreateMaybeMessage< ::ConfirmTransactionReq >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::ConfirmTransactionReq >(arena);
+}
+template<> PROTOBUF_NOINLINE ::ConfirmTransactionAck*
+Arena::CreateMaybeMessage< ::ConfirmTransactionAck >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::ConfirmTransactionAck >(arena);
 }
 template<> PROTOBUF_NOINLINE ::CorresHash*
 Arena::CreateMaybeMessage< ::CorresHash >(Arena* arena) {

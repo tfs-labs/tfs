@@ -7,7 +7,7 @@ bool Init();
 bool InitConfig();
 bool InitLog();
 bool InitAccount();
-bool InitRocksDb();
+int  InitRocksDb();
 
 /*********Check Consistency*********/
 

@@ -24,6 +24,7 @@ void BlockMonitor::checkTxSuccessRate()
 	std::unique_lock<std::mutex> lck(mutex_);
 	DBReader reader;
 	int DropshippingTxVecFail = 0;
+	std::vector<std::string> failTxhashVec;
 	for(const auto& txHash : DropshippingTxVec)
 	{
 		std::string blockHash;
@@ -31,11 +32,25 @@ void BlockMonitor::checkTxSuccessRate()
 
 		if (blockHash.empty())
 		{
+			failTxhashVec.push_back(txHash);
 			DropshippingTxVecFail++;
 			continue;
 		}
 	}
-	DEBUGLOG("addDropshippingTxVec Txsize{}, DropshippingTxVecFail size:{}", DropshippingTxVec.size(), DropshippingTxVecFail);
+	
+	std::ofstream outputFile("./failTxhash.txt");
+	if (outputFile.is_open())
+	{
+		for(const auto& it : failTxhashVec)
+		{
+			outputFile << it << "\n";
+		}
+		outputFile.close();
+	}
+
+	DEBUGLOG(GREEN "addDropshippingTxVec Txsize: {}, DropshippingTxVecFail size:{}" RESET, DropshippingTxVec.size(), DropshippingTxVecFail);
+	DropshippingTxVec.clear();
+
 	int DoHandleTxVecFail = 0;
 	for(const auto& txHash : DoHandleTxVec)
 	{
@@ -48,7 +63,8 @@ void BlockMonitor::checkTxSuccessRate()
 			continue;
 		}
 	}
-	DEBUGLOG("addDoHandleTxTxVec Txsize{}, DoHandleTxVecFailFail size:{}", DoHandleTxVec.size(), DoHandleTxVecFail);
+	DEBUGLOG(GREEN "addDoHandleTxTxVec Txsize: {}, DoHandleTxVecFailFail size:{}" RESET, DoHandleTxVec.size(), DoHandleTxVecFail);
+	DoHandleTxVec.clear();
 }
 
 void BlockMonitor::addDropshippingTxVec(const std::string& txHash)

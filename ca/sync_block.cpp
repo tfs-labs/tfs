@@ -31,14 +31,18 @@ static uint64_t newSyncFailHeight = 0;
 static bool runFastSync = false;
 static bool inFastSyncFail = false;
 
-static uint32_t syncHeightCnt = 50;
+static bool runNewSync = false;
+static uint64_t newSyncStartHeight = 0;
+
+static uint32_t syncHeightCnt = 100;
 const static uint32_t kSyncHeightTime = 50;
 const static uint32_t kSyncStuckOvertimeCount = 6;
-static uint64_t syncSendNewSyncNum = 25;
-static uint64_t syncSendFastSyncNum = 10;
-static uint64_t syncSendZeroSyncNum = 20;
+static uint64_t syncSendNewSyncNum = UINT32_MAX;
+static uint64_t syncSendFastSyncNum = UINT32_MAX;
+static uint64_t syncSendZeroSyncNum = UINT32_MAX;
 const  static int kNnormalSumHashNum = 1;
 static uint32_t runFastSuncNum = 0;
+static uint32_t runZeroSyncNum = 0;
 // static bool sync_to_tx = false;
 // #include <fstream> 
 // static std::ofstream fout("./test.txt", std::ios::trunc); 
@@ -252,13 +256,19 @@ void SyncBlock::ThreadStart()
                     }
                 }
 
-                if(runFastSuncNum >= 10)
+                if(runFastSuncNum >= 5)
                 {
                     if(runFastSync)
                     {
                         runFastSuncNum = 0;
                         runFastSync = false;
                     }
+                }
+
+                if(runNewSync)
+                {
+                    runFastSuncNum = 0;
+                    runFastSync = false;
                 }
 
                 if(runFastSync)
@@ -303,6 +313,10 @@ void SyncBlock::ThreadStart()
                 else
                 { 
                     auto syncType = GetSaveSyncType(selfNodeHeight, chainHeight);
+                    if(runNewSync || runZeroSyncNum > 2)
+                    {
+                        syncType = global::ca::SaveType::SyncNormal;
+                    }
 
                     if (syncType == global::ca::SaveType::SyncFromZero)
                     {
@@ -310,12 +324,8 @@ void SyncBlock::ThreadStart()
                         int runStatus = _RunFromZeroSyncOnce(pledgeAddr, chainHeight, selfNodeHeight);
                         if (runStatus != 0)
                         {
-                            syncSendZeroSyncNum *= 10;
-                            ERRORLOG("from zero sync fail ret: {}", runStatus);
-                        }
-                        else 
-                        {
-                            syncSendZeroSyncNum = 20;
+                            ++runZeroSyncNum;
+                            ERRORLOG("from zero sync fail ret: {},   runZeroSyncNum: {}", runStatus, runZeroSyncNum);
                         }
                         DEBUGLOG("_RunFromZeroSyncOnce ret: {}", runStatus);
                     }
@@ -349,6 +359,16 @@ void SyncBlock::ThreadStart()
                         sleepTime = kSyncHeightTime;
                         INFOLOG("begin new sync {} {} ", startSyncHeight, endSyncHeight);
 
+                        if(runNewSync)
+                        {
+                            if(newSyncStartHeight > selfNodeHeight)
+                            {
+                                newSyncStartHeight = selfNodeHeight;
+                            }
+                            startSyncHeight = newSyncStartHeight > syncHeightCnt ? newSyncStartHeight - syncHeightCnt : 1;
+                            endSyncHeight = newSyncStartHeight + syncHeightCnt;
+                        }
+
                         int runStatus = _RunNewSyncOnce(pledgeAddr, chainHeight, selfNodeHeight, startSyncHeight, endSyncHeight, 0);
                         if(runStatus < 0)
                         {   
@@ -358,6 +378,9 @@ void SyncBlock::ThreadStart()
                         }
                         if(runStatus == 0)
                         {
+                            runZeroSyncNum = 0;
+                            runNewSync = false;
+                            newSyncStartHeight = 0;
                             newSyncFailHeight = 0;
                             runFastSync = false;
                             syncSendNewSyncNum = 25;
@@ -413,6 +436,7 @@ bool SyncBlock::_RunFastSyncOnce(const std::vector<std::string> &pledgeAddr, uin
 
 int SyncBlock::_RunNewSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t selfNodeHeight, uint64_t startSyncHeight, uint64_t endSyncHeight, uint64_t newSendNum)
 {
+    DEBUGLOG("_RunNewSyncOnce  startSyncHeight: {}\tendSyncHeight: ", startSyncHeight, endSyncHeight);
     uint64_t newSyncSnedNum = 0;
     if(newSendNum == 0)
     {
@@ -760,6 +784,19 @@ void SyncBlock::SetFastSync(uint64_t syncStartHeight)
 {
     runFastSync = true;
     newSyncFailHeight = syncStartHeight;
+}
+
+void SyncBlock::SetNewSyncHeight(uint64_t height)
+{
+    runNewSync = true;
+    if(newSyncStartHeight == 0) 
+    {
+        newSyncStartHeight = height;
+    }
+    if(newSyncStartHeight > height)
+    {
+        newSyncStartHeight = height;
+    }
 }
 
 bool SyncBlock::_GetFastSyncSumHashNode(const std::vector<std::string> &sendNodeIds, uint64_t startSyncHeight, uint64_t endSyncHeight,
@@ -1235,7 +1272,7 @@ int SyncBlock::_GetSyncSumHashNode(uint64_t pledgeAddrSize, const std::vector<st
                             continue;
                         }
                         uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-                        if(block.time() < nowTime - 5 * 60 * 1000000)
+                        if(block.time() < nowTime - 1 * 60 * 1000000)
                         {
                             DEBUGLOG("currentHeightNodeSize: {}\tret_datas.size() / 2:{}",currentHeightNodeSize, retDatas.size() / 2);
                             DEBUGLOG("_AddBlockToMap rollback block height: {}\tblock hash:{}",block.height(), block.hash());
@@ -1820,6 +1857,10 @@ int SyncBlock::_GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& 
         _syncFromZeroReserveHeights.push_back(fail_height);
     }
 
+    if(!sendHeights.empty())
+    {
+        return -9;
+    }
 
     if (sendHeights.empty())
     {

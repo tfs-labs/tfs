@@ -16,6 +16,7 @@
 
 
 
+
 /**
  * @brief       
  */
@@ -35,8 +36,6 @@ void GetStakeList();
  * @brief      Get a list of addresses that can claim bonuses
  */
 int GetBounsAddrInfo();
-
-
 
 
 /**
@@ -76,7 +75,6 @@ void MenuBlockInfo();
  * @param       top: block height
  */
 void getTxBlockInfo(uint64_t& top);
-
 
 /**
  * @brief       

@@ -49,9 +49,22 @@ int ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &h
     DEBUGLOG("Evmone execution Result: {}", result.status_code);
     if (result.status_code != EVMC_SUCCESS)
 	{
-		ERRORLOG(RED "Evmone execution failed! gas_left:{}" RESET, result.gas_left);  
-        strOutput = std::string_view(reinterpret_cast<const char *>(result.output_data), result.output_size);
-	    DEBUGLOG("Output: {}", strOutput);
+		ERRORLOG(RED "Evmone execution failed! gas_left:{}, Output: {}" RESET, result.gas_left, std::string_view(reinterpret_cast<const char *>(result.output_data), result.output_size));  
+        switch (result.status_code)
+        {
+        case 1:
+            strOutput = strOutput + "evmc_status_code: " + "Generic execution failure. ";
+            break;
+        case 2:
+            strOutput = strOutput + "evmc_status_code: " + "Execution terminated with REVERT opcode. ";
+            break;
+        case 3:
+            strOutput = strOutput + "evmc_status_code: " + "The execution has run out of gas. ";
+            break;
+        default:
+            break;
+        }
+        strOutput = strOutput + "output: " + std::move(evmc::hex({result.output_data, result.output_size}));
 		return -4;
 	}
     gasCost = msg.gas - result.gas_left;

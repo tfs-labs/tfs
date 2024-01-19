@@ -121,19 +121,13 @@ class VRF
             
             std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
             uint64_t time_= MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-            auto ite=vrfCache.find(TxHash);
-            if(ite==vrfCache.end()){
-                vrfCache[TxHash]={info,time_};
-            }
+            vrfCache[TxHash]={info,time_};
         }
 
         void addTxVrfInfo(const std::string & TxHash,const Vrf & info){
             std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
-            auto ite=txvrfCache.find(TxHash);
             uint64_t time_= MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-            if(ite==txvrfCache.end()){
-                txvrfCache[TxHash]={info,time_};
-            }
+            txvrfCache[TxHash]={info,time_};
         }
 
         void removeVrfInfo(const std::string & TxHash)
@@ -174,10 +168,7 @@ class VRF
          void addVerifyNodes(const std::string & TxHash,std::vector<std::string> & base58_s){
             std::unique_lock<std::shared_mutex> lck(vrfNodeMutex);
             uint64_t time_= MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-            auto ite=vrfVerifyNode.find(TxHash);
-            if(ite==vrfVerifyNode.end()){
-                vrfVerifyNode[TxHash]={base58_s,time_};
-            }
+            vrfVerifyNode[TxHash]={base58_s,time_};
         }
 
         void removeVerifyNodes(const std::string & TxHash)

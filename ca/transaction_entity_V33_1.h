@@ -4,7 +4,7 @@
  * @LastEditors: HaoXuDong 2848973813@qq.com
  * @LastEditTime: 2023-12-06 16:49:31
  * @FilePath: /tfs/ca/transaction_entity_V33_1.h
- * @Description: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ * @Description:https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
 /**
  * *****************************************************************************

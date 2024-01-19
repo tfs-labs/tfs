@@ -539,6 +539,17 @@ DBStatus DBReader::GetMptValueByMptKey(const std::string &MptKey, std::string &M
     return ReadData(db_key, MptValue);
 }
 
+DBStatus DBReader::GetInitVer(std::string &version)
+{
+    std::string tmpversion;
+    auto ret = ReadData(kInitVersionKey, tmpversion);
+    if (DBStatus::DB_SUCCESS == ret)
+    {
+        version = tmpversion;
+    }
+    return ret;
+}
+
 DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vector<std::string> &values)
 {
     if (keys.empty())

@@ -79,6 +79,8 @@ public:
      */
     static void SetFastSync(uint64_t syncStartHeight);
 
+    static void SetNewSyncHeight(uint64_t height);
+
     /**
      * @brief       
      * 

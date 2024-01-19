@@ -1495,12 +1495,7 @@ void HandleCallContract()
         newInfo -> CopyFrom(info);
 
     }
-
     
-
-    
-
- 
     auto msg = make_shared<ContractTxMsgReq>(ContractMsg);
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
     if(isNeedAgentFlag==TxHelper::vrfAgentType::vrfAgentType_vrf)
@@ -1508,8 +1503,6 @@ void HandleCallContract()
         ret = DropCallShippingTx(msg,outTx);
     }
     return ;
-
-  //  DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
 }
 
 void HandleExportPrivateKey()

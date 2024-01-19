@@ -457,6 +457,10 @@ void TransactionCache::ProcessContract()
 {
     std::scoped_lock locker(_contractCacheMutex, _contractInfoCacheMutex, _dirtyContractMapMutex);
     MagicSingleton<ContractDataCache>::GetInstance()->lock();
+    ON_SCOPE_EXIT{
+        MagicSingleton<ContractDataCache>::GetInstance()->clear();
+        MagicSingleton<ContractDataCache>::GetInstance()->unlock();
+    };
     _ExecuteContracts();
     std::list<CTransaction> buildTxs;
     uint64_t topTransactionHeight = 0;
@@ -498,8 +502,6 @@ void TransactionCache::ProcessContract()
         std::cout << "block successfully packaged" << std::endl;
     }
     DEBUGLOG("FFF 555555555");
-    MagicSingleton<ContractDataCache>::GetInstance()->clear();
-    MagicSingleton<ContractDataCache>::GetInstance()->unlock();
     _dirtyContractMap.clear();
     _contractCache.clear();
     _contractInfoCache.clear();
@@ -1004,7 +1006,7 @@ int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, c
         _vrfNodelist.push_back(x);
     }
 
-    auto ret = MagicSingleton<UnregisterNode>::GetInstance()->verifyVrfDataSource(_vrfNodelist,verifyHeight);
+    auto ret = verifyVrfDataSource(_vrfNodelist,verifyHeight);
     if(ret != 0)
     {
         ERRORLOG("verifyVrfDataSource fail ! ,ret:{}", ret);

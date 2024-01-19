@@ -35,7 +35,7 @@ class ContractDispatcher{
         {
             std::vector<TxMsgReq> txMsgReq;
             std::set<std::string> nodelist;
-            Vrf info; 
+            Vrf info;
         };
 
         void _DispatcherProcessingFunc();
@@ -53,10 +53,7 @@ class ContractDispatcher{
         std::mutex _contractHandleMutex;
 
         std::unordered_map<std::string, std::vector<std::string>> _contractDependentCache; 
-        std::unordered_map<std::string, TxMsgReq> _contractMsgReqCache; 
-
- 
-
+        std::unordered_map<std::string, TxMsgReq> _contractMsgReqCache;
 };
 
 #endif

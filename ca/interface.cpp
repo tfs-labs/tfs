@@ -1443,16 +1443,22 @@ std::map<int32_t, std::string> GetReqCode()
 	return errInfo;												
 }
 
-int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack)
+int OldSendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack)
 {
     std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    auto nodelistsize = nodelist.size();
+    if(nodelistsize == 0)
+    {
+        DEBUGLOG("Nodelist Size {}",nodelistsize);
+        return -1;
+    }
 
     std::string msgId;
     std::map<std::string, uint32_t> successHash;
     int send_num = nodelist.size();
     if (!GLOBALDATAMGRPTR.CreateWait(10, send_num * 0.8, msgId))
     {
-        return -1;
+        return -2;
     }
 
     CheckTxReq req;
@@ -1472,7 +1478,7 @@ int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack
     std::vector<std::string> ret_datas;
     if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
     {
-        return -2;
+        return -3;
     }
 
 
@@ -1517,12 +1523,116 @@ int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack
 
         alsuc->set_hash(success.first);
         double rate = (double)success.second / (double)(send_num * 0.8);
-        DEBUGLOG("SendCheckTxReq = {} , == {}, rate = ", success.second, send_num, rate);
+        DEBUGLOG("OldSendCheckTxReq = {} , == {}, rate = ", success.second, send_num, rate);
         alsuc->set_rate(rate);
 
     }
 
 
+    return 0;
+}
+
+int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,  ConfirmTransactionAck & ack)
+{
+    std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    auto nodelistsize = nodelist.size();
+    if(nodelistsize == 0)
+    {
+        DEBUGLOG("Nodelist Size {}",nodelistsize);
+        return -1;
+    }
+    
+    std::vector<Node> FilterHeightNodeList;
+    for(auto &item : nodelist)
+    {
+        if(item.height >= msg->height())
+        {
+            FilterHeightNodeList.push_back(item);
+        }
+    }
+    auto send_num = FilterHeightNodeList.size();
+    if(send_num == 0)
+    {
+        DEBUGLOG("FilterHeightNodeList {}",send_num);
+        return -2;
+    }
+    ack.set_send_size(send_num);
+    //send_size
+    std::string msgId;
+    std::map<std::string, uint32_t> successHash;
+
+    
+    if (!GLOBALDATAMGRPTR.CreateWait(10, send_num * 0.8, msgId))
+    {
+        return -3;
+    }
+
+    CheckTxReq req;
+    req.set_version(global::kVersion);
+    req.set_msg_id(msgId);
+    for(auto & hash : msg->txhash())
+    {
+        req.add_txhash(hash);
+        successHash.insert(std::make_pair(hash, 0));
+    }
+
+    for (auto &node : FilterHeightNodeList)
+    {
+        NetSendMessage<CheckTxReq>(node.base58Address, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+    }
+
+    std::vector<std::string> ret_datas;
+    if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
+    {
+        return -4;
+    }
+    
+
+    CheckTxAck copyAck;
+
+    std::multimap<std::string, int> txFlagHashs;
+
+    for (auto &ret_data : ret_datas)
+    {
+        copyAck.Clear();
+        if (!copyAck.ParseFromString(ret_data))
+        {
+            continue;
+        }
+        
+        for(auto & flag_hash : copyAck.flaghash())
+        {
+            txFlagHashs.insert(std::make_pair(flag_hash.hash(),flag_hash.flag()));
+        }
+    }
+      
+
+
+
+    for(auto & item : txFlagHashs)
+    {
+        for(auto & success : successHash)
+        {
+            if(item.second == 1 && item.first == success.first)
+            {
+                success.second ++;
+                DEBUGLOG("success.second size = {}", success.second);
+            }
+        }
+    }
+    ack.set_version(global::kVersion);
+    ack.set_time(msg->time());
+    
+    for(auto & success : successHash)
+    {
+        SuccessRate * alsuc = ack.add_percentage();
+
+        alsuc->set_hash(success.first);
+        double rate = (double)success.second / (double)(ret_datas.size());
+        DEBUGLOG("SendConfirmTransactionReq = {} , == {}, rate = ", success.second, send_num, rate);
+        alsuc->set_rate(rate);
+    }
+    ack.set_received_size(ret_datas.size());
     return 0;
 }
 
@@ -1534,7 +1644,7 @@ std::map<int32_t, std::string> GetOnChianReqCode()
 	return errInfo;												
 }
 
-int HandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& req, const MsgData & msgdata)
+int OldHandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& req, const MsgData & msgdata)
 {
    
     auto errInfo = GetOnChianReqCode();
@@ -1550,7 +1660,30 @@ int HandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& req, const MsgData &
 		return ret = -1;
 	}
 
-    ret = SendCheckTxReq(req, ack);
+    ret = OldSendCheckTxReq(req, ack);
+
+
+    return ret;
+
+}
+
+int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& req, const MsgData & msgdata)
+{
+   
+    auto errInfo = GetOnChianReqCode();
+    ConfirmTransactionAck ack;
+    int ret = 0;
+
+    ON_SCOPE_EXIT{
+        ReturnAckCode<ConfirmTransactionAck>(msgdata, errInfo, ack, ret);
+    };
+
+    if( 0 != Util::IsVersionCompatible( req->version() ) )
+	{
+		return ret = -1;
+	}
+
+    ret = SendConfirmTransactionReq(req, ack);
 
 
     return ret;
@@ -1664,7 +1797,8 @@ void RegisterInterface()
     CaRegisterCallback<GetHeightReq>(HandleGetHeightReq);
     CaRegisterCallback<GetBonusListReq>(HandleGetBonusListReq);
     CaRegisterCallback<GetSDKReq>(HandleGetSDKAllNeedReq);
-    CaRegisterCallback<IsOnChainReq>(HandleIsOnChainReq);
+    CaRegisterCallback<IsOnChainReq>(OldHandleIsOnChainReq);
+	CaRegisterCallback<ConfirmTransactionReq>(HandleConfirmTransactionReq);
     CaRegisterCallback<GetRestInvestAmountReq>(HandleGetRestInvestAmountReq);
 
 }

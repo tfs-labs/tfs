@@ -166,6 +166,7 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/printCalcHash", ApiPrintCalc1000SumHash);
     HttpServer::RegisterCallback("/setCalcTopHeight", ApiSetCalc1000TopHeight);
     HttpServer::RegisterCallback("/blockc", ApiPrintContractBlock);
+    HttpServer::RegisterCallback("/printHundredHash", ApiPrintHundredSumHash);
 
 
 #endif // #ifndef NDEBUG
@@ -194,7 +195,9 @@ void CaRegisterHttpCallbacks() {
 
     HttpServer::RegisterCallback("/get_rsa_pub_req", GetRsaPub);
 
-    HttpServer::RegisterCallback("/GetIsOnChain", GetIsOnChain);
+    HttpServer::RegisterCallback("/GetIsOnChain", OldGetIsOnChain);
+
+    HttpServer::RegisterCallback("/confirm_transaction", ConfirmTransaction);
 
     HttpServer::RegisterCallback("/deployers_req", GetDeployer);
 
@@ -1443,10 +1446,12 @@ bool tool_DeCode(const std::string &source, std::string &dest,
 void JsonRpcGetHeight(const Request &req, Response &res) {
     the_top ack_t;
     DBReader dbReader;
-    uint64_t top = 0;
-    dbReader.GetBlockTop(top);
-    ack_t.top = std::to_string(top);
-
+    uint64_t height = 0;
+    dbReader.GetBlockTop(height);
+    ack_t.height = std::to_string(height);
+    ack_t.identity  = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    auto node       = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
+    ack_t.ip        = std::string(IpPort::IpSz(node.publicIp));
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -1905,12 +1910,11 @@ void SendContractMessage(const Request & req,Response & res){
    DropCallShippingTx(msg,tx);
     res.set_content(ack_t.paseToString(), "application/json");
 }
-
-void GetIsOnChain(const Request &req, Response &res) 
+void OldGetIsOnChain(const Request &req, Response &res) 
 {
     get_isonchain_req req_j;
-     get_isonchain_ack ack_t;
-     CHECK_PASE(req_j)
+    get_isonchain_ack ack_t;
+    CHECK_PASE(req_j)
 
     IsOnChainAck ack;
     std::shared_ptr<IsOnChainReq> req_t = std::make_shared<IsOnChainReq>();
@@ -1921,19 +1925,86 @@ void GetIsOnChain(const Request &req, Response &res)
     req_t->set_time(currentTime);
 
     int ret = 0;
-    ret = SendCheckTxReq(req_t, ack);
+    ret = OldSendCheckTxReq(req_t, ack);
+    if(ret != 0)
+    {
+        ERRORLOG("sussize is empty{}",ret);
+        ack_t.ErrorMessage = "initial node list is empty";
+        ack_t.ErrorCode = std::to_string(ret);
+        res.set_content(ack_t.paseToString(),"application/json");
+        return;
+    }
     std::string debugValue;
     google::protobuf::util::Status status =
         google::protobuf::util::MessageToJsonString(ack, &debugValue);
-    //debugL(debugValue);
-     DEBUGLOG("http_api.cpp:GetIsOnChain ack_T.paseToString {}",debugValue);
+    DEBUGLOG("http_api.cpp:OldGetIsOnChain ack_T.paseToString {}",debugValue);
 
    
     auto sus = ack.percentage();
+    auto susSize = sus.size();
+    if(susSize == 0)
+    {
+        ERRORLOG("sussize is empty{}",susSize);
+        ack_t.ErrorMessage = "initial node list is empty";
+        ack_t.ErrorCode = "-5";
+        res.set_content(ack_t.paseToString(),"application/json");
+        return;
+    }
     auto rate = sus.at(0);
     ack_t.txhash = rate.hash();
     ack_t.pro = std::to_string(rate.rate());
     ack_t.ErrorCode = std::to_string(ret);
+    res.set_content(ack_t.paseToString(), "application/json");
+}
+
+void ConfirmTransaction(const Request &req, Response &res) 
+{
+    confirm_transaction_req req_j;
+    confirm_transaction_ack ack_t;
+     CHECK_PASE(req_j)
+
+    uint64_t height = std::stoll(req_j.height);
+    ConfirmTransactionAck ack;
+    std::shared_ptr<ConfirmTransactionReq> req_t = std::make_shared<ConfirmTransactionReq>();
+    req_t->add_txhash(req_j.txhash);
+    req_t->set_version(global::kVersion);
+    req_t->set_height(height);
+    auto currentTime =
+        MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    req_t->set_time(currentTime);
+
+    int ret = 0;
+    ret = SendConfirmTransactionReq(req_t, ack);
+    if(ret != 0)
+    {
+        ERRORLOG("sussize is empty{}",ret);
+        ack_t.ErrorMessage = "initial node list is empty";
+        ack_t.ErrorCode = std::to_string(ret);
+        res.set_content(ack_t.paseToString(),"application/json");
+        return;
+    }
+    std::string debugValue;
+    google::protobuf::util::Status status =
+        google::protobuf::util::MessageToJsonString(ack, &debugValue);
+     DEBUGLOG("http_api.cpp:ConfirmTransaction ack_T.paseToString {}",debugValue);
+
+   
+    auto sus = ack.percentage();
+    auto susSize = sus.size();
+    if(susSize == 0)
+    {
+        ERRORLOG("sussize is empty{}",susSize);
+        ack_t.ErrorMessage = "initial node list is empty";
+        ack_t.ErrorCode = "-5";
+        res.set_content(ack_t.paseToString(),"application/json");
+        return;
+    }
+    auto rate = sus.at(0);
+    ack_t.txhash = rate.hash();
+    ack_t.percent = std::to_string(rate.rate());
+    ack_t.ErrorCode = std::to_string(ret);
+    ack_t.receivedsize = std::to_string(ack.received_size());
+    ack_t.sendsize = std::to_string(ack.send_size());
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -3099,3 +3170,46 @@ void ApiPrintContractBlock(const Request & req, Response & res)
 }
 
 
+void ApiPrintHundredSumHash(const Request & req, Response & res)
+{
+    int startHeight = 100;
+    if (req.has_param("startHeight")) {
+        startHeight = atol(req.get_param_value("startHeight").c_str());
+    }
+    if(startHeight <= 0 || startHeight % 100 != 0)
+    {
+        res.set_content("startHeight error", "text/plain");
+        return;
+    }
+
+    int endHeight = 0;
+    if (req.has_param("endHeight")) {
+        endHeight = atol(req.get_param_value("endHeight").c_str());
+    }
+
+    if(endHeight < startHeight || endHeight % 100 != 0)
+    {
+        res.set_content("endHeight error", "text/plain");
+        return;
+    }
+
+    DBReader dbReader;
+    std::ostringstream oss;
+
+    for(int i = startHeight; i <= endHeight; i += 100)
+    {
+        std::string sumHash;
+        auto ret = dbReader.GetSumHashByHeight(i, sumHash);
+        if(ret == DBStatus::DB_SUCCESS)
+        {
+            oss << "blockHeight: " << i << "\t sumHash: " << sumHash << std::endl;
+        }
+        else 
+        {
+            oss << "GetSumHashByHeight error, error height: " << i << std::endl;
+        }
+        
+    }
+    
+    res.set_content(oss.str(), "text/plain");
+}

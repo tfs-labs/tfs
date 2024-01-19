@@ -29,14 +29,15 @@
 
 //the_top
 struct the_top {
+	std::string ip;
+	std::string identity; 
+	std::string height;
 	std::string type;
-	std::string top;
 	std::string ErrorCode;
 	std::string ErrorMessage;
 	std::string paseFromJson(const std::string& json);
 	std::string paseToString();
 };
-
 
 
 
@@ -235,6 +236,18 @@ UCTE
 UCTS_ACK(get_isonchain_ack)
 std::string txhash;
 std::string pro;
+UCTE
+
+UCTS_REQ(confirm_transaction_req)
+std::string txhash;
+std::string height;
+UCTE
+
+UCTS_ACK(confirm_transaction_ack)
+std::string txhash;
+std::string percent;
+std::string sendsize;
+std::string receivedsize;
 UCTE
 
 UCTS_REQ(get_restinverst_req)

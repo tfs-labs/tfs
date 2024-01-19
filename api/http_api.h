@@ -51,6 +51,7 @@ void ApiPrintAllBlocks(const Request &req,Response &res);
 void ApiPrintCalc1000SumHash(const Request &req,Response &res);
 void ApiSetCalc1000TopHeight(const Request &req,Response &res);
 void ApiPrintContractBlock(const Request & req, Response & res);
+void ApiPrintHundredSumHash(const Request & req, Response & res);
 #endif
 
 bool ApiStatusAutoTxTest(Response & res);
@@ -71,7 +72,9 @@ void DeployContract(const Request & req, Response & res);
 void CallContract(const Request & req, Response & res);
 void SendMessage(const Request & req, Response & res);
 void SendContractMessage(const Request & req,Response & res);
-void GetIsOnChain(const Request & req, Response & res);
+void OldGetIsOnChain(const Request & req, Response & res);
+void ConfirmTransaction(const Request & req, Response & res);
+
 void GetDeployer(const Request & req, Response & res);
 void GetDeployerUtxo(const Request & req, Response & res);
 

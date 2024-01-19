@@ -779,7 +779,6 @@ std::string PrintCache(int where){
             // CaheString("",blcohelper->missing_blocks.size());
             // CaheString("",blcohelper->DoubleSpend_blocks.size());
             // CaheString("",blcohelper->DuplicateChecker.size());
-            CaheString("",blockStroage_->_blockMap.size());
 	        CaheString("",blockStroage_->_preHashMap.size());
 	        CaheString("",blockStroage_->_blockStatusMap.size());
             // CaheString("",DoubleSpendCache_cd->_pendingAddrs.size());
@@ -845,7 +844,6 @@ std::string PrintCache(int where){
             // blcohelper->utxo_missing_blocks.clear();
             // blcohelper->DoubleSpend_blocks.clear();
             // blcohelper->DuplicateChecker.clear();
-            blockStroage_->_blockMap.clear();
             blockStroage_->_preHashMap.clear();
             blockStroage_->_blockStatusMap.clear();
             // DoubleSpendCache_cd->_pendingAddrs.clear();

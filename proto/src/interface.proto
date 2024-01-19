@@ -434,7 +434,6 @@ message IsOnChainReq
     uint64 time = 3; //
 }
 
-
 message IsOnChainAck
 {
     string version  = 1; //version
@@ -443,6 +442,26 @@ message IsOnChainAck
     uint64 time     = 4; 
     repeated SuccessRate percentage = 5; 
 }
+
+message ConfirmTransactionReq
+{
+    string version         = 1; //version
+    repeated string txhash = 2; //transaction hash
+    uint64 time            = 3; //time
+    uint64 height          = 4; //transaction height 
+}
+
+
+message ConfirmTransactionAck
+{
+    string      version                  = 1; //version
+    int32       code                     = 2; //Error code
+    string      message                  = 3; //Returns an error message
+    uint64      time                     = 4; //time
+    repeated    SuccessRate percentage   = 5;
+    uint32      send_size                = 6; //sendNumber   
+    uint32      received_size            = 7; //received number 
+} 
 
 message CorresHash
 {
@@ -479,3 +498,6 @@ message GetRestInvestAmountAck
     uint64 amount   = 4; 
     string base58   = 5; 
 }
+
+
+

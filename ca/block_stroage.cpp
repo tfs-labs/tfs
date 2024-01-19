@@ -17,7 +17,7 @@
 
 void BlockStroage::_StartTimer()
 {
-	_blockTimer.AsyncLoop(100, [this](){
+	_blockTimer.AsyncLoop(1000, [this](){
 		_BlockCheck();
         ExpiredDeleteCheck();
 	});
@@ -32,11 +32,9 @@ int BlockStroage::AddBlock(const BlockMsg &msg)
     block.ParseFromString(msg.block());
 
 	std::vector<BlockMsg> msgVec;
-	msgVec.push_back(msg); // The self add does not have its own signature on the block at this time
-    //Self-add does not have its own signature on the block at this time
-	_blockMap.insert(std::pair<std::string,std::vector<BlockMsg>>(block.hash(),msgVec));
+	msgVec.push_back(msg); 
     _blockCnt.insert(std::pair<std::string,std::vector<BlockMsg>>(block.hash(),msgVec));
-	DEBUGLOG("add FailedTransactionCache");
+	DEBUGLOG("add TransactionCache");
 	lck.unlock();
 
     return 0;
@@ -55,89 +53,16 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 		ERRORLOG("sign  size != 2");
         return -1;
     }
-    bool flag = false;
-	for(auto &i : _blockMap)
-	{
 		
-		if(block.hash() != i.first || global::ca::kRecvSignCnt == _blockCnt[block.hash()].size())
-		{
-			continue;
-		}
-
-        auto it = _blockCnt.find(block.hash());
-        if (it != _blockCnt.end())
-        {
-            _blockCnt[block.hash()].push_back(msg);
-        }
-        
-		if( global::ca::kRecvSignCnt == _blockCnt[block.hash()].size())
-		{
-            DEBUGLOG("Recv sign count = {}",_blockCnt[block.hash()].size());
-            
-            Cycliclist<BlockMsg> list;
-            std::vector<BlockMsg> secondMsg = _blockCnt[block.hash()];
-            secondMsg.erase(secondMsg.begin());
-
-            for(auto &msgBlock : secondMsg)
-            {
-                list.push_back(msgBlock);
-            }
-
-            std::string outPut , proof;
-            Account defaultAccount;
-            if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultAccount) != 0)
-            {
-                ERRORLOG("Failed to get the default account");
-                return -2;
-            }
-
-            int ret = MagicSingleton<VRF>::GetInstance()->CreateVRF(defaultAccount.GetKey(), block.hash(), outPut, proof);
-            if (ret != 0)
-            {
-                // std::cout << "error create:" << ret << std::endl;
-                ERRORLOG("error create :{} generate VRF info fail",ret);
-                return -3;
-            }
-
-            double randNum = MagicSingleton<VRF>::GetInstance()->GetRandNum(outPut);
-            int randPos = list.size() * randNum;
-            const int signMsgcnt = global::ca::kConsensus / 2;
-            auto endMsgpos = randPos - signMsgcnt;
-
-            std::vector<BlockMsg> targetMsg;
-            for (; targetMsg.size() < (global::ca::kConsensus - 1); endMsgpos++)
-            {
-                targetMsg.push_back(list[endMsgpos]);
-            }
-
-            if(targetMsg.size() != (global::ca::kConsensus - 1))
-            {
-                DEBUGLOG("target lazy weight, size = {}",targetMsg.size());
-                continue;
-            }
-        
-            for(auto & msgTmg : targetMsg)
-            {
-                i.second.push_back(msgTmg);
-            }
-
-            //Combined into BlockMsg
-            _ComposeEndBlockmsg(i.second);	
-		}
-	}
+    auto it = _blockCnt.find(block.hash());
+    if (it != _blockCnt.end() && it->second.size() != global::ca::kRecvSignCnt)
+    {
+        _blockCnt[block.hash()].push_back(msg);
+    }
+    
 	lck.unlock();
 
 	return 0;
-}
-bool BlockStroage::IsBlock(const std::string& blockHash)
-{
-    std::shared_lock<std::shared_mutex> lck(_blockMutex);
-    auto result = _blockMap.find(blockHash);
-    if(result != _blockMap.end())
-    {
-        return false;
-    }
-    return true;
 }
 
 void BlockStroage::_BlockCheck()
@@ -148,79 +73,48 @@ void BlockStroage::_BlockCheck()
     const int64_t kTenSecond = (int64_t)1000000 * 10;
 
 	std::vector<std::string> hashKey;
-	for(auto &i : _blockMap)
+	for(auto &item : _blockCnt)
 	{
-        BlockMsg copyendmsg_ = i.second.at(0); 
-
-        CBlock block;
-        block.ParseFromString(copyendmsg_.block());
-        if(block.hash() != i.first)
-        {
-            ERRORLOG("block.hash() != i.first blockHash:{}", block.hash());
-            hashKey.push_back(block.hash()); 
-            continue;
-        }
+        CBlock temBlock;
+        temBlock.ParseFromString(item.second.at(0).block());
+        DEBUGLOG("temBlock hash : {}" , temBlock.hash());
+        uint64_t lagTime = abs(nowTime - (int64_t)temBlock.time());
+        uint32_t msgSize = item.second.size();
         
-        DEBUGLOG("block.sign_size() =  {}",block.sign_size());
-        if( abs(nowTime - (int64_t)block.time()) >= kTenSecond)
+        if(msgSize >= global::ca::kConsensus && lagTime <= kTenSecond)
         {
-            ERRORLOG("Add to failure list timeout blockHash:{}", block.hash());
-            hashKey.push_back(block.hash());
-            copyendmsg_.Clear();
-
-        }
-        else if(block.sign_size() == global::ca::kConsensus)
-        {
-            DEBUGLOG("begin add cache block");
-
-            //Verify Block flow verifies the signature of the node
-            std::pair<std::string, std::vector<std::string>> nodesPair;
-            
-            MagicSingleton<VRF>::GetInstance()->getVerifyNodes(block.hash(), nodesPair);
-
-            //Block signature node in cache
-            std::vector<std::string> cacheNodes = nodesPair.second;
-
-            //The signature node in the block flow
-            std::vector<std::string> verifyNodes;
-            for(auto &item : block.sign())
-            {
-                verifyNodes.push_back(GetBase58Addr(item.pub()));
-                
-            }
-            //Compare whether the nodes in the two containers are consistent
-            for(auto & signNode : verifyNodes)
-            {
-                if(std::find(cacheNodes.begin(), cacheNodes.end(), signNode) == cacheNodes.end())
-                {
-                    ERRORLOG(" The nodes in the two containers are inconsistent = {}, blockHash:{}",signNode, block.hash());
-                    hashKey.push_back(block.hash());
-                    continue;
+            DEBUGLOG("Block hash : {} Recv block sign node size : {}" ,temBlock.hash(),msgSize);
+            BlockMsg outMsg;
+            if(_ComposeEndBlockmsg(item.second,outMsg,true) == 0){
+                CBlock block;
+                block.ParseFromString(outMsg.block());
+                int ret = VerifyBlockFlowSignNode(outMsg);
+                if(ret == 0){
+                    //After the verification is passed, the broadcast block is directly built
+                    if(block.version() >= global::ca::kInitBlockVersion){
+                        if(_blockStatusMap.find(block.hash()) == _blockStatusMap.end())
+                        {
+                            _blockStatusMap[block.hash()] = {block.hash(), block};
+                        }
+                        auto NowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+                        MagicSingleton<TFSbenchmark>::GetInstance()->SetByBlockHash(block.hash(), &NowTime, 2);
+                        MagicSingleton<BlockMonitor>::GetInstance()->SendBroadcastAddBlock(outMsg.block(),block.height());
+                        DEBUGLOG("BuildBlockBroadcastMsg successful..., block hash : {}",block.hash());
+                    }else{
+                        std::cout << "The version is too low. Please update the version!" << std::endl;
+                    }
+                }else{
+                    ERRORLOG("Verify Block Flow SignNode Failed! ret : {}",ret);
                 }
+            }else{
+                ERRORLOG("Compose blockmsg failed!");
             }
-
-            //After the verification is passed, the broadcast block is directly built
-            if(block.version() >= global::ca::kInitBlockVersion)
-            {
-                if(_blockStatusMap.find(block.hash()) == _blockStatusMap.end())
-                {
-                    _blockStatusMap[block.hash()] = {block.hash(), block};
-                }
-                auto NowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-			    MagicSingleton<TFSbenchmark>::GetInstance()->SetByBlockHash(block.hash(), &NowTime, 2);
-                MagicSingleton<BlockMonitor>::GetInstance()->SendBroadcastAddBlock(copyendmsg_.block(),block.height());
-                INFOLOG("Start to broadcast BuildBlockBroadcastMsg...");
-            }
-            else
-            {
-                std::cout << "The version is too low. Please update the version!" << std::endl;
-            }
-            
-            hashKey.push_back(block.hash());
-            copyendmsg_.Clear();
+            hashKey.push_back(temBlock.hash());
+        }else if(lagTime > kTenSecond){
+            hashKey.push_back(temBlock.hash());
+            ERRORLOG("Block Flow Timeout! block hash : {}",temBlock.hash());
         }
-
-	}
+    }
 	
     if(!hashKey.empty())
 	{
@@ -232,17 +126,67 @@ void BlockStroage::_BlockCheck()
 	hashKey.clear();    
 }
 
-void BlockStroage::_ComposeEndBlockmsg(std::vector<BlockMsg> &msgvec)
+int BlockStroage::_ComposeEndBlockmsg(const std::vector<BlockMsg> &msgvec, BlockMsg & outMsg , bool isVrf)
 {
-	for(auto &msg : msgvec)
-	{  
+    std::vector<BlockMsg> _vrfMsgVec;
+    if(isVrf)
+    {
+        CBlock temBlock;
+        temBlock.ParseFromString(msgvec.at(0).block());
+        Cycliclist<BlockMsg> list;
+        std::vector<BlockMsg> secondMsg = msgvec;
+        secondMsg.erase(secondMsg.begin());
+
+        for(auto &msgBlock : secondMsg)
+        {
+            list.push_back(msgBlock);
+        }
+
+        std::string outPut , proof;
+        Account defaultAccount;
+        if (MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultAccount) != 0)
+        {
+            ERRORLOG("Failed to get the default account");
+            return -1;
+        }
+
+        int ret = MagicSingleton<VRF>::GetInstance()->CreateVRF(defaultAccount.GetKey(), temBlock.hash(), outPut, proof);
+        if (ret != 0)
+        {
+            ERRORLOG("error create :{} generate VRF info fail",ret);
+            return -2;
+        }
+
+        double randNum = MagicSingleton<VRF>::GetInstance()->GetRandNum(outPut);
+        int randPos = list.size() * randNum;
+        const int signMsgcnt = global::ca::kConsensus / 2;
+        auto endMsgpos = randPos - signMsgcnt;
+
+        std::vector<BlockMsg> targetMsg;
+        for (; targetMsg.size() < (global::ca::kConsensus - 1); endMsgpos++)
+        {
+            targetMsg.push_back(list[endMsgpos]);
+        }
+
+        if(targetMsg.size() != (global::ca::kConsensus - 1))
+        {
+            std::cout << "size" << targetMsg.size() << std::endl;
+            ERRORLOG("target lazy weight, size = {}",targetMsg.size());
+            return -3;
+        }
+    
+        for(auto & msgTmg : targetMsg)
+        {
+            _vrfMsgVec.push_back(msgTmg);
+        }
+    }    
+
+    CBlock endBlock;
+    endBlock.ParseFromString(msgvec[0].block()); 
+	for(auto &msg : _vrfMsgVec)
+	{   
         CBlock block;
         block.ParseFromString(msg.block());
-
-        if(block.sign_size() == 1)  
-        {
-            continue;
-        }
 
         if(block.sign_size() != 2)
         {
@@ -250,34 +194,21 @@ void BlockStroage::_ComposeEndBlockmsg(std::vector<BlockMsg> &msgvec)
         }
         else
         {
-            CBlock endBlock;
-            endBlock.ParseFromString(msgvec[0].block()); 
 
             CSign * sign  = endBlock.add_sign();
             sign->set_pub(block.sign(1).pub());
             sign->set_sign(block.sign(1).sign());
             INFOLOG("rand block sign = {}",GetBase58Addr(block.sign(1).pub()));
 
-            msgvec[0].set_block(endBlock.SerializeAsString());
-
-        }    
-    }        
+        }
+    }
+    std::string addr = GetBase58Addr(endBlock.sign(0).pub());
+    outMsg.set_block(endBlock.SerializeAsString());
+    return 0;       
 }
 
 void BlockStroage::_Remove(const std::string &hash)
 {
-	for(auto iter = _blockMap.begin(); iter != _blockMap.end();)
-	{
-		if (iter->first == hash)
-		{
-			iter = _blockMap.erase(iter);
-			DEBUGLOG("BlockStroage::Remove hash:{}", hash);
-		}
-		else
-		{
-			iter++;
-		}
-	}
 
     for(auto iter = _blockCnt.begin(); iter != _blockCnt.end();)
 	{
@@ -912,5 +843,42 @@ int HandleBlockStatusMsg(const std::shared_ptr<BlockStatus> &msg, const MsgData 
     return 0;
 }
 
+int BlockStroage::VerifyBlockFlowSignNode(const BlockMsg & blockmsg)
+{
+    CBlock block;
+    block.ParseFromString(blockmsg.block());
 
+	// Verify Block flow verifies the signature of the node
+    std::pair<std::string, std::vector<std::string>> nodesPair;
+    
+    MagicSingleton<VRF>::GetInstance()->getVerifyNodes(block.hash(), nodesPair);
+
+    //Block signature node in cache
+    std::vector<std::string> cacheNodes = nodesPair.second;
+
+    //The signature node in the block flow
+    std::vector<std::string> verifyNodes;
+    std::string defaultBase58addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    for(auto &item : block.sign())
+    {
+        std::string addr = GetBase58Addr(item.pub());
+        if(addr != defaultBase58addr)
+        {
+            verifyNodes.push_back(addr);
+        }
+    }
+    
+    
+    //Compare whether the nodes in the two containers are consistent
+    for(auto & signNode : verifyNodes)
+    {
+        if(std::find(cacheNodes.begin(), cacheNodes.end(), signNode) == cacheNodes.end())
+        {
+            ERRORLOG(" The nodes in the two containers are inconsistent = {}, blockHash:{}",signNode, block.hash());
+            return -1;
+        }
+    }
+
+    return 0;
+}
 

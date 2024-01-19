@@ -12,6 +12,7 @@
 #include "ca/block_monitor.h"
 #include "utils/magic_singleton.h"
 #include "utils/vrf.hpp"
+#include "block.pb.h"
 #include <future>
 
 using RetType = std::pair<std::string, uint16_t>;
@@ -70,15 +71,6 @@ public:
 	 * @return      int 
 	 */
 	int UpdateBlock(const BlockMsg &msg);
-
-	/**
-	 * @brief       
-	 * 
-	 * @param       blockHash: 
-	 * @return      true 
-	 * @return      false 
-	 */
-	bool IsBlock(const std::string& blockHash);
 
 	/**
 	 * @brief       Get the Prehash object
@@ -192,7 +184,7 @@ private:
 	 * 
 	 * @param       msgvec: 
 	 */
-	void _ComposeEndBlockmsg(std::vector<BlockMsg> &msgvec);
+	int _ComposeEndBlockmsg(const std::vector<BlockMsg> &msgvec, BlockMsg & outMsg , bool isVrf);
 
 	/**
 	 * @brief       
@@ -208,6 +200,7 @@ private:
 	 * @return      RetType 
 	 */
 	RetType _SeekPreHashThread(uint64_t seekHeight);
+	int VerifyBlockFlowSignNode(const BlockMsg & blockmsg);
 
 	/**
 	 * @brief       
@@ -230,7 +223,7 @@ private:
     friend std::string PrintCache(int where);
 	CTimer _blockTimer;
 	mutable std::shared_mutex _blockMutex;
-	std::map<std::string, std::vector<BlockMsg>> _blockMap;
+	std::map<std::string , std::vector<BlockMsg>> _blockCnt;
 
 	mutable std::shared_mutex _prehashMutex;
 	std::map<uint64_t, std::shared_future<RetType>> _preHashMap;
@@ -238,7 +231,6 @@ private:
 	std::mutex _statusMutex;
 	std::map<std::string, BlockStatusWrapper> _blockStatusMap;
 
-	std::map<std::string , std::vector<BlockMsg>> _blockCnt;
 
 	double _failureRate = 0.75;
 };
@@ -252,4 +244,6 @@ int HandleSeekGetPreHashAck(const std::shared_ptr<SeekPreHashByHightAck> &msg, c
 
 int DoProtoBlockStatus(const BlockStatus& blockStatus, const std::string destNode);
 int HandleBlockStatusMsg(const std::shared_ptr<BlockStatus> &msg, const MsgData &msgdata);
+
+
 #endif

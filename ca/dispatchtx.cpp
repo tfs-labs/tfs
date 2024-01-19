@@ -156,7 +156,6 @@ int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const 
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 {
-
     DEBUGLOG("DependencyGrouping");
     std::vector<std::set<std::string>> res;
 
@@ -190,7 +189,6 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 					break;
 				}
 			}
-
 			if (!foundDuplicate) {
 				res.push_back(commonKeys);
 			}
@@ -212,8 +210,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const std::vector<std::vector<TxMsgReq>> & txMsgVec)
 {
-    int size = txMsgVec.size(); //
-
+    int size = txMsgVec.size(); 
     std::vector<std::vector<TxMsgReq>> groupTxMsg;
     if(size <= 4)
     {
@@ -226,7 +223,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
     {
         int parts = 4;
         int perPart = size / parts; 
-        int remain = size % parts;  
+        int remain = size % parts;
 
         int index = 0;
 
@@ -242,7 +239,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
 
             index += perPart;
             if(remain > 0) 
-            { //2
+            {
                 for(int j = index; j < index + remain; j++)
                 {
                     for(auto& txMsg : txMsgVec[j])
@@ -268,14 +265,12 @@ int ContractDispatcher::DistributionContractTx(std::multimap<std::string, msgInf
         ERRORLOG("DependencyGrouping txMsgVec is empty");
         return -1;
     }
-
     std::vector<std::vector<TxMsgReq>> groupTxMsg = GroupDependentData(txMsgVec);
     if(groupTxMsg.empty())
     {
         ERRORLOG("GroupDependentData groupTxMsg is empty");
         return -2;
     }
-
     for(const auto & txMsgContainer : groupTxMsg)
     {
         

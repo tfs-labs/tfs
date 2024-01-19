@@ -1640,7 +1640,7 @@ int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, co
     int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
     if (ret != 0)
     {
-		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s",ret));
+		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s  %s",ret, strOutput));
         ERRORLOG("Evmone failed to deploy contract!");
         ret -= 10;
         return ret;
@@ -1717,7 +1717,7 @@ int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, cons
     int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
     if (ret != 0)
     {
-		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s",ret));
+		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s  %s",ret, strOutput));
         ERRORLOG("Evmone failed to call contract!");
         ret -= 10;
         return ret;
@@ -1978,6 +1978,7 @@ bool TxHelper::CheckTxTimeOut(const uint64_t & txTime, const uint64_t & timeout,
 
 TxHelper::vrfAgentType TxHelper::GetVrfAgentType(const CTransaction &tx, uint64_t &preHeight)
 {
+
 	global::ca::TxType txType = (global::ca::TxType)tx.txtype();
 	if (global::ca::TxType::kTxTypeDeployContract == txType || global::ca::TxType::kTxTypeCallContract == txType)
 	{

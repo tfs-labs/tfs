@@ -113,7 +113,16 @@ int GetBonusListReqImpl(const std::shared_ptr<GetBonusListReq> & req, GetBonusLi
  * @param       ack: 
  * @return      int 
  */
-int SendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack);
+int OldSendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack);
+
+/**
+ * @brief       Query whether the transaction is linked
+ * 
+ * @param       msg: 
+ * @param       ack: 
+ * @return      int 
+ */
+int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,  ConfirmTransactionAck & ack);
 
 /**
  * @brief       Get the Rest Invest Amount Req Impl object
@@ -230,7 +239,17 @@ int HandleGetBonusListReq(const std::shared_ptr<GetBonusListReq>& req, const Msg
  * @param       msgdata: 
  * @return      int 
  */
-int HandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& msg, const MsgData & msgdata);
+int OldHandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& msg, const MsgData & msgdata);
+
+
+/**
+ * @brief       Query transaction chain up
+ * 
+ * @param       msg: 
+ * @param       msgdata: 
+ * @return      int 
+ */
+int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg, const MsgData & msgdata);
 
 /**
  * @brief       

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "logging.h"
 #include "utils/magic_singleton.h"
 #include "include/scope_guard.h"
 #include "net/api.h"
@@ -15,6 +16,7 @@
 #include "common.pb.h"
 #include "common/global_data.h"
 #include "utils/account_manager.h"
+#include "utils/tmp_log.h"
 #include "utils/vrf.hpp"
 #include "checker.h"
 #include "utils/tfs_bench_mark.h"
@@ -711,18 +713,23 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         delete dbWriterPtr;
         dbWriterPtr = nullptr;
         ERRORLOG("save block ret:{}:{}:{}", ret, blockHeight, blockHash);
+        if(saveType == global::ca::SaveType::SyncNormal || saveType == global::ca::SaveType::SyncFromZero)
+        {
+            DEBUGLOG("run new sync, start height: {}", blockHeight);
+            SyncBlock::SetNewSyncHeight(blockHeight);
+        }
         if (_missingPrehash)
         {
             ResetMissingPrehash();
             SyncBlock::SetFastSync(blockHeight - 1);
-            return -4;
+            return -5;
         }
         if(!_missingUtxos.empty())
         {
             GetMissBlock();
-            return -5;
+            return -6;
         }
-        return -6;
+        return -7;
     }
     if(DBStatus::DB_SUCCESS == dbWriterPtr->TransactionCommit())
     {        
@@ -745,7 +752,7 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         }
         MagicSingleton<VRF>::GetInstance()->removeVrfInfo(block.hash());
         ERRORLOG("Transaction commit fail");
-        return -7;
+        return -8;
     }
     return 0;
 }

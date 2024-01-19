@@ -459,6 +459,10 @@ int getVrfdata(const Vrf &vrf, std::string &hash, std::string &targetAddr);
  */
 void ClearVRF(const CBlock &block);
 
+int verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight, bool txConsensusStatus = false);
+
+bool CheckTxConsensusStatus(const CTransaction &tx);
+
 int GetContractRootHash(const std::string& contractAddress, std::string& rootHash);
 
 /**

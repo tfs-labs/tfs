@@ -57,6 +57,12 @@ extern CheckTxAckDefaultTypeInternal _CheckTxAck_default_instance_;
 class CheckTxReq;
 struct CheckTxReqDefaultTypeInternal;
 extern CheckTxReqDefaultTypeInternal _CheckTxReq_default_instance_;
+class ConfirmTransactionAck;
+struct ConfirmTransactionAckDefaultTypeInternal;
+extern ConfirmTransactionAckDefaultTypeInternal _ConfirmTransactionAck_default_instance_;
+class ConfirmTransactionReq;
+struct ConfirmTransactionReqDefaultTypeInternal;
+extern ConfirmTransactionReqDefaultTypeInternal _ConfirmTransactionReq_default_instance_;
 class CorresHash;
 struct CorresHashDefaultTypeInternal;
 extern CorresHashDefaultTypeInternal _CorresHash_default_instance_;
@@ -203,6 +209,8 @@ template<> ::BlockItem* Arena::CreateMaybeMessage<::BlockItem>(Arena*);
 template<> ::BonusItem* Arena::CreateMaybeMessage<::BonusItem>(Arena*);
 template<> ::CheckTxAck* Arena::CreateMaybeMessage<::CheckTxAck>(Arena*);
 template<> ::CheckTxReq* Arena::CreateMaybeMessage<::CheckTxReq>(Arena*);
+template<> ::ConfirmTransactionAck* Arena::CreateMaybeMessage<::ConfirmTransactionAck>(Arena*);
+template<> ::ConfirmTransactionReq* Arena::CreateMaybeMessage<::ConfirmTransactionReq>(Arena*);
 template<> ::CorresHash* Arena::CreateMaybeMessage<::CorresHash>(Arena*);
 template<> ::GetAllInvestAddressAck* Arena::CreateMaybeMessage<::GetAllInvestAddressAck>(Arena*);
 template<> ::GetAllInvestAddressReq* Arena::CreateMaybeMessage<::GetAllInvestAddressReq>(Arena*);
@@ -9407,6 +9415,440 @@ class IsOnChainAck final :
 };
 // -------------------------------------------------------------------
 
+class ConfirmTransactionReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ConfirmTransactionReq) */ {
+ public:
+  inline ConfirmTransactionReq() : ConfirmTransactionReq(nullptr) {}
+  ~ConfirmTransactionReq() override;
+  explicit PROTOBUF_CONSTEXPR ConfirmTransactionReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ConfirmTransactionReq(const ConfirmTransactionReq& from);
+  ConfirmTransactionReq(ConfirmTransactionReq&& from) noexcept
+    : ConfirmTransactionReq() {
+    *this = ::std::move(from);
+  }
+
+  inline ConfirmTransactionReq& operator=(const ConfirmTransactionReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ConfirmTransactionReq& operator=(ConfirmTransactionReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ConfirmTransactionReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ConfirmTransactionReq* internal_default_instance() {
+    return reinterpret_cast<const ConfirmTransactionReq*>(
+               &_ConfirmTransactionReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    46;
+
+  friend void swap(ConfirmTransactionReq& a, ConfirmTransactionReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ConfirmTransactionReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ConfirmTransactionReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ConfirmTransactionReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ConfirmTransactionReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ConfirmTransactionReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ConfirmTransactionReq& from) {
+    ConfirmTransactionReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ConfirmTransactionReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "ConfirmTransactionReq";
+  }
+  protected:
+  explicit ConfirmTransactionReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTxhashFieldNumber = 2,
+    kVersionFieldNumber = 1,
+    kTimeFieldNumber = 3,
+    kHeightFieldNumber = 4,
+  };
+  // repeated string txhash = 2;
+  int txhash_size() const;
+  private:
+  int _internal_txhash_size() const;
+  public:
+  void clear_txhash();
+  const std::string& txhash(int index) const;
+  std::string* mutable_txhash(int index);
+  void set_txhash(int index, const std::string& value);
+  void set_txhash(int index, std::string&& value);
+  void set_txhash(int index, const char* value);
+  void set_txhash(int index, const char* value, size_t size);
+  std::string* add_txhash();
+  void add_txhash(const std::string& value);
+  void add_txhash(std::string&& value);
+  void add_txhash(const char* value);
+  void add_txhash(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& txhash() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_txhash();
+  private:
+  const std::string& _internal_txhash(int index) const;
+  std::string* _internal_add_txhash();
+  public:
+
+  // string version = 1;
+  void clear_version();
+  const std::string& version() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_version(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_version();
+  PROTOBUF_NODISCARD std::string* release_version();
+  void set_allocated_version(std::string* version);
+  private:
+  const std::string& _internal_version() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
+  std::string* _internal_mutable_version();
+  public:
+
+  // uint64 time = 3;
+  void clear_time();
+  uint64_t time() const;
+  void set_time(uint64_t value);
+  private:
+  uint64_t _internal_time() const;
+  void _internal_set_time(uint64_t value);
+  public:
+
+  // uint64 height = 4;
+  void clear_height();
+  uint64_t height() const;
+  void set_height(uint64_t value);
+  private:
+  uint64_t _internal_height() const;
+  void _internal_set_height(uint64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:ConfirmTransactionReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> txhash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
+    uint64_t time_;
+    uint64_t height_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_interface_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ConfirmTransactionAck final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ConfirmTransactionAck) */ {
+ public:
+  inline ConfirmTransactionAck() : ConfirmTransactionAck(nullptr) {}
+  ~ConfirmTransactionAck() override;
+  explicit PROTOBUF_CONSTEXPR ConfirmTransactionAck(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ConfirmTransactionAck(const ConfirmTransactionAck& from);
+  ConfirmTransactionAck(ConfirmTransactionAck&& from) noexcept
+    : ConfirmTransactionAck() {
+    *this = ::std::move(from);
+  }
+
+  inline ConfirmTransactionAck& operator=(const ConfirmTransactionAck& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ConfirmTransactionAck& operator=(ConfirmTransactionAck&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ConfirmTransactionAck& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ConfirmTransactionAck* internal_default_instance() {
+    return reinterpret_cast<const ConfirmTransactionAck*>(
+               &_ConfirmTransactionAck_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    47;
+
+  friend void swap(ConfirmTransactionAck& a, ConfirmTransactionAck& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ConfirmTransactionAck* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ConfirmTransactionAck* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ConfirmTransactionAck* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ConfirmTransactionAck>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ConfirmTransactionAck& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ConfirmTransactionAck& from) {
+    ConfirmTransactionAck::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ConfirmTransactionAck* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "ConfirmTransactionAck";
+  }
+  protected:
+  explicit ConfirmTransactionAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPercentageFieldNumber = 5,
+    kVersionFieldNumber = 1,
+    kMessageFieldNumber = 3,
+    kTimeFieldNumber = 4,
+    kCodeFieldNumber = 2,
+    kSendSizeFieldNumber = 6,
+    kReceivedSizeFieldNumber = 7,
+  };
+  // repeated .SuccessRate percentage = 5;
+  int percentage_size() const;
+  private:
+  int _internal_percentage_size() const;
+  public:
+  void clear_percentage();
+  ::SuccessRate* mutable_percentage(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >*
+      mutable_percentage();
+  private:
+  const ::SuccessRate& _internal_percentage(int index) const;
+  ::SuccessRate* _internal_add_percentage();
+  public:
+  const ::SuccessRate& percentage(int index) const;
+  ::SuccessRate* add_percentage();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >&
+      percentage() const;
+
+  // string version = 1;
+  void clear_version();
+  const std::string& version() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_version(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_version();
+  PROTOBUF_NODISCARD std::string* release_version();
+  void set_allocated_version(std::string* version);
+  private:
+  const std::string& _internal_version() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
+  std::string* _internal_mutable_version();
+  public:
+
+  // string message = 3;
+  void clear_message();
+  const std::string& message() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_message(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_message();
+  PROTOBUF_NODISCARD std::string* release_message();
+  void set_allocated_message(std::string* message);
+  private:
+  const std::string& _internal_message() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_message(const std::string& value);
+  std::string* _internal_mutable_message();
+  public:
+
+  // uint64 time = 4;
+  void clear_time();
+  uint64_t time() const;
+  void set_time(uint64_t value);
+  private:
+  uint64_t _internal_time() const;
+  void _internal_set_time(uint64_t value);
+  public:
+
+  // int32 code = 2;
+  void clear_code();
+  int32_t code() const;
+  void set_code(int32_t value);
+  private:
+  int32_t _internal_code() const;
+  void _internal_set_code(int32_t value);
+  public:
+
+  // uint32 send_size = 6;
+  void clear_send_size();
+  uint32_t send_size() const;
+  void set_send_size(uint32_t value);
+  private:
+  uint32_t _internal_send_size() const;
+  void _internal_set_send_size(uint32_t value);
+  public:
+
+  // uint32 received_size = 7;
+  void clear_received_size();
+  uint32_t received_size() const;
+  void set_received_size(uint32_t value);
+  private:
+  uint32_t _internal_received_size() const;
+  void _internal_set_received_size(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:ConfirmTransactionAck)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate > percentage_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
+    uint64_t time_;
+    int32_t code_;
+    uint32_t send_size_;
+    uint32_t received_size_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_interface_2eproto;
+};
+// -------------------------------------------------------------------
+
 class CorresHash final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:CorresHash) */ {
  public:
@@ -9455,7 +9897,7 @@ class CorresHash final :
                &_CorresHash_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    46;
+    48;
 
   friend void swap(CorresHash& a, CorresHash& b) {
     a.Swap(&b);
@@ -9619,7 +10061,7 @@ class CheckTxReq final :
                &_CheckTxReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    47;
+    49;
 
   friend void swap(CheckTxReq& a, CheckTxReq& b) {
     a.Swap(&b);
@@ -9814,7 +10256,7 @@ class CheckTxAck final :
                &_CheckTxAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    48;
+    50;
 
   friend void swap(CheckTxAck& a, CheckTxAck& b) {
     a.Swap(&b);
@@ -10019,7 +10461,7 @@ class GetRestInvestAmountReq final :
                &_GetRestInvestAmountReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    51;
 
   friend void swap(GetRestInvestAmountReq& a, GetRestInvestAmountReq& b) {
     a.Swap(&b);
@@ -10188,7 +10630,7 @@ class GetRestInvestAmountAck final :
                &_GetRestInvestAmountAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    50;
+    52;
 
   friend void swap(GetRestInvestAmountAck& a, GetRestInvestAmountAck& b) {
     a.Swap(&b);
@@ -18202,6 +18644,399 @@ IsOnChainAck::percentage() const {
 
 // -------------------------------------------------------------------
 
+// ConfirmTransactionReq
+
+// string version = 1;
+inline void ConfirmTransactionReq::clear_version() {
+  _impl_.version_.ClearToEmpty();
+}
+inline const std::string& ConfirmTransactionReq::version() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionReq.version)
+  return _internal_version();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ConfirmTransactionReq::set_version(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ConfirmTransactionReq.version)
+}
+inline std::string* ConfirmTransactionReq::mutable_version() {
+  std::string* _s = _internal_mutable_version();
+  // @@protoc_insertion_point(field_mutable:ConfirmTransactionReq.version)
+  return _s;
+}
+inline const std::string& ConfirmTransactionReq::_internal_version() const {
+  return _impl_.version_.Get();
+}
+inline void ConfirmTransactionReq::_internal_set_version(const std::string& value) {
+  
+  _impl_.version_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionReq::_internal_mutable_version() {
+  
+  return _impl_.version_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionReq::release_version() {
+  // @@protoc_insertion_point(field_release:ConfirmTransactionReq.version)
+  return _impl_.version_.Release();
+}
+inline void ConfirmTransactionReq::set_allocated_version(std::string* version) {
+  if (version != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.version_.IsDefault()) {
+    _impl_.version_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ConfirmTransactionReq.version)
+}
+
+// repeated string txhash = 2;
+inline int ConfirmTransactionReq::_internal_txhash_size() const {
+  return _impl_.txhash_.size();
+}
+inline int ConfirmTransactionReq::txhash_size() const {
+  return _internal_txhash_size();
+}
+inline void ConfirmTransactionReq::clear_txhash() {
+  _impl_.txhash_.Clear();
+}
+inline std::string* ConfirmTransactionReq::add_txhash() {
+  std::string* _s = _internal_add_txhash();
+  // @@protoc_insertion_point(field_add_mutable:ConfirmTransactionReq.txhash)
+  return _s;
+}
+inline const std::string& ConfirmTransactionReq::_internal_txhash(int index) const {
+  return _impl_.txhash_.Get(index);
+}
+inline const std::string& ConfirmTransactionReq::txhash(int index) const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionReq.txhash)
+  return _internal_txhash(index);
+}
+inline std::string* ConfirmTransactionReq::mutable_txhash(int index) {
+  // @@protoc_insertion_point(field_mutable:ConfirmTransactionReq.txhash)
+  return _impl_.txhash_.Mutable(index);
+}
+inline void ConfirmTransactionReq::set_txhash(int index, const std::string& value) {
+  _impl_.txhash_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionReq.txhash)
+}
+inline void ConfirmTransactionReq::set_txhash(int index, std::string&& value) {
+  _impl_.txhash_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:ConfirmTransactionReq.txhash)
+}
+inline void ConfirmTransactionReq::set_txhash(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.txhash_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:ConfirmTransactionReq.txhash)
+}
+inline void ConfirmTransactionReq::set_txhash(int index, const char* value, size_t size) {
+  _impl_.txhash_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:ConfirmTransactionReq.txhash)
+}
+inline std::string* ConfirmTransactionReq::_internal_add_txhash() {
+  return _impl_.txhash_.Add();
+}
+inline void ConfirmTransactionReq::add_txhash(const std::string& value) {
+  _impl_.txhash_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:ConfirmTransactionReq.txhash)
+}
+inline void ConfirmTransactionReq::add_txhash(std::string&& value) {
+  _impl_.txhash_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:ConfirmTransactionReq.txhash)
+}
+inline void ConfirmTransactionReq::add_txhash(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.txhash_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:ConfirmTransactionReq.txhash)
+}
+inline void ConfirmTransactionReq::add_txhash(const char* value, size_t size) {
+  _impl_.txhash_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:ConfirmTransactionReq.txhash)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+ConfirmTransactionReq::txhash() const {
+  // @@protoc_insertion_point(field_list:ConfirmTransactionReq.txhash)
+  return _impl_.txhash_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+ConfirmTransactionReq::mutable_txhash() {
+  // @@protoc_insertion_point(field_mutable_list:ConfirmTransactionReq.txhash)
+  return &_impl_.txhash_;
+}
+
+// uint64 time = 3;
+inline void ConfirmTransactionReq::clear_time() {
+  _impl_.time_ = uint64_t{0u};
+}
+inline uint64_t ConfirmTransactionReq::_internal_time() const {
+  return _impl_.time_;
+}
+inline uint64_t ConfirmTransactionReq::time() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionReq.time)
+  return _internal_time();
+}
+inline void ConfirmTransactionReq::_internal_set_time(uint64_t value) {
+  
+  _impl_.time_ = value;
+}
+inline void ConfirmTransactionReq::set_time(uint64_t value) {
+  _internal_set_time(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionReq.time)
+}
+
+// uint64 height = 4;
+inline void ConfirmTransactionReq::clear_height() {
+  _impl_.height_ = uint64_t{0u};
+}
+inline uint64_t ConfirmTransactionReq::_internal_height() const {
+  return _impl_.height_;
+}
+inline uint64_t ConfirmTransactionReq::height() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionReq.height)
+  return _internal_height();
+}
+inline void ConfirmTransactionReq::_internal_set_height(uint64_t value) {
+  
+  _impl_.height_ = value;
+}
+inline void ConfirmTransactionReq::set_height(uint64_t value) {
+  _internal_set_height(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionReq.height)
+}
+
+// -------------------------------------------------------------------
+
+// ConfirmTransactionAck
+
+// string version = 1;
+inline void ConfirmTransactionAck::clear_version() {
+  _impl_.version_.ClearToEmpty();
+}
+inline const std::string& ConfirmTransactionAck::version() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.version)
+  return _internal_version();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ConfirmTransactionAck::set_version(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.version)
+}
+inline std::string* ConfirmTransactionAck::mutable_version() {
+  std::string* _s = _internal_mutable_version();
+  // @@protoc_insertion_point(field_mutable:ConfirmTransactionAck.version)
+  return _s;
+}
+inline const std::string& ConfirmTransactionAck::_internal_version() const {
+  return _impl_.version_.Get();
+}
+inline void ConfirmTransactionAck::_internal_set_version(const std::string& value) {
+  
+  _impl_.version_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionAck::_internal_mutable_version() {
+  
+  return _impl_.version_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionAck::release_version() {
+  // @@protoc_insertion_point(field_release:ConfirmTransactionAck.version)
+  return _impl_.version_.Release();
+}
+inline void ConfirmTransactionAck::set_allocated_version(std::string* version) {
+  if (version != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.version_.IsDefault()) {
+    _impl_.version_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ConfirmTransactionAck.version)
+}
+
+// int32 code = 2;
+inline void ConfirmTransactionAck::clear_code() {
+  _impl_.code_ = 0;
+}
+inline int32_t ConfirmTransactionAck::_internal_code() const {
+  return _impl_.code_;
+}
+inline int32_t ConfirmTransactionAck::code() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.code)
+  return _internal_code();
+}
+inline void ConfirmTransactionAck::_internal_set_code(int32_t value) {
+  
+  _impl_.code_ = value;
+}
+inline void ConfirmTransactionAck::set_code(int32_t value) {
+  _internal_set_code(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.code)
+}
+
+// string message = 3;
+inline void ConfirmTransactionAck::clear_message() {
+  _impl_.message_.ClearToEmpty();
+}
+inline const std::string& ConfirmTransactionAck::message() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.message)
+  return _internal_message();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ConfirmTransactionAck::set_message(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.message_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.message)
+}
+inline std::string* ConfirmTransactionAck::mutable_message() {
+  std::string* _s = _internal_mutable_message();
+  // @@protoc_insertion_point(field_mutable:ConfirmTransactionAck.message)
+  return _s;
+}
+inline const std::string& ConfirmTransactionAck::_internal_message() const {
+  return _impl_.message_.Get();
+}
+inline void ConfirmTransactionAck::_internal_set_message(const std::string& value) {
+  
+  _impl_.message_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionAck::_internal_mutable_message() {
+  
+  return _impl_.message_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionAck::release_message() {
+  // @@protoc_insertion_point(field_release:ConfirmTransactionAck.message)
+  return _impl_.message_.Release();
+}
+inline void ConfirmTransactionAck::set_allocated_message(std::string* message) {
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.message_.SetAllocated(message, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.message_.IsDefault()) {
+    _impl_.message_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ConfirmTransactionAck.message)
+}
+
+// uint64 time = 4;
+inline void ConfirmTransactionAck::clear_time() {
+  _impl_.time_ = uint64_t{0u};
+}
+inline uint64_t ConfirmTransactionAck::_internal_time() const {
+  return _impl_.time_;
+}
+inline uint64_t ConfirmTransactionAck::time() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.time)
+  return _internal_time();
+}
+inline void ConfirmTransactionAck::_internal_set_time(uint64_t value) {
+  
+  _impl_.time_ = value;
+}
+inline void ConfirmTransactionAck::set_time(uint64_t value) {
+  _internal_set_time(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.time)
+}
+
+// repeated .SuccessRate percentage = 5;
+inline int ConfirmTransactionAck::_internal_percentage_size() const {
+  return _impl_.percentage_.size();
+}
+inline int ConfirmTransactionAck::percentage_size() const {
+  return _internal_percentage_size();
+}
+inline void ConfirmTransactionAck::clear_percentage() {
+  _impl_.percentage_.Clear();
+}
+inline ::SuccessRate* ConfirmTransactionAck::mutable_percentage(int index) {
+  // @@protoc_insertion_point(field_mutable:ConfirmTransactionAck.percentage)
+  return _impl_.percentage_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >*
+ConfirmTransactionAck::mutable_percentage() {
+  // @@protoc_insertion_point(field_mutable_list:ConfirmTransactionAck.percentage)
+  return &_impl_.percentage_;
+}
+inline const ::SuccessRate& ConfirmTransactionAck::_internal_percentage(int index) const {
+  return _impl_.percentage_.Get(index);
+}
+inline const ::SuccessRate& ConfirmTransactionAck::percentage(int index) const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.percentage)
+  return _internal_percentage(index);
+}
+inline ::SuccessRate* ConfirmTransactionAck::_internal_add_percentage() {
+  return _impl_.percentage_.Add();
+}
+inline ::SuccessRate* ConfirmTransactionAck::add_percentage() {
+  ::SuccessRate* _add = _internal_add_percentage();
+  // @@protoc_insertion_point(field_add:ConfirmTransactionAck.percentage)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >&
+ConfirmTransactionAck::percentage() const {
+  // @@protoc_insertion_point(field_list:ConfirmTransactionAck.percentage)
+  return _impl_.percentage_;
+}
+
+// uint32 send_size = 6;
+inline void ConfirmTransactionAck::clear_send_size() {
+  _impl_.send_size_ = 0u;
+}
+inline uint32_t ConfirmTransactionAck::_internal_send_size() const {
+  return _impl_.send_size_;
+}
+inline uint32_t ConfirmTransactionAck::send_size() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.send_size)
+  return _internal_send_size();
+}
+inline void ConfirmTransactionAck::_internal_set_send_size(uint32_t value) {
+  
+  _impl_.send_size_ = value;
+}
+inline void ConfirmTransactionAck::set_send_size(uint32_t value) {
+  _internal_set_send_size(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.send_size)
+}
+
+// uint32 received_size = 7;
+inline void ConfirmTransactionAck::clear_received_size() {
+  _impl_.received_size_ = 0u;
+}
+inline uint32_t ConfirmTransactionAck::_internal_received_size() const {
+  return _impl_.received_size_;
+}
+inline uint32_t ConfirmTransactionAck::received_size() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.received_size)
+  return _internal_received_size();
+}
+inline void ConfirmTransactionAck::_internal_set_received_size(uint32_t value) {
+  
+  _impl_.received_size_ = value;
+}
+inline void ConfirmTransactionAck::set_received_size(uint32_t value) {
+  _internal_set_received_size(value);
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.received_size)
+}
+
+// -------------------------------------------------------------------
+
 // CorresHash
 
 // string hash = 1;
@@ -18948,6 +19783,10 @@ inline void GetRestInvestAmountAck::set_allocated_base58(std::string* base58) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -292,6 +292,7 @@ bool UnregisterNode::StartSyncNode()
         }
         _vrfNodelist[syncNodeAck.ids()] = targetAddrList;
     }
+
     for(auto & item : _vrfNodelist)
     {
         std::sort(item.second.begin(), item.second.end(), compareStructs);
@@ -388,6 +389,32 @@ void UnregisterNode::DeleteSpiltNodeList(const std::string & base58)
     }
 }
 
+void UnregisterNode::GetConsensusStakeNodelist(std::map<std::string,int>& consensusStakeNodeMap)
+{
+    std::unique_lock<std::mutex> lck(_mutexStakelist);
+    if(stakeNodelist.empty())
+    {
+        return;
+    }
+    consensusStakeNodeMap.insert(stakeNodelist.rbegin()->second.begin(), stakeNodelist.rbegin()->second.end());
+    return;
+}
+
+void UnregisterNode::GetConsensusNodelist(std::map<std::string,int>& consensusNodeMap)
+{
+    std::unique_lock<std::mutex> lck(_mutexStakelist);
+    if(stakeNodelist.empty() || unStakeNodelist.empty())
+    {
+        return;
+    }
+    consensusNodeMap.insert(stakeNodelist.rbegin()->second.begin(), stakeNodelist.rbegin()->second.end());
+    
+    for(const auto& it : unStakeNodelist.rbegin()->second)
+    {
+        consensusNodeMap[it.first] = it.second;
+    }
+    return;
+}
 
 void UnregisterNode::ClearSplitNodeListData()
 {
@@ -408,7 +435,7 @@ static int calculateAverage(const std::vector<int>& vec)
     }
 
     int sum = 0;
-    
+
     for (int num : vec)
     {
         sum += num;

@@ -116,6 +116,13 @@ public:
 
     DBStatus GetMptValueByMptKey(const std::string &MptKey, std::string &MptValue);
 
+    /**
+     * @brief       Read the program version that initializes the database
+     *
+     * @param       version:
+     * @return      DBStatus
+     */
+    DBStatus GetInitVer(std::string &version);
     virtual DBStatus MultiReadData(const std::vector<std::string> &keys, std::vector<std::string> &values);
     virtual DBStatus ReadData(const std::string &key, std::string &value);
 
@@ -151,10 +158,14 @@ public:
     //Set Sum hash per global::ca::sum_hash_range heights
     DBStatus SetSumHashByHeight(uint64_t height, const std::string& sumHash);
     //Remove Sum hash per global::ca::sum_hash_range heights
-    DBStatus RemoveSumHashByHeight(uint64_t height);   
+    DBStatus RemoveSumHashByHeight(uint64_t height); 
+    //
     DBStatus SetCheckBlockHashsByBlockHeight(const uint64_t &blockHeight ,const std::string &sumHash);
+    //
     DBStatus RemoveCheckBlockHashsByBlockHeight(const uint64_t &blockHeight);
+    //
     DBStatus SetBlockComHashHeight(const uint64_t &thousandNum);
+    //
     DBStatus RemoveBlockComHashHeight(const uint64_t &thousandNum);   
     //Set highest block
     DBStatus SetBlockTop(const unsigned int blockHeight);

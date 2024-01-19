@@ -136,6 +136,8 @@ public:
     void splitAndInsertData(const std::map<Node, int, NodeCompare>  syncNodeCount);
     void ClearSplitNodeListData();
 
+    void GetConsensusStakeNodelist(std::map<std::string,int>& consensusStakeNodeMap);
+    void GetConsensusNodelist(std::map<std::string,int>& consensusNodeMap);
 private:
     friend std::string PrintCache(int where);
     std::shared_mutex _mutexForNodes;
