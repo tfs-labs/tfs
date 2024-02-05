@@ -167,7 +167,7 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/setCalcTopHeight", ApiSetCalc1000TopHeight);
     HttpServer::RegisterCallback("/blockc", ApiPrintContractBlock);
     HttpServer::RegisterCallback("/printHundredHash", ApiPrintHundredSumHash);
-
+    HttpServer::RegisterCallback("/contactTx", ApiContactTx);
 
 #endif // #ifndef NDEBUG
     HttpServer::RegisterCallback("/ip", ApiIp);
@@ -1498,7 +1498,10 @@ void DeployContract(const Request &req, Response &res) {
     {
         ret = RpcDeployContract((void *)&req_t, &ack_t);
     }
-    
+
+    ack_t.type = "deploy_contract_req";
+    ack_t.ErrorCode = "0";
+
     if (ret != "0") {
         auto rpcError=GetRpcError();
         if(rpcError.first!="0"){
@@ -1509,10 +1512,7 @@ void DeployContract(const Request &req, Response &res) {
             ack_t.ErrorCode = "-1";
         }
     }
-       
-    ack_t.type = "deploy_contract_req";
-    ack_t.ErrorCode = "0";
-
+    
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -1590,12 +1590,7 @@ void GetTransaction(const Request &req, Response &res)
 
     std::string strError =
         TxHelper::ReplaceCreateTxTransaction(req_t.fromAddr, toAddr, &ack_t);
-    if (strError != "0") 
-    {
-        ack_t.ErrorMessage = strError;
-        ack_t.ErrorCode = "-5";
-    }
-  
+    
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -1683,11 +1678,11 @@ void GetInvest(const Request &req, Response &res) {
 
     std::string strError = TxHelper::ReplaceCreateInvestTransaction(
         fromAddr, toAddr, investAmout, investType, &ack_t);
-    if (strError != "0") {
-        ack_t.ErrorMessage = strError;
-        ack_t.ErrorCode = "-1";
+    auto rpcError=GetRpcError();
+    if(rpcError.first!="0"){
+        ack_t.ErrorMessage = rpcError.second;
+        ack_t.ErrorCode = rpcError.first;
     }
-
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -1708,11 +1703,11 @@ void GetDisinvest(const Request &req, Response &res)
 
     std::string strError = TxHelper::ReplaceCreateDisinvestTransaction(
         fromAddr, toAddr, utxoHash, &ack_t);
-    if (strError != "0") {
-        ack_t.ErrorMessage = strError;
-        ack_t.ErrorCode = "-1";
+    auto rpcError=GetRpcError();
+    if(rpcError.first!="0"){
+        ack_t.ErrorMessage = rpcError.second;
+        ack_t.ErrorCode = rpcError.first;
     }
-
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -1802,9 +1797,7 @@ void CallContract(const Request &req, Response &res)
     {
         ret = RpcCallContract((void *)&req_t, &ack_t);
     }
-    
-
-    if (ret != "0") {
+        if (ret != "0") {
         auto rpcError=GetRpcError();
         if(rpcError.first!="0"){
             ack_t.ErrorMessage = rpcError.second;
@@ -1814,6 +1807,7 @@ void CallContract(const Request &req, Response &res)
             ack_t.ErrorCode = "-1";
         }
     }
+
     res.set_content(ack_t.paseToString(), "application/json");
 }
 
@@ -3211,5 +3205,34 @@ void ApiPrintHundredSumHash(const Request & req, Response & res)
         
     }
     
+    res.set_content(oss.str(), "text/plain");
+}
+
+void ApiContactTx(const Request & req, Response & res)
+{
+    uint32_t time = 0;
+    if (req.has_param("time")) {
+        time = atol(req.get_param_value("time").c_str());
+    }
+    uint32_t second = 0;
+    if (req.has_param("second")) {
+        second = atol(req.get_param_value("second").c_str());
+    }
+    uint32_t much = 0;
+    if (req.has_param("much")) {
+        much = atol(req.get_param_value("much").c_str());
+    }
+
+    if(time == 0 || second == 0 || much == 0)
+    {
+        res.set_content("input error", "text/plain");
+        return;
+    }
+
+    std::thread task(test_contact_thread, time, second, much);
+    task.detach();
+
+    std::ostringstream oss;
+    oss << "tx start, time: " << time << "\tsecond: " << second << "\tmuch: " << much << std::endl;
     res.set_content(oss.str(), "text/plain");
 }

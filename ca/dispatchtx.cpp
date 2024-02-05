@@ -20,20 +20,35 @@ void ContractDispatcher::_DispatcherProcessingFunc()
                 continue;
             }
         }
+
         //FormatUTCTimestamp
         // 10:06:09
         // 10:06:00
-        uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-        if (timeBaseline == 0)
-        {
-            timeBaseline = (currentTime / 1000000 / _precedingContractBlockLookupInterval) * 1000000 * _precedingContractBlockLookupInterval;
-            DEBUGLOG("current baseline {}", timeBaseline);
-        }
-        auto s1 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(currentTime);
-        auto s2 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(timeBaseline);
-        DEBUGLOG("FFF OOOOOOOO, currentTime:{}, timeBaseline:{}", s1, s2);
+        // uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+        // if (timeBaseline == 0)
+        // {
+        //     timeBaseline = (currentTime / 1000000 / _precedingContractBlockLookupInterval) * 1000000 * _precedingContractBlockLookupInterval;
+        //     DEBUGLOG("current baseline {}", timeBaseline);
+        // }
+        // auto s1 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(currentTime);
+        // auto s2 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(timeBaseline);
+        // DEBUGLOG("FFF OOOOOOOO, currentTime:{}, timeBaseline:{}", s1, s2);
 
-        if (currentTime >= timeBaseline + _contractBlockPackingTime)
+        uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+        if(timeBaseline == 0)
+        {
+            timeBaseline = MagicSingleton<TimeUtil>::GetInstance()->GetTheTimestampPerUnitOfTime(currentTime);
+            auto s1 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(currentTime);
+            auto s2 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(timeBaseline);
+            DEBUGLOG("FFF OOOOOOOO, currentTime:{}, timeBaseline:{}", s1, s2);
+        }
+        /*
+            A = Transaction reception time in 10 seconds (time interval between two dispatchers' packaging) = Switching dispatcher time (10 seconds)
+            B = Delay in distribution and packaging after receiving the transaction by the dispatcher in 5 seconds
+            C = B (Fastest transaction confirmation time)
+            D = A + B (Slowest transaction confirmation time)
+        */
+        if (currentTime >= timeBaseline + _contractWaitingTime)
         {
             std::unique_lock<std::mutex> lock(_contractHandleMutex);
             DEBUGLOG("************** time out 10s");
@@ -53,7 +68,17 @@ void ContractDispatcher::_DispatcherProcessingFunc()
 
             for(auto & item : distribution)
             {
-                DEBUGLOG("-0-0-0-0-0-0-0-0- send packager : {}", item.first);
+                DEBUGLOG("-0-0-0-0-0-0-0-0- send packager : {}, Number of transactions: {} ", item.first, item.second.txMsgReq.size());
+                for(auto & txmsg : item.second.txMsgReq)
+                {
+                CTransaction contractTx;
+                if (!contractTx.ParseFromString(txmsg.txmsginfo().tx()))
+                {
+                    ERRORLOG("Failed to deserialize transaction body!");
+                    continue;
+                }
+                DEBUGLOG("send packager : {} , tx hash : {}", item.first, contractTx.hash());
+                }
                 SendTxInfoToPackager(item.first,item.second.info,item.second.txMsgReq,item.second.nodelist);
             }
 
@@ -210,9 +235,11 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const std::vector<std::vector<TxMsgReq>> & txMsgVec)
 {
-    int size = txMsgVec.size(); 
+    int size = txMsgVec.size();
+    int parts = 8;
+
     std::vector<std::vector<TxMsgReq>> groupTxMsg;
-    if(size <= 4)
+    if(size <= parts)
     {
         for(const auto & hashContainer : txMsgVec)
         {
@@ -221,8 +248,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
     }
     else
     {
-        int parts = 4;
-        int perPart = size / parts; 
+        int perPart = size / parts;
         int remain = size % parts;
 
         int index = 0;
@@ -230,7 +256,7 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
         for(int i = 0; i < parts; i++) {
             std::vector<TxMsgReq> part;
             for(int j = index; j < index + perPart; j++) 
-            { // 2
+            {
                 for(auto& txMsg : txMsgVec[j])
                 {
                     part.push_back(txMsg);

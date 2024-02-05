@@ -317,7 +317,6 @@ void SyncBlock::ThreadStart()
                     {
                         syncType = global::ca::SaveType::SyncNormal;
                     }
-
                     if (syncType == global::ca::SaveType::SyncFromZero)
                     {
                         INFOLOG("begin from zero sync");
@@ -1198,6 +1197,7 @@ int SyncBlock::_GetSyncSumHashNode(uint64_t pledgeAddrSize, const std::vector<st
         if (syncHashData.second < verifyNum)
         {
             DEBUGLOG("verify error, error height: {} syncHashData.second: {} verifyNum: {}", startHeight, syncHashData.second, verifyNum);
+
             uint64_t selfNodeHeight = 0;
             if(DBStatus::DB_SUCCESS != dbReader.GetBlockTop(selfNodeHeight))
             {

@@ -159,6 +159,8 @@ std::string CBlockHttpCallback::ToJson(const CBlock& block)
     jsonBlock["hash"] = block.hash();
     jsonBlock["height"] = block.height();
     jsonBlock["time"] = block.time();
+    nlohmann::json BlockData = nlohmann::json::parse(block.data());
+    jsonBlock["blockdata"] = BlockData;
 
     int k = 0;
     for(auto & tx : block.txs())
@@ -166,11 +168,10 @@ std::string CBlockHttpCallback::ToJson(const CBlock& block)
         nlohmann::json Tx;
         if(tx.type() == global::ca::kTxSign)
         {   
-            if((global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeBonus)
+            if((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx)
             {
                 nlohmann::json dataJson = nlohmann::json::parse(tx.data());
-                nlohmann::json tx_info = dataJson["TxInfo"].get<nlohmann::json>();
-                Tx["data"] = tx_info;
+                Tx["data"] = dataJson;
             }
             
             Tx["time"] = tx.time();

@@ -158,9 +158,9 @@ int GetVrfDataSourceByTime(const uint64_t& txTime, const uint64_t& txHeight, std
 
 int CalculateThePackerByTime(const uint64_t& txTime, const uint64_t& txHeight, std::string& packager, std::string& proof, std::string &txHash);
 
-int GetContractBlockPackager(const uint64_t& txTime, const uint64_t& txHeight, std::string& packager, Vrf& info);
+int GetContractDistributionManager(const uint64_t& txTime, const uint64_t& txHeight, std::string& packager, Vrf& info);
 
-int IsContractVrfVerifyNode(const CTransaction& tx, const uint64_t& height, const Vrf& vrfInfo);
+int VerifyContractDistributionManager(const CTransaction& tx, const uint64_t& height, const Vrf& vrfInfo);
 /**
  * @brief       
  * 
@@ -473,6 +473,8 @@ int GetContractRootHash(const std::string& contractAddress, std::string& rootHas
  * @param       outAddrs: 
  */
 static void FilterConsensusNodeList(const vector<std::string>& vrfNodelist, const CTransaction & tx, std::vector<std::string> &outAddrs);
+
+std::string GetContractAddr(const CTransaction & tx);
 
 /**
  * @brief       

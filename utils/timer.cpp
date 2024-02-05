@@ -66,10 +66,10 @@ void CTimer::Cancel()
     std::thread::native_handle_type handle = m_Thread->native_handle();
     
 #if defined(__unix__) || defined(__APPLE__) || defined(__ANDROID__)
-    pthread_cancel(handle);        // Unix/Linux/MacOS//Android  pthread_cancel 
+    pthread_cancel(handle);        
 #endif
     
-    m_ThreadCon.notify_all();     
+    m_ThreadCon.notify_all();      
     m_Thread->join();              
 }
 

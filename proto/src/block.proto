@@ -77,3 +77,29 @@ message SeekContractPreHashAck
     string                  msg_id             = 2;
     string                  ContractPreHash    = 3;
 }
+
+
+//--
+message preHashPair
+{
+  string ContractAddr = 1;
+  string RootHash = 2;
+  bytes blockRaw = 3;
+}
+
+
+message newSeekContractPreHashReq
+{
+  string version = 1;
+  string msg_id  = 2;
+  string self_node_id = 3;
+  repeated preHashPair seekRootHash = 4;
+}
+
+message newSeekContractPreHashAck
+{
+  string version = 1;
+  string msg_id  = 2;
+  string self_node_id = 3;
+  repeated preHashPair seekContractBlock = 4;
+}

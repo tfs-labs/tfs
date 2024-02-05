@@ -47,16 +47,17 @@ public:
 
     void lock()
     {
-        mapMutex.lock();
+        Mutex.lock();
     }
 
     void unlock()
     {
-        mapMutex.unlock();
+        Mutex.unlock();
     }
 
     void set(const nlohmann::json& jStorage)
     {
+        std::unique_lock<std::shared_mutex> lck(contractDataMapMutex);
         for (auto it = jStorage.begin(); it != jStorage.end(); ++it)
         {
             contractDataMap[it.key()] = it.value();
@@ -66,6 +67,7 @@ public:
 
     bool get(const std::string& key, std::string& value)
     {
+        std::shared_lock<std::shared_mutex> lck(contractDataMapMutex);
         auto it = contractDataMap.find(key);
         if (it != contractDataMap.end())
         {
@@ -77,12 +79,14 @@ public:
 
     void clear()
     {
+        std::unique_lock<std::shared_mutex> lck(contractDataMapMutex);
         contractDataMap.clear();
     }
 
 private:
     std::unordered_map<std::string, std::string> contractDataMap;
-    std::mutex mapMutex;
+    mutable std::shared_mutex contractDataMapMutex;
+    std::mutex Mutex;
 };
 
 class Trie

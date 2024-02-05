@@ -304,10 +304,10 @@ int RpcFillOutTx(const std::string &fromAddr, const std::string &toAddr, global:
     else
     {
         std::string identity;
-        int ret = GetContractBlockPackager(outTx.time(), height - 1, identity, info);
+        int ret = GetContractDistributionManager(outTx.time(), height - 1, identity, info);
         if(ret != 0)
         {
-            ERRORLOG("GetContractBlockPackager fail ret: {}", ret);
+            ERRORLOG("GetContractDistributionManager fail ret: {}", ret);
             return ret -= 300;
         }
         outTx.set_identity(identity);

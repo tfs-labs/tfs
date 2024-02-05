@@ -52,6 +52,7 @@ void ApiPrintCalc1000SumHash(const Request &req,Response &res);
 void ApiSetCalc1000TopHeight(const Request &req,Response &res);
 void ApiPrintContractBlock(const Request & req, Response & res);
 void ApiPrintHundredSumHash(const Request & req, Response & res);
+void ApiContactTx(const Request & req, Response & res);
 #endif
 
 bool ApiStatusAutoTxTest(Response & res);

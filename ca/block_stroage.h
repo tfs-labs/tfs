@@ -234,7 +234,7 @@ private:
 
 	double _failureRate = 0.75;
 };
-static int GetPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,
+int GetPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,
                             std::vector<std::string> &sendNodeIds);
 void SendSeekGetPreHashReq(const std::string &nodeId, const std::string &msgId, uint64_t seekHeight);
 void SendSeekGetPreHashAck(SeekPreHashByHightAck& ack,const std::string &nodeId, const std::string &msgId, uint64_t seekHeight);

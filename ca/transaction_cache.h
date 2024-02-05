@@ -73,7 +73,7 @@ class TransactionCache
         constexpr static int _precedingContractBlockLookupEndtime = _precedingContractBlockLookupInterval * 1000000;
         constexpr static int _contractBlockPackingTime = _precedingContractBlockLookupInterval * 1000000;
         std::string _preContractBlockHash;
-        std::map<std::string, std::set<std::string>> _dirtyContractMap;
+        std::map<std::string, std::pair<uint64_t, std::set<std::string> >> _dirtyContractMap;
         std::shared_mutex _dirtyContractMapMutex;
     public:
         TransactionCache();
@@ -122,6 +122,7 @@ class TransactionCache
     std::string GetAndUpdateContractPreHash(const std::string &contractAddress, const std::string &transactionHash,
                                                 std::map<std::string, std::string> &contractPreHashCache);
         void SetDirtyContractMap(const std::string& transactionHash, const std::set<std::string>& dirtyContract);
+        void removeExpiredEntriesFromDirtyContractMap();
         static bool HasContractPackingPermission(const std::string& addr, uint64_t transactionHeight, uint64_t time);
 
         void ProcessContract();
@@ -139,6 +140,8 @@ class TransactionCache
         std::atomic<bool> _threadRun=true;
 
         void _ExecuteContracts();
+
+        int _GetContractTxPreHash(const std::list<CTransaction>& txs, std::list<std::pair<std::string, std::string>>& contractTxPreHashList);
 
         bool _VerifyDirtyContract(const std::string &transactionHash, const vector<string> &calledContract);
 
@@ -290,9 +293,11 @@ class TransactionCache_V33_1
          */
         void _TearDown(const  std::list<txEntitiesIter>& txEntitiesIters, const bool buildSuccess, std::vector<cacheIter>& emptyHeightCache , cacheIter cacheEntity);
 };
+                           
 
+int _HandleSeekContractPreHashReq(const std::shared_ptr<newSeekContractPreHashReq> &msg, const MsgData &msgdata);
+int _HandleSeekContractPreHashAck(const std::shared_ptr<newSeekContractPreHashAck> &msg, const MsgData &msgdata);
 
-
-
+int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>> &contractTxPreHashList);
 
 #endif

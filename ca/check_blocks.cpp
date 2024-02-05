@@ -404,7 +404,7 @@ int CheckBlocks::ByzantineSumHash(const std::vector<std::string> &sendNodeIds, c
             needSyncHeights.push_back(sum_hashdata.first);
             continue;
         }
-
+        
         auto maxIterator = std::max_element(sum_hashdata.second.begin(), sum_hashdata.second.end(), compare);
 
         if (maxIterator != sum_hashdata.second.end())

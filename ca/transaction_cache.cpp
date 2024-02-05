@@ -21,6 +21,7 @@
 #include "utils/console.h"
 #include "utils/tmp_log.h"
 #include "evmone.h"
+#include "block_helper.h"
 #include "utils/time_util.h"
 #include "common/global_data.h"
 #include "../../net/unregister_node.h"
@@ -316,18 +317,12 @@ void TransactionCache::_TransactionCacheProcessingFunc()
         if(ret != 0)
         {
             ERRORLOG("{} build block fail", ret);
-            if(ret == -103 || ret == -104 || ret == -105)
-            {
-                continue;
-            }
-
             _transactionCache.clear();
-            std::cout << "block packaging fail" << std::endl;
             continue;
+            std::cout << "block packaging fail" << std::endl;
         }
         std::cout << "block successfully packaged" << std::endl;
         _transactionCache.clear();
-
         locker.unlock();
     }
 }
@@ -491,6 +486,33 @@ void TransactionCache::ProcessContract()
         DEBUGLOG("buildTxs.empty()");
         return;
     }
+
+    ON_SCOPE_EXIT{
+        removeExpiredEntriesFromDirtyContractMap();
+        _contractCache.clear();
+        _contractInfoCache.clear();
+    };
+
+    std::list<std::pair<std::string, std::string>> contractTxPreHashList;
+    if(_GetContractTxPreHash(buildTxs,contractTxPreHashList) != 0)
+    {
+        ERRORLOG("_GetContractTxPreHash fail");
+        return;
+    }
+    if(contractTxPreHashList.empty())
+    {
+        DEBUGLOG("contractTxPreHashList empty");
+    }
+    else
+    {
+        auto ret = _newSeekContractPreHash(contractTxPreHashList);
+        if ( ret != 0)
+        {
+            ERRORLOG("{} _newSeekContractPreHash fail", ret);
+            return;
+        }
+    }
+
     auto ret = BuildBlock(buildTxs, topTransactionHeight + 1, false);
     if(ret != 0)
     {
@@ -502,9 +524,7 @@ void TransactionCache::ProcessContract()
         std::cout << "block successfully packaged" << std::endl;
     }
     DEBUGLOG("FFF 555555555");
-    _dirtyContractMap.clear();
-    _contractCache.clear();
-    _contractInfoCache.clear();
+    return;
 }
 
 void TransactionCache::_ExecuteContracts()
@@ -535,6 +555,54 @@ void TransactionCache::_ExecuteContracts()
     DEBUGLOG("FFF _ExecuteContracts EndTime:{}", EndTime);
 }
 
+int TransactionCache::_GetContractTxPreHash(const std::list<CTransaction>& txs, std::list<std::pair<std::string, std::string>>& contractTxPreHashList)
+{
+    std::map<std::string, std::vector<std::pair<std::string, std::string>>> contractTxPreHashMap;
+    for(auto& tx : txs)
+	{
+        if (global::ca::TxType::kTxTypeDeployContract == (global::ca::TxType)tx.txtype())
+        {
+            continue;
+        }
+        auto txHash = tx.hash();
+        nlohmann::json txStorage;
+        if (MagicSingleton<TransactionCache>::GetInstance()->GetContractInfoCache(txHash, txStorage) != 0)
+        {
+            ERRORLOG("can't find storage of tx {}", txHash);
+            return -1;
+        }
+
+        for(auto &it : txStorage["PrevHash"].items())
+        {
+            contractTxPreHashMap[txHash].push_back({it.key(), it.value()});
+        }
+	}
+    DBReader dbReader;
+    for(auto& iter : contractTxPreHashMap)
+    {
+        for(auto& preHashPair : iter.second)
+        {
+            if(contractTxPreHashMap.find(preHashPair.second) != contractTxPreHashMap.end())
+            {
+                continue;
+            }
+            std::string DBContractPreHash;
+            if (DBStatus::DB_SUCCESS != dbReader.GetLatestUtxoByContractAddr(preHashPair.first, DBContractPreHash))
+            {
+                ERRORLOG("GetLatestUtxoByContractAddr fail !!! ContractAddr:{}", preHashPair.first);
+                return -2;
+            }
+            if(DBContractPreHash != preHashPair.second)
+            {
+                ERRORLOG("DBContractPreHash:({}) != preHashPair.second:({})", DBContractPreHash, preHashPair.second);
+                return -3;
+            }
+            contractTxPreHashList.push_back(preHashPair);
+        }
+    }
+    return 0;
+}
+
 bool TransactionCache::_VerifyDirtyContract(const std::string &transactionHash, const vector<string> &calledContract)
 {
     auto found = _dirtyContractMap.find(transactionHash);
@@ -546,7 +614,7 @@ bool TransactionCache::_VerifyDirtyContract(const std::string &transactionHash, 
     std::set<std::string> calledContractSet(calledContract.begin(), calledContract.end());
     std::vector<std::string> result;
     std::set_difference(calledContractSet.begin(), calledContractSet.end(),
-                        found->second.begin(), found->second.end(),
+                        found->second.second.begin(), found->second.second.end(),
                         std::back_inserter(result));
     if (!result.empty())
     {
@@ -554,7 +622,7 @@ bool TransactionCache::_VerifyDirtyContract(const std::string &transactionHash, 
         {
             ERRORLOG("executed {}", addr);
         }
-        for (const auto& addr : found->second)
+        for (const auto& addr : found->second.second)
         {
             ERRORLOG("found {}", addr);
         }
@@ -740,6 +808,7 @@ TransactionCache::GetAndUpdateContractPreHash(const std::string &contractAddress
         {
             return "";
         }
+        DEBUGLOG("transactionHash:{}, contractAddress:{}, strPrevTxHash:{}",transactionHash, contractAddress, strPrevTxHash);
     }
     else
     {
@@ -753,7 +822,24 @@ TransactionCache::GetAndUpdateContractPreHash(const std::string &contractAddress
 void TransactionCache::SetDirtyContractMap(const std::string& transactionHash, const std::set<std::string>& dirtyContract)
 {
     std::unique_lock locker(_dirtyContractMapMutex);
-    _dirtyContractMap[transactionHash] = dirtyContract;
+    uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    _dirtyContractMap[transactionHash]= {currentTime, dirtyContract};
+}
+
+void TransactionCache::removeExpiredEntriesFromDirtyContractMap()
+{
+    uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    for(auto iter = _dirtyContractMap.begin(); iter != _dirtyContractMap.end();)
+    {
+        if(nowTime >= iter->second.first + 60 * 1000000ull)
+        {
+            _dirtyContractMap.erase(iter++);
+        }
+        else
+        {
+            ++iter;
+        }
+    }
 }
 
 std::string TransactionCache::_SeekContractPreHash()
@@ -879,6 +965,7 @@ void SendSeekContractPreHashReq(const std::string &nodeId, const std::string &ms
     req.set_msg_id(msgId);
     NetSendMessage<SeekContractPreHashReq>(nodeId, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
 }
+
 void SendSeekContractPreHashAck(SeekContractPreHashAck& ack,const std::string &nodeId, const std::string &msgId)
 {
     DEBUGLOG("SendSeekContractPreHashAck, id:{}",  nodeId);
@@ -1013,7 +1100,7 @@ int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, c
         return -6;
     }
 
-	
+ 
     Node node;
 	if (!MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(msgdata.fd, node))
 	{
@@ -1426,4 +1513,219 @@ void TransactionCache_V33_1::_TearDown(const  std::list<txEntitiesIter>& txEntit
     {
         emptyHeightCache.push_back(cacheEntity);         
     }
+}
+
+int _HandleSeekContractPreHashReq(const std::shared_ptr<newSeekContractPreHashReq> &msg, const MsgData &msgdata)
+{
+    newSeekContractPreHashAck ack;
+    ack.set_version(msg->version());
+    ack.set_msg_id(msg->msg_id());
+    ack.set_self_node_id(NetGetSelfNodeId());
+    Node node;
+	if (!MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(msgdata.fd, node))
+	{
+        ERRORLOG("FindNodeByFd fail !!!, seekId:{}", node.base58Address);
+		return -1;
+	}
+
+    DBReader dbReader;
+    if(msg->seekroothash_size() >= 200)
+    {
+        ERRORLOG("msg->seekroothash_size:({}) >= 200", msg->seekroothash_size());
+        return -2;
+    }
+    for(auto& preHashPair : msg->seekroothash())
+    {
+        std::string DBContractPreHash;
+        if (DBStatus::DB_SUCCESS != dbReader.GetLatestUtxoByContractAddr(preHashPair.contractaddr(), DBContractPreHash))
+        {
+            ERRORLOG("GetLatestUtxoByContractAddr fail !!!");
+            return -3;
+        }
+        if(DBContractPreHash != preHashPair.roothash())
+        {
+            DEBUGLOG("DBContractPreHash:({}) != roothash:({}) seekId:{}", DBContractPreHash, preHashPair.roothash(), node.base58Address);
+            std::string strPrevBlockHash;
+            if(dbReader.GetBlockHashByTransactionHash(DBContractPreHash, strPrevBlockHash) != DBStatus::DB_SUCCESS)
+            {
+                ERRORLOG("GetBlockHashByTransactionHash failed!");
+                return -4;
+            }
+            std::string blockRaw;
+            if(dbReader.GetBlockByBlockHash(strPrevBlockHash, blockRaw) != DBStatus::DB_SUCCESS)
+            {
+                ERRORLOG("GetBlockByBlockHash failed!");
+                return -5;
+            }
+            auto seekContractBlock = ack.add_seekcontractblock();
+            seekContractBlock->set_contractaddr(preHashPair.contractaddr());
+            seekContractBlock->set_roothash(strPrevBlockHash);
+            seekContractBlock->set_blockraw(blockRaw);
+        }
+    }
+
+    NetSendMessage<newSeekContractPreHashAck>(node.base58Address, ack, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+    return 0;
+}
+int _HandleSeekContractPreHashAck(const std::shared_ptr<newSeekContractPreHashAck> &msg, const MsgData &msgdata)
+{
+    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
+    return 0;
+}
+
+int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>> &contractTxPreHashList)
+{
+    DEBUGLOG("_newSeekContractPreHash.............");
+    uint64_t chainHeight;
+    if(!MagicSingleton<BlockHelper>::GetInstance()->ObtainChainHeight(chainHeight))
+    {
+        DEBUGLOG("ObtainChainHeight fail!!!");
+    }
+    uint64_t selfNodeHeight = 0;
+    std::vector<std::string> pledgeAddr; // stake and invested addr
+    {
+        DBReader dbReader;
+        auto status = dbReader.GetBlockTop(selfNodeHeight);
+        if (DBStatus::DB_SUCCESS != status)
+        {
+            DEBUGLOG("GetBlockTop fail!!!");
+
+        }
+        std::vector<std::string> stakeAddr;
+        status = dbReader.GetStakeAddress(stakeAddr);
+        if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+        {
+            DEBUGLOG("GetStakeAddress fail!!!");
+        }
+
+        for(const auto& addr : stakeAddr)
+        {
+            if(VerifyBonusAddr(addr) != 0)
+            {
+                DEBUGLOG("{} doesn't get invested, skip", addr);
+                continue;
+            }
+            pledgeAddr.push_back(addr);
+        }
+    }
+    std::vector<std::string> sendNodeIds;
+    if (GetPrehashFindNode(pledgeAddr.size(), chainHeight, pledgeAddr, sendNodeIds) != 0)
+    {
+        ERRORLOG("get sync node fail");
+    }
+
+    if(sendNodeIds.size() == 0)
+    {
+        DEBUGLOG("sendNodeIds {}",sendNodeIds.size());
+        return -2;
+    }
+
+    //send_size
+    std::string msgId;
+    if (!GLOBALDATAMGRPTR.CreateWait(3, sendNodeIds.size() * 0.8, msgId))
+    {
+        return -3;
+    }
+
+    newSeekContractPreHashReq req;
+    req.set_version(global::kVersion);
+    req.set_msg_id(msgId);
+
+    for(auto &item : contractTxPreHashList)
+    {
+        preHashPair * _hashPair = req.add_seekroothash();
+        _hashPair->set_contractaddr(item.first);
+        _hashPair->set_roothash(item.second);
+        DEBUGLOG("req contractAddr:{}, contractTxHash:{}", item.first, item.second);
+    }
+    
+    for (auto &nodeBase58 : sendNodeIds)
+    {
+        NetSendMessage<newSeekContractPreHashReq>(nodeBase58, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+    }
+
+    std::vector<std::string> ret_datas;
+    if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
+    {
+        return -4;
+    }
+
+    newSeekContractPreHashAck ack;
+    std::map<std::string, std::set<std::string>> blockHashMap;
+    std::map<std::string, std::pair<std::string, std::string>> testMap; //TODO::
+    for (auto &ret_data : ret_datas)
+    {
+        ack.Clear();
+        if (!ack.ParseFromString(ret_data))
+        {
+            continue;
+        }
+        for(auto& iter : ack.seekcontractblock())
+        {
+            blockHashMap[ack.self_node_id()].insert(iter.blockraw());
+            testMap[iter.blockraw()] = {iter.contractaddr(), iter.roothash()};
+        }
+    }
+
+    std::unordered_map<std::string , int> countMap;
+
+    for (auto& iter : blockHashMap) 
+    {
+        for(auto& iter_second : iter.second)
+        {
+            countMap[iter_second]++;
+        }
+        
+    }
+
+    DBReader dbReader;
+    std::vector<std::pair<CBlock,std::string>> seekBlocks;
+    for (const auto& iter : countMap) 
+    {
+        double rate = double(iter.second) / double(blockHashMap.size());
+        auto test_iter = testMap[iter.first];
+        if(rate < 0.66)
+        {
+            ERRORLOG("rate:({}) < 0.66, contractAddr:{}, contractTxHash:{}", rate, test_iter.first, test_iter.second);
+            continue;
+        }
+
+        CBlock block;
+        if(!block.ParseFromString(iter.first))
+        {
+            continue;
+        }
+        string blockStr;
+        if(dbReader.GetBlockByBlockHash(block.hash(), blockStr) != DBStatus::DB_SUCCESS)
+        {
+            seekBlocks.push_back({block, block.hash()});
+            DEBUGLOG("rate:({}) < 0.66, contractAddr:{}, contractTxHash:{}, blockHash:{}", rate, test_iter.first, test_iter.second, block.hash());
+            MagicSingleton<BlockHelper>::GetInstance()->AddSeekBlock(seekBlocks);
+        }
+    }
+
+    uint64_t timeOut = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp() + 2 * 1000000;
+    uint64_t currentTime;
+    bool flag;
+    do
+    {
+        flag = true;
+        for(auto& it : seekBlocks)
+        {
+            std::string blockRaw;
+            if(dbReader.GetBlockByBlockHash(it.second, blockRaw) != DBStatus::DB_SUCCESS)
+            {
+                flag = false;
+                break;
+            }
+        }
+        if(flag)
+        {
+            DEBUGLOG("find block successfuly ");
+            return 0;
+        }
+        sleep(1);
+        currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    }while(currentTime < timeOut && !flag);
+    return -6;
 }

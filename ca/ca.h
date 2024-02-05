@@ -23,7 +23,8 @@ extern bool bIsCreateTx;
 
 void RegisterCallback();
 void TestCreateTx(const std::vector<std::string> & addrs, const int & sleepTime);
-
+void CreateMultiThreadAutomaticDeployContract();
+void printJson();
 /**
  * @brief       CA initialization
  * 

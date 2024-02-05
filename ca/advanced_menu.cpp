@@ -67,6 +67,7 @@ std::atomic<int> jobs_index=0;
 std::atomic<int> perrnode_index=0;
 boost::threadpool::pool test_pool;
 
+
 void ReadContract_json(const std::string & file_name){
     std::ifstream file(file_name);
     std::stringstream buffer;  
@@ -176,7 +177,7 @@ void ContrackInvke(contractJob job){
     std::string txRaw;
     if (DBStatus::DB_SUCCESS != dataReader.GetTransactionByHash(strTxHash, txRaw))
     {
-        ERRORLOG("get contract transaction failed!!");
+        ERRORLOG("get contract transaction failed!!, strTxHash:{}", strTxHash);
         return ;
     }
     if(!tx.ParseFromString(txRaw))
@@ -244,12 +245,6 @@ void ContrackInvke(contractJob job){
         txMsgInfo->add_contractstoragelist(addr);
     }
 
-//    if(dirtyContract.empty())
-//    {
-//        std::string contractAddress = evm_utils::GenerateContractAddr(strToAddr + strTxHash);
-//        txMsgInfo->add_contractstoragelist(contractAddress);
-//    }
-
     if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
         Vrf * newInfo=txMsg->mutable_vrfinfo();
@@ -261,31 +256,25 @@ void ContrackInvke(contractJob job){
     std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
     if(isNeedAgentFlag == TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
-        ret = DropCallShippingTx(msg,outTx);
+        ret = DropCallShippingTx(msg, outTx);
+        MagicSingleton<BlockMonitor>::GetInstance()->addDropshippingTxVec(outTx.hash());
     }
 
     DEBUGLOG("Transaction result,ret:{}  txHash:{}", ret, outTx.hash());
 }
 
 
-void test_contact_thread(){
+void test_contact_thread(uint32_t time, uint32_t second, uint32_t much)
+{
     ReadContract_json("contract.json");
     std::vector<std::string> acccountlist;
     MagicSingleton<AccountManager>::GetInstance()->GetAccountList(acccountlist);
-   
+
     jobs_index=0;
     perrnode_index=0;
-    int time_s;
-    std::cout << "time_s:" ;
-    std::cin >>  time_s;
-    std::cout << "second:";
-    long long _second;
-    std::cin >> _second;
-    std::cout << "hom much:";
-    long long _much;
-    std::cin >> _much;
+
     int oneSecond=0;
-    while(time_s){
+    while(time){
         oneSecond++;
         std::cout <<"hhh h" << std::endl;
         jobs[jobs_index].fromAddr=acccountlist[perrnode_index];
@@ -294,13 +283,29 @@ void test_contact_thread(){
         th.detach();
         jobs_index=++jobs_index%jobs.size();
         perrnode_index=++perrnode_index%acccountlist.size();
-        ::usleep(_second *1000 *1000 / _much);
-        if(oneSecond == _much){
-            time_s--;
+        ::usleep(second *1000 *1000 / much);
+        if(oneSecond == much){
+            time--;
             oneSecond=0;
         }
     }
 }
+
+void contact_thread()
+{
+    uint32_t time;
+    std::cout << "time:" ;
+    std::cin >>  time;
+    std::cout << "second:";
+    uint32_t second;
+    std::cin >> second;
+    std::cout << "hom much:";
+    uint32_t much;
+    std::cin >> much;
+
+    test_contact_thread(time, second, much);
+}
+
 
 void GenKey()
 {
@@ -325,6 +330,37 @@ void GenKey()
 void RollBack()
 {
     MagicSingleton<BlockHelper>::GetInstance()->RollbackTest();
+}
+
+void getBlockByBlockHash()
+{
+    DBReader reader;
+    std::cout << "Block Hash : ";
+    std::string blockHash;
+    std::cin >> blockHash;
+
+    std::string blockStr;
+
+    if(DBStatus::DB_SUCCESS != reader.GetBlockByBlockHash(blockHash, blockStr))
+    {
+        std::cout<< GREEN <<"GetBlockByBlockHash fail!!!" << RESET << std::endl;
+        return;
+    }
+    CBlock block;
+    block.ParseFromString(blockStr);
+
+    std::cout << GREEN << "Block Hash : " << block.hash() << RESET << std::endl;
+    std::cout << GREEN << "Block height : " << block.height() << RESET << std::endl;
+
+    std::string fileName = "print_block_" + blockHash.substr(0,6) + ".txt";
+    std::ofstream filestream;
+    filestream.open(fileName);
+    if (!filestream)
+    {
+        std::cout << "Open file failed!" << std::endl;
+        return;
+    }
+    PrintBlock(block, true, filestream);
 }
 
 void GetStakeList()
@@ -565,6 +601,7 @@ void getTxBlockInfo(uint64_t &top)
         PrintRocksdb(start, end, true, filestream);
     }
 }
+
 
 void GenMnemonic()
 {
@@ -1496,12 +1533,22 @@ void GetTxHashByHeight(int64_t start,int64_t end,std::ofstream& filestream)
             dbReader.GetBlockByBlockHash(blockhash, blockstr);
             CBlock block;
             block.ParseFromString(blockstr);
-
             txHashCount += block.txs_size();
         }
         txTotal += txHashCount;
         blockTotal += tmpBlockHashs.size();
         filestream  << "Height >: " << i << " Blocks >: " << tmpBlockHashs.size() << " Txs >: " << txHashCount  << std::endl;
+        for(auto &blockhash : tmpBlockHashs)
+        {
+            std::string blockstr;
+            dbReader.GetBlockByBlockHash(blockhash, blockstr);
+            CBlock block;
+            block.ParseFromString(blockstr);
+            std::string tmpBlockHash = block.hash();
+            tmpBlockHash = tmpBlockHash.substr(0,6);
+            int tmpHashSize = block.txs_size();
+            filestream << " BlockHash: " << tmpBlockHash << " TxHashSize: " << tmpHashSize << std::endl;
+        }
     }
 
     filestream  << "Total block sum >:" << blockTotal  << std::endl;
@@ -1689,12 +1736,12 @@ void ThreadTest::TestCreateTx_2(const std::string &from, const std::string &to)
     {
 
         ret = DropshippingTx(msg, outTx);
-        MagicSingleton<BlockMonitor>::GetInstance()->addDropshippingTxVec(outTx.hash());
+        //MagicSingleton<BlockMonitor>::GetInstance()->addDropshippingTxVec(outTx.hash());
     }
     else
     {
         ret = DoHandleTx(msg, outTx);
-        MagicSingleton<BlockMonitor>::GetInstance()->addDoHandleTxTxVec(outTx.hash());
+        //MagicSingleton<BlockMonitor>::GetInstance()->addDoHandleTxTxVec(outTx.hash());
     }
     global::ca::TxNumber++;
     DEBUGLOG("Transaction result,ret:{}  txHash:{}, TxNumber:{}", ret, outTx.hash(), global::ca::TxNumber);

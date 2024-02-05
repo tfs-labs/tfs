@@ -364,6 +364,8 @@ class BlockHelper
          */
         int RollbackBlocks();
 
+        int RollbackContractBlock();
+
         std::mutex _helperMutex;
         std::mutex _helperMutexLow1;
         std::atomic<bool> _missingPrehash;

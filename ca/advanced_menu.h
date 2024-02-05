@@ -16,7 +16,6 @@
 
 
 
-
 /**
  * @brief       
  */
@@ -31,6 +30,11 @@ void RollBack();
  * @brief       Get the stake list
  */
 void GetStakeList();
+
+/**
+ * @brief
+ */
+void getBlockByBlockHash();
 
 /**
  * @brief      Get a list of addresses that can claim bonuses
@@ -75,6 +79,7 @@ void MenuBlockInfo();
  * @param       top: block height
  */
 void getTxBlockInfo(uint64_t& top);
+
 
 /**
  * @brief       
@@ -200,6 +205,9 @@ void PrintBenchmarkToFile();
 void GetRewardAmount();
 
 void TestManToOneDelegate();
+
+void test_contact_thread(uint32_t time, uint32_t second, uint32_t much);
+void contact_thread();
 
 
 namespace ThreadTest

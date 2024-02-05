@@ -2136,19 +2136,28 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	
     if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
     {
+		ackT->ErrorMessage=" db get top failed!!";
+		ackT->ErrorCode="-1";
+		ERRORLOG("db get top failed!!");
         return "-1 db get top failed!!"; 
     }
 	//  Check parameters
-	height+=1;
+	height += 1;
 	int ret = Check(fromAddr, height);
 	if (ret != 0)
 	{
+		ackT->ErrorMessage="Check parameters failed!";
+		ackT->ErrorCode="-2";
 		std::string strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
+		ERRORLOG("Check parameters failed!");
 		return strError; 
 	}
 
 	if(toAddr.empty())
 	{
+		ackT->ErrorMessage="to addr is empty";
+		ackT->ErrorCode="-3";
+		ERRORLOG("to addr is empty");
 		return "-3 to addr is empty";
 	}	
 
@@ -2156,6 +2165,9 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	{
 		if (!CheckBase58Addr(addr.first))
 		{
+			ackT->ErrorMessage="To address is not base58 address!";
+			ackT->ErrorCode="-4";
+			ERRORLOG("To address is not base58 address!");
 			return "-4 To address is not base58 address!";
 		}
 
@@ -2163,12 +2175,18 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 		{
 			if (addr.first == from)
 			{
-				return "-5";
+				ackT->ErrorMessage="from address is same with toaddr";
+				ackT->ErrorCode="-5";
+				ERRORLOG("from address is same with toaddr");
+				return "-5 from address is same with toaddr";
 			}
 		}
 		
 		if (addr.second <= 0)
 		{
+			ackT->ErrorMessage="Value is zero!";
+			ackT->ErrorCode="-6";
+			ERRORLOG("Value is zero!");
 			return "-6 Value is zero!";
 		}
 	}
@@ -2186,11 +2204,17 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	ret = FindUtxo(fromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
 	if (ret != 0)
 	{
+		ackT->ErrorMessage="FindUtxo failed!";
+		ackT->ErrorCode="-7";
 		std::string strError = "-7 FindUtxo failed! The error code is " + std::to_string(ret-200);
+		ERRORLOG("FindUtxo failed!");
 		return strError; 
 	}
 	if (setOutUtxos.empty())
 	{
+		ackT->ErrorMessage="Utxo is empty!";
+		ackT->ErrorCode="-8";
+		ERRORLOG("Utxo is empty!");
 		return "-8 Utxo is empty!";
 	}
 
@@ -2206,6 +2230,9 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	}
 	if (setTxowners.empty())
 	{
+		ackT->ErrorMessage="Tx owner is empty!";
+		ackT->ErrorCode="-9";
+		ERRORLOG("Tx owner is empty!");
 		return "-9 Tx owner is empty!";
 	}
 
@@ -2235,7 +2262,10 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	targetAddrs.insert(make_pair(global::ca::kVirtualBurnGasAddr,gas));
 	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
-		return " -11 gas = 0 !";
+		ackT->ErrorMessage="gas = 0 !";
+		ackT->ErrorCode="-10";
+		ERRORLOG("gas = 0 !");
+		return " -10 gas = 0 !";
 	}
 
 	TxHelper::vrfAgentType type;
@@ -2244,7 +2274,10 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	DEBUGLOG("GetTxStartIdentity currentTime = {} type = {}",currentTime ,type);
 	if(type == TxHelper::vrfAgentType_unknow)
 	{
-		return "-12 +++++++vrfAgentType_unknow +++++";
+		ackT->ErrorMessage = "vrfAgentType_unknow";
+		ackT->ErrorCode="-11";
+		ERRORLOG("vrfAgentType_unknow");
+		return "-11 +++++++vrfAgentType_unknow +++++";
 	}
 	expend +=  gas;
 	ackT->gas = std::to_string(gas);
@@ -2252,9 +2285,11 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 	//Judge whether utxo is enough
 	if(total < expend)
 	{
-		std::string strError = "-13 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		ERRORLOG("-13 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
-		return "-72013"; 
+		ackT->ErrorMessage = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend)+"gas is " +std::to_string(gas)+"toAddr amount is "+std::to_string(amount);
+		ackT->ErrorCode="-72013";
+		std::string strError = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend)+"gas is " +std::to_string(gas)+"toAddr amount is "+std::to_string(amount);
+		ERRORLOG("-12 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
+		return strError; 
 	}
 	// fill vout
 	for(auto & to : toAddr)
@@ -2296,7 +2331,9 @@ std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>&
 		
     	int ret = GetBlockPackager(id,allUtxos, info);
     	if(ret != 0){
-			std::string strError = "-15 GetBlockPackager error ,error code is " + std::to_string(ret);
+			ackT->ErrorMessage = "GetBlockPackager error ,error code is";
+			ackT->ErrorCode="-13";
+			std::string strError = "-13 GetBlockPackager error ,error code is " + std::to_string(ret);
 			return strError;
     	}
 		outTx.set_identity(id);
@@ -2742,7 +2779,11 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
     uint64_t height = 0;
     if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
     {
-        return "-1 db get top failed!!"; 
+		ackT->ErrorMessage = "db get top failed!!";
+        ackT->ErrorCode = "-1";
+		ERRORLOG("db get top failed!!");
+        return "-1"; 
+
     }
 
 	height+=1;
@@ -2752,33 +2793,48 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	int ret = Check(vecfromAddr, height);
 	if(ret != 0)
 	{
-		std::string strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
+		std::string strError = "Check parameters failed!";
+		ackT->ErrorMessage = "Check parameters failed!";
+        ackT->ErrorCode = "-2";
+		ERRORLOG("Check parameters failed!");
 		return strError;
+
 	}
 
 	//  Neither fromaddr nor toaddr can be a virtual account
 	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
 	{
-		return "-3 FromAddr is not normal base58 addr.";
+		ackT->ErrorMessage = "FromAddr is not normal base58 addr.";
+        ackT->ErrorCode = "-3";
+		ERRORLOG("FromAddr is not normal base58 addr.");
+		return "-3";
+
 	}
 
 	if (CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign) == true)
 	{
-		return "-4 To address is not base58 address!";
+		ackT->ErrorMessage = "To address is not base58 address!";
+        ackT->ErrorCode = "-4";
+		ERRORLOG("To address is not base58 address!");
+		return "-4";
 	}
 
 	if(investAmount <35 * global::ca::kDecimalNum){
-		std::string strError = "-5 Invest less = " + std::to_string(35 * global::ca::kDecimalNum);
-		ERRORLOG(strError);
-		return "-72014";
+		std::string strError = "Invest less  ";
+		ERRORLOG("{}", strError);
+		ackT->ErrorMessage = "Invest less 35 ";
+        ackT->ErrorCode = "-72021";
+		return strError;
 	}
 
 	ret = CheckInvestQualification(fromAddr, toAddr, investAmount);
 	if(ret != 0)
 	{
-		std::string strError = "-6 FromAddr is not qualified to invest! The error code is " + std::to_string(ret-200);
+		std::string strError = "FromAddr is not qualified to invest! ";
 		ERRORLOG(strError);
         auto er=GetRpcError();
+		ackT->ErrorMessage = er.second;
+        ackT->ErrorCode = er.first;
         return er.first;
 	}	
 	std::string strinvestType;
@@ -2789,7 +2845,10 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	}
 	else
 	{
-		return "-7 Unknown invest type!";
+		ackT->ErrorMessage = "Unknown invest type!";
+	    ackT->ErrorCode = "-7";
+		ERRORLOG("Unknown invest type");
+		return "-7";
 	}
 	
 	//  Find utxo
@@ -2800,12 +2859,19 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
 	if (ret != 0)
 	{
-		std::string strError = "-8 FindUtxo failed! The error code is " + std::to_string(ret-300);
+		std::string strError = "FindUtxo failed! The error code is " + std::to_string(ret-300);
+		ackT->ErrorMessage = "FindUtxo failed!";
+	    ackT->ErrorCode = "-8";
+		ERRORLOG(strError);
 		return strError;
 	}
 	if (setOutUtxos.empty())
 	{
-		return "-9 Utxo is empty!";
+		ackT->ErrorMessage = "Utxo is empty!";
+        ackT->ErrorCode = "-9";
+		ERRORLOG("Utxo is empty!");
+		return "-9";
+
 	}
 
 	CTransaction outTx;
@@ -2820,7 +2886,11 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	}
 	if (setTxowners.empty())
 	{
-		return "-10 Tx owner is empty!";
+		ackT->ErrorMessage = "Tx owner is empty!";
+        ackT->ErrorCode = "-10";
+		ERRORLOG("Tx owner is empty!");
+		return "-10";
+
 	}
 
 	for (auto & owner : setTxowners)
@@ -2860,8 +2930,12 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 	
 	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
 	{
+		ERRORLOG("GenerateGas fail gas : {}", gas);
 		std::cout << "GenerateGas gas = " << gas << std::endl;
-		return "-12 gas = 0 !";
+		ackT->ErrorMessage = "gas = 0 !";
+        ackT->ErrorCode = "-11";
+		return "-11";
+
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
@@ -2879,9 +2953,11 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 
 	if(total < expend)
 	{
-		std::string strError = "-13 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		ERRORLOG("-13 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
-		return "-72013"; 
+		std::string strError = "-12 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
+		ERRORLOG("The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
+		ackT->ErrorMessage = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
+        ackT->ErrorCode = "-72013";
+		return strError; 
 	}
 
 	CTxOutput * vout = txUtxo->add_vout(); 
@@ -2921,8 +2997,12 @@ std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAdd
 		
     	int ret= GetBlockPackager(id,allUtxos,info);
     	if(ret!=0){
-			std::string strError = "-15 GetBlockPackager error , error code is " + std::to_string(ret);
+			ackT->ErrorMessage = "GetBlockPackager error";
+        	ackT->ErrorCode = "-13";
+			std::string strError = "-13";
+			ERRORLOG("GetBlockPackager error");
 			return strError;
+
     	}
 		outTx.set_identity(id);
 	}
@@ -2954,7 +3034,10 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
     uint64_t height = 0;
     if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
     {
-        return "-1 db get top failed!!"; 
+		ackT->ErrorMessage = "db get top failed!!";
+        ackT->ErrorCode = "-1";
+		ERRORLOG("db get top failed!!");
+        return "-1";
     }
 
 	height += 1;
@@ -2964,24 +3047,40 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	int ret = Check(vecfromAddr, height);
 	if(ret != 0)
 	{
-		std::string strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
+		std::string strError = "Check parameters failed! The error code is " + std::to_string(ret-100);
+		ackT->ErrorMessage = "Check parameters failed!";
+        ackT->ErrorCode = "-2";
+		ERRORLOG(strError);
 		return strError;
+
 	}
 
 	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
 	{
-		return "-3 FromAddr is not normal base58 addr.";
+		ackT->ErrorMessage = "FromAddr is not normal base58 addr.";
+        ackT->ErrorCode = "-3";	
+		ERRORLOG("FromAddr is not normal base58 addr.");
+		return "-3";
+
 	}
 
 	if (CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign) == true)
 	{
-		return "-4 To address is not base58 address!";
+		ackT->ErrorMessage = "To address is not base58 address!";
+        ackT->ErrorCode = "-4";		
+		ERRORLOG("To address is not base58 address!");
+		return "-4";
+
 	}
 
 	uint64_t investedAmount = 0;
 	if(IsQualifiedToDisinvest(fromAddr, toAddr, utxoHash, investedAmount) != 0)
 	{
-		return "-72015";
+		ackT->ErrorMessage = "The disinvest is not satisfied!";
+        ackT->ErrorCode = "-5";		
+		ERRORLOG("The disinvest is not satisfied!");
+		return "-5";
+
 	}
 	//  Find utxo
 	uint64_t total = 0;
@@ -2991,12 +3090,19 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	if (ret != 0)
 	{
 		std::string strError = "-6 FindUtxo failed! The error code is " + std::to_string(ret-300);
+		ackT->ErrorMessage = "FindUtxo failed!";
+        ackT->ErrorCode = "-6";		
+		ERRORLOG("FindUtxo failed!");
 		return strError;
+
 	}
 	if (setOutUtxos.empty())
 	{
 		ERRORLOG(RED "Utxo is empty!" RESET);
-		return "-7 Utxo is empty!";
+		ackT->ErrorMessage = "Utxo is empty!";
+        ackT->ErrorCode = "-7";	
+		return "-7";
+
 	}
 
 	outTx.Clear();
@@ -3009,7 +3115,11 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	}
 	if (setTxowners.empty())
 	{
-		return "-8 Tx owner is empty!";
+		ackT->ErrorMessage = "Tx owner is empty!";
+        ackT->ErrorCode = "-8";	
+		ERRORLOG("Tx owner is empty!");
+		return "-8";
+
 	}
 
 	{
@@ -3056,7 +3166,11 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	
 	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
-		return "-11 gas = 0 !";
+		ackT->ErrorMessage = "gas = 0 !";
+        ackT->ErrorCode = "-9";	
+		ERRORLOG("gas = 0 !");
+		return "-9";
+
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
@@ -3072,7 +3186,10 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 	
 	if(total < expend)
 	{
-		std::string strError = "-12 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
+		ackT->ErrorMessage = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
+        ackT->ErrorCode = "-72013";	
+		std::string strError = "-72013 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
+		ERRORLOG("The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
 		return "-72013";
 	}	
 
@@ -3112,8 +3229,12 @@ std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromA
 		std::string id;
     	int ret= GetBlockPackager(id,allUtxos,information);
     	if(ret!=0){
-			std::string strError = "-14 GetBlockPackager error , error code is " + std::to_string(ret);
+			ackT->ErrorMessage = "GetBlockPackager error";
+        	ackT->ErrorCode = "-11";	
+			std::string strError = "-11";
+			ERRORLOG("GetBlockPackager error");
 			return strError;
+
     	}
 		outTx.set_identity(id);
 	}

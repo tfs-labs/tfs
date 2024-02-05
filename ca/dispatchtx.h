@@ -26,10 +26,7 @@ class ContractDispatcher{
         void Process();
         
     private:
-        constexpr static int _precedingContractBlockLookupInterval = 10;
-        constexpr static int _precedingContractBlockLookupStartTime = 3 * 1000000;
-        constexpr static int _precedingContractBlockLookupEndtime = _precedingContractBlockLookupInterval * 1000000;
-        constexpr static int _contractBlockPackingTime = _precedingContractBlockLookupInterval * 1000000;
+        constexpr static int _contractWaitingTime = 15 * 1000000;
 
         struct msgInfo
         {
@@ -52,8 +49,11 @@ class ContractDispatcher{
         std::mutex _contractMsgMutex;
         std::mutex _contractHandleMutex;
 
-        std::unordered_map<std::string, std::vector<std::string>> _contractDependentCache; 
-        std::unordered_map<std::string, TxMsgReq> _contractMsgReqCache;
+        std::unordered_map<std::string, std::vector<std::string>> _contractDependentCache;
+        std::unordered_map<std::string, TxMsgReq> _contractMsgReqCache; 
+
+ 
+
 };
 
 #endif

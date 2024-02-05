@@ -47,8 +47,11 @@ void BlockMonitor::checkTxSuccessRate()
 		}
 		outputFile.close();
 	}
-
-	DEBUGLOG(GREEN "addDropshippingTxVec Txsize: {}, DropshippingTxVecFail size:{}" RESET, DropshippingTxVec.size(), DropshippingTxVecFail);
+	double successRate = (1 - static_cast<double>(DropshippingTxVecFail) / DropshippingTxVec.size()) * 100;
+	DEBUGLOG(GREEN "addDropshippingTxVec Txsize: {}, DropshippingTxVecFail size:{}, SuccessRate:{}%" RESET, DropshippingTxVec.size(), DropshippingTxVecFail, successRate );
+	std::cout<< GREEN << "addDropshippingTxVec Txsize:" << DropshippingTxVec.size() << RESET << std::endl;
+	std::cout<< GREEN <<"DropshippingTxVecFail size:" << DropshippingTxVecFail<< RESET << std::endl;
+	std::cout<< GREEN <<"SuccessRate:" << successRate << "%" << RESET << std::endl;
 	DropshippingTxVec.clear();
 
 	int DoHandleTxVecFail = 0;

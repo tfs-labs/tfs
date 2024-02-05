@@ -46,7 +46,7 @@ int ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &h
         return -3;
     }
     evmc::result result = futureResult.get();
-    DEBUGLOG("Evmone execution Result: {}", result.status_code);
+    DEBUGLOG("Evmone execution Result: {}, msg.gas:{}, result.gas_left:{}", result.status_code, msg.gas, result.gas_left);
     if (result.status_code != EVMC_SUCCESS)
 	{
 		ERRORLOG(RED "Evmone execution failed! gas_left:{}, Output: {}" RESET, result.gas_left, std::string_view(reinterpret_cast<const char *>(result.output_data), result.output_size));  
@@ -69,7 +69,6 @@ int ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &h
 	}
     gasCost = msg.gas - result.gas_left;
 	strOutput = std::move(evmc::hex({result.output_data, result.output_size}));
-    
 	DEBUGLOG("Output: {}", strOutput);
     return 0;    
 }
@@ -774,10 +773,10 @@ FillOutTx(const std::string &fromAddr, const std::string &toAddr, global::ca::Tx
     else
     {
         std::string identity;
-        int ret = GetContractBlockPackager(outTx.time(), height - 1, identity, info_);
+        int ret = GetContractDistributionManager(outTx.time(), height - 1, identity, info_);
         if(ret != 0)
         {
-            ERRORLOG("GetContractBlockPackager fail ret: {}", ret);
+            ERRORLOG("GetContractDistributionManager fail ret: {}", ret);
             return ret -= 300;
         }
         outTx.set_identity(identity);
@@ -959,7 +958,7 @@ int Evmone::GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
     vout->set_value(gasCost);
     targetAddrs.insert({global::ca::kVirtualDeployContractAddr, gasCost});
 
-    if(contractTip != 0)
+    if(contractTip != 0 && !toAddr.empty())
     {
         CTxOutput * voutToAddr = txUtxo->add_vout();
         voutToAddr->set_addr(toAddr);
@@ -1010,7 +1009,7 @@ int Evmone::GenCallOutTx(const std::string &fromAddr, const std::string &toAddr,
         return -11;
     }
     expend += gas;
-
+    DEBUGLOG("contractTip:{}, gasCost:{}, gas:{}",contractTip, gasCost, gas);
     if(fromBalance[fromAddr] < expend)
     {
         ERRORLOG("The total cost = {} is less than the cost = {}", fromBalance[fromAddr], expend);
@@ -1039,13 +1038,14 @@ int Evmone::VerifyUtxo(const CTransaction& tx, const CTransaction& callOutTx)
     std::string srcStr;
     for(const auto& vout : tx.utxo().vout())
     {
-        DEBUGLOG("----- vout.addr:{}, vout.amount:{}", vout.addr(), vout.value());
+        DEBUGLOG("srcStr ----- vout.addr:{}, vout.amount:{}", vout.addr(), vout.value());
         srcStr += vout.SerializeAsString();
     }
 
     std::string detStr;
     for(const auto& vout : callOutTx.utxo().vout())
     {
+         DEBUGLOG("detStr ----- vout.addr:{}, vout.amount:{}", vout.addr(), vout.value());
         detStr += vout.SerializeAsString();
     }
 

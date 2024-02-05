@@ -323,6 +323,7 @@ int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs)
 
     for (auto &node_id : sendNodeIds)
     {
+        DEBUGLOG("GetBlockByHashReq id:{}", node_id);
         NetSendMessage<GetBlockByHashReq>(node_id, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
 
@@ -428,6 +429,7 @@ int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string&
 
     for (auto &node_id : sendNodeIds)
     {
+        DEBUGLOG("GetBlockByHashReq id:{}", node_id);
         NetSendMessage<GetBlockByHashReq>(node_id, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
 
@@ -471,7 +473,7 @@ int SendBlockByHashAck(const std::map<std::string, bool> &missingHashs, const st
         {
             if (DBStatus::DB_SUCCESS != dbReader.GetBlockHashByTransactionHash(it.first, strBlockHash))
             {
-                ERRORLOG("GetBlockHashByTransactionHash fail!");
+                ERRORLOG("GetBlockHashByTransactionHash fail!, txHash:{}", it.first);
                 return -1;
             }
         }
@@ -482,7 +484,7 @@ int SendBlockByHashAck(const std::map<std::string, bool> &missingHashs, const st
         std::string blockstr = "";
         if (DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(strBlockHash, blockstr))
         {
-            ERRORLOG("GetBlockByBlockHash fail!");
+            ERRORLOG("GetBlockByBlockHash fail!, blockHash:{}", strBlockHash);
             return -2;
         }
         if(blockstr == "")
@@ -623,8 +625,14 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
         return -13;
     }
     auto startT5 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+
     DEBUGLOG("verifying block {} , isVerify:{}", blockHash.substr(0, 6), isVerify);
-    
+
+    if(block.sign_size() >= 1)
+    {
+        DEBUGLOG("verifying block {} , isVerify:{}, blockPackage:{}", blockHash.substr(0, 6), isVerify, GetBase58Addr(block.sign(0).pub()));
+    }
+
     int ret;
     //add condition of height and version
 	if(blockHeight <= global::ca::OldVersionSmartContractFailureHeight)
@@ -1149,14 +1157,99 @@ void BlockHelper::PostSaveProcess(const CBlock &block)
     PostMembershipCancellationProcess(block);
 }
 
+
+int BlockHelper::RollbackContractBlock()
+{
+    int ret = 0;
+    std::set<std::string> addrMap; 
+    std::set<std::string> rollbackBlocksHashs;
+    for (auto it = _rollbackBlocks.rbegin(); it != _rollbackBlocks.rend(); ++it)
+    {
+        for (auto sit = it->second.begin(); sit != it->second.end(); ++sit)
+        {
+            rollbackBlocksHashs.insert(sit->hash());
+            if(IsContractBlock(*sit))
+            {
+                for(auto& tx :sit->txs())
+                {
+                    auto addr = GetContractAddr(tx);
+                    if(!addr.empty())
+                    {
+                        addrMap.insert(addr);
+                    }
+                }
+            }
+        }
+    }
+
+    uint64_t selfNodeHeight = 0;
+    DBReader dbReader;
+    auto status = dbReader.GetBlockTop(selfNodeHeight);
+    if (DBStatus::DB_SUCCESS != status)
+    {
+        ERRORLOG("RollbackContractBlock GetBlockTop error");
+        return -1;
+    }
+
+    uint64_t beginHeight = _rollbackBlocks.begin()->first;
+    std::vector<std::string> block_hashes;
+    if(DBStatus::DB_SUCCESS != dbReader.GetBlockHashesByBlockHeight(beginHeight, selfNodeHeight, block_hashes))
+    {
+        ERRORLOG("RollbackContractBlock GetBlockHashesByBlockHeight error");
+        return -2;
+    }
+
+    for(const auto& blockHash: block_hashes)
+    {
+        std::string blockStr;
+        CBlock block;
+        if(DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(blockHash, blockStr))
+        {
+            ERRORLOG("RollbackContractBlock GetBlockByBlockHash error");
+            return -3;
+        }
+        block.ParseFromString(blockStr);
+
+        auto findBlock = rollbackBlocksHashs.find(block.hash());
+        if(findBlock != rollbackBlocksHashs.end())
+        {
+            continue;
+        }
+
+        if(IsContractBlock(block))
+        {
+            for(auto& tx :block.txs())
+            {
+                auto addr = GetContractAddr(tx);
+                if(!addr.empty())
+                {
+                    auto findAddr = addrMap.find(addr);
+                    if(findAddr != addrMap.end())
+                    {
+                        _rollbackBlocks[block.height()].insert(block);
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
 int BlockHelper::RollbackBlocks()
 {
     if (_rollbackBlocks.empty())
     {
         return 0;
     }
-    auto rollbackTop = (--_rollbackBlocks.end())->first;
-    int ret = 0;
+
+    int ret = RollbackContractBlock();
+    if(ret != 0)
+    {
+        ERRORLOG("RollbackContractBlock error, error num: {}", ret);
+        return -1;
+    }
+
     for (auto it = _rollbackBlocks.rbegin(); it != _rollbackBlocks.rend(); ++it)
     {
         for (auto sit = it->second.begin(); sit != it->second.end(); ++sit)
@@ -1739,31 +1832,31 @@ int BlockHelper::checkContractBlock(const CBlock& block, std::string& contractTx
 
     try
     {
-        std::unordered_map<std::string, std::vector<std::string>> contractTxPreHashMap;
+        std::map<std::string, std::vector<std::pair<std::string, std::string>>> contractTxPreHashMap;
         nlohmann::json dataJson = nlohmann::json::parse(block.data());
         for (const auto&[key, value] : dataJson.items())
         {
             for(auto &it : value["PrevHash"].items())
             {
-                contractTxPreHashMap[it.key()].push_back(it.value());
+                contractTxPreHashMap[key].push_back({it.key(), it.value()});
             }
         }
 
         for(auto& iter : contractTxPreHashMap)
         {
-            for(auto& preHash : iter.second)
+            for(auto& preHashPair : iter.second)
             {
-                auto found = std::find(iter.second.begin(), iter.second.end(), preHash);
-                if(found != iter.second.end())
+                if(contractTxPreHashMap.find(preHashPair.second) != contractTxPreHashMap.end())
                 {
                     continue;
                 }
 
                 std::string DBBlockHash;
-                auto preHashStatus = CheckContractPreHashStatus(iter.first, preHash, block.time(), DBBlockHash);
+                auto preHashStatus = CheckContractPreHashStatus(preHashPair.first, preHashPair.second, block.time(), DBBlockHash);
                 if(preHashStatus == ContractPreHashStatus::Normal)
                 {
-                    if(checkContractBlockCache(block, preHash) != 0)
+                    DEBUGLOG("checkContractBlockCache blockHash:{}, contractPrehash:{}", block.hash().substr(0,6), preHashPair.second.substr(0,10));
+                    if(checkContractBlockCache(block, preHashPair.second) != 0)
                     {
                         return -2;
                     }
@@ -1787,11 +1880,11 @@ int BlockHelper::checkContractBlock(const CBlock& block, std::string& contractTx
                 }
                 else if(preHashStatus == ContractPreHashStatus::Waiting)
                 {
-                    if(checkContractBlockCache(block, preHash) != 0)
+                    if(checkContractBlockCache(block, preHashPair.second) != 0)
                     {
                         return -5;
                     }
-                    contractTxPreHash = preHash;
+                    contractTxPreHash = preHashPair.second;
                     break;
                 }
             }
@@ -1928,7 +2021,7 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
         auto ret = checkContractBlock(block, contractTxPreHash);
         if(ret < 0)
         {
-            DEBUGLOG("checkContractBlock error, contractBlockHash:{}, contractTxPreHash:{}",block.hash().substr(0,6), contractTxPreHash);
+            DEBUGLOG("checkContractBlock error, contractBlockHash:{}, contractTxPreHash:{}, ret:{}",block.hash().substr(0,6), contractTxPreHash, ret);
             return;
         }
         if(ret == 0 && !contractTxPreHash.empty())
@@ -2163,7 +2256,7 @@ bool BlockHelper::ObtainChainHeight(uint64_t& chainHeight)
 
 void BlockHelper::RollbackTest()
 {
-    std::lock_guard<std::mutex> lock(_helperMutex);
+    // std::lock_guard<std::mutex> lock(_helperMutex); 
 
     cout << "1.Rollback block from Height" << endl;
     cout << "2.Rollback block from Hash" << endl;
@@ -2182,6 +2275,7 @@ void BlockHelper::RollbackTest()
             unsigned int height = 0;
             cout << "Rollback block height: ";
             cin >> height;
+            std::lock_guard<std::mutex> lock(_helperMutex);
             auto ret = ca_algorithm::RollBackToHeight(height);
             if (0 != ret)
             {
@@ -2194,18 +2288,31 @@ void BlockHelper::RollbackTest()
         }
         case 2:
         {
+            std::map<uint64_t, std::set<CBlock, CBlockCompare>> rollBackMap;
             string hash;
-            cout << "Rollback block hash: ";
+            cout << "Enter rollback block hash, Enter 0 exit" << std::endl;
             cin >> hash;
-            auto ret = ca_algorithm::RollBackByHash(hash);
-            if (0 != ret)
+            while(hash != "0")
             {
-                cout << endl
-                          << "ca_algorithm::RollBackByHash:" << ret << endl;
-                break;
+                CBlock block;
+                std::string blockStr;
+                DBReader dbReader;
+                if(DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(hash, blockStr))
+                {
+                    std::cout << "RollbackContractBlock GetBlockByBlockHash error" << std::endl;
+                    return;
+                }
+                block.ParseFromString(blockStr);
+                rollBackMap[block.height()].insert(block);
+                hash.clear();
+                cout << "Enter rollback block hash, Enter 0 exit" << std::endl;
+                cin >> hash;
             }
-
-            break;
+            if(!rollBackMap.empty())
+            {
+                MagicSingleton<BlockHelper>::GetInstance()->AddRollbackBlock(rollBackMap);
+            }
+            return;
         }
         default:
         {

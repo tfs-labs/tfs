@@ -55,7 +55,7 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
     }
 		
     auto it = _blockCnt.find(block.hash());
-    if (it != _blockCnt.end() && it->second.size() != global::ca::kRecvSignCnt)
+    if (it != _blockCnt.end())
     {
         _blockCnt[block.hash()].push_back(msg);
     }
