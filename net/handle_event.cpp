@@ -667,30 +667,52 @@ int HandleNodeBase58AddrChangedReq(const std::shared_ptr<NodeBase58AddrChangedRe
 		return -4;
 	}
 
-	// EVP_PKEY* newPublicKey = nullptr;
-	// if(GetEDPubKeyByBytes(newSign.pub(), newPublicKey) == false)
-	// {
-	// 	ERRORLOG(RED "Get public key from bytes failed!" RESET);
-	// 	return -3;
-	// }
-
-	// if(ED25519VerifyMessage(Getsha256hash(GetBase58Addr(newSign.pub(), Base58Ver::kBase58Ver_Normal)), newPublicKey, newSign.sign()) == false)
-	// {
-	// 	ERRORLOG(RED "Public key verify sign failed!" RESET);
-	// 	return -4;
-	// }
-
-	// ON_SCOPE_EXIT
-	// {
-	// 	EVP_PKEY_free(oldPublicKey);
-	// 	EVP_PKEY_free(newPublicKey);
-	// };
-
 	int ret = MagicSingleton<PeerNode>::GetInstance()->UpdateBase58Address(oldSign.pub(), newSign.pub());
 	return ret;
 }
 
-int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, const MsgData& msgData)
+
+void initCyclicTargetAddresses(const std::shared_ptr<BuildBlockBroadcastMsg>& msg, Cycliclist<std::string> & targetAddressCycleList)
+{
+	std::vector<std::string> targetAddresses;
+	auto castAddrs = msg->castaddrs();
+	if(msg->castaddrs_size() == 0)
+	{
+		std::cout <<" error castaddr empty" << std::endl;
+	}
+
+	for(auto & addr : castAddrs)
+	{
+		targetAddresses.push_back(addr);
+	}
+	
+	std::sort(targetAddresses.begin(), targetAddresses.end());
+	for(auto & addr : targetAddresses)
+	{
+		DEBUGLOG("initCyclicTargetAddresses addr : {}", addr);
+		targetAddressCycleList.push_back(addr);
+	}
+}
+
+void initCyclicNodeList(Cycliclist<std::string>& cyclicNodeList) 
+{
+	std::vector<std::string> nodeListAddrs;
+	std::vector<Node> nodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+	
+	for(auto &node : nodeList)
+	{
+		nodeListAddrs.push_back(node.base58Address);
+	}
+	std::sort(nodeListAddrs.begin(),nodeListAddrs.end());
+
+	for(auto & addr : nodeListAddrs)
+	{
+		DEBUGLOG("broadcast cyclic list addr : {}", addr);
+		cyclicNodeList.push_back(addr);
+	}
+}
+
+int HandleBroadcastMsg(const std::shared_ptr<BuildBlockBroadcastMsg>& msg, const MsgData& msgData)
 {	
 	DEBUGLOG("HandleBuildBlockBroadcastMsg begin");
 
@@ -706,14 +728,12 @@ int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
    
 	if (!block.ParseFromString(serBlock))
 	{
-       
 		ERRORLOG("HandleBuildBlockBroadcastMsg block ParseFromString failed");
-     
 		return -2;
 	}
 
-	std::vector<Cycliclist<std::string>::iterator> upAddr;
-	std::vector<Cycliclist<std::string>::iterator> downAddr;
+	std::vector<Cycliclist<std::string>::iterator> upperBoundary;
+	std::vector<Cycliclist<std::string>::iterator> lowerBoundary;
 	Cycliclist<std::string>::iterator targetIter;
 
 	//Initialize lookup list
@@ -747,8 +767,8 @@ int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 			if(up != down && up-1 != down && down+1 != up)
 			{
              
-				upAddr.push_back(up);
-				downAddr.push_back(down);
+				upperBoundary.push_back(up);
+				lowerBoundary.push_back(down);
 				up--;
 				down++;
 			}
@@ -762,17 +782,17 @@ int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 	};
 
 	//Find adjacent nodes up
-	auto getUpIter= [&](int times, Cycliclist<std::string> & nodeList)->std::pair<Cycliclist<std::string>::iterator,int>
+	auto getUpperIterator= [&](int times, Cycliclist<std::string> & nodeList)->std::pair<Cycliclist<std::string>::iterator,int>
 	{
 		std::pair<Cycliclist<std::string>::iterator,int> res;
         res.second = 0;
 
         try {
-            if (times >= upAddr.size() || times >= downAddr.size()) 
+            if (times >= upperBoundary.size() || times >= lowerBoundary.size()) 
 			{
                 ERRORLOG("find times is over! "
-                         "[times:{}],[upAddr.size:{}],[downAddr.size:{}]",
-                         times, upAddr.size(), downAddr.size());
+                         "[times:{}],[upperBoundary.size:{}],[lowerBoundary.size:{}]",
+                         times, upperBoundary.size(), lowerBoundary.size());
                 res.second = -1033;
                 return res;
             }
@@ -784,23 +804,23 @@ int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
                  return res;
             }
             for (; iter != nodeList.end(); iter++) {
-                if(upAddr[times] == Cycliclist<std::string>::iterator(nullptr))
+                if(upperBoundary[times] == Cycliclist<std::string>::iterator(nullptr))
 				{
                     res.second=-1;
                     return res;
                 }
-                if (upAddr[times]->data == iter->data) 
+                if (upperBoundary[times]->data == iter->data) 
 				{
                     res.first = iter;
                     res.second = 0;
                 }
             }
-             if(upAddr[times] == Cycliclist<std::string>::iterator(nullptr))
+             if(upperBoundary[times] == Cycliclist<std::string>::iterator(nullptr))
 			 {      
                     res.second = -1;
                     return res;
             }
-            if (upAddr[times]->data == iter->data) 
+            if (upperBoundary[times]->data == iter->data) 
 			{
                 res.first = iter;
                 res.second = 0;
@@ -814,14 +834,14 @@ int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
 	};
 
 	//Find adjacent nodes down
-	auto getDownIter = [&](int times, Cycliclist<std::string> & nodeList)->std::pair<Cycliclist<std::string>::iterator,int>
+	auto getLowerIterator = [&](int times, Cycliclist<std::string> & nodeList)->std::pair<Cycliclist<std::string>::iterator,int>
 	{
 		std::pair<Cycliclist<std::string>::iterator,int> res;
         res.second = 0;
 
-		if(times >= upAddr.size() || times >= downAddr.size())
+		if(times >= upperBoundary.size() || times >= lowerBoundary.size())
 		{
-			ERRORLOG("find times is over! [times:{}],[upAddr.size:{}],[downAddr.size:{}]",times,upAddr.size(),downAddr.size());
+			ERRORLOG("find times is over! [times:{}],[upperBoundary.size:{}],[lowerBoundary.size:{}]",times,upperBoundary.size(),lowerBoundary.size());
 			res.second=-1033;
 			return res;
 		}
@@ -834,114 +854,84 @@ int HandleBroadcastMsg( const std::shared_ptr<BuildBlockBroadcastMsg>& msg, cons
                  return res;
             }
             for (; iter != nodeList.end(); iter++) {
-                 if(downAddr[times] == Cycliclist<std::string>::iterator(nullptr))
+                 if(lowerBoundary[times] == Cycliclist<std::string>::iterator(nullptr))
 				 {
                     res.second = -1;
                     return res;
                  }
-                if (downAddr[times] -> data == iter-> data) {
+                if (lowerBoundary[times] -> data == iter-> data) {
                     res.first = iter;
 
                     res.second = 0;
                 }
             }
-            if(downAddr[times] == Cycliclist<std::string>::iterator(nullptr))
+            if(lowerBoundary[times] == Cycliclist<std::string>::iterator(nullptr))
 			{       
                     res.second = -1;
                     return res;
             }
-            if (downAddr[times]->data == iter->data) 
+            if (lowerBoundary[times]->data == iter->data) 
 			{
                 res.first = iter;
                 res.second = 0;
             }
         } catch (std::exception &e) {
-            res.second=-3;
+            res.second = -3;
         }
         return res;
 	};
 	int findTimes = 0;
-	//Determine broadcast type
 	if(msg->type() == 1)
 	{
-		std::vector<std::string> nodeListAddrs;
-		std::vector<Node> nodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
-      
-		for(auto &n:nodeList)
-		{
-			nodeListAddrs.push_back(n.base58Address);
-		}
-      
-		std::sort(nodeListAddrs.begin(),nodeListAddrs.end());
-		std::vector<std::string> allAddrs;
-		auto castAddrs = msg->castaddrs();
-		if(msg->castaddrs_size() == 0)
-		{
-			std::cout <<" error castaddr empty" << std::endl;
-		}
+		Cycliclist<std::string> targetAddressCycleList;
+		initCyclicTargetAddresses(msg, targetAddressCycleList);
 
-		for(auto & addr : castAddrs)
-		{
-			allAddrs.push_back(addr);
-		}
-       
-		std::sort(allAddrs.begin(),allAddrs.end());
-		Cycliclist<std::string> cycList;
-		for(auto & addr : allAddrs)
-		{
-			cycList.push_back(addr);
-		}
+		std::string defaultAddress = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+		bool isTargetFound = InitFindeTarget(defaultAddress, targetAddressCycleList);
 
-		std::string defalutAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-		bool isFindd=InitFindeTarget(defalutAddr,cycList);
-
-        if(isFindd==false)
+        if(isTargetFound == false)
 		{
             return -1;
         }
 
-		//nodeList Add to circular linked list
-		Cycliclist<std::string> cycNodeList;
-		for(auto &addr : nodeListAddrs)
-		{
-			cycNodeList.push_back(addr);
-		}
+		Cycliclist<std::string> cyclicNodeList;
+		initCyclicNodeList(cyclicNodeList);
+
 		msg->set_type(2);
-		for(;findTimes < upAddr.size() && findTimes < downAddr.size(); findTimes++)
+		for(;findTimes < upperBoundary.size() && findTimes < lowerBoundary.size(); findTimes++)
 		{
-			auto upIter = getUpIter(findTimes,cycNodeList);
-            if(upIter.second!=0)
+			auto upIter = getUpperIterator(findTimes, cyclicNodeList);
+            if(upIter.second != 0)
 			{   
                 return -1;
             }
-			auto downIter = getDownIter(findTimes,cycNodeList);
-            if(downIter.second!=0)
+			auto downIter = getLowerIterator(findTimes, cyclicNodeList);
+            if(downIter.second != 0)
 			{
                 return -1;
             }
           
-			Cycliclist<std::string>::iterator startPosition=upIter.first;
-			Cycliclist<std::string>::iterator endPosition=downIter.first;
-			
-			if(startPosition == Cycliclist<std::string>::iterator(nullptr) || endPosition == Cycliclist<std::string>::iterator(nullptr))
+			Cycliclist<std::string>::iterator startIterator = upIter.first;
+			Cycliclist<std::string>::iterator endIterator = downIter.first;
+
+			if(startIterator == Cycliclist<std::string>::iterator(nullptr) || endIterator == Cycliclist<std::string>::iterator(nullptr))
 			{
 				continue;
 			}
 			else
 			{
-				for(;startPosition!=endPosition;startPosition++)
+				for(; startIterator != endIterator; startIterator++)
 				{
-                  //  debugL("__line:%s",__LINE__);
-					if(startPosition->data != defalutAddr)
+					DEBUGLOG("broadcast addr : {}, type: {}, block hash : {}, findTimes: {}", startIterator->data, msg->type(), block.hash().substr(0, 6), findTimes);
+					if(startIterator->data != defaultAddress)
 					{
-						net_com::SendMessage(startPosition->data, *msg);
+						MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, startIterator->data, *msg));
 					}
-					//debugL("__line:%s",__LINE__);
 				}
-				if(startPosition->data!=defalutAddr)
+				if(startIterator->data != defaultAddress)
 				{
-					net_com::SendMessage(startPosition->data, *msg);
-                   // debugL("__line:%s",__LINE__);
+					DEBUGLOG("broadcast addr : {}, type: {}, block hash : {}, findTimes: {}", startIterator->data, msg->type(), block.hash().substr(0, 6), findTimes);
+					MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, startIterator->data, *msg));
 				}
 				break;
 			}

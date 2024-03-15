@@ -44,17 +44,6 @@ public:
 class ContractDataCache
 {
 public:
-
-    void lock()
-    {
-        Mutex.lock();
-    }
-
-    void unlock()
-    {
-        Mutex.unlock();
-    }
-
     void set(const nlohmann::json& jStorage)
     {
         std::unique_lock<std::shared_mutex> lck(contractDataMapMutex);
@@ -76,19 +65,10 @@ public:
         }
         return false;
     }
-
-    void clear()
-    {
-        std::unique_lock<std::shared_mutex> lck(contractDataMapMutex);
-        contractDataMap.clear();
-    }
-
 private:
     std::unordered_map<std::string, std::string> contractDataMap;
     mutable std::shared_mutex contractDataMapMutex;
-    std::mutex Mutex;
 };
-
 class Trie
 {
 public:
@@ -96,14 +76,16 @@ public:
     {
         root = NULL;
     }
-    Trie(std::string ContractAddr) 
+    Trie(std::string ContractAddr, ContractDataCache* contractDataCache) 
     {
         root = NULL;
         this->contractAddr = ContractAddr;
+        this->contractDataCache = contractDataCache;
     }
-    Trie(std::string roothash, std::string ContractAddr) 
+    Trie(std::string roothash, std::string ContractAddr, ContractDataCache* contractDataCache) 
     {
         this->contractAddr = ContractAddr;
+        this->contractDataCache = contractDataCache;
         auto roothashnode = std::shared_ptr<packing<HashNode>>(
             new packing<HashNode>(HashNode{ roothash }));
         root = ResolveHash(roothashnode, "");
@@ -154,6 +136,7 @@ public:
     mutable nodePtr root;
     std::string contractAddr;
     std::map<std::string, std::string> dirtyHash;
+    mutable ContractDataCache* contractDataCache;
 };
 #endif
 

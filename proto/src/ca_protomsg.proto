@@ -33,9 +33,19 @@ message TxMsgReq
 
 }
 
+message VrfData
+{
+  string  hash = 1;
+  uint64  range = 2;
+  uint64  percentage  = 3;
+  uint64  height = 4;
+  string  targetAddr  = 5;
+  repeated string  vrfList = 6;
+  string  txvrfinfohash = 7;
+}
 message Vrf
 {
-  string data = 1;
+  VrfData vrfdata = 1;
   CSign  Vrfsign = 2;
 }
 

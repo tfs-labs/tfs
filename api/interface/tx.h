@@ -272,6 +272,8 @@ uint64_t blockheight;
 std::string blockhash;
 UCTE
 
+
+
 UCTS_REQ(stake_node_list)
 
 std::string addr; 

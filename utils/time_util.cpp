@@ -37,8 +37,8 @@ x_uint64_t TimeUtil::GetUTCTimestamp()
 
 x_uint64_t TimeUtil::GetTheTimestampPerUnitOfTime(const x_uint64_t& utcTime)
 {
-    x_uint64_t minutes = utcTime / 10000000;  // Convert timestamp
-    return minutes *  10000000;
+    x_uint64_t minutes = utcTime / 3000000;  // Convert timestamp
+    return minutes *  3000000;
 }
 
 x_uint64_t TimeUtil::GetTimestamp()

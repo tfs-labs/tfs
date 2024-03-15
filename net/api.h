@@ -240,6 +240,13 @@ namespace net_com
 	 * @return      false 
 	 */
 	bool SendOneMessage(const MsgData &to, const NetPack &pack);
+	/**
+	 * @brief       
+	 * 
+	 * @param       to 
+	 * @param       pack 
+	 */
+	void SendMessageTask(const std::string& addr, BuildBlockBroadcastMsg &msg);
 
 	template <typename T>
 	/**

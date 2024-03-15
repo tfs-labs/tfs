@@ -92,7 +92,7 @@ class BlockHelper
          * @param       blockStatus: 
          * @return      int 
          */
-        int VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus = nullptr);
+        int VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus = nullptr,BlockMsg *msg = nullptr);
         // int SaveBlock(const CBlock& block, bool NeedVerify);
 
         /**

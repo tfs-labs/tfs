@@ -15,7 +15,6 @@
 #include "db/db_api.h"
 
 
-
 /**
  * @brief       
  */
@@ -40,7 +39,6 @@ void getBlockByBlockHash();
  * @brief      Get a list of addresses that can claim bonuses
  */
 int GetBounsAddrInfo();
-
 
 /**
  * @brief       

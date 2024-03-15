@@ -89,6 +89,16 @@ public:
     /**
      * @brief       
      * 
+     * @param       task 
+     */
+    void CommitBroadcastTask(std::function<void()> task) {
+        _broadcastTaskPool.schedule(task);
+    }
+    
+
+    /**
+     * @brief       
+     * 
      * @param       func 
      * @param       subMsg 
      * @param       data 

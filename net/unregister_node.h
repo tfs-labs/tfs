@@ -133,7 +133,7 @@ public:
      */
 
     int verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight);
-    void splitAndInsertData(const std::map<Node, int, NodeCompare>  syncNodeCount);
+    void splitAndInsertData(const std::map<Node, int, NodeCompare> & syncNodeCount);
     void ClearSplitNodeListData();
 
     void GetConsensusStakeNodelist(std::map<std::string,int>& consensusStakeNodeMap);

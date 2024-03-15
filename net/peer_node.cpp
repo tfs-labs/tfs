@@ -91,6 +91,22 @@ void PeerNode::DeleteNode(std::string base58Addr)
 	}
 }
 
+void PeerNode::CloseFd(int fd)
+{
+	if(fd <= 0)
+	{
+		return;
+	}
+
+	MagicSingleton<BufferCrol>::GetInstance()->DeleteBuffer(fd); 
+	MagicSingleton<EpollMode>::GetInstance()->DeleteEpollEvent(fd);
+	int ret = close(fd);
+	if(ret != 0)
+	{
+		DEBUGLOG("CloseFd close error, fd = {}, errno = {}, ret = ",fd , errno, ret);
+	}
+}
+
 void PeerNode::DeleteByFd(int fd)
 {
 	std::unique_lock<std::shared_mutex> lck(_mutexForNodes);

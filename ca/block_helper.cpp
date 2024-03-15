@@ -522,14 +522,15 @@ int HandleBlockByHashAck(const std::shared_ptr<GetBlockByHashAck> &msg, const Ms
     return 0;
 }
 
-int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus)
+int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus , BlockMsg *msg)
 {
     if(block.version() != global::ca::kInitBlockVersion && block.version() != global::ca::kCurrentBlockVersion)
 	{
 		return -1;
 	}
     bool isVerify = true;
-    if(block.sign_size() == 0)
+    auto selfBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    if(GetBase58Addr(block.sign(0).pub()) == selfBase58Addr)
     {
         isVerify = false;
     }
@@ -641,7 +642,7 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
     }
     else
     {
-         ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus);
+         ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus,msg);
     }
 	
 	if (0 != ret)
@@ -729,7 +730,8 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         if (_missingPrehash)
         {
             ResetMissingPrehash();
-            SyncBlock::SetFastSync(blockHeight - 1);
+            DEBUGLOG("run new sync, start height: {}", blockHeight - 1);
+            SyncBlock::SetNewSyncHeight(blockHeight - 1);
             return -5;
         }
         if(!_missingUtxos.empty())
@@ -960,7 +962,8 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
             if (_missingPrehash)
             {
                 ResetMissingPrehash();
-                SyncBlock::SetFastSync(blockHeight - 1);
+                DEBUGLOG("run new sync, start height: {}", blockHeight - 1);
+                SyncBlock::SetNewSyncHeight(blockHeight - 1);
                 return -1;
             }
             if(!_missingUtxos.empty())
@@ -1470,8 +1473,8 @@ void BlockHelper::Process()
 
         if (result == -2)
         {
-            DEBUGLOG("next run fast sync, sync height: {}", block.height() - 1);
-            SyncBlock::SetFastSync(block.height() - 1);
+            DEBUGLOG("next run new sync, start height: {}", block.height() - 1);
+            SyncBlock::SetNewSyncHeight(block.height() - 1);
             return;
         }
 
@@ -2017,6 +2020,12 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
     bool isContractBlock = false;
     if(IsContractBlock(block))
     {
+        std::string blockRaw;
+        if (DBStatus::DB_SUCCESS == dbReader.GetBlockByBlockHash(block.hash(), blockRaw))
+        {
+            return;
+        }
+
         std::string contractTxPreHash;
         auto ret = checkContractBlock(block, contractTxPreHash);
         if(ret < 0)

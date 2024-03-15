@@ -405,7 +405,9 @@ int RpcCreateEvmDeployContractTransaction(const std::string &fromAddr, const std
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
+    auto nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    std::string transientContractAddress = evm_utils::GenerateEvmAddr(std::to_string(nowTime));
+    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost, transientContractAddress);
     if (ret != 0)
     {
         ERRORLOG("Evmone failed to deploy contract!");
@@ -418,6 +420,7 @@ int RpcCreateEvmDeployContractTransaction(const std::string &fromAddr, const std
     jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
     jTxInfo["VmType"] = global::ca::VmType::EVM;
     jTxInfo["Code"] = code;
+    jTxInfo["transientAddress"] = transientContractAddress;
     jTxInfo["Output"] = strOutput;
  
 
@@ -433,7 +436,8 @@ int RpcCreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, con
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
+    std::string transientContractAddress = "xxx";
+    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost, transientContractAddress);
     if (ret != 0)
     {
         ERRORLOG("Evmone failed to deploy contract!");
@@ -764,7 +768,7 @@ int RpcECallContract(const std::string &fromAddr, const std::string &OwnerEvmAdd
         return -11;
     }
 
-    host.accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+    host.accounts[msg.recipient].CreateTrie(rootHash, ContractAddress, host.contractDataCache);
     host.accounts[msg.recipient].set_code(code);
     int res = ExecuteByEvmone(msg, code, host, strOutput, gasCost);
     DEBUGLOG("evm execute ret: {}", res);

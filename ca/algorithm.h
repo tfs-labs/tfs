@@ -25,7 +25,7 @@ namespace ca_algorithm
  * @param       addr_sign_cnt: 
  * @return      int 
  */
-int GetAbnormalSignAddrListByPeriod(uint64_t &curTime, std::map<std::string, uint64_t> &abnormalAddrList, std::unordered_map<std::string, uint64_t> & addrSignCnt);
+int GetAbnormalSignAddrListByPeriod(uint64_t &curTime, std::map<std::string, double> &addr_percent, std::unordered_map<std::string, uint64_t> & addrSignCnt);
 
 /**
  * @brief       Obtain the time (nanosecond) of pledge transaction with pledge limit of more than 500 according to the addressGet the Pledge Time By Addr object
@@ -134,12 +134,12 @@ int VerifySign(const CSign & sign, const std::string & serHash);
  */
 int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* blockStat = nullptr);
 
-
+bool VerifyDirtyContract(const std::vector<std::string> &verifyCalledContract, const std::vector<std::string> &calledContract);
 
 int VerifyContractStorage(const nlohmann::json& txInfo, const nlohmann::json& expectedTxInfo);
 
-int VerifyContractBlock(const CBlock &block);
-
+int VerifyContractBlock(const CBlock &block,BlockMsg * msg = nullptr);
+int verifyContractDependenciesTx(const std::map<std::string, CTransaction>& ContractTxs, std::map<std::string,std::vector<std::string>>& dependTx, const CBlock &block, nlohmann::json& blockData);
 /**
  * @brief       Check block
  * 
@@ -150,7 +150,7 @@ int VerifyContractBlock(const CBlock &block);
  * @param       blockStatus: 
  * @return      int 
  */
-int VerifyBlock(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr);
+int VerifyBlock(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr,BlockMsg* msg = nullptr);
 // int VerifyBlock(const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean, bool verify_abnormal = true);
 int VerifyBlock_V33_1(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr);
 /**

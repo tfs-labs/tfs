@@ -155,6 +155,7 @@ void CaRegisterHttpCallbacks() {
     HttpServer::RegisterCallback("/bandwidth", ApiGetRealBandwidth);
     HttpServer::RegisterCallback("/block_info", ApiGetBlockInfo);
     HttpServer::RegisterCallback("/get_tx_info", ApiGetTxInfo);
+    HttpServer::RegisterCallback("/get_all_bonus_info",ApiGetAllBonusInfo);
 
     HttpServer::RegisterCallback("/pub", ApiPub);
     HttpServer::RegisterCallback("/startautotx", ApiStartAutoTx);
@@ -1432,6 +1433,34 @@ void ApiGetTxInfo(const Request &req, Response &res)
     ack_t.blockheight = BlockHeight;
     res.set_content(ack_t.paseToString(), "application/json");
 }
+
+void ApiGetAllBonusInfo(const Request &req,Response &res)
+{
+    nlohmann::json addr_conut_time;
+
+    std::map<std::string, double> addr_percent;
+    std::unordered_map<std::string, uint64_t> addrSignCnt;
+    uint64_t curTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    uint64_t morningTime = MagicSingleton<TimeUtil>::GetInstance()->GetMorningTime(curTime)*1000000;
+
+    auto ret = ca_algorithm::GetAbnormalSignAddrListByPeriod(curTime, addr_percent, addrSignCnt);
+    if(ret < 0) 
+    {   
+        ERRORLOG("");
+    }   
+
+    addr_conut_time["time"] = std::to_string(morningTime); 
+    for(auto &it : addrSignCnt)
+    {
+        nlohmann::json addr_count;  
+        addr_count["address"] = it.first;
+        addr_count["count"] = it.second;
+        addr_conut_time["addr_count"].push_back(addr_count);
+    }
+    std::string str = addr_conut_time.dump();
+    res.set_content(str, "application/json");
+}
+
 
 bool tool_DeCode(const std::string &source, std::string &dest,
                  std::string &pubstr) {

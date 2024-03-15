@@ -26,6 +26,8 @@
 #include "utils/timer.hpp"
 #include "ca/transaction_entity.h"
 #include "net/msg_queue.h"
+#include "mpt/trie.h"
+#include "ca/packager_dispatch.h"
 
 /**
  * @brief       Transaction cache class. After the transaction flow ends, add the transaction to this class. 
@@ -68,13 +70,15 @@ class TransactionCache
     // The mutex of _contractInfoCache
         std::shared_mutex _contractInfoCacheMutex;
 
-    constexpr static int _precedingContractBlockLookupInterval = 10;
+        constexpr static int _precedingContractBlockLookupInterval = 10;
         constexpr static int _precedingContractBlockLookupStartTime = 3 * 1000000;
         constexpr static int _precedingContractBlockLookupEndtime = _precedingContractBlockLookupInterval * 1000000;
         constexpr static int _contractBlockPackingTime = _precedingContractBlockLookupInterval * 1000000;
         std::string _preContractBlockHash;
         std::map<std::string, std::pair<uint64_t, std::set<std::string> >> _dirtyContractMap;
         std::shared_mutex _dirtyContractMapMutex;
+
+        std::mutex _threadMutex;
     public:
         TransactionCache();
         ~TransactionCache() = default;
@@ -110,6 +114,7 @@ class TransactionCache
          */
 //        bool CheckConflict(const CTransaction& transaction);
 
+        void AddContractInfoCache(const std::string& transactionHash, const nlohmann::json& jTxInfo, const uint64_t& txtime);
         int GetContractInfoCache(const std::string& transactionHash, nlohmann::json& jTxInfo);
 
         std::string GetContractPrevBlockHash();
@@ -119,13 +124,22 @@ class TransactionCache
 
         std::string _SeekContractPreHashByNode(const std::vector<std::string> &sendNodeIds);
 
-    std::string GetAndUpdateContractPreHash(const std::string &contractAddress, const std::string &transactionHash,
+        std::string GetAndUpdateContractPreHash(const std::string &contractAddress, const std::string &transactionHash,
                                                 std::map<std::string, std::string> &contractPreHashCache);
         void SetDirtyContractMap(const std::string& transactionHash, const std::set<std::string>& dirtyContract);
+        bool GetDirtyContractMap(const std::string& transactionHash, std::set<std::string>& dirtyContract);
         void removeExpiredEntriesFromDirtyContractMap();
         static bool HasContractPackingPermission(const std::string& addr, uint64_t transactionHeight, uint64_t time);
 
+        std::pair<int, std::string> _ExecuteContracts(const std::map<std::string, CTransaction>& dependentContractTxMap);
+
+        bool RemoveContractsCacheTransaction(const std::map<std::string, CTransaction>& contractTxs);
+
+        bool RemoveContractInfoCacheTransaction(const std::map<std::string, CTransaction>& contractTxs);
+
         void ProcessContract();
+
+        int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, const MsgData &msgdata);
     private:
         /**
          * @brief       Threading functions
@@ -134,12 +148,10 @@ class TransactionCache
 //        void _ContractCacheProcessingFunc();
 
         int _AddContractInfoCache(const CTransaction &transaction,
-                                  std::map<std::string, std::string> &contractPreHashCache);
+                                  std::map<std::string, std::string> &contractPreHashCache, ContractDataCache* contractDataCache);
         static bool _HasContractPackingPermission(uint64_t transactionHeight, uint64_t time);
 
         std::atomic<bool> _threadRun=true;
-
-        void _ExecuteContracts();
 
         int _GetContractTxPreHash(const std::list<CTransaction>& txs, std::list<std::pair<std::string, std::string>>& contractTxPreHashList);
 

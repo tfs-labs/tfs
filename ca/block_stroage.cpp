@@ -26,7 +26,7 @@ void BlockStroage::_StartTimer()
 
 int BlockStroage::AddBlock(const BlockMsg &msg)
 {
-	std::unique_lock<std::shared_mutex> lck(_blockMutex);
+	std::unique_lock<std::shared_mutex> lck(_blockMutex); 
 
     CBlock block;
     block.ParseFromString(msg.block());
@@ -684,8 +684,8 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
         auto foundVrf = _blockStatusMap[blockHash].vrfMap.find(tx.hash());
         if(foundVrf != _blockStatusMap[blockHash].vrfMap.end())
         {
+            // blockmsg.mutable_vrfinfomap()->insert({tx.hash(), foundVrf->second});
             blockmsg.add_vrfinfo()->CopyFrom(foundVrf->second);
-            
         } 
         else
         {
@@ -694,11 +694,15 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
         auto foundTxVrf = _blockStatusMap[blockHash].txvrfMap.find(tx.hash());
         if(foundTxVrf != _blockStatusMap[blockHash].txvrfMap.end())
         {
-            auto vrfJson = nlohmann::json::parse(foundTxVrf->second.data());
-            vrfJson["txhash"] = tx.hash();
-            foundTxVrf->second.set_data(vrfJson.dump());
+            // auto vrfJson = nlohmann::json::parse(foundTxVrf->second.data());
+            // vrfJson["txhash"] = tx.hash();
+            // foundTxVrf->second.set_data(vrfJson.dump());
 
+            foundTxVrf->second.mutable_vrfdata()->set_txvrfinfohash(tx.hash());
             blockmsg.add_txvrfinfo()->CopyFrom(foundTxVrf->second);
+
+            //foundTxVrf->second.mutable_vrfdata()->set_hash(tx.hash());
+            // blockmsg.mutable_txvrfinfomap()->insert({tx.hash(), foundTxVrf->second});
             *newBlock.add_txs() = tx;
         } 
     }

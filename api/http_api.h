@@ -36,6 +36,7 @@ std::string ApiTime();
 void ApiGetRealBandwidth(const Request &req, Response &res);
 void ApiGetBlockInfo(const Request &req, Response &res);
 void ApiGetTxInfo(const Request &req,Response &res);
+void ApiGetAllBonusInfo(const Request &req,Response &res);
 void ApiPrintBlock(const Request & req, Response & res);
 void ApiInfo(const Request & req, Response & res);
 void ApiGetBlock(const Request & req, Response & res);

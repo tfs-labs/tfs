@@ -338,6 +338,10 @@ bool net_com::SendOneMessage(const MsgData& to, const NetPack &pack)
 	return bRet;
 }
 
+void net_com::SendMessageTask(const std::string& addr, BuildBlockBroadcastMsg &msg) {
+  	net_com::SendMessage(addr, msg);
+}
+
 uint64_t net_data::DataPackPortAndIp(uint16_t port, uint32_t ip)
 {
 	uint64_t ret = port;
@@ -904,14 +908,17 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 
 	std::vector<Node> nodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 	std::set<std::string> addrs;
+	
+    uint64_t t9 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	if(block.height() < 500)
 	{
 		if(nodeList.size() <= global::g_broadcastThreshold)
 		{
 			BuildBlockMsg.set_type(2);//Set the number of broadcasts to two
-			for(auto & node:nodeList){
-				net_com::SendMessage(node.base58Address, BuildBlockMsg);
-				addrs.insert(node.base58Address);
+			for(auto & node : nodeList){
+				
+				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", node.base58Address, block.hash().substr(0,6));		
+				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, node.base58Address, BuildBlockMsg));
 			}
 
 		}else{
@@ -922,9 +929,10 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 			{
 				BuildBlockMsg.add_castaddrs(addr);	
 			}
-			for(auto & addr:addrs)
-			{
-				net_com::SendMessage(addr, BuildBlockMsg);	
+			for(auto & addr: addrs) {
+				
+				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", addr,block.hash().substr(0,6));		
+				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, addr, BuildBlockMsg));
 			}
 		}
 	}
@@ -953,9 +961,10 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 				BuildBlockMsg.add_castaddrs(addr);	
 			}
 			
-			for(auto & addr:addrs){
+			for(auto & addr : addrs){
 				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", addr,block.hash().substr(0,6));			
-				net_com::SendMessage(addr, BuildBlockMsg);
+				//net_com::SendMessage(addr, BuildBlockMsg);
+				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, addr, BuildBlockMsg));
 			}
 		}
 		else
@@ -972,10 +981,16 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 
 			for(auto & addr : addrs)
 			{
-				net_com::SendMessage(addr, BuildBlockMsg);
+				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", addr,block.hash().substr(0,6));		
+				//net_com::SendMessage(addr, BuildBlockMsg);
+				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, addr, BuildBlockMsg));
 			}
 		}
 	}
+	
+    uint64_t t10 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+	auto t11 = t10 - t9;
+	DEBUGLOG("send broadcast time : {}", t11);
 	for(auto & addr : addrs)
 	{
 		DEBUGLOG("Level 1 broadcasting address {} , block hash : {}", addr,block.hash().substr(0,6));

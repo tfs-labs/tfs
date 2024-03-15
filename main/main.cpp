@@ -122,6 +122,7 @@ void Menu()
 			case 10:
 				HandleAccountManger();
 				break;
+
 			default:
                 std::cout << "Invalid input." << std::endl;
                 continue;

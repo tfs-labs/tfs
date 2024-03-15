@@ -72,6 +72,9 @@ extern TxMsgReqDefaultTypeInternal _TxMsgReq_default_instance_;
 class Vrf;
 struct VrfDefaultTypeInternal;
 extern VrfDefaultTypeInternal _Vrf_default_instance_;
+class VrfData;
+struct VrfDataDefaultTypeInternal;
+extern VrfDataDefaultTypeInternal _VrfData_default_instance_;
 class VrfDataSource;
 struct VrfDataSourceDefaultTypeInternal;
 extern VrfDataSourceDefaultTypeInternal _VrfDataSource_default_instance_;
@@ -85,6 +88,7 @@ template<> ::TxMsgAck* Arena::CreateMaybeMessage<::TxMsgAck>(Arena*);
 template<> ::TxMsgInfo* Arena::CreateMaybeMessage<::TxMsgInfo>(Arena*);
 template<> ::TxMsgReq* Arena::CreateMaybeMessage<::TxMsgReq>(Arena*);
 template<> ::Vrf* Arena::CreateMaybeMessage<::Vrf>(Arena*);
+template<> ::VrfData* Arena::CreateMaybeMessage<::VrfData>(Arena*);
 template<> ::VrfDataSource* Arena::CreateMaybeMessage<::VrfDataSource>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
 
@@ -735,6 +739,250 @@ class TxMsgReq final :
 };
 // -------------------------------------------------------------------
 
+class VrfData final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:VrfData) */ {
+ public:
+  inline VrfData() : VrfData(nullptr) {}
+  ~VrfData() override;
+  explicit PROTOBUF_CONSTEXPR VrfData(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  VrfData(const VrfData& from);
+  VrfData(VrfData&& from) noexcept
+    : VrfData() {
+    *this = ::std::move(from);
+  }
+
+  inline VrfData& operator=(const VrfData& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline VrfData& operator=(VrfData&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const VrfData& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const VrfData* internal_default_instance() {
+    return reinterpret_cast<const VrfData*>(
+               &_VrfData_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  friend void swap(VrfData& a, VrfData& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(VrfData* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(VrfData* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  VrfData* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<VrfData>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const VrfData& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const VrfData& from) {
+    VrfData::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(VrfData* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "VrfData";
+  }
+  protected:
+  explicit VrfData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVrfListFieldNumber = 6,
+    kHashFieldNumber = 1,
+    kTargetAddrFieldNumber = 5,
+    kTxvrfinfohashFieldNumber = 7,
+    kRangeFieldNumber = 2,
+    kPercentageFieldNumber = 3,
+    kHeightFieldNumber = 4,
+  };
+  // repeated string vrfList = 6;
+  int vrflist_size() const;
+  private:
+  int _internal_vrflist_size() const;
+  public:
+  void clear_vrflist();
+  const std::string& vrflist(int index) const;
+  std::string* mutable_vrflist(int index);
+  void set_vrflist(int index, const std::string& value);
+  void set_vrflist(int index, std::string&& value);
+  void set_vrflist(int index, const char* value);
+  void set_vrflist(int index, const char* value, size_t size);
+  std::string* add_vrflist();
+  void add_vrflist(const std::string& value);
+  void add_vrflist(std::string&& value);
+  void add_vrflist(const char* value);
+  void add_vrflist(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& vrflist() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_vrflist();
+  private:
+  const std::string& _internal_vrflist(int index) const;
+  std::string* _internal_add_vrflist();
+  public:
+
+  // string hash = 1;
+  void clear_hash();
+  const std::string& hash() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_hash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_hash();
+  PROTOBUF_NODISCARD std::string* release_hash();
+  void set_allocated_hash(std::string* hash);
+  private:
+  const std::string& _internal_hash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_hash(const std::string& value);
+  std::string* _internal_mutable_hash();
+  public:
+
+  // string targetAddr = 5;
+  void clear_targetaddr();
+  const std::string& targetaddr() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_targetaddr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_targetaddr();
+  PROTOBUF_NODISCARD std::string* release_targetaddr();
+  void set_allocated_targetaddr(std::string* targetaddr);
+  private:
+  const std::string& _internal_targetaddr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_targetaddr(const std::string& value);
+  std::string* _internal_mutable_targetaddr();
+  public:
+
+  // string txvrfinfohash = 7;
+  void clear_txvrfinfohash();
+  const std::string& txvrfinfohash() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_txvrfinfohash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_txvrfinfohash();
+  PROTOBUF_NODISCARD std::string* release_txvrfinfohash();
+  void set_allocated_txvrfinfohash(std::string* txvrfinfohash);
+  private:
+  const std::string& _internal_txvrfinfohash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_txvrfinfohash(const std::string& value);
+  std::string* _internal_mutable_txvrfinfohash();
+  public:
+
+  // uint64 range = 2;
+  void clear_range();
+  uint64_t range() const;
+  void set_range(uint64_t value);
+  private:
+  uint64_t _internal_range() const;
+  void _internal_set_range(uint64_t value);
+  public:
+
+  // uint64 percentage = 3;
+  void clear_percentage();
+  uint64_t percentage() const;
+  void set_percentage(uint64_t value);
+  private:
+  uint64_t _internal_percentage() const;
+  void _internal_set_percentage(uint64_t value);
+  public:
+
+  // uint64 height = 4;
+  void clear_height();
+  uint64_t height() const;
+  void set_height(uint64_t value);
+  private:
+  uint64_t _internal_height() const;
+  void _internal_set_height(uint64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:VrfData)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> vrflist_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr hash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr targetaddr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr txvrfinfohash_;
+    uint64_t range_;
+    uint64_t percentage_;
+    uint64_t height_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_ca_5fprotomsg_2eproto;
+};
+// -------------------------------------------------------------------
+
 class Vrf final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Vrf) */ {
  public:
@@ -783,7 +1031,7 @@ class Vrf final :
                &_Vrf_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    4;
 
   friend void swap(Vrf& a, Vrf& b) {
     a.Swap(&b);
@@ -856,22 +1104,26 @@ class Vrf final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kDataFieldNumber = 1,
+    kVrfdataFieldNumber = 1,
     kVrfsignFieldNumber = 2,
   };
-  // string data = 1;
-  void clear_data();
-  const std::string& data() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_data(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_data();
-  PROTOBUF_NODISCARD std::string* release_data();
-  void set_allocated_data(std::string* data);
+  // .VrfData vrfdata = 1;
+  bool has_vrfdata() const;
   private:
-  const std::string& _internal_data() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_data(const std::string& value);
-  std::string* _internal_mutable_data();
+  bool _internal_has_vrfdata() const;
   public:
+  void clear_vrfdata();
+  const ::VrfData& vrfdata() const;
+  PROTOBUF_NODISCARD ::VrfData* release_vrfdata();
+  ::VrfData* mutable_vrfdata();
+  void set_allocated_vrfdata(::VrfData* vrfdata);
+  private:
+  const ::VrfData& _internal_vrfdata() const;
+  ::VrfData* _internal_mutable_vrfdata();
+  public:
+  void unsafe_arena_set_allocated_vrfdata(
+      ::VrfData* vrfdata);
+  ::VrfData* unsafe_arena_release_vrfdata();
 
   // .CSign Vrfsign = 2;
   bool has_vrfsign() const;
@@ -899,7 +1151,7 @@ class Vrf final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr data_;
+    ::VrfData* vrfdata_;
     ::CSign* vrfsign_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -956,7 +1208,7 @@ class TxMsgAck final :
                &_TxMsgAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    5;
 
   friend void swap(TxMsgAck& a, TxMsgAck& b) {
     a.Swap(&b);
@@ -1152,7 +1404,7 @@ class BuildBlockBroadcastMsg final :
                &_BuildBlockBroadcastMsg_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    5;
+    6;
 
   friend void swap(BuildBlockBroadcastMsg& a, BuildBlockBroadcastMsg& b) {
     a.Swap(&b);
@@ -1405,7 +1657,7 @@ class BuildBlockBroadcastMsgAck final :
                &_BuildBlockBroadcastMsgAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    7;
 
   friend void swap(BuildBlockBroadcastMsgAck& a, BuildBlockBroadcastMsgAck& b) {
     a.Swap(&b);
@@ -1606,7 +1858,7 @@ class ContractTxMsgReq final :
                &_ContractTxMsgReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    7;
+    8;
 
   friend void swap(ContractTxMsgReq& a, ContractTxMsgReq& b) {
     a.Swap(&b);
@@ -1805,7 +2057,7 @@ class VrfDataSource final :
                &_VrfDataSource_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    9;
 
   friend void swap(VrfDataSource& a, VrfDataSource& b) {
     a.Swap(&b);
@@ -1968,7 +2220,7 @@ class ContractPackagerMsg final :
                &_ContractPackagerMsg_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    10;
 
   friend void swap(ContractPackagerMsg& a, ContractPackagerMsg& b) {
     a.Swap(&b);
@@ -2922,56 +3174,385 @@ TxMsgReq::mutable_prevblkhashs() {
 
 // -------------------------------------------------------------------
 
-// Vrf
+// VrfData
 
-// string data = 1;
-inline void Vrf::clear_data() {
-  _impl_.data_.ClearToEmpty();
+// string hash = 1;
+inline void VrfData::clear_hash() {
+  _impl_.hash_.ClearToEmpty();
 }
-inline const std::string& Vrf::data() const {
-  // @@protoc_insertion_point(field_get:Vrf.data)
-  return _internal_data();
+inline const std::string& VrfData::hash() const {
+  // @@protoc_insertion_point(field_get:VrfData.hash)
+  return _internal_hash();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void Vrf::set_data(ArgT0&& arg0, ArgT... args) {
+void VrfData::set_hash(ArgT0&& arg0, ArgT... args) {
  
- _impl_.data_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:Vrf.data)
+ _impl_.hash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:VrfData.hash)
 }
-inline std::string* Vrf::mutable_data() {
-  std::string* _s = _internal_mutable_data();
-  // @@protoc_insertion_point(field_mutable:Vrf.data)
+inline std::string* VrfData::mutable_hash() {
+  std::string* _s = _internal_mutable_hash();
+  // @@protoc_insertion_point(field_mutable:VrfData.hash)
   return _s;
 }
-inline const std::string& Vrf::_internal_data() const {
-  return _impl_.data_.Get();
+inline const std::string& VrfData::_internal_hash() const {
+  return _impl_.hash_.Get();
 }
-inline void Vrf::_internal_set_data(const std::string& value) {
+inline void VrfData::_internal_set_hash(const std::string& value) {
   
-  _impl_.data_.Set(value, GetArenaForAllocation());
+  _impl_.hash_.Set(value, GetArenaForAllocation());
 }
-inline std::string* Vrf::_internal_mutable_data() {
+inline std::string* VrfData::_internal_mutable_hash() {
   
-  return _impl_.data_.Mutable(GetArenaForAllocation());
+  return _impl_.hash_.Mutable(GetArenaForAllocation());
 }
-inline std::string* Vrf::release_data() {
-  // @@protoc_insertion_point(field_release:Vrf.data)
-  return _impl_.data_.Release();
+inline std::string* VrfData::release_hash() {
+  // @@protoc_insertion_point(field_release:VrfData.hash)
+  return _impl_.hash_.Release();
 }
-inline void Vrf::set_allocated_data(std::string* data) {
-  if (data != nullptr) {
+inline void VrfData::set_allocated_hash(std::string* hash) {
+  if (hash != nullptr) {
     
   } else {
     
   }
-  _impl_.data_.SetAllocated(data, GetArenaForAllocation());
+  _impl_.hash_.SetAllocated(hash, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.data_.IsDefault()) {
-    _impl_.data_.Set("", GetArenaForAllocation());
+  if (_impl_.hash_.IsDefault()) {
+    _impl_.hash_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:Vrf.data)
+  // @@protoc_insertion_point(field_set_allocated:VrfData.hash)
+}
+
+// uint64 range = 2;
+inline void VrfData::clear_range() {
+  _impl_.range_ = uint64_t{0u};
+}
+inline uint64_t VrfData::_internal_range() const {
+  return _impl_.range_;
+}
+inline uint64_t VrfData::range() const {
+  // @@protoc_insertion_point(field_get:VrfData.range)
+  return _internal_range();
+}
+inline void VrfData::_internal_set_range(uint64_t value) {
+  
+  _impl_.range_ = value;
+}
+inline void VrfData::set_range(uint64_t value) {
+  _internal_set_range(value);
+  // @@protoc_insertion_point(field_set:VrfData.range)
+}
+
+// uint64 percentage = 3;
+inline void VrfData::clear_percentage() {
+  _impl_.percentage_ = uint64_t{0u};
+}
+inline uint64_t VrfData::_internal_percentage() const {
+  return _impl_.percentage_;
+}
+inline uint64_t VrfData::percentage() const {
+  // @@protoc_insertion_point(field_get:VrfData.percentage)
+  return _internal_percentage();
+}
+inline void VrfData::_internal_set_percentage(uint64_t value) {
+  
+  _impl_.percentage_ = value;
+}
+inline void VrfData::set_percentage(uint64_t value) {
+  _internal_set_percentage(value);
+  // @@protoc_insertion_point(field_set:VrfData.percentage)
+}
+
+// uint64 height = 4;
+inline void VrfData::clear_height() {
+  _impl_.height_ = uint64_t{0u};
+}
+inline uint64_t VrfData::_internal_height() const {
+  return _impl_.height_;
+}
+inline uint64_t VrfData::height() const {
+  // @@protoc_insertion_point(field_get:VrfData.height)
+  return _internal_height();
+}
+inline void VrfData::_internal_set_height(uint64_t value) {
+  
+  _impl_.height_ = value;
+}
+inline void VrfData::set_height(uint64_t value) {
+  _internal_set_height(value);
+  // @@protoc_insertion_point(field_set:VrfData.height)
+}
+
+// string targetAddr = 5;
+inline void VrfData::clear_targetaddr() {
+  _impl_.targetaddr_.ClearToEmpty();
+}
+inline const std::string& VrfData::targetaddr() const {
+  // @@protoc_insertion_point(field_get:VrfData.targetAddr)
+  return _internal_targetaddr();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void VrfData::set_targetaddr(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.targetaddr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:VrfData.targetAddr)
+}
+inline std::string* VrfData::mutable_targetaddr() {
+  std::string* _s = _internal_mutable_targetaddr();
+  // @@protoc_insertion_point(field_mutable:VrfData.targetAddr)
+  return _s;
+}
+inline const std::string& VrfData::_internal_targetaddr() const {
+  return _impl_.targetaddr_.Get();
+}
+inline void VrfData::_internal_set_targetaddr(const std::string& value) {
+  
+  _impl_.targetaddr_.Set(value, GetArenaForAllocation());
+}
+inline std::string* VrfData::_internal_mutable_targetaddr() {
+  
+  return _impl_.targetaddr_.Mutable(GetArenaForAllocation());
+}
+inline std::string* VrfData::release_targetaddr() {
+  // @@protoc_insertion_point(field_release:VrfData.targetAddr)
+  return _impl_.targetaddr_.Release();
+}
+inline void VrfData::set_allocated_targetaddr(std::string* targetaddr) {
+  if (targetaddr != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.targetaddr_.SetAllocated(targetaddr, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.targetaddr_.IsDefault()) {
+    _impl_.targetaddr_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:VrfData.targetAddr)
+}
+
+// repeated string vrfList = 6;
+inline int VrfData::_internal_vrflist_size() const {
+  return _impl_.vrflist_.size();
+}
+inline int VrfData::vrflist_size() const {
+  return _internal_vrflist_size();
+}
+inline void VrfData::clear_vrflist() {
+  _impl_.vrflist_.Clear();
+}
+inline std::string* VrfData::add_vrflist() {
+  std::string* _s = _internal_add_vrflist();
+  // @@protoc_insertion_point(field_add_mutable:VrfData.vrfList)
+  return _s;
+}
+inline const std::string& VrfData::_internal_vrflist(int index) const {
+  return _impl_.vrflist_.Get(index);
+}
+inline const std::string& VrfData::vrflist(int index) const {
+  // @@protoc_insertion_point(field_get:VrfData.vrfList)
+  return _internal_vrflist(index);
+}
+inline std::string* VrfData::mutable_vrflist(int index) {
+  // @@protoc_insertion_point(field_mutable:VrfData.vrfList)
+  return _impl_.vrflist_.Mutable(index);
+}
+inline void VrfData::set_vrflist(int index, const std::string& value) {
+  _impl_.vrflist_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:VrfData.vrfList)
+}
+inline void VrfData::set_vrflist(int index, std::string&& value) {
+  _impl_.vrflist_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:VrfData.vrfList)
+}
+inline void VrfData::set_vrflist(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.vrflist_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:VrfData.vrfList)
+}
+inline void VrfData::set_vrflist(int index, const char* value, size_t size) {
+  _impl_.vrflist_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:VrfData.vrfList)
+}
+inline std::string* VrfData::_internal_add_vrflist() {
+  return _impl_.vrflist_.Add();
+}
+inline void VrfData::add_vrflist(const std::string& value) {
+  _impl_.vrflist_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:VrfData.vrfList)
+}
+inline void VrfData::add_vrflist(std::string&& value) {
+  _impl_.vrflist_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:VrfData.vrfList)
+}
+inline void VrfData::add_vrflist(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.vrflist_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:VrfData.vrfList)
+}
+inline void VrfData::add_vrflist(const char* value, size_t size) {
+  _impl_.vrflist_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:VrfData.vrfList)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+VrfData::vrflist() const {
+  // @@protoc_insertion_point(field_list:VrfData.vrfList)
+  return _impl_.vrflist_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+VrfData::mutable_vrflist() {
+  // @@protoc_insertion_point(field_mutable_list:VrfData.vrfList)
+  return &_impl_.vrflist_;
+}
+
+// string txvrfinfohash = 7;
+inline void VrfData::clear_txvrfinfohash() {
+  _impl_.txvrfinfohash_.ClearToEmpty();
+}
+inline const std::string& VrfData::txvrfinfohash() const {
+  // @@protoc_insertion_point(field_get:VrfData.txvrfinfohash)
+  return _internal_txvrfinfohash();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void VrfData::set_txvrfinfohash(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.txvrfinfohash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:VrfData.txvrfinfohash)
+}
+inline std::string* VrfData::mutable_txvrfinfohash() {
+  std::string* _s = _internal_mutable_txvrfinfohash();
+  // @@protoc_insertion_point(field_mutable:VrfData.txvrfinfohash)
+  return _s;
+}
+inline const std::string& VrfData::_internal_txvrfinfohash() const {
+  return _impl_.txvrfinfohash_.Get();
+}
+inline void VrfData::_internal_set_txvrfinfohash(const std::string& value) {
+  
+  _impl_.txvrfinfohash_.Set(value, GetArenaForAllocation());
+}
+inline std::string* VrfData::_internal_mutable_txvrfinfohash() {
+  
+  return _impl_.txvrfinfohash_.Mutable(GetArenaForAllocation());
+}
+inline std::string* VrfData::release_txvrfinfohash() {
+  // @@protoc_insertion_point(field_release:VrfData.txvrfinfohash)
+  return _impl_.txvrfinfohash_.Release();
+}
+inline void VrfData::set_allocated_txvrfinfohash(std::string* txvrfinfohash) {
+  if (txvrfinfohash != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.txvrfinfohash_.SetAllocated(txvrfinfohash, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.txvrfinfohash_.IsDefault()) {
+    _impl_.txvrfinfohash_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:VrfData.txvrfinfohash)
+}
+
+// -------------------------------------------------------------------
+
+// Vrf
+
+// .VrfData vrfdata = 1;
+inline bool Vrf::_internal_has_vrfdata() const {
+  return this != internal_default_instance() && _impl_.vrfdata_ != nullptr;
+}
+inline bool Vrf::has_vrfdata() const {
+  return _internal_has_vrfdata();
+}
+inline void Vrf::clear_vrfdata() {
+  if (GetArenaForAllocation() == nullptr && _impl_.vrfdata_ != nullptr) {
+    delete _impl_.vrfdata_;
+  }
+  _impl_.vrfdata_ = nullptr;
+}
+inline const ::VrfData& Vrf::_internal_vrfdata() const {
+  const ::VrfData* p = _impl_.vrfdata_;
+  return p != nullptr ? *p : reinterpret_cast<const ::VrfData&>(
+      ::_VrfData_default_instance_);
+}
+inline const ::VrfData& Vrf::vrfdata() const {
+  // @@protoc_insertion_point(field_get:Vrf.vrfdata)
+  return _internal_vrfdata();
+}
+inline void Vrf::unsafe_arena_set_allocated_vrfdata(
+    ::VrfData* vrfdata) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.vrfdata_);
+  }
+  _impl_.vrfdata_ = vrfdata;
+  if (vrfdata) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:Vrf.vrfdata)
+}
+inline ::VrfData* Vrf::release_vrfdata() {
+  
+  ::VrfData* temp = _impl_.vrfdata_;
+  _impl_.vrfdata_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::VrfData* Vrf::unsafe_arena_release_vrfdata() {
+  // @@protoc_insertion_point(field_release:Vrf.vrfdata)
+  
+  ::VrfData* temp = _impl_.vrfdata_;
+  _impl_.vrfdata_ = nullptr;
+  return temp;
+}
+inline ::VrfData* Vrf::_internal_mutable_vrfdata() {
+  
+  if (_impl_.vrfdata_ == nullptr) {
+    auto* p = CreateMaybeMessage<::VrfData>(GetArenaForAllocation());
+    _impl_.vrfdata_ = p;
+  }
+  return _impl_.vrfdata_;
+}
+inline ::VrfData* Vrf::mutable_vrfdata() {
+  ::VrfData* _msg = _internal_mutable_vrfdata();
+  // @@protoc_insertion_point(field_mutable:Vrf.vrfdata)
+  return _msg;
+}
+inline void Vrf::set_allocated_vrfdata(::VrfData* vrfdata) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete _impl_.vrfdata_;
+  }
+  if (vrfdata) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(vrfdata);
+    if (message_arena != submessage_arena) {
+      vrfdata = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, vrfdata, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.vrfdata_ = vrfdata;
+  // @@protoc_insertion_point(field_set_allocated:Vrf.vrfdata)
 }
 
 // .CSign Vrfsign = 2;
@@ -4456,6 +5037,8 @@ inline void ContractPackagerMsg::set_allocated_vrfdatasource(::VrfDataSource* vr
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

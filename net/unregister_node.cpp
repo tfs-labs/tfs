@@ -50,6 +50,7 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> nodeMap)
     }
 
     std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    std::map<uint32_t, int> nodeIPAndFd;
     
     for (auto & unconnectNode : nodeMap)
     {
@@ -72,7 +73,9 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> nodeMap)
         if(ret != 0)
         {
             ERRORLOG("SendRegisterNodeReq fail ret = {}", ret);
+            continue;
         }
+        nodeIPAndFd.insert(std::make_pair(unconnectNode.second.publicIp, unconnectNode.second.fd));
     }
 
     std::vector<std::string> returnDatas;
@@ -81,6 +84,12 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> nodeMap)
         if (returnDatas.empty())
         {
             ERRORLOG("wait Register time out send:{} recv:{}", sendNum, returnDatas.size());
+            for(auto& t: nodeIPAndFd)
+            {
+                DEBUGLOG("wait Register time out, 111 close fd:{}, ip = {}",t.second , IpPort::IpSz(t.first));
+                MagicSingleton<PeerNode>::GetInstance()->CloseFd(t.second);
+            }
+
             return false;
         }
     }
@@ -95,6 +104,13 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> nodeMap)
         }
         uint32_t ip = registerNodeAck.from_ip();
         uint32_t port = registerNodeAck.from_port();
+
+        auto find = nodeIPAndFd.find(ip);
+        if(find != nodeIPAndFd.end())
+        {
+            nodeIPAndFd.erase(find);
+        }
+
         std::cout << "registerNodeAck.nodes_size(): " << registerNodeAck.nodes_size() <<std::endl;
         if(registerNodeAck.nodes_size() <= 1)
 	    {
@@ -110,6 +126,13 @@ bool UnregisterNode::Register(std::map<uint32_t, Node> nodeMap)
 			}
         }
     }
+
+    for(auto& t: nodeIPAndFd)
+    {
+        DEBUGLOG("nodeIPAndFd, 111 close fd:{}, ip = {}",t.second , IpPort::IpSz(t.first));
+        MagicSingleton<PeerNode>::GetInstance()->CloseFd(t.second);
+    }
+
     return true;
 }
 bool UnregisterNode::StartRegisterNode(std::map<std::string, int> &serverList)
@@ -288,7 +311,6 @@ bool UnregisterNode::StartSyncNode()
                 nodeMap[nodeinfo.public_ip()] = node;
             }
             targetAddrList.push_back(node);
-
         }
         _vrfNodelist[syncNodeAck.ids()] = targetAddrList;
     }
@@ -307,6 +329,8 @@ bool UnregisterNode::StartSyncNode()
 
     //Count the number of IPs and the number of times they correspond to IPs
     {
+        std::unique_lock<std::mutex> locker(_mutexStakelist);
+
         std::map<Node,int, NodeCompare> syncNodeCount;
         for(auto it = syncNodes.begin(); it != syncNodes.end(); ++it)
         {
@@ -314,14 +338,16 @@ bool UnregisterNode::StartSyncNode()
         }
         splitAndInsertData(syncNodeCount);
         syncNodes.clear();
-        syncNodeCount.clear();
+        syncNodeCount.clear(); 
+
+        //Only the latest elements are stored in the maintenance map map
+        if(stakeNodelist.size() == 2 && unStakeNodelist.size() == 2)
+        {
+            ClearSplitNodeListData();
+        }
     }
 
-    //Only the latest elements are stored in the maintenance map map
-    if(stakeNodelist.size() == 2 || unStakeNodelist.size() == 2)
-    {
-        ClearSplitNodeListData();
-    }
+
 
     if(nodeMap.empty())
     {
@@ -359,7 +385,7 @@ void UnregisterNode::DeleteSpiltNodeList(const std::string & base58)
     std::unique_lock<std::mutex> locker(_mutexStakelist);
     if(stakeNodelist.empty() || unStakeNodelist.empty())
     {
-        ERRORLOG("list is empty!");
+        ERRORLOG("stakeNodelist size = {}, unStakeNodelist size = {}",stakeNodelist.size(),unStakeNodelist.size());
         return;
     }
 
@@ -392,8 +418,10 @@ void UnregisterNode::DeleteSpiltNodeList(const std::string & base58)
 void UnregisterNode::GetConsensusStakeNodelist(std::map<std::string,int>& consensusStakeNodeMap)
 {
     std::unique_lock<std::mutex> lck(_mutexStakelist);
+    DEBUGLOG("stakeNodelist size = {}",stakeNodelist.size());
     if(stakeNodelist.empty())
     {
+        ERRORLOG("stakeNodelist size = {}",stakeNodelist.size());
         return;
     }
     consensusStakeNodeMap.insert(stakeNodelist.rbegin()->second.begin(), stakeNodelist.rbegin()->second.end());
@@ -405,6 +433,7 @@ void UnregisterNode::GetConsensusNodelist(std::map<std::string,int>& consensusNo
     std::unique_lock<std::mutex> lck(_mutexStakelist);
     if(stakeNodelist.empty() || unStakeNodelist.empty())
     {
+        ERRORLOG("stakeNodelist empty");
         return;
     }
     consensusNodeMap.insert(stakeNodelist.rbegin()->second.begin(), stakeNodelist.rbegin()->second.end());
@@ -418,13 +447,13 @@ void UnregisterNode::GetConsensusNodelist(std::map<std::string,int>& consensusNo
 
 void UnregisterNode::ClearSplitNodeListData()
 {
-    std::unique_lock<std::mutex> lck(_mutexStakelist);
+    DEBUGLOG("ClearSplitNodeListData stakeNodelist size = {} , unStakeNodelist size = {}",stakeNodelist.size(),unStakeNodelist.size());
     auto it = stakeNodelist.begin();
     stakeNodelist.erase(it);
 
     auto _it = unStakeNodelist.begin();
     unStakeNodelist.erase(_it);
-    DEBUGLOG("ClearSplitNodeListData @@@@@ ");
+    DEBUGLOG("2ClearSplitNodeListData stakeNodelist size = {} , unStakeNodelist size = {}",stakeNodelist.size(),unStakeNodelist.size());
 }
 
 static int calculateAverage(const std::vector<int>& vec)
@@ -435,6 +464,7 @@ static int calculateAverage(const std::vector<int>& vec)
     }
 
     int sum = 0;
+    
 
     for (int num : vec)
     {
@@ -448,9 +478,8 @@ static int calculateAverage(const std::vector<int>& vec)
 
 
 
-void UnregisterNode::splitAndInsertData(const std::map<Node, int, NodeCompare>  syncNodeCount)
+void UnregisterNode::splitAndInsertData(const std::map<Node, int, NodeCompare> & syncNodeCount)
 {
-    std::unique_lock<std::mutex> locker(_mutexStakelist);
     std::map<std::string, int>  stakeSyncNodeCount;
     std::map<std::string, int>  UnstakeSyncNodeCount;
     DEBUGLOG("splitAndInsertData @@@@@ ");
@@ -468,10 +497,12 @@ void UnregisterNode::splitAndInsertData(const std::map<Node, int, NodeCompare>  
             UnstakeSyncNodeCount.insert(std::make_pair(item.first.base58Address,item.second));
         }
     }
-
+    DEBUGLOG("stakeNodelist size = {} , unStakeNodelist size = {}",stakeNodelist.size(),unStakeNodelist.size());
+    DEBUGLOG("stakeSyncNodeCount size = {} , UnstakeSyncNodeCount size = {}",stakeSyncNodeCount.size(),UnstakeSyncNodeCount.size());
     uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
     stakeNodelist[nowTime] = stakeSyncNodeCount;
     unStakeNodelist[nowTime] = UnstakeSyncNodeCount;
+    DEBUGLOG("stakeNodelist size = {} , unStakeNodelist size = {}",stakeNodelist.size(),unStakeNodelist.size());
 }
 
 int UnregisterNode::verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight)

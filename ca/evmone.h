@@ -104,7 +104,7 @@ namespace Evmone
      * @param       gasCost: 
      * @return      int 
      */
-    int DeployContract(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &code_str, std::string &strOutput, TfsHost &host, int64_t &gasCost);
+    int DeployContract(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &code_str, std::string &strOutput, TfsHost &host, int64_t &gasCost, std::string& transientContractAddress);
     
     /**
      * @brief       

@@ -19,7 +19,7 @@ extern "C" {
 
 /**
  * @struct x_ntp_timestamp_t
- * @brief  NTP timestamp
+ * @brief  NTP
  */
 typedef struct x_ntp_timestamp_t
 { 

@@ -289,8 +289,11 @@ nodePtr Trie::DescendKey(std::string key) const
     DBReader dataReader;
     std::string value;
 
-    MagicSingleton<ContractDataCache>::GetInstance()->get(contractAddr + "_" + key, value);
-
+    if(this->contractDataCache != nullptr)
+    {
+        this->contractDataCache->get(contractAddr + "_" + key, value);
+    }
+    
     if(value.empty() && dataReader.GetMptValueByMptKey(contractAddr + "_" + key, value) != 0)
     {
         ERRORLOG("GetContractStorageByKey error");

@@ -73,6 +73,7 @@ int PrintRocksdb(uint64_t start, uint64_t end, bool isConsoleOutput, std::ostrea
         {
             std::string strHeader;
             dbReader.GetBlockByBlockHash(hash, strHeader);
+            DEBUGLOG("blockHash:{}, blockSize:{}", hash.substr(0,6), strHeader.size());
             CBlock block;
             block.ParseFromString(strHeader);
             blocks.push_back(block);

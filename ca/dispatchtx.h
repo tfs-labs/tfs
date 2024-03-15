@@ -24,36 +24,39 @@ class ContractDispatcher{
         void Start();
         void Stop();
         void Process();
+        bool HasDuplicate(const std::vector<std::string>& v1, const std::vector<std::string>& v2);
+        void setValue(const uint64_t& newValue);
         
     private:
-        constexpr static int _contractWaitingTime = 15 * 1000000;
+        constexpr static int _contractWaitingTime = 3 * 1000000;
 
         struct msgInfo
         {
             std::vector<TxMsgReq> txMsgReq;
             std::set<std::string> nodelist;
-            Vrf info;
+            Vrf info; 
         };
 
         void _DispatcherProcessingFunc();
 
-        bool HasDuplicate(const std::vector<std::string>& v1, const std::vector<std::string>& v2);
         std::vector<std::vector<TxMsgReq>> GetDependentData();
         std::vector<std::vector<TxMsgReq>> GroupDependentData(const std::vector<std::vector<TxMsgReq>> & txMsgVec);
         int DistributionContractTx(std::multimap<std::string, msgInfo>& distribution);
         int SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsmsg,const std::set<std::string> nodelist);
 
     private:
+
         std::thread _dispatcherThread;
         std::mutex _contractInfoCacheMutex;
         std::mutex _contractMsgMutex;
         std::mutex _contractHandleMutex;
+        std::mutex _mtx;
 
-        std::unordered_map<std::string, std::vector<std::string>> _contractDependentCache;
+        bool isFirst = false;
+        uint64_t timeValue;
+
+        std::unordered_map<std::string, std::vector<std::string>> _contractDependentCache; 
         std::unordered_map<std::string, TxMsgReq> _contractMsgReqCache; 
-
- 
-
 };
 
 #endif

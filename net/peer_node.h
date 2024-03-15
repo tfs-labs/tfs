@@ -97,6 +97,13 @@ public:
 	void DeleteNode(std::string base58Addr);
 
 	/**
+	 * @brief       When adding to the node list fails close fd
+	 * 
+	 * @param       fd  
+	 */
+	void CloseFd(int fd);
+
+	/**
 	 * @brief       
 	 * 
 	 * @param       fd 

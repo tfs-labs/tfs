@@ -1637,7 +1637,9 @@ int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, co
     std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
+	auto nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+	std::string transientContractAddress = evm_utils::GenerateEvmAddr(std::to_string(nowTime));
+    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost, transientContractAddress);
     if (ret != 0)
     {
 		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s  %s",ret, strOutput));
@@ -1650,6 +1652,7 @@ int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, co
     jTxInfo["Version"] = 0;
     jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
     jTxInfo["VmType"] = global::ca::VmType::EVM;
+	jTxInfo["transientAddress"] = transientContractAddress;
     jTxInfo["Code"] = code;
     jTxInfo["Output"] = strOutput;
 //    jTxInfo["Info"] = contractInfo;
@@ -1675,7 +1678,8 @@ int TxHelper::CreateEvmDeployContractTransaction_V33_1(const std::string &fromAd
 	std::string strOutput;
     TfsHost host;
     int64_t gasCost = 0;
-    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost);
+	std::string transientContractAddress = "xxxxx";
+    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost, transientContractAddress);
     if (ret != 0)
     {
         ERRORLOG("Evmone failed to deploy contract!");

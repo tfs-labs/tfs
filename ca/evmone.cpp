@@ -74,7 +74,7 @@ int ExecuteByEvmone(const evmc_message &msg, const evmc::bytes &code, TfsHost &h
 }
 
 int Evmone::DeployContract(const std::string &fromAddr, const std::string &ownerEvmAddr, const std::string &code_str,
-                           std::string &strOutput, TfsHost &host, int64_t &gasCost)
+                           std::string &strOutput, TfsHost &host, int64_t &gasCost, std::string& transientContractAddress)
 {
     int ret = -1;
     try
@@ -84,7 +84,11 @@ int Evmone::DeployContract(const std::string &fromAddr, const std::string &owner
 
         // msg
         evmc_address&& evmAddr = evm_utils::StringToEvmAddr(ownerEvmAddr);
-        evmc::address createAddress = {{0,1,2}};
+        
+        
+        //evmc::address createAddress = {{0,1,2}};
+        // std::string transientContractAddress = evm_utils::GenerateEvmAddr(std::to_string(nowTime));
+        evmc::address createAddress = evm_utils::StringToEvmAddr(transientContractAddress);
         evmc_message createMsg{};
         createMsg.kind = EVMC_CREATE;
         createMsg.recipient = createAddress;
@@ -97,6 +101,8 @@ int Evmone::DeployContract(const std::string &fromAddr, const std::string &owner
             .tx_origin = evmAddr
         };
         host.tx_context = txContext;
+        std::string rootHash = "";
+        host.accounts[createMsg.recipient].CreateTrie(rootHash, transientContractAddress, host.contractDataCache);
 
         ret = ExecuteByEvmone(createMsg, code, host, strOutput, gasCost);
         DEBUGLOG("evm execute ret: {}", ret);
@@ -230,63 +236,14 @@ Evmone::CallContract(const std::string &fromAddr, const std::string &ownerEvmAdd
     };
     host.tx_context = tx_context;
 
-    // host
-//    std::string strPrevTxHash;
-//	ret = data_reader.GetLatestUtxoByContractAddr(contractAddress, strPrevTxHash);
-//    if(ret != DBStatus::DB_SUCCESS)
-//    {
-//		ERRORLOG("GetLatestUtxoByContractAddr failed!");
-//        return -8;
-//    }
-//
-//    CTransaction PrevTx;
-//    std::string transactionRaw;
-//	ret = data_reader.GetTransactionByHash(strPrevTxHash, transactionRaw);
-//
-//    if(ret != DBStatus::DB_SUCCESS)
-//    {
-//		ERRORLOG("GetTransactionByHash failed!");
-//        return -9;
-//    }
-//
-//    if(!PrevTx.ParseFromString(transactionRaw))
-//    {
-//		ERRORLOG("parse failed!");
-//        return -10;
-//    }
-//
-//	std::string rootHash;
-//    try
-//    {
-//        nlohmann::json jPrevData = nlohmann::json::parse(PrevTx.data());
-//        nlohmann::json jPrevStorage = jPrevData["TxInfo"]["Storage"];
-//        if(!jPrevStorage.is_null())
-//        {
-//            auto tx_type = (global::ca::TxType)PrevTx.txtype();
-//            if(tx_type == global::ca::TxType::kTxTypeDeployContract)
-//            {
-//                rootHash = jPrevStorage[std::string("_") + "rootHash"].get<std::string>();
-//            }
-//            else
-//            {
-//                rootHash = jPrevStorage[contractAddress + "_" + "rootHash"].get<std::string>();
-//            }
-//        }
-//
-//    }
-//    catch(...)
-//    {
-//		ERRORLOG("Parsing failed!");
-//        return -11;
-//    }
-
     std::string rootHash;
-    int retVal = GetContractRootHash(contractAddress, rootHash);
+    int retVal = GetContractRootHash(contractAddress, rootHash, host.contractDataCache);
     if (retVal != 0)
     {
         return retVal;
     }
-    host.accounts[msg.recipient].CreateTrie(rootHash, contractAddress);
+    DEBUGLOG("contractAddress:{}, rootHash:{}", contractAddress, rootHash);
+    host.accounts[msg.recipient].CreateTrie(rootHash, contractAddress, host.contractDataCache);
     host.accounts[msg.recipient].set_code(code);
     int res = ExecuteByEvmone(msg, code, host, strOutput, gasCost);
     DEBUGLOG("evm execute ret: {}", res);
@@ -429,7 +386,7 @@ Evmone::CallContract_V33_1(const std::string &fromAddr, const std::string &owner
         return -11;
     }
 
-    host.accounts[msg.recipient].CreateTrie(rootHash, contractAddress);
+    host.accounts[msg.recipient].CreateTrie(rootHash, contractAddress, host.contractDataCache);
     host.accounts[msg.recipient].set_code(code);
     int res = ExecuteByEvmone(msg, code, host, strOutput, gasCost);
     DEBUGLOG("evm execute ret: {}", res);
@@ -520,10 +477,11 @@ int Evmone::ContractInfoAdd(const TfsHost &host, const std::string &txHash, glob
 
     DBReader data_reader;
     std::map<std::string,std::string> items;
-    evmc::address createAddress = {{0,1,2}};
+    //evmc::address createAddress = {{0,1,2}};
     for(auto &account : host.accounts)
     {
-        if(TxType == global::ca::TxType::kTxTypeDeployContract && account.first == createAddress)
+        // if(TxType == global::ca::TxType::kTxTypeDeployContract && account.first == createAddress)
+        if(TxType == global::ca::TxType::kTxTypeDeployContract)
         {
             continue;
         }
@@ -1045,12 +1003,29 @@ int Evmone::VerifyUtxo(const CTransaction& tx, const CTransaction& callOutTx)
     std::string detStr;
     for(const auto& vout : callOutTx.utxo().vout())
     {
-         DEBUGLOG("detStr ----- vout.addr:{}, vout.amount:{}", vout.addr(), vout.value());
+        DEBUGLOG("detStr ----- vout.addr:{}, vout.amount:{}", vout.addr(), vout.value());
         detStr += vout.SerializeAsString();
     }
 
     if(srcStr != detStr)
     {
+       
+        for(auto &vin : tx.utxo().vin())
+        {   
+            ERRORLOG("TxUtxosign pub:{}", GetBase58Addr(vin.vinsign().pub()));
+            for(auto &prevout : vin.prevout())
+            {
+                ERRORLOG("TxUtxoPrevout hash:{},TxUtxoPrevout num:{}",prevout.hash(),prevout.n());
+            }
+        }
+        for(auto &vin : callOutTx.utxo().vin())
+        {
+            ERRORLOG("CallUtxosign pub:{}", GetBase58Addr(vin.vinsign().pub()));
+            for(auto &prevout : vin.prevout())
+            {
+                ERRORLOG("CallUtxoPrevout hash:{},CallUtxoPrevout num:{}",prevout.hash(),prevout.n());
+            }
+        }
         return -2;
     }
     return 0;

@@ -245,6 +245,13 @@ void ContrackInvke(contractJob job){
         txMsgInfo->add_contractstoragelist(addr);
     }
 
+
+//    if(dirtyContract.empty())
+//    {
+//        std::string contractAddress = evm_utils::GenerateContractAddr(strToAddr + strTxHash);
+//        txMsgInfo->add_contractstoragelist(contractAddress);
+//    }
+
     if(isNeedAgentFlag== TxHelper::vrfAgentType::vrfAgentType_vrf)
     {
         Vrf * newInfo=txMsg->mutable_vrfinfo();
@@ -305,7 +312,6 @@ void contact_thread()
 
     test_contact_thread(time, second, much);
 }
-
 
 void GenKey()
 {

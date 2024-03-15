@@ -32,7 +32,7 @@
 #include "ca/block_stroage.h"
 #include "block_monitor.h"
 #include "ca/txhelper.h"
-
+#include "mpt/trie.h"
 /**
  * @brief       Get the Balance By Utxo object
  * 
@@ -48,6 +48,8 @@ typedef enum emTransactionType{
 	kTransactionType_Tx,			// Normal trading
 } TransactionType;
 
+// int verifyVrfInfo(const std::shared_ptr<BlockMsg> & msg, const std::map<std::string, CTransaction> & txMap);
+// int verifyTxVrfInfo(const std::shared_ptr<BlockMsg> & msg, const std::map<std::string, CTransaction> & txMap);
 /**
  * @brief       Get the Transaction Type object
  * 
@@ -430,7 +432,7 @@ int GenerateGas(const CTransaction &tx, const uint64_t voutSize, uint64_t &gas);
  * @param       pub: 
  * @param       data: 
  */
-void SetVrf(Vrf & dest,const std::string & proof, const std::string & pub,const std::string & data);
+void SetVrf(Vrf & dest,const std::string & proof, const std::string & pub);
 
 /**
  * @brief       Get the Vrfdata object
@@ -463,7 +465,7 @@ int verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vr
 
 bool CheckTxConsensusStatus(const CTransaction &tx);
 
-int GetContractRootHash(const std::string& contractAddress, std::string& rootHash);
+int GetContractRootHash(const std::string& contractAddress, std::string& rootHash, ContractDataCache* contractDataCache);
 
 /**
  * @brief       

@@ -27,6 +27,7 @@
 #include "../../net/unregister_node.h"
 #include <chrono>
 
+
 class ContractDataCache;
 
 const int TransactionCache::_kBuildInterval = 3 * 1000;
@@ -52,6 +53,8 @@ int CreateBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight,
 
     nlohmann::json storage;
     bool isContractBlock = false;
+    
+    packDispatch packdis;
 	// Fill tx
 	for(auto& tx : txs)
 	{
@@ -69,23 +72,18 @@ int CreateBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight,
                 ERRORLOG("can't find storage of tx {}", txHash);
                 return -1;
             }
+            
+            std::set<std::string> dirtyContractList;
+            if(!MagicSingleton<TransactionCache>::GetInstance()->GetDirtyContractMap(tx.hash(), dirtyContractList))
+            {
+                ERRORLOG("GetDirtyContractMap fail!!! txHash:{}", tx.hash());
+                return -2;
+            }
+            txStorage["dependentCTx"] = dirtyContractList;
+
             storage[txHash] = txStorage;
         }
 	}
-
-//    if (isContractBlock)
-//    {
-//        std::string contractPrevBlockHash = MagicSingleton<TransactionCache>::GetInstance()->GetContractPrevBlockHash();
-//        if (contractPrevBlockHash.empty())
-//        {
-//            ERRORLOG("contractPrevBlockHash.empty() == true");
-//            return -2;
-//        }
-//
-//        storage["contractPrevBlockHash"] = contractPrevBlockHash;
-//        DEBUGLOG("contract block hash {}, prehash {}", cblock.hash(), contractPrevBlockHash);
-//
-//    }
 
     cblock.set_data(storage.dump());
     // Fill preblockhash
@@ -120,11 +118,12 @@ int CreateBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight,
 	cblock.set_merkleroot(ca_algorithm::CalcBlockMerkle(cblock));
 	// Fill hash
 	cblock.set_hash(Getsha256hash(cblock.SerializeAsString()));
+    DEBUGLOG("blockHash:{}, \n storage:{}", cblock.hash().substr(0,6), storage.dump(4));
     DEBUGLOG("block hash = {} set time ",cblock.hash());
 	return 0;
 }
 
-int BuildBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight, bool build_first)
+int BuildBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight, bool build_first, bool isConTractTx = false)
 {
 	if(txs.empty())
 	{
@@ -160,6 +159,7 @@ int BuildBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight, 
         {
             continue;
         }
+
         CTransaction copyTx = tx;
         copyTx.clear_hash();
         copyTx.clear_verifysign();
@@ -173,26 +173,30 @@ int BuildBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight, 
             continue;
         }
 
-        std::pair<std::string,Vrf>  vrf;
-        if(!MagicSingleton<VRF>::GetInstance()->getVrfInfo(txHash, vrf))
+        std::pair<std::string,Vrf> vrfPair;
+        if(!MagicSingleton<VRF>::GetInstance()->getVrfInfo(txHash, vrfPair))
         {
             ERRORLOG("getVrfInfo failed! tx hash {}", txHash);
             return -3000;
         }
         Vrf *vrfinfo  = blockmsg.add_vrfinfo();
-        vrfinfo ->CopyFrom(vrf.second);
+        vrfinfo ->CopyFrom(vrfPair.second);
 
-        if(!MagicSingleton<VRF>::GetInstance()->getTxVrfInfo(txHash, vrf))
+        if(!MagicSingleton<VRF>::GetInstance()->getTxVrfInfo(txHash, vrfPair))
         {
             ERRORLOG("getTxVrfInfo failed! tx hash {}", txHash);
             return -4000;
         }
 
-        auto vrfJson = nlohmann::json::parse(vrf.second.data());
-		vrfJson["txhash"] = txHash;
-        vrf.second.set_data(vrfJson.dump());
+        Vrf *txvrfinfo  = blockmsg.add_txvrfinfo();
+        vrfPair.second.mutable_vrfdata()->set_txvrfinfohash(txHash);
+        txvrfinfo ->CopyFrom(vrfPair.second);
 
-        blockmsg.add_txvrfinfo()->CopyFrom(vrf.second);
+        // auto vrfJson = nlohmann::json::parse(vrf.second.data());
+		// vrfJson["txhash"] = txHash;
+        // vrf.second.set_data(vrfJson.dump());
+        
+        //blockmsg.mutable_txvrfinfomap()->insert({txHash, vrfPair.second});
     }
     
     BlockMsg _cpMsg = blockmsg;
@@ -212,10 +216,11 @@ int BuildBlock(const std::list<CTransaction>& txs, const uint64_t& blockHeight, 
 	sign->set_pub(pub);
 
     auto msg = make_shared<BlockMsg>(blockmsg);
+    DEBUGLOG("DoHandleBlock start");
 	ret = DoHandleBlock(msg);
     if(ret != 0)
     {
-        ERRORLOG("DoHandleBlock failed The error code is {}",ret);
+        ERRORLOG("DoHandleBlock failed The error code is {} ,blockHash:{}",ret, cblock.hash().substr(0,6));
         CBlock cblock;
 	    if (!cblock.ParseFromString(msg->block()))
 	    {
@@ -254,6 +259,7 @@ int TransactionCache::AddCache(const CTransaction& transaction, const uint64_t& 
             DEBUGLOG("DoubleSpentTransactions, txHash:{}", transaction.hash());
             return -2;
         }
+        DEBUGLOG("transaction hash:{}", transaction.hash());
         _contractCache.push_back({transaction, height, false});
     }
     else
@@ -447,16 +453,315 @@ void TransactionCache::_TransactionCacheProcessingFunc()
 //        }
 //    }
 //}
+int TransactionCache::HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, const MsgData &msgdata)
+{
+    std::unique_lock<mutex> locker(_threadMutex);
+    DEBUGLOG("111111111111 HHHHHHHHHH");
+
+    auto cSign = msg->sign();
+    auto pub = cSign.pub();
+    auto signature = cSign.sign();
+
+    ContractPackagerMsg cp_msg = *msg;
+    cp_msg.clear_sign();
+	std::string message = Getsha256hash(cp_msg.SerializeAsString());
+    Account account;
+    if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(pub, account) == false){
+        ERRORLOG(RED " HandleContractPackagerMsg Get public key from bytes failed!" RESET);
+        return -1;
+    }
+    if(account.Verify(message, signature) == false)
+    {
+        ERRORLOG(RED "HandleBuildBlockBroadcastMsg Public key verify sign failed!" RESET);
+        return -2;
+    }
+
+    // todo verify vrf
+    Vrf vrfInfo = msg->vrfinfo();
+    std::string hash;
+    int range;
+    uint64_t verifyHeight;
+
+    const VrfData& vrfData = vrfInfo.vrfdata();
+	hash = vrfData.hash();
+	range = vrfData.range();
+    verifyHeight = vrfData.height();
+
+	EVP_PKEY *pkey = nullptr;
+	if (!GetEDPubKeyByBytes(vrfInfo.vrfsign().pub(), pkey))
+	{
+		ERRORLOG(RED "HandleBuildBlockBroadcastMsg Get public key from bytes failed!" RESET);
+		return -4;
+	}
+
+    std::string contractHash;
+    for (const TxMsgReq& txMsg : msg->txmsgreq())
+    {
+        const TxMsgInfo& txMsgInfo = txMsg.txmsginfo();
+        CTransaction transaction;
+        if (!transaction.ParseFromString(txMsgInfo.tx()))
+        {
+            ERRORLOG("Failed to deserialize transaction body!");
+            continue;
+        }
+        contractHash += transaction.hash();
+    }
+    std::string input = Getsha256hash(contractHash);
+    DEBUGLOG("HandleContractPackagerMsg input : {} , hash : {}", input,hash);
+	std::string result = hash;
+	std::string proof = vrfInfo.vrfsign().sign();
+	if (MagicSingleton<VRF>::GetInstance()->VerifyVRF(pkey, input, result, proof) != 0)
+	{
+		ERRORLOG(RED "HandleBuildBlockBroadcastMsg Verify VRF Info fail" RESET);
+		return -5;
+	}
+
+    std::vector<Node> _vrfNodelist;
+    for(auto & item : msg->vrfdatasource().vrfnodelist())
+    {
+        Node x;
+        x.base58Address = item;
+        _vrfNodelist.push_back(x);
+    }
+
+    DEBUGLOG("2222222222222 HHHHHHHHHH");
+
+    auto ret = verifyVrfDataSource(_vrfNodelist,verifyHeight);
+    if(ret != 0)
+    {
+        ERRORLOG("verifyVrfDataSource fail ! ,ret:{}", ret);
+        return -6;
+    }
+
+    Node node;
+	if (!MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(msgdata.fd, node))
+	{
+		return -7;
+	}
+    DEBUGLOG("dispatchNodeAddr:{}", node.base58Address);
+    double randNum = MagicSingleton<VRF>::GetInstance()->GetRandNum(result);
+    std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    ret = VerifyContractPackNode(node.base58Address, randNum, defaultAddr,_vrfNodelist);
+    if(ret != 0)
+    {
+        ERRORLOG("VerifyContractPackNode ret  {}", ret);
+        return -8;
+    }
+    DEBUGLOG("333333333333333 HHHHHHHHHH,txSize:{}", msg->txmsgreq().size());
+    std::set<CTransaction> ContractTxs;
+
+    packDispatch packdis;
+    std::map<std::string, future<int>> txTaskResults;
+    for (const TxMsgReq& txMsg : msg->txmsgreq())
+    {
+        const TxMsgInfo& txMsgInfo = txMsg.txmsginfo();
+        CTransaction transaction;
+        if (!transaction.ParseFromString(txMsgInfo.tx()))
+        {
+            ERRORLOG("Failed to deserialize transaction body!");
+            continue;
+        }
+
+        DEBUGLOG("SetDirtyContractMap, txHash:{}", transaction.hash());
+        SetDirtyContractMap(transaction.hash(), {txMsgInfo.contractstoragelist().begin(), txMsgInfo.contractstoragelist().end()});
+
+
+        std::vector<std::string> dependentAddress(txMsgInfo.contractstoragelist().begin(), txMsgInfo.contractstoragelist().end());
+        packdis.Add(transaction.hash(),dependentAddress,transaction);
+
+        auto task = std::make_shared<std::packaged_task<int()>>(
+                [txMsg, txMsgInfo, transaction] {
+//                    const CSign dispatcherSign = txMsgInfo ->sign();
+//                    bool isMultiSign = IsMultiSign(transaction);
+//                    Base58Ver ver = isMultiSign ? Base58Ver::kBase58Ver_MultiSign : Base58Ver::kBase58Ver_Normal;
+                    std::string dispatcherAddr = transaction.identity();
+                    if(!HasContractPackingPermission(dispatcherAddr, txMsgInfo.height(), transaction.time()))
+                    {
+                        ERRORLOG("HasContractPackingPermission fail!!!, txHash:{}", transaction.hash().substr(0,6));
+                        return -1;
+                    }
+
+                    int ret = DoHandleTx(std::make_shared<TxMsgReq>(txMsg), *std::make_unique<CTransaction>());
+                    if (ret != 0)
+                    {
+                        ERRORLOG("DoHandleTx fail ret: {}, tx hash : {}", ret, transaction.hash());
+                        return ret;
+                    }
+                    return 0;
+                });
+        try
+        {
+            txTaskResults[transaction.hash()] = task->get_future();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+        MagicSingleton<TaskPool>::GetInstance()->CommitWorkTask([task](){(*task)();});
+    }
+
+    DEBUGLOG("3333333333333444 HHHHHHHHHH");
+
+    std::map<uint32, future<std::pair<int, std::string>>> dependentContractTxTaskResults;
+    std::vector<future<std::pair<int, std::string>>> nondependentContractTxTaskResults;
+
+    std::map<uint32_t, std::map<std::string, CTransaction>> dependentContractTxMap;
+    std::map<std::string, CTransaction> nondependentContractTxMap;
+    packdis.GetDependentData(dependentContractTxMap, nondependentContractTxMap);
+    DEBUGLOG("44444444444 HHHHHHHHHH");
+    auto processDependentContract = [&dependentContractTxTaskResults](const uint32_t N, std::map<std::string, CTransaction> ContractTxs) {
+        auto task = std::make_shared<std::packaged_task<std::pair<int, std::string>()>>(
+            [ContractTxs] {
+                return MagicSingleton<TransactionCache>::GetInstance()->_ExecuteContracts(ContractTxs);
+            });
+
+        if (task)
+            dependentContractTxTaskResults[N] =task->get_future();
+        else
+            return -10;
+
+        MagicSingleton<TaskPool>::GetInstance()->CommitTxTask([task]() { (*task)(); });
+
+        return 0; 
+    };
+
+    for(const auto& iter : dependentContractTxMap)
+    {
+        DEBUGLOG("dependentContractTxMap HHHHHHHHHH first:{}, second size:{}", iter.first, iter.second.size());
+        processDependentContract(iter.first, iter.second);
+    }
+    DEBUGLOG("555555555555 HHHHHHHHHH");
+
+    DEBUGLOG("nondependentContractTxMap HHHHHHHHHH size:{}", nondependentContractTxMap.size());
+    for(const auto& iter : nondependentContractTxMap)
+    {
+        std::map<std::string, CTransaction> ContractTxs;
+        ContractTxs.emplace(iter.first, iter.second);
+        
+        auto task = std::make_shared<std::packaged_task<std::pair<int, std::string>()>>(
+        [ContractTxs]
+        { 
+            return MagicSingleton<TransactionCache>::GetInstance()->_ExecuteContracts(ContractTxs);
+        });
+
+        if(task)    nondependentContractTxTaskResults.push_back(task->get_future());
+        else    return -10;
+
+        MagicSingleton<TaskPool>::GetInstance()->CommitBlockTask([task](){(*task)();});
+    }
+    DEBUGLOG("66666666666 HHHHHHHHHH");
+    std::map<std::string, int> txRes;
+    for (auto& res : txTaskResults)
+    {
+        if (res.second.valid()) 
+        {
+            auto retPair = res.second.get();
+            txRes[res.first] = retPair;
+        }
+    }
+    DEBUGLOG("77777777777 HHHHHHHHHH");
+
+    std::set<uint32_t> failDependent;
+    for (auto& res : txRes)
+    {
+        if(res.second != 0)
+        {
+            ERRORLOG("failDependent txHash:{}, ret:{}", res.first, res.second);
+            for (auto iter = dependentContractTxMap.begin(); iter != dependentContractTxMap.end();) 
+            {
+                if (iter->second.find(res.first) != iter->second.end()) 
+                {
+                    RemoveContractInfoCacheTransaction(iter->second);
+                    failDependent.insert(iter->first);
+                    ERRORLOG("verify tx fail !!! delete contract tx:{}", res.first);
+                    iter->second.erase(res.first);
+                }
+
+                if (iter->second.empty()) 
+                {
+                    iter = dependentContractTxMap.erase(iter);
+                } 
+                else 
+                {
+                    ++iter;
+                }
+            }
+            if(nondependentContractTxMap.find(res.first) != nondependentContractTxMap.end())
+            {
+                std::map<std::string, CTransaction> contractTxs;
+                contractTxs[res.first] = {};
+                RemoveContractInfoCacheTransaction(contractTxs);
+            }
+        }
+    }
+
+    for(const auto& iter : failDependent)
+    {
+        dependentContractTxTaskResults.erase(iter);
+        processDependentContract(iter, dependentContractTxMap[iter]);
+    }
+
+    std::map<std::string, int> depenDentCTxRes;
+    for (auto& res : dependentContractTxTaskResults)
+    {
+        if (res.second.valid()) 
+        {
+            auto retPair = res.second.get();
+            depenDentCTxRes[retPair.second] = retPair.first;
+        }
+    }
+    DEBUGLOG("888888888888 HHHHHHHHHH");
+
+    std::map<std::string, int> nondepenDentCTxRes;
+    for (auto& res : nondependentContractTxTaskResults)
+    {
+        if(res.valid())
+        {
+            auto retPair = res.get();
+            nondepenDentCTxRes[retPair.second] = retPair.first;
+        }
+        
+    }
+    DEBUGLOG("999999999999 HHHHHHHHHH");
+
+    for (auto& res : depenDentCTxRes)
+    {
+        if(res.second != 0)
+        {
+            ERRORLOG("faildepenDentCTxRes txHash:{}, ret:{}", res.first, res.second);
+            for(const auto& iter : dependentContractTxMap)
+            {
+                if(iter.second.find(res.first) != iter.second.end())
+                {
+                    RemoveContractsCacheTransaction(iter.second);
+                }
+            }
+            ERRORLOG("_ExecuteDependentContractTx fail!!!, txHash:{}", res.first);
+        }
+    }
+
+    for (auto& res : nondepenDentCTxRes)
+    {
+        if(res.second != 0)
+        {
+            ERRORLOG("nondepenDentCTxRes txHash:{}, ret:{}", res.first, res.second);
+            std::map<std::string, CTransaction> contractTxs;
+            contractTxs[res.first] = {};
+            RemoveContractsCacheTransaction(contractTxs);
+            ERRORLOG("_ExecuteNonDependentContractTx fail!!!, txHash:{}", res.first);
+        }
+    }
+    
+    DEBUGLOG("1010101010101 HHHHHHHHHH");
+    ProcessContract();
+    DEBUGLOG("Packager HandleContractPackagerMsg 005 ");
+    return 0;
+}
 
 void TransactionCache::ProcessContract()
 {
     std::scoped_lock locker(_contractCacheMutex, _contractInfoCacheMutex, _dirtyContractMapMutex);
-    MagicSingleton<ContractDataCache>::GetInstance()->lock();
-    ON_SCOPE_EXIT{
-        MagicSingleton<ContractDataCache>::GetInstance()->clear();
-        MagicSingleton<ContractDataCache>::GetInstance()->unlock();
-    };
-    _ExecuteContracts();
+    //_ExecuteContracts();
     std::list<CTransaction> buildTxs;
     uint64_t topTransactionHeight = 0;
     for(const auto& txEntity : _contractCache)
@@ -493,12 +798,15 @@ void TransactionCache::ProcessContract()
         _contractInfoCache.clear();
     };
 
+    DEBUGLOG("_GetContractTxPreHash start");
     std::list<std::pair<std::string, std::string>> contractTxPreHashList;
     if(_GetContractTxPreHash(buildTxs,contractTxPreHashList) != 0)
     {
         ERRORLOG("_GetContractTxPreHash fail");
         return;
-    }
+    }   
+    DEBUGLOG("_GetContractTxPreHash end");
+
     if(contractTxPreHashList.empty())
     {
         DEBUGLOG("contractTxPreHashList empty");
@@ -512,8 +820,8 @@ void TransactionCache::ProcessContract()
             return;
         }
     }
-
-    auto ret = BuildBlock(buildTxs, topTransactionHeight + 1, false);
+    DEBUGLOG("BuildBlock start");
+    auto ret = BuildBlock(buildTxs, topTransactionHeight + 1, false,true);
     if(ret != 0)
     {
         ERRORLOG("{} build block fail", ret);
@@ -527,32 +835,28 @@ void TransactionCache::ProcessContract()
     return;
 }
 
-void TransactionCache::_ExecuteContracts()
+std::pair<int, std::string> TransactionCache::_ExecuteContracts(const std::map<std::string, CTransaction>& dependentContractTxMap)
 {
     uint64_t StartTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    DEBUGLOG("FFF _ExecuteContracts StartTime:{}", StartTime);
+    ContractDataCache contractDataCache;
     std::map<std::string, std::string> contractPreHashCache;
-    for (auto iter = _contractCache.begin(); iter != _contractCache.end();)
+    for (auto iterPair : dependentContractTxMap)
     {
-//        if (iter->GetExecutedBefore())
-//        {
-//            ++iter;
-//            continue;
-//        }
-        const auto& transaction = iter->GetTransaction();
-        auto txType = (global::ca::TxType)transaction.txtype();
+        uint64_t StartTime1 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+        auto& tx = iterPair.second;
+        auto txType = (global::ca::TxType)tx.txtype();
         if ( (txType != global::ca::TxType::kTxTypeCallContract && txType != global::ca::TxType::kTxTypeDeployContract)
-            || _AddContractInfoCache(transaction, contractPreHashCache) != 0)
+            || _AddContractInfoCache(tx, contractPreHashCache, &contractDataCache) != 0)
         {
-            iter = _contractCache.erase(iter);
-            continue;
+            //_contractCache.erase(iter)
+            return {-1,tx.hash()};
         }
-        DEBUGLOG("FFF _ExecuteContracts txHash:{}", transaction.hash().substr(0,6));
-//        iter->SetExecutedBefore(true);
-        ++iter;
+        uint64_t StartTime2 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+        DEBUGLOG("FFF _ExecuteContracts HHHHHHHHHH txHash:{}, time:{}", tx.hash().substr(0,6), (StartTime2 - StartTime1) / 1000000.0);
     }
     uint64_t EndTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    DEBUGLOG("FFF _ExecuteContracts EndTime:{}", EndTime);
+    DEBUGLOG("FFF _ExecuteContracts HHHHHHHHHH txSize:{}, Time:{}",dependentContractTxMap.size(), (EndTime - StartTime) / 1000000.0);
+    return {0,""};
 }
 
 int TransactionCache::_GetContractTxPreHash(const std::list<CTransaction>& txs, std::list<std::pair<std::string, std::string>>& contractTxPreHashList)
@@ -637,7 +941,7 @@ bool TransactionCache::_VerifyDirtyContract(const std::string &transactionHash, 
 }
 
 int TransactionCache::_AddContractInfoCache(const CTransaction &transaction,
-                                            std::map<std::string, std::string> &contractPreHashCache)
+                                            std::map<std::string, std::string> &contractPreHashCache, ContractDataCache* contractDataCache)
 {
     auto txType = (global::ca::TxType)transaction.txtype();
     if (txType != global::ca::TxType::kTxTypeCallContract && txType != global::ca::TxType::kTxTypeDeployContract)
@@ -658,7 +962,7 @@ int TransactionCache::_AddContractInfoCache(const CTransaction &transaction,
     global::ca::VmType vmType;
 
     std::string code;
-
+    std::string transientContractAddress;
     std::string input;
     std::string deployerAddr;
     std::string deployHash;
@@ -689,6 +993,7 @@ int TransactionCache::_AddContractInfoCache(const CTransaction &transaction,
         else if (txType == global::ca::TxType::kTxTypeDeployContract)
         {
             code = txInfo["Code"].get<std::string>();
+            transientContractAddress = txInfo["transientAddress"].get<std::string>();
         }
 
     }
@@ -699,12 +1004,12 @@ int TransactionCache::_AddContractInfoCache(const CTransaction &transaction,
     }
 
     std::string expectedOutput;
-    TfsHost host;
+    TfsHost host(contractDataCache);
     int64_t gasCost = 0;
     if(txType == global::ca::TxType::kTxTypeDeployContract)
     {
         ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, expectedOutput,
-                                     host, gasCost);
+                                     host, gasCost, transientContractAddress);
         if(ret != 0)
         {
             ERRORLOG("VM failed to deploy contract!, ret {}", ret);
@@ -738,14 +1043,22 @@ int TransactionCache::_AddContractInfoCache(const CTransaction &transaction,
         ERRORLOG("_VerifyDirtyContract fail");
         return -6;
     }
-    MagicSingleton<ContractDataCache>::GetInstance()->set(jTxInfo["Storage"]);
-    _contractInfoCache[transaction.hash()] = {jTxInfo, transaction.time()};
+    if(host.contractDataCache != nullptr) host.contractDataCache->set(jTxInfo["Storage"]);
+    else return -7;
+
+    AddContractInfoCache(transaction.hash(), jTxInfo, transaction.time());
     return 0;
+}
+
+void TransactionCache::AddContractInfoCache(const std::string& transactionHash, const nlohmann::json& jTxInfo, const uint64_t& txtime)
+{
+    std::unique_lock<std::shared_mutex> locker(_contractInfoCacheMutex);
+    _contractInfoCache[transactionHash] = {jTxInfo, txtime};
+    return;
 }
 
 int TransactionCache::GetContractInfoCache(const std::string& transactionHash, nlohmann::json& jTxInfo)
 {
-//    std::shared_lock<std::shared_mutex> locker(_contractInfoCacheMutex);
     auto found = _contractInfoCache.find(transactionHash);
     if (found == _contractInfoCache.end())
     {
@@ -826,6 +1139,18 @@ void TransactionCache::SetDirtyContractMap(const std::string& transactionHash, c
     _dirtyContractMap[transactionHash]= {currentTime, dirtyContract};
 }
 
+bool TransactionCache::GetDirtyContractMap(const std::string& transactionHash, std::set<std::string>& dirtyContract)
+{
+    auto found = _dirtyContractMap.find(transactionHash);
+    if(found != _dirtyContractMap.end())
+    {
+        dirtyContract = found->second.second;
+        return true;
+    }
+    
+    return false;
+}
+
 void TransactionCache::removeExpiredEntriesFromDirtyContractMap()
 {
     uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
@@ -833,6 +1158,7 @@ void TransactionCache::removeExpiredEntriesFromDirtyContractMap()
     {
         if(nowTime >= iter->second.first + 60 * 1000000ull)
         {
+            DEBUGLOG("remove txHash:{}", iter->first);
             _dirtyContractMap.erase(iter++);
         }
         else
@@ -1017,157 +1343,41 @@ int HandleSeekContractPreHashAck(const std::shared_ptr<SeekContractPreHashAck> &
 
 int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, const MsgData &msgdata)
 {
-    // todo verify version
-    // todo verify sign
-    auto cSign = msg->sign();
-    auto pub = cSign.pub();
-    auto signature = cSign.sign();
-
-    ContractPackagerMsg cp_msg = *msg;
-    cp_msg.clear_sign();
-	std::string message = Getsha256hash(cp_msg.SerializeAsString());
-    Account account;
-    if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(pub, account) == false){
-        ERRORLOG(RED " HandleContractPackagerMsg Get public key from bytes failed!" RESET);
-        return -1;
-    }
-    if(account.Verify(message, signature) == false)
-    {
-        ERRORLOG(RED "HandleBuildBlockBroadcastMsg Public key verify sign failed!" RESET);
-        return -2;
-    }
-
-    // todo verify vrf
-    Vrf vrfInfo = msg->vrfinfo();
-    std::string hash;
-    int range;
-    uint64_t verifyHeight;
-    try
-	{
-		auto json = nlohmann::json::parse(vrfInfo.data());
-		hash = json["hash"];
-		range = json["range"];
-        verifyHeight = json["height"];
-
-	}
-	catch (std::exception & e)
-	{
-        ERRORLOG("VRF PARSE ERROR:{}",e.what());
-		return -100;
-	}
-
-	EVP_PKEY *pkey = nullptr;
-	if (!GetEDPubKeyByBytes(vrfInfo.vrfsign().pub(), pkey))
-	{
-		ERRORLOG(RED "HandleBuildBlockBroadcastMsg Get public key from bytes failed!" RESET);
-		return -4;
-	}
-
-    std::string contractHash;
-    for (const TxMsgReq& txMsg : msg->txmsgreq())
-    {
-        const TxMsgInfo& txMsgInfo = txMsg.txmsginfo();
-        CTransaction transaction;
-        if (!transaction.ParseFromString(txMsgInfo.tx()))
-        {
-            ERRORLOG("Failed to deserialize transaction body!");
-            continue;
-        }
-        contractHash += transaction.hash();
-    }
-    std::string input = Getsha256hash(contractHash);
-    DEBUGLOG("HandleContractPackagerMsg input : {} , hash : {}", input,hash);
-	std::string result = hash;
-	std::string proof = vrfInfo.vrfsign().sign();
-	if (MagicSingleton<VRF>::GetInstance()->VerifyVRF(pkey, input, result, proof) != 0)
-	{
-		ERRORLOG(RED "HandleBuildBlockBroadcastMsg Verify VRF Info fail" RESET);
-		return -5;
-	}
-
-    std::vector<Node> _vrfNodelist;
-    for(auto & item : msg->vrfdatasource().vrfnodelist())
-    {
-        Node x;
-        x.base58Address = item;
-        _vrfNodelist.push_back(x);
-    }
-
-    auto ret = verifyVrfDataSource(_vrfNodelist,verifyHeight);
-    if(ret != 0)
-    {
-        ERRORLOG("verifyVrfDataSource fail ! ,ret:{}", ret);
-        return -6;
-    }
-
- 
-    Node node;
-	if (!MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(msgdata.fd, node))
-	{
-		return -7;
-	}
-
-    double randNum = MagicSingleton<VRF>::GetInstance()->GetRandNum(result);
-    std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    ret = VerifyContractPackNode(node.base58Address, randNum, defaultAddr,_vrfNodelist);
-    if(ret != 0)
-    {
-        ERRORLOG("VerifyContractPackNode ret  {}", ret);
-        return -8;
-    }
-
-    std::map<std::string, future<int>> taskResults;
-    for (const TxMsgReq& txMsg : msg->txmsgreq())
-    {
-        const TxMsgInfo& txMsgInfo = txMsg.txmsginfo();
-        CTransaction transaction;
-        if (!transaction.ParseFromString(txMsgInfo.tx()))
-        {
-            ERRORLOG("Failed to deserialize transaction body!");
-            continue;
-        }
-        auto task = std::make_shared<std::packaged_task<int()>>(
-                [txMsg, txMsgInfo, transaction] {
-//                    const CSign dispatcherSign = txMsgInfo ->sign();
-//                    bool isMultiSign = IsMultiSign(transaction);
-//                    Base58Ver ver = isMultiSign ? Base58Ver::kBase58Ver_MultiSign : Base58Ver::kBase58Ver_Normal;
-                    std::string dispatcherAddr = transaction.identity();
-                    if(!TransactionCache::HasContractPackingPermission(dispatcherAddr, txMsgInfo.height(), transaction.time()))
-                    {
-                        ERRORLOG("HasContractPackingPermission fail!!!, txHash:{}", transaction.hash().substr(0,6));
-                        return -1;
-                    }
-
-                    MagicSingleton<TransactionCache>::GetInstance()->SetDirtyContractMap(transaction.hash(), {txMsgInfo.contractstoragelist().begin(), txMsgInfo.contractstoragelist().end()});
-
-
-                    int ret = DoHandleTx(std::make_shared<TxMsgReq>(txMsg), *std::make_unique<CTransaction>());
-                    if (ret != 0)
-                    {
-                        ERRORLOG("DoHandleTx fail ret: {}, tx hash : {}", ret, transaction.hash());
-                        return ret;
-                    }
-                    return 0;
-                });
-        try
-        {
-            taskResults[transaction.hash()] = task->get_future();
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-        MagicSingleton<TaskPool>::GetInstance()->CommitWorkTask([task](){(*task)();});
-    }
-    for (auto& res : taskResults)
-    {
-        res.second.get();
-    }
-    MagicSingleton<TransactionCache>::GetInstance()->ProcessContract();
+    MagicSingleton<TransactionCache>::GetInstance()->HandleContractPackagerMsg(msg, msgdata);
     return 0;
 }
 
+bool TransactionCache::RemoveContractInfoCacheTransaction(const std::map<std::string, CTransaction>& contractTxs)
+{
+    std::shared_lock<std::shared_mutex> locker(_contractInfoCacheMutex);
+    auto it = _contractInfoCache.begin();
+    while (it != _contractInfoCache.end()) 
+    {
+        if (contractTxs.find(it->first) != contractTxs.end()) 
+        {
+            DEBUGLOG("txHash:{}", it->first);
+            it = _contractInfoCache.erase(it); 
+        } 
+        else 
+        {
+            ++it;
+        }
+    }
+    return true;
+}
 
+bool TransactionCache::RemoveContractsCacheTransaction(const std::map<std::string, CTransaction>& contractTxs) {
+    std::unique_lock<mutex> locker(_contractCacheMutex);
+    auto it = _contractCache.begin();
+    while (it != _contractCache.end()) {
+        if (contractTxs.find(it->_transaction.hash()) != contractTxs.end()) {
+            it = _contractCache.erase(it); 
+        } else {
+            ++it;
+        }
+    }
+    return true;
+}
 
 
 
@@ -1243,98 +1453,98 @@ int CreateBlock_V33_1(std::vector<TransactionEntity_V33_1>& txs, CBlock& cblock)
 
 int BuildBlock_V33_1(std::vector<TransactionEntity_V33_1>& txs, bool build_first)
 {
-	if(txs.empty())
-	{
-		ERRORLOG("Txs is empty!");
-		return -1;
-	}
+	// if(txs.empty())
+	// {
+	// 	ERRORLOG("Txs is empty!");
+	// 	return -1;
+	// }
 
-	CBlock cblock;
-    auto S = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	int ret = CreateBlock_V33_1(txs,cblock);
-    if(ret != 0)
-    {
-        if(ret == -3 || ret == -4 || ret == -5)
-        {
-            MagicSingleton<BlockStroage>::GetInstance()->ForceCommitSeekTask(cblock.height() - 1);
-        }
-        ERRORLOG("Create block failed!");
-		return ret - 100;
-    }
-	auto S1 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	std::string serBlock = cblock.SerializeAsString();
+	// CBlock cblock;
+    // auto S = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+	// int ret = CreateBlock_V33_1(txs,cblock);
+    // if(ret != 0)
+    // {
+    //     if(ret == -3 || ret == -4 || ret == -5)
+    //     {
+    //         MagicSingleton<BlockStroage>::GetInstance()->ForceCommitSeekTask(cblock.height() - 1);
+    //     }
+    //     ERRORLOG("Create block failed!");
+	// 	return ret - 100;
+    // }
+	// auto S1 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+	// std::string serBlock = cblock.SerializeAsString();
 
-	ca_algorithm::PrintBlock(cblock);
-    auto startT4 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    auto endT4 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-    auto blockTime = cblock.time();
-    auto t4 = endT4 - startT4;
-    auto txSize = txs.size();
-    auto BlockHight = cblock.height();
-    MagicSingleton<TFSbenchmark>::GetInstance()->SetByBlockHash(cblock.hash(), &blockTime, 1 , &t4, &txSize, &BlockHight);
+	// ca_algorithm::PrintBlock(cblock);
+    // auto startT4 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    // auto endT4 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    // auto blockTime = cblock.time();
+    // auto t4 = endT4 - startT4;
+    // auto txSize = txs.size();
+    // auto BlockHight = cblock.height();
+    // MagicSingleton<TFSbenchmark>::GetInstance()->SetByBlockHash(cblock.hash(), &blockTime, 1 , &t4, &txSize, &BlockHight);
 
-    BlockMsg blockmsg;
-    blockmsg.set_version(global::kVersion);
-    blockmsg.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
-    blockmsg.set_block(serBlock);
+    // BlockMsg blockmsg;
+    // blockmsg.set_version(global::kVersion);
+    // blockmsg.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
+    // blockmsg.set_block(serBlock);
 
 
-    for(auto &tx : cblock.txs())
-    {
-        if(GetTransactionType(tx) != kTransactionType_Tx)
-        {
-            continue;
-        }
+    // for(auto &tx : cblock.txs())
+    // {
+    //     if(GetTransactionType(tx) != kTransactionType_Tx)
+    //     {
+    //         continue;
+    //     }
 
-        CTransaction copyTx = tx;
-        copyTx.clear_hash();
-        copyTx.clear_verifysign();
-        std::string txHash = Getsha256hash(copyTx.SerializeAsString());
-        MagicSingleton<TFSbenchmark>::GetInstance()->SetTxHashByBlockHash(cblock.hash(), txHash);
+    //     CTransaction copyTx = tx;
+    //     copyTx.clear_hash();
+    //     copyTx.clear_verifysign();
+    //     std::string txHash = Getsha256hash(copyTx.SerializeAsString());
+    //     MagicSingleton<TFSbenchmark>::GetInstance()->SetTxHashByBlockHash(cblock.hash(), txHash);
 
-        uint64_t handleTxHeight =  cblock.height() - 1;
-        TxHelper::vrfAgentType type = TxHelper::GetVrfAgentType(tx, handleTxHeight);
-        if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-        {
-            continue;
-        }
+    //     uint64_t handleTxHeight =  cblock.height() - 1;
+    //     TxHelper::vrfAgentType type = TxHelper::GetVrfAgentType(tx, handleTxHeight);
+    //     if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
+    //     {
+    //         continue;
+    //     }
 
-        std::pair<std::string,Vrf>  vrf;
-        if(!MagicSingleton<VRF>::GetInstance()->getVrfInfo(txHash, vrf))
-        {
-            ERRORLOG("getVrfInfo failed!");
-            return -3000;
-        }
-        Vrf *vrfinfo  = blockmsg.add_vrfinfo();
-        vrfinfo ->CopyFrom(vrf.second);
+    //     std::pair<std::string,Vrf>  vrf;
+    //     if(!MagicSingleton<VRF>::GetInstance()->getVrfInfo(txHash, vrf))
+    //     {
+    //         ERRORLOG("getVrfInfo failed!");
+    //         return -3000;
+    //     }
+    //     Vrf *vrfinfo  = blockmsg.add_vrfinfo();
+    //     vrfinfo ->CopyFrom(vrf.second);
 
-        if(!MagicSingleton<VRF>::GetInstance()->getTxVrfInfo(txHash, vrf))
-        {
-            ERRORLOG("getTxVrfInfo failed!");
-            return -4000;
-        }
+    //     if(!MagicSingleton<VRF>::GetInstance()->getTxVrfInfo(txHash, vrf))
+    //     {
+    //         ERRORLOG("getTxVrfInfo failed!");
+    //         return -4000;
+    //     }
 
-        auto vrfJson = nlohmann::json::parse(vrf.second.data());
-		vrfJson["txhash"] = txHash;
-        vrf.second.set_data(vrfJson.dump());
+    //     auto vrfJson = nlohmann::json::parse(vrf.second.data());
+	// 	vrfJson["txhash"] = txHash;
+    //     vrf.second.set_data(vrfJson.dump());
 
-        blockmsg.add_txvrfinfo()->CopyFrom(vrf.second);
-    }
+    //     blockmsg.add_txvrfinfo()->CopyFrom(vrf.second);
+    // }
     
-    auto msg = make_shared<BlockMsg>(blockmsg);
-	// ret = DoHandleBlock_V33_1(msg);
-    if(ret != 0)
-    {
-        ERRORLOG("DoHandleBlock failed The error code is {}",ret);
-        CBlock cblock;
-	    if (!cblock.ParseFromString(msg->block()))
-	    {
-		    ERRORLOG("fail to serialization!!");
-		    return -3090;
-	    }
-        ClearVRF(cblock);
-        return ret -4000;
-    }
+    // auto msg = make_shared<BlockMsg>(blockmsg);
+	// // ret = DoHandleBlock_V33_1(msg);
+    // if(ret != 0)
+    // {
+    //     ERRORLOG("DoHandleBlock failed The error code is {}",ret);
+    //     CBlock cblock;
+	//     if (!cblock.ParseFromString(msg->block()))
+	//     {
+	// 	    ERRORLOG("fail to serialization!!");
+	// 	    return -3090;
+	//     }
+    //     ClearVRF(cblock);
+    //     return ret -4000;
+    // }
 
 	return 0;
 }
@@ -1639,17 +1849,18 @@ int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>>
         DEBUGLOG("req contractAddr:{}, contractTxHash:{}", item.first, item.second);
     }
     
+    DEBUGLOG("1111111111111");
     for (auto &nodeBase58 : sendNodeIds)
     {
         NetSendMessage<newSeekContractPreHashReq>(nodeBase58, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
-
+    DEBUGLOG("22222222222222");
     std::vector<std::string> ret_datas;
     if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
     {
         return -4;
     }
-
+    DEBUGLOG("3333333333333333");
     newSeekContractPreHashAck ack;
     std::map<std::string, std::set<std::string>> blockHashMap;
     std::map<std::string, std::pair<std::string, std::string>> testMap; //TODO::
@@ -1666,7 +1877,7 @@ int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>>
             testMap[iter.blockraw()] = {iter.contractaddr(), iter.roothash()};
         }
     }
-
+    DEBUGLOG("4444444444444444444");
     std::unordered_map<std::string , int> countMap;
 
     for (auto& iter : blockHashMap) 
@@ -1678,6 +1889,7 @@ int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>>
         
     }
 
+    DEBUGLOG("55555555555555");
     DBReader dbReader;
     std::vector<std::pair<CBlock,std::string>> seekBlocks;
     for (const auto& iter : countMap) 
@@ -1701,8 +1913,10 @@ int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>>
             seekBlocks.push_back({block, block.hash()});
             DEBUGLOG("rate:({}) < 0.66, contractAddr:{}, contractTxHash:{}, blockHash:{}", rate, test_iter.first, test_iter.second, block.hash());
             MagicSingleton<BlockHelper>::GetInstance()->AddSeekBlock(seekBlocks);
+            DEBUGLOG("wwwwwwwwwwwwwwwwww");
         }
     }
+    DEBUGLOG("666666666666666");
 
     uint64_t timeOut = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp() + 2 * 1000000;
     uint64_t currentTime;

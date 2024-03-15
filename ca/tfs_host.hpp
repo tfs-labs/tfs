@@ -70,15 +70,15 @@ struct TfsAccount
     {
         storageRoot = std::make_shared<Trie>();
     }
-    void CreateTrie(const std::string& rootHash ,const std::string& ContractAddr)
+    void CreateTrie(const std::string& rootHash ,const std::string& ContractAddr, ContractDataCache* contractDataCache)
     {
         if(rootHash.empty())
         {
-            storageRoot = std::make_shared<Trie>(ContractAddr);
+            storageRoot = std::make_shared<Trie>(ContractAddr, contractDataCache);
         }
         else
         {
-            storageRoot = std::make_shared<Trie>(rootHash, ContractAddr);
+            storageRoot = std::make_shared<Trie>(rootHash, ContractAddr, contractDataCache);
         }
         
     }
@@ -131,7 +131,18 @@ struct TransferInfo
 class TfsHost : public Host
 {
 public:
-    TfsHost() = default;
+    //TfsHost() = default;
+    TfsHost(ContractDataCache* contractDataCache = nullptr)
+    {
+        if(contractDataCache != nullptr)
+        {
+            this->contractDataCache = contractDataCache;
+        }
+        else 
+        {
+            this->contractDataCache = nullptr;
+        }
+    }
     // LOG record.
     struct log_record
     {
@@ -205,6 +216,8 @@ public:
     std::vector<TransferInfo> coin_transferrings;
 
     std::map<std::string, uint64_t> DBspendMap;
+
+    ContractDataCache* contractDataCache;
 private:
     // The copy of call inputs for the recorded_calls record.
     std::vector<bytes> m_recorded_calls_inputs;
@@ -695,18 +708,18 @@ public:
                     return result{evmc_failure_result};
                 }
 
-                this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+                this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress, this->contractDataCache);
             }
             else
             {
                 DEBUGLOG("EVMC_CALL:");
                 std::string rootHash;
-                int ret = GetContractRootHash(ContractAddress, rootHash);
+                int ret = GetContractRootHash(ContractAddress, rootHash, this->contractDataCache);
                 if (ret != 0)
                 {
                     return result{evmc_failure_result};
                 }
-                this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress);
+                this->accounts[msg.recipient].CreateTrie(rootHash, ContractAddress, this->contractDataCache);
             }
         }
         else if (msg.kind == EVMC_DELEGATECALL)

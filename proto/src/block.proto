@@ -22,7 +22,6 @@ message CBlock {
   string reserve1 = 12;
 }
 
-
 message BlockMsg
 {
   string    version             = 1;
@@ -30,8 +29,8 @@ message BlockMsg
   string    message             = 3;
   uint64    time                = 4;
   bytes     block               = 5;
-  repeated  Vrf  vrfInfo        = 6;
-  repeated  Vrf  txvrfInfo      = 7;
+  repeated Vrf  vrfInfo      = 6;
+  repeated Vrf  txvrfInfo    = 7;
   VrfDataSource vrfDataSource   = 8;
   CSign         sign            = 9;
 }

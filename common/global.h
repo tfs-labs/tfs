@@ -30,9 +30,9 @@ namespace global{
     #endif
 
     // version
-    static const std::string kNetVersion = "37";
-    static const std::string kLinuxCompatible = "0.37.0";
-    static const std::string kWindowsCompatible = "0.37.0";
+    static const std::string kNetVersion = "39";
+    static const std::string kLinuxCompatible = "0.39.0";
+    static const std::string kWindowsCompatible = "0.39.0";
     static const std::string kIOSCompatible = "4.0.4";
     static const std::string kAndroidCompatible = "3.1.0";
 

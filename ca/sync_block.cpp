@@ -2015,6 +2015,7 @@ int SyncBlock::_GetSyncBlockHashNode(const std::vector<std::string> &sendNodeIds
         std::vector<std::string> blockHashes;
         if(DBStatus::DB_SUCCESS != dbReader.GetBlockHashesByBlockHeight(startSyncHeight, endHeight, blockHashes))
         {
+            ERRORLOG("_GetSyncBlockHashNode GetBlockHashesByBlockHeight error, startSyncHeight = {}, endHeight = {}", startSyncHeight, endHeight);
             ret = -5;
             return ret;
         }
@@ -2094,7 +2095,7 @@ int SyncBlock::_GetSyncBlockData(const std::vector<std::string> &sendNodeIds, co
         return 0;
     }
     std::string msgId;
-    if (!GLOBALDATAMGRPTR.CreateWait(90, sendNodeIds.size() * 0.8, msgId))
+    if (!GLOBALDATAMGRPTR.CreateWait(90, 3, msgId))
     {
         ret = -1;
         return ret;
