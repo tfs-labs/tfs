@@ -15,20 +15,101 @@ public:
     RocksDBReadWriter(const RocksDBReadWriter &) = delete;
     RocksDBReadWriter &operator=(RocksDBReadWriter &&) = delete;
     RocksDBReadWriter &operator=(const RocksDBReadWriter &) = delete;
-
+    /**
+     * @brief
+     * 
+     * @return      true
+     * @return      false
+     */
     bool TransactionInit();
-    bool TransactionCommit(rocksdb::Status &ret_status);
-    bool TransactionRollBack(rocksdb::Status &ret_status);
-
-    bool MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &ret_status);
-    bool MergeValue(const std::string &key, const std::string &value, rocksdb::Status &ret_status, bool first_or_last = false);
-    bool RemoveMergeValue(const std::string &key, const std::string &value, rocksdb::Status &ret_status);
-    bool ReadData(const std::string &key, std::string &value, rocksdb::Status &ret_status);
-    bool WriteData(const std::string &key, const std::string &value, rocksdb::Status &ret_status);
-    bool DeleteData(const std::string &key, rocksdb::Status &ret_status);
+    /**
+     * @brief
+     * 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool TransactionCommit(rocksdb::Status &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool TransactionRollBack(rocksdb::Status &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       keys:
+     * @param       values: 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       value: 
+     * @param       retStatus:
+     * @param       firstOrLast:
+     * @return      true
+     * @return      false
+     */
+    bool MergeValue(const std::string &key, const std::string &value, rocksdb::Status &retStatus, bool firstOrLast = false);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       value: 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool RemoveMergeValue(const std::string &key, const std::string &value, rocksdb::Status &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       value: 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool ReadData(const std::string &key, std::string &value, rocksdb::Status &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       value: 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool WriteData(const std::string &key, const std::string &value, rocksdb::Status &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool DeleteData(const std::string &key, rocksdb::Status &retStatus);
 
 private:
-    bool ReadForUpdate(const std::string &key, std::string &value, rocksdb::Status &ret_status);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       value:
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool ReadForUpdate(const std::string &key, std::string &value, rocksdb::Status &retStatus);
 
     std::string txn_name_;
     std::shared_ptr<RocksDB> rocksdb_;

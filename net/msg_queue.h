@@ -21,7 +21,6 @@
 
 #include "../include/logging.h"
 
-using namespace std;
 enum DataType
 {
     E_READ,

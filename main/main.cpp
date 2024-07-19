@@ -1,6 +1,5 @@
 #include "main.h"
 
-#include <cstdint>
 #include <regex>
 #include <iostream>
 
@@ -15,13 +14,11 @@
 #include "ca/algorithm.h"
 #include "utils/magic_singleton.h"
 #include "test.h"
-#include "utils/base58.h"
 #include "interface.pb.h"
 #include "ca/interface.h"
 #include "utils/account_manager.h"
 #include "ca/block_http_callback.h"
 #include "ca/block_stroage.h"
-
 
 void Menu()
 {
@@ -56,7 +53,7 @@ void Menu()
 			case 0:
 				std::cout << "Exiting, bye!" << std::endl;
 				CaCleanup();
-				exit(0);
+				quick_exit(0);
 				return;		
 			case 1:
 				HandleTransaction();
@@ -80,49 +77,14 @@ void Menu()
 				PrintBasicInfo();
 				break;
       		case 8:
-				{
-					uint64_t selfNodeHeight = 0;
-                    DBReader dbReader;
-                    auto status = dbReader.GetBlockTop(selfNodeHeight);
-                    if (DBStatus::DB_SUCCESS != status)
-                    {
-						std::cout << "Get block top error,please try again: "<< std::endl;
-                        break;
-                    }
-					if(selfNodeHeight < global::ca::OldVersionSmartContractFailureHeight)
-					{
-						HandleDeployContract_V33_1();
-					}
-					else
-					{
-						HandleDeployContract();
-					}
-				}
+				HandleDeployContract();
 				break;
 			case 9:
-				{
-					uint64_t selfNodeHeight = 0;
-                    DBReader dbReader;
-                    auto status = dbReader.GetBlockTop(selfNodeHeight);
-                    if (DBStatus::DB_SUCCESS != status)
-                    {
-						std::cout << "Get block top error,please try again: "<< std::endl;
-                        break;
-                    }
-					if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
-					{
-						HandleCallContract_V33_1();
-					}
-					else
-					{
-						HandleCallContract();
-					}
-				}
+				HandleCallContract();
 				break;
 			case 10:
 				HandleAccountManger();
 				break;
-
 			default:
                 std::cout << "Invalid input." << std::endl;
                 continue;
@@ -140,8 +102,8 @@ bool Init()
 
 	if(!InitConfig())
 	{
-		ERRORLOG("Failed to initialize config!");
-		std::cout << "Failed to initialize config!" << std::endl;
+		ERRORLOG("Failed to initialize log!");
+		std::cout << "Failed to initialize log!" << std::endl;
 		return false;
 	}
 
@@ -163,14 +125,14 @@ bool Init()
 	}
 	
 	// Initialize database
-    if(InitRocksDb() != 0)
+    if(InitRocksDb()!=0)
 	{
 		ERRORLOG("Failed to initialize database!");
 		std::cout << "Failed to initialize database!" << std::endl;
 		return false;		
 	}
 
-	return  CaInit() && net_com::InitializeNetwork();
+	return  CaInit() && NetInit();
 }
 
 bool InitConfig()
@@ -184,7 +146,7 @@ bool InitLog()
 {
 	Config::Log log = {};
 	MagicSingleton<Config>::GetInstance()->GetLog(log);
-	if(!LogInit(log.path, log.console, log.level))
+	if(!MagicSingleton<Log>::GetInstance()->LogInit(log.path, log.console, log.level))
 	{
 		return false;
 	}
@@ -202,7 +164,6 @@ int InitRocksDb()
 {
     if (!DBInit("./data.db"))
     {
-		ERRORLOG("DBInit is error");
         return -1;
     }
 
@@ -218,19 +179,16 @@ int InitRocksDb()
         CBlock block;
         if(!block.ParseFromString(serBlock))
 		{
-			ERRORLOG("block parsefromsring is error");
 			return -2;
 		}
         
         if (block.txs_size() == 0)
         {
-			ERRORLOG("the transactions in block are empty");
             return -3;
         }
         CTransaction tx = block.txs(0);
         if (tx.utxo().vout_size() == 0)
         {
-			ERRORLOG("vouts in utxo are empty");
             return -4;
         }
 
@@ -238,16 +196,15 @@ int InitRocksDb()
         dbReadWriter.SetBlockHashByBlockHeight(block.height(), block.hash(), true);
         dbReadWriter.SetBlockByBlockHash(block.hash(), block.SerializeAsString());
         dbReadWriter.SetBlockTop(0);
-//        dbReadWriter.SetLatestContractBlockHash(block.hash());
 		
 		for(int i = 0; i < tx.utxo().vout_size(); ++i)
 		{
-			if(!CheckBase58Addr(tx.utxo().vout(i).addr()))
+			if(!isValidAddress(tx.utxo().vout(i).addr()))
 			{
 				continue;
 			}
 			dbReadWriter.SetUtxoHashsByAddress(tx.utxo().vout(i).addr(), tx.hash());
-			if(tx.utxo().vout(i).addr() == global::ca::kInitAccountBase58Addr)
+			if(tx.utxo().vout(i).addr() == global::ca::kInitAccountAddr)
 			{
 				dbReadWriter.SetUtxoValueByUtxoHashs(tx.hash(), tx.utxo().vout(i).addr(), std::to_string(tx.utxo().vout(i).value()));
 				dbReadWriter.SetBalanceByAddress(tx.utxo().vout(i).addr(), tx.utxo().vout(i).value());
@@ -267,41 +224,15 @@ int InitRocksDb()
         uint64_t totalCirculation = global::ca::kM2 * global::ca::kDecimalNum;
         dbReadWriter.SetTotalCirculation(totalCirculation);
     }
-	// if (DBStatus::DB_SUCCESS != dbReadWriter.SetInitVer(global::kVersion))
-	// {
-	// 	ERRORLOG("(rocksdb init) set InitVer failed !");
-	// 	return false;
-	// }
-	std::string version;
-	if (DBStatus::DB_SUCCESS != dbReadWriter.GetInitVer(version))
-	{
-		ERRORLOG("(rocksdb init) get InitVer failed !");
-	}
-	
-	if(global::kVersion != version)
-	{
-		std::cout <<"Database version now is:"<< version << std::endl;
-		if(version == "")
-		{
-			ERRORLOG("rocksdb date version is empty");
-			std::cout << "Please replace the database with the latest "<< std::endl;
-			return -5;
-		}
-		else
-		{
-		ERRORLOG("(rocksdb init) date version is not qulified current version failed !");
-		std::cout <<"Please replace the database with the latest "<<std::endl;
-		return -6;
-		}
-	}
+	dbReadWriter.SetInitVer(global::kVersion);
 	if (DBStatus::DB_SUCCESS != dbReadWriter.TransactionCommit())
     {
         ERRORLOG("(rocksdb init) TransactionCommit failed !");
-        return -7;
+        return -8;
     }
+
     return 0;
 }
-
 
 
 bool Check()

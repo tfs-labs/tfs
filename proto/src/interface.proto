@@ -1,154 +1,171 @@
+/**
+ * *****************************************************************************
+ * @file        interface.proto
+ * @brief       Get node related information agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax = "proto3";
 
 
-
+//get block massage
 message GetBlockReq
 {
-    string version = 1;
-    uint64 height = 2;
+    string version = 1; //version
+    uint64 height  = 2; //height
 }
 
-
+//get block sign addr
 message BlockItem
 {
-    string  blockhash = 1;
-    repeated string  addr = 2;
+    string  blockhash     = 1;  //block hash
+    repeated string  addr = 2;  //block sign addr
 }
 
+//send block massage
 message GetBlockAck
 {
-    string version = 1;
-    sint32 code = 2;
-    string message = 3;
-    uint64 height = 4;
-    uint64 timestamp = 5;
-    repeated BlockItem list = 6; 
+    string version   = 1;   //version
+    sint32 code      = 2;   //error code
+    string message   = 3;   //error message
+    uint64 height    = 4;   //block height
+    uint64 timestamp = 5;   //time
+    repeated BlockItem list = 6;    
 }
 
 
 
 /*************************************Get the balance*************************************/
 
+//get balance
 message GetBalanceReq 
 {
-    string version = 1;
-    string address = 2;
+    string version = 1; //version
+    string address = 2; //address
 }
 
-//ack Get balance ack
+//Get balance ack
 message GetBalanceAck 
 {
-    string version = 1;
-    sint32 code = 2;
-    string message = 3;
+    string version  = 1; //version
+    sint32 code     = 2; //error code
+    string message  = 3; //error message
 
     //data
-    string address = 4;
-    uint64 balance = 5;
-    uint64 height = 6;
+    string address  = 4; //address
+    uint64 balance  = 5; //balance
+    uint64 height   = 6; //height
 }
 
 /*************************************Get node information*************************************/
 
+//get node info
 message GetNodeInfoReq 
 {
-    string version = 1;
+    string version = 1; //version
 }
 
 //ack Get node information ack
 message GetNodeInfoAck 
 {
-    string version = 1;
-    sint32 code = 2;
-    string message = 3;
+    string version = 1; //version
+    sint32 code    = 2; //error code
+    string message = 3; //error message
 
     //data
-    string address = 4;
-    string ip = 5;
-    uint64 height = 6;
-    uint64 gas = 7;
-    string ver = 8;
+    string address = 4; //address
+    string ip      = 5; //node ip
+    uint64 height  = 6; //node height
+    uint64 gas     = 7;
+    string ver     = 8; //version
 }
 
 
 /*************************************Stake list*************************************/
 
-//req The staking list requests req
+//get The staking list requests
 message GetStakeListReq 
 {
     string version = 1; //version
-    string addr = 2; //Query address
+    string addr    = 2; //Query address
 }
 
 //ack The staking list answers ACK
 message StakeItem
 {
-    string blockhash = 1; //Block hash
+    string blockhash   = 1; //Block hash
     uint32 blockheight = 2; //Block height
-    string utxo = 3; // utox
-    uint64 amount = 4; //Stake asset value
-    uint64 time  = 5; //timestamp 
-    string fromaddr = 6; //Originating address
-    string toaddr = 7;  //Receiving address
-    string detail = 8;  //Detailed description
+    string utxo        = 3; //utox
+    uint64 amount      = 4; //Stake asset value
+    uint64 time        = 5; //timestamp 
+    string fromaddr    = 6; //Originating address
+    string toaddr      = 7; //Receiving address
+    string detail      = 8; //Detailed description
 }  
 
+//send The staking list requests
 message GetStakeListAck
 {
     string version = 1; //ersion
-    int32 code = 2; //Error code
-    string message = 3;//Returns an error message
+    int32 code     = 2; //Error code
+    string message = 3; //Returns an error message
     repeated StakeItem list = 4; //A list of staking information
 }
 
 /*************************************List of investments*************************************/
 
+//get invest list
 message GetInvestListReq
 {
-    string version = 1; // version
-    string addr = 2; //Query address
+    string version = 1; //version
+    string addr    = 2; //query address
 }
 
 
 //Investment list answer
 message InvestItem
 {
-    string blockhash = 1; //Block hash
-    uint32 blockheight = 2; //Block height
-    string utxo = 3; // utox
-    uint64 amount = 4; //Investment asset value
-    uint64 time  = 5; //timestamp
-    string fromaddr = 6; //Originating address
-    string toaddr = 7;  //Receiving address
-    string detail = 8;  //Detailed description
+    string blockhash    = 1; //Block hash
+    uint32 blockheight  = 2; //Block height
+    string utxo         = 3; // utox
+    uint64 amount       = 4; //Investment asset value
+    uint64 time         = 5; //timestamp
+    string fromaddr     = 6; //Originating address
+    string toaddr       = 7; //Receiving address
+    string detail       = 8; //Detailed description
 }
 
+//send invest list
 message GetInvestListAck
 {
-    string version = 1; //version
-    int32 code = 2; //Error code
-    string message = 3;//Returns an error message
+    string version  = 1; //version
+    int32 code      = 2; //Error code
+    string message  = 3; //Returns an error message
     repeated InvestItem list = 4; //List of investment information
 }
 
 /*************************************Transactions in progress*************************************/
 
+//transaction type
 enum TxType
 {
-    TxTypeUnknown = 0;
-    TxTypeTx = 1; //trade
-    TxTypeStake = 2; //impawn
-    TxTypeUnstake = 3; //Unpledge
-    TxTypeInvest = 4; //investment
+    TxTypeUnknown   = 0;
+    TxTypeTx        = 1; //trade
+    TxTypeStake     = 2; //impawn
+    TxTypeUnstake   = 3; //Unpledge
+    TxTypeInvest    = 4; //investment
     TxTypeDisinvest = 5; //Divestment
-    TxTypeBonus = 6; // Claim
+    TxTypeBonus     = 6; // Claim
 }
 
 
 //Get a list of transactions in progress request
 message GetTxPendingListReq 
 {
-    string version = 1; //version
+    string version       = 1; //version
     repeated string addr = 2; //Query address, if empty, all addresses will be queried for in-process transactions
 }
 
@@ -156,64 +173,69 @@ message GetTxPendingListReq
 //The list of transactions in progress responds to ACK
 message TxPendingItem
 {
-    string txHash = 1; //Transaction hash
-    repeated string vins = 2; // vins
+    string txHash            = 1; //Transaction hash
+    repeated string vins     = 2; //vins
     repeated string fromaddr = 3; //Originating address
-    repeated string toaddr = 4;  //Receiving address
-    uint64 amount = 5; //Amount asset value
-    uint64 time  = 6; //timestamp
-    string detail = 7;  //Detailed description
-    uint64 gas = 8; //Signature fee
+    repeated string toaddr   = 4; //Receiving address
+    uint64 amount            = 5; //Amount asset value
+    uint64 time              = 6; //timestamp
+    string detail            = 7; //Detailed description
+    uint64 gas               = 8; //Signature fee
     repeated uint64 toAmount = 9; //Amount per account
-    TxType type = 10; //Transaction type
+    TxType type              = 10; //Transaction type
 }  
 
+//get transaction pending list
 message GetTxPendingListAck
 {
-    string version = 1; //version
-    int32 code = 2; //Error code
-    string message = 3;//Returns an error message
-    repeated string addr = 4; //Query address
+    string version  = 1; //version
+    int32 code      = 2; //Error code
+    string message  = 3; //Returns an error message
+    repeated string addr        = 4; //Query address
     repeated TxPendingItem list = 5; //A list of transaction information in progress
 }
 
 /*************************************Failed transactions*************************************/
 
+//get transaction failure list
 message GetTxFailureListReq
 {
-    string version = 1; //version
-    string addr = 2; //Query address
-    string txhash = 3; //The next part of this hash is the starting block
-    uint32 count = 4; //Number of queries
+    string version   = 1; //version
+    string addr      = 2; //Query address
+    string txhash    = 3; //The next part of this hash is the starting block
+    uint32 count     = 4; //Number of queries
 }
 
+//transaction failure message
 message TxFailureItem
 {
-    string txHash = 1; //Transaction hash
-    repeated string vins = 2; // vins
+    string txHash            = 1; //Transaction hash
+    repeated string vins     = 2; //vins
     repeated string fromaddr = 3; //Originating address
-    repeated string toaddr = 4;  //Receiving address
-    uint64 amount = 5; //Amount asset value
-    uint64 time  = 6; //timestamp
-    string detail = 7;  //Detailed description
-    uint64 gas = 8; //Signature fee
+    repeated string toaddr   = 4; //Receiving address
+    uint64 amount            = 5; //Amount asset value
+    uint64 time              = 6; //timestamp
+    string detail            = 7; //Detailed description
+    uint64 gas               = 8; //Signature fee
     repeated uint64 toAmount = 9; //Amount per account
-    TxType type = 10; //Transaction type
+    TxType type              = 10; //Transaction type
 } 
 
+//send transaction pending list
 message GetTxFailureListAck
 {
-    string version = 1; //version
-    int32 code = 2; //Error code
-    string message = 3; //Returns an error message
-    uint32 total = 4; //Total number of failed transactions
+    string version   = 1; //version
+    int32 code       = 2; //Error code
+    string message   = 3; //Returns an error message
+    uint32 total     = 4; //Total number of failed transactions
     repeated TxFailureItem list = 5; //List of failed transaction information
-    string lasthash = 6; //hash The last transaction hash
+    string lasthash  = 6; //hash The last transaction hash
 }
 
 
 /*************************************Query UTXO*************************************/
 
+//get utxo
 message GetUtxoReq
 {
     string version = 1; //version
@@ -222,15 +244,16 @@ message GetUtxoReq
 
 message Utxo
 {
-    string hash = 1; // utxo hash
+    string hash  = 1; // utxo hash
     uint64 value = 2; // utxo value
-    uint32 n = 3; // utxo n
+    uint32 n     = 3; // utxo n
 }
 
+//send utxo
 message GetUtxoAck
 {
     string version = 1; //version
-    int32 code = 2; //Error code
+    int32 code     = 2; //Error code
     string message = 3; //Returns an error message
     string address = 4; //Account address
     repeated Utxo utxos = 5; //utxo All UTXOs under the account
@@ -239,10 +262,11 @@ message GetUtxoAck
 
 /*************************************Query all investment accounts and amounts on the investee node*************************************/
 
+//get all invest address
 message GetAllInvestAddressReq 
 {
-    string version              = 1;
-    string addr                 = 2;
+    string version              = 1; //version
+    string addr                 = 2; //addr
 }
 
 message InvestAddressItem 
@@ -255,29 +279,31 @@ message InvestAddressItem
 //Check all investment accounts and amount receipts on the investee node
 message GetAllInvestAddressAck 
 {
-    string version     = 1;
-    sint32 code        = 2;
-    string message     = 3;
-    string addr        = 4;
+    string version     = 1; //version
+    sint32 code        = 2; //error code
+    string message     = 3; //error message
+    string addr        = 4; //addr
     repeated InvestAddressItem list = 5;
 }
 
 /*************************************Get all the nodes*************************************/
 
+//get stake node
 message GetAllStakeNodeListReq 
 {
-    string version  = 1;
+    string version  = 1; //version
 }
 
+//send stake node
 message StakeNode 
 {
-    string addr           = 1; // base58 address
+    string addr           = 1; //  address
     string name           = 2; // name
     string ip             = 3; // ip
     bytes identity        = 4; // logotype
     string logo           = 5; // Logo (URL or base64)
     uint64 height         = 6; // height
-    string version        = 7; 
+    string version        = 7; // version
 }
 
 
@@ -286,68 +312,76 @@ message GetAllStakeNodeListAck
 {
     string version     = 1;//The version number  
     sint32 code        = 2;//0 successful, rest to be replenished	
-    string message     = 3;
+    string message     = 3;//error message
     repeated StakeNode list = 4;//List of all nodes
 }
 
 /*************************************Get a list of signatures*************************************/
 
+//get sign cout list
 message GetSignCountListReq 
 {
-    string version  = 1;
+    string version  = 1; //version
 }
 
+//sign count
 message SignCount
 {
-    string addr   = 1;
-    uint32 count = 2;
+    string addr   = 1;  //addr
+    uint32 count  = 2;  //sign count
 }
 
+//send sign count list
 message GetSignCountListAck 
 {
-    string version     = 1;
-    sint32 code        = 2;
-    string message     = 3;
-    repeated SignCount list  = 4;
+    string version     = 1; //version
+    sint32 code        = 2; //error code
+    string message     = 3; //error message
+    repeated SignCount list  = 4; // sign count list
 }
 
 
 /*************************************Calculate the commission*************************************/
 
+//get height
 message GetHeightReq 
 {
     string version = 1; //version
 }
 
+//send height
 message GetHeightAck
 {
     string version = 1; //version
-    int32 code = 2; //Error code
+    int32 code     = 2; //Error code
     string message = 3; //Returns an error message
-    uint64 height = 4; //height
+    uint64 height  = 4; //height
 }
 
 
 /*************************************Check the current claim amount (precalculated)*************************************/
 
+//get bonus list
 message GetBonusListReq
 {
-    string version = 1; //The version number
-    string bonusAddr = 2;
+    string version   = 1; //The version number
+    string bonusAddr = 2; //bonus addr
 }
 
+//bonus
 message BonusItem
 {
-    string addr = 1;
-    uint64 value = 2;
+    string addr  = 1; //addr
+    uint64 value = 2; //bonus value
 }
 
+//send bonus list
 message GetBonusListAck
 {
     string version = 1; //version
-    int32 code = 2; //Error code
+    int32 code     = 2; //Error code
     string message = 3; //Returns an error message
-    string bonusAddr = 4;
+    string bonusAddr = 4; //bonus addr
     repeated BonusItem list = 5;
 }
 
@@ -355,94 +389,84 @@ message GetBonusListAck
 
 /*************************************Multi-signature transaction-related agreements*************************************/
 
+//get multi sign
 message MultiSignTxReq
 {
   string version  = 1; //version
-  uint64 height = 2; //The height value of the initiating transaction node
-  bytes txRaw = 3;
+  uint64 height   = 2; //The height value of the initiating transaction node
+  bytes txRaw     = 3; //sign
 }
 
+//send multi sign
 message MultiSignTxAck
 {
   string version  = 1; //version
   int32 code      = 2; //Error code
   string message  = 3; //Returns an error message
-  bytes txRaw = 4;
+  bytes txRaw     = 4; //sign
   
 }
 
 
 /*************************************Transaction status related agreements*************************************/
 
-
+//get transaction status list
 message GetTransactionStatusListReq
 {
     string version = 1; //The version number
-    string txhash = 2;
+    string txhash  = 2; //transaction hash
 }
 
+//other status message
 message OtherStatusItem
 {
-    string othernodetime = 1;
-    int32  othernodecode = 2;
-    string othernodemessage = 3;
+    string othernodetime    = 1;    //time  
+    int32  othernodecode    = 2;    //error code
+    string othernodemessage = 3;    //error message
 }
 
-
+//get verify status message
 message SelfVerifyStatusItem
 {
-    string verifyothernodetime = 1;
-    int32 verifyothernodecode = 2;
-    string verifyothernodemessage = 3;
+    string verifyothernodetime    = 1;  //verify time  
+    int32  verifyothernodecode    = 2;  //verify error code
+    string verifyothernodemessage = 3;  //verify error message
 }
 
+//transaction status message
 message TransactionStatusItem
 {
-    string initiatortime = 1;
-    int32 selfcode = 2;
-    string initiatormessage = 3;
+    string initiatortime    = 1;    //initiator time
+    int32  selfcode         = 2;    //self error code  
+    string initiatormessage = 3;    //initiator message
    
     repeated OtherStatusItem Othernode = 4;
 
     repeated SelfVerifyStatusItem verifyothernode = 5;
 
-    string composetime = 6;
-    string selfaddblocktime = 7;
-    string selfeaddblockmessage = 8;
-
-    string removependingtime = 9;
+    string composetime           = 6;   //compose time
+    string selfaddblocktime      = 7;   //self add block time
+    string selfeaddblockmessage  = 8;   //selfe add block message
+    string removependingtime     = 9;   //removepending time
 }
 
+//send transaction status message
 message GetTransactionStatusListAck
 {
     string version = 1; //version
-    int32 code = 2; //Error code
+    int32  code = 2; //Error code
     string message = 3; //Returns an error message
     TransactionStatusItem list = 5;
 }
 
+//transaction on chain ratio
 message SuccessRate
 {
-    string hash = 1;
-    double rate = 2;
+    string hash = 1;    //transaction hash
+    double rate = 2;    //ratio
 }
 
-message IsOnChainReq
-{
-    string version  = 1; //version
-    repeated string txhash = 2;
-    uint64 time = 3; //
-}
-
-message IsOnChainAck
-{
-    string version  = 1; //version
-    int32 code      = 2; //Error code
-    string message  = 3; //Returns an error message
-    uint64 time     = 4; 
-    repeated SuccessRate percentage = 5; 
-}
-
+//get confirm transaction message
 message ConfirmTransactionReq
 {
     string version         = 1; //version
@@ -451,32 +475,42 @@ message ConfirmTransactionReq
     uint64 height          = 4; //transaction height 
 }
 
-
+//send confirm transaction message
 message ConfirmTransactionAck
 {
     string      version                  = 1; //version
     int32       code                     = 2; //Error code
     string      message                  = 3; //Returns an error message
     uint64      time                     = 4; //time
-    repeated    SuccessRate percentage   = 5;
+    repeated    SuccessRate percentage   = 5; //success transaction percentage
     uint32      send_size                = 6; //sendNumber   
     uint32      received_size            = 7; //received number 
+    bytes      tx                       = 8;
 } 
-
+//transaction does it exist
 message CorresHash
 {
-    string hash = 1;
-    uint32 flag = 2;
+    string hash = 1;    //transaction hash
+    uint32 flag = 2;    //does it exist
 }
 
+//get check if the corresponding hash exists
 message CheckTxReq
 {
+    string version         = 1; //version
+    repeated string txhash = 2; //transaction hash
+    string msg_id          = 3; //mark message
+    uint32 isresponse      = 4; 
+}
+
+message GetUtxoHashReq
+{
     string version         = 1;
-    repeated string txhash = 2;
+    repeated string utxoHash = 2;
     string msg_id          = 3;
 }
 
-message CheckTxAck
+message GetUtxoHashAck
 {
     string version = 1;
     repeated CorresHash flaghash = 2;
@@ -484,20 +518,29 @@ message CheckTxAck
     string base58addr = 4;
 }
 
-message GetRestInvestAmountReq
+//send check if the corresponding hash exists
+message CheckTxAck
 {
-    string version = 1;
-    string base58 = 2;
+    string version               = 1;   //version
+    repeated CorresHash flaghash = 2;   
+    string msg_id                = 3;   //mark message
+    string addr                  = 4;   //addr
+    bytes tx                    = 5;
 }
 
+//get rest invest amount
+message GetRestInvestAmountReq
+{
+    string version = 1; //version
+    string addr  = 2; //addr
+}
+
+//send rest invest amount
 message GetRestInvestAmountAck
 {
     string version  = 1; //version
     int32 code      = 2; //Error code
     string message  = 3; //Returns an error message
-    uint64 amount   = 4; 
-    string base58   = 5; 
+    uint64 amount   = 4; //rest invest amount
+    string addr   = 5; //addr
 }
-
-
-

@@ -7,32 +7,39 @@
 #include <fstream>
 #include <string>
 
-#include "failed_transaction_cache.h"
-#include "block_cache.h"
-#include "block_helper.h"
-#include "block_monitor.h"
-#include "block_stroage.h"
-#include "test.h"
-#include "cache.h"
+#include "ca/test.h"
+#include "ca/global.h"
+#include "ca/block_helper.h"
+#include "ca/block_monitor.h"
+#include "ca/block_stroage.h"
+#include "ca/double_spend_cache.h"
+#include "ca/block_http_callback.h"
+#include "ca/failed_transaction_cache.h"
+#include "ca/ca.h"
+#include "ca/sync_block.h"
+
+#include "net/test.hpp"
+#include "net/epoll_mode.h"
 #include "net/socket_buf.h"
+#include "net/http_server.h"
 #include "net/unregister_node.h"
+#include "net/work_thread.h"
+
+
+#include "utils/json.hpp"
+#include "utils/envelop.h"
+#include "utils/tmp_log.h"
 #include "utils/console.h"
 #include "utils/hex_code.h"
-#include "../include/logging.h"
-#include "utils/base58.h"
-#include "ca/global.h"
-#include "utils/json.hpp"
 #include "utils/time_util.h"
 #include "utils/magic_singleton.h"
 #include "utils/account_manager.h"
+#include "utils/contract_utils.h"
+
 #include "db/db_api.h"
-#include "utils/tmp_log.h"
-#include "double_spend_cache.h"
-#include "net/http_server.h"
-#include "net/test.hpp"
-#include "utils/envelop.h"
-#include "block_http_callback.h"
-#include "net/epoll_mode.h"
+#include "db/cache.h"
+#include "include/logging.h"
+
 int PrintFormatTime(uint64_t time, bool isConsoleOutput, std::ostream & stream)
 {
     time_t s = (time_t)(time / 1000000);
@@ -100,9 +107,8 @@ int PrintBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream
     CaConsole bkColor(kConsoleColor_Blue, kConsoleColor_Black, true);
     CaConsole greenColor(kConsoleColor_Green, kConsoleColor_Black, true);
     stream << std::endl << "BlockInfo ---------------------- > height [" << block.height() << "]" << std::endl;
-    stream << "Block version -->"  << block.version() << std::endl;
     stream << "HashMerkleRoot -> " << block.merkleroot() << std::endl;
-    stream << "HashPrevBlock --> " << block.prevhash() << std::endl;
+    stream << "HashPrevBlock -> " << block.prevhash() << std::endl;
     if (isConsoleOutput)
     {
         stream << "BlockHash -> " << bkColor.Color() << block.hash() << bkColor.Reset() << std::endl;
@@ -115,12 +121,12 @@ int PrintBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream
     stream << "blockverifySign[" << block.sign_size() << "]" << std::endl;
     for (auto & verifySign : block.sign())
     {
-        stream << "block Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+        stream << "block Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GenerateAddr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
     }
     
     for (auto & verifySign : block.sign())
     {
-        stream << "block signer -> [" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+        stream << "block signer -> [" << greenColor.Color() << GenerateAddr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
     }
     
     stream << "Time-> ";
@@ -137,7 +143,7 @@ int PrintBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream
     return 0;
 }
 
-std::string PrintBlocks(int num, bool pre_hash_flag)
+std::string PrintBlocks(int num, bool preHashFlag)
 {
     DBReader dbRead;
     uint64_t top = 0;
@@ -155,7 +161,7 @@ std::string PrintBlocks(int num, bool pre_hash_flag)
             dbRead.GetBlockByBlockHash(hash, strHeader);
             CBlock header;
             header.ParseFromString(strHeader);
-            if(pre_hash_flag)
+            if(preHashFlag)
             {
                 str = str + hash.substr(0,6) + "(" + header.prevhash().substr(0,6) + ")" + " ";
             }else{
@@ -173,7 +179,7 @@ std::string PrintBlocks(int num, bool pre_hash_flag)
     return str;
 }
 
-std::string PrintBlocksHash(int num, bool pre_hash_flag)
+std::string PrintBlocksHash(int num, bool preHashFlag)
 {
     DBReader dbRead;
     uint64_t top = 0;
@@ -191,7 +197,7 @@ std::string PrintBlocksHash(int num, bool pre_hash_flag)
             dbRead.GetBlockByBlockHash(hash, strHeader);
             CBlock header;
             header.ParseFromString(strHeader);
-            if(pre_hash_flag)
+            if(preHashFlag)
             {
                 str = str + hash + "(" + header.prevhash().substr(0,6) + ")" + " \n";
             }else{
@@ -209,7 +215,7 @@ std::string PrintBlocksHash(int num, bool pre_hash_flag)
     return str;
 }
 
-std::string PrintRangeBlocks(int startNum,int num, bool pre_hash_flag)
+std::string PrintRangeBlocks(int startNum,int num, bool preHashFlag)
 {
     DBReader dbRead;
     uint64_t top = 0;
@@ -240,7 +246,7 @@ std::string PrintRangeBlocks(int startNum,int num, bool pre_hash_flag)
             dbRead.GetBlockByBlockHash(hash, strHeader);
             CBlock header;
             header.ParseFromString(strHeader);
-            if(pre_hash_flag)
+            if(preHashFlag)
             {
                 str = str + hash.substr(0,6) + "(" + header.prevhash().substr(0,6) + ")" + " ";
             }else{
@@ -274,12 +280,12 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
 
         for (auto & verifySign : tx.verifysign())
         {
-            stream << "Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+            stream << "Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GenerateAddr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
         }
         
         for (auto & verifySign : tx.verifysign())
         {
-            stream << "Transaction signer -> [" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+            stream << "Transaction signer -> [" << greenColor.Color() << GenerateAddr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
         }
 
         stream << "Owner -> ";
@@ -293,7 +299,7 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
         {
             const CTxInput & vin = tx.utxo().vin(j);
             stream << "vin[" << j << "] sequence -> " << vin.sequence() << std::endl;
-            stream << "vin[" << j << "] sign -> " << Str2Hex(vin.vinsign().sign()) << " : " << Str2Hex(vin.vinsign().pub()) << "[" << greenColor.Color() << GetBase58Addr(vin.vinsign().pub()) << greenColor.Reset() << "]" << std::endl;
+            stream << "vin[" << j << "] sign -> " << Str2Hex(vin.vinsign().sign()) << " : " << Str2Hex(vin.vinsign().pub()) << "[" << greenColor.Color() << GenerateAddr(vin.vinsign().pub()) << greenColor.Reset() << "]" << std::endl;
 
             for (auto & prevout : vin.prevout())
             {
@@ -312,7 +318,7 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
         for (int j = 0; j < tx.utxo().multisign_size(); j++)
         {
             const CSign & multiSign = tx.utxo().multisign(j);
-            stream << "multiSign[" << j << "] -> " << Str2Hex(multiSign.sign()) << " : " << Str2Hex(multiSign.pub()) << "[" << greenColor.Color() << GetBase58Addr(multiSign.pub()) << greenColor.Reset() << "]" << std::endl;
+            stream << "multiSign[" << j << "] -> " << Str2Hex(multiSign.sign()) << " : " << Str2Hex(multiSign.pub()) << "[" << greenColor.Color() << GenerateAddr(multiSign.pub()) << greenColor.Reset() << "]" << std::endl;
         }
     }
     else
@@ -326,12 +332,12 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
 
         for (auto & verifySign : tx.verifysign())
         {
-            stream << "Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << GetBase58Addr(verifySign.pub()) << "]" << std::endl;  
+            stream << "Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << GenerateAddr(verifySign.pub()) << "]" << std::endl;  
         }
         
         for (auto & verifySign : tx.verifysign())
         {
-            stream << "Transaction signer -> [" << GetBase58Addr(verifySign.pub()) << "]" << std::endl;
+            stream << "Transaction signer -> [" << GenerateAddr(verifySign.pub()) << "]" << std::endl;
         }
 
         stream << "Owner -> ";
@@ -345,7 +351,7 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
         {
             const CTxInput & vin = tx.utxo().vin(j);
             stream << "vin[" << j << "] sequence -> " << vin.sequence() << std::endl;
-            stream << "vin[" << j << "] sign -> " << Str2Hex(vin.vinsign().sign()) << " : " << Str2Hex(vin.vinsign().pub()) << "[" << GetBase58Addr(vin.vinsign().pub()) << "]" << std::endl;
+            stream << "vin[" << j << "] sign -> " << Str2Hex(vin.vinsign().sign()) << " : " << Str2Hex(vin.vinsign().pub()) << "[" << GenerateAddr(vin.vinsign().pub()) << "]" << std::endl;
 
             for (auto & prevout : vin.prevout())
             {
@@ -363,7 +369,7 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
         for (int j = 0; j < tx.utxo().multisign_size(); j++)
         {
             const CSign & multiSign = tx.utxo().multisign(j);
-            stream << "multiSign[" << j << "] -> " << Str2Hex(multiSign.sign()) << " : " << Str2Hex(multiSign.pub()) << GetBase58Addr(multiSign.pub()) << std::endl;
+            stream << "multiSign[" << j << "] -> " << Str2Hex(multiSign.sign()) << " : " << Str2Hex(multiSign.pub()) << GenerateAddr(multiSign.pub()) << std::endl;
         }
     }
 
@@ -390,7 +396,7 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
             {
                 dataMap.push_back(std::make_pair("StakeType", dataJson["TxInfo"]["StakeType"].get<std::string>()));
                 dataMap.push_back(std::make_pair("StakeAmount", std::to_string(dataJson["TxInfo"]["StakeAmount"].get<uint64_t>())));
-                dataMap.push_back(std::make_pair("BonusPumping", std::to_string(dataJson["TxInfo"]["BonusPumping"].get<double>())));
+                dataMap.push_back(std::make_pair("CommissionRate", std::to_string(dataJson["TxInfo"]["CommissionRate"].get<double>())));
             }
             else if (txType == global::ca::TxType::kTxTypeUnstake)
             {
@@ -428,22 +434,49 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
 
     nlohmann::json allTx;
     nlohmann::json jsonBlock;
-    jsonBlock["merkleroot"] = block.merkleroot();
-    jsonBlock["prevhash"] = block.prevhash();
-    jsonBlock["hash"] = block.hash();
+    jsonBlock["merkleroot"] = addHexPrefix(block.merkleroot());
+    jsonBlock["prevhash"] = addHexPrefix(block.prevhash());
+    jsonBlock["hash"] = addHexPrefix(block.hash());
     jsonBlock["height"] = block.height();
     jsonBlock["time"] = block.time();
     jsonBlock["bytes"] = block.ByteSizeLong();
-    nlohmann::json blockdataJson = nlohmann::json::parse(block.data());
-    jsonBlock["data"] = blockdataJson;
+    if(!block.data().empty())
+    {
+        nlohmann::json blockdataJson = nlohmann::json::parse(block.data());
+        nlohmann::json modifiedJsonData;
+
+        for (auto it = blockdataJson.begin(); it != blockdataJson.end(); ++it) {
+
+            std::string originalKey = it.key();
+            auto value = it.value();
+            if(value.contains("dependentCTx"))
+            {
+                std::set<std::string> tempVec;
+                for(auto & dep : value["dependentCTx"])
+                {
+                    tempVec.insert(addHexPrefix(dep));
+                }
+                value["dependentCTx"] = tempVec;
+            }
+
+            std::string modifiedKey = addHexPrefix(originalKey);
+            modifiedJsonData[modifiedKey] = value;
+        }
+        blockdataJson = modifiedJsonData;
+        jsonBlock["data"] = blockdataJson;
+    }
+    else
+    {
+        jsonBlock["data"] = "";
+    }
 
     for(auto & blocksign : block.sign())
     {
         nlohmann::json block_verifySign;
         block_verifySign["sign"] = Base64Encode(blocksign.sign());
         block_verifySign["pub"] = Base64Encode(blocksign.pub());
-        std::string sign_addr = GetBase58Addr(blocksign.pub(), Base58Ver::kBase58Ver_Normal);
-        block_verifySign["signaddr"] = sign_addr;
+        std::string sign_addr = GenerateAddr(blocksign.pub());
+        block_verifySign["signaddr"] = addHexPrefix(sign_addr);
 
         jsonBlock["blocksign"].push_back(block_verifySign);
     }
@@ -456,19 +489,19 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
         if(tx.type() == global::ca::kTxSign)
         {   
             Tx["time"] = tx.time();
-            Tx["txHash"] = tx.hash();
-            Tx["identity"] = tx.identity();
+            Tx["txHash"] = addHexPrefix(tx.hash());
+            Tx["identity"] = addHexPrefix(tx.identity());
 
             for(auto & owner: tx.utxo().owner())
             {
-                Tx["utxo"]["owner"].push_back(owner);
+                Tx["utxo"]["owner"].push_back(addHexPrefix(owner));
             }
 
             for(auto & vin : tx.utxo().vin())
             {
                 for(auto &prevout : vin.prevout())
                 {
-                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(prevout.hash());
+                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(addHexPrefix(prevout.hash()));
                 }
 
                 nlohmann::json utxoVinsign;
@@ -477,34 +510,54 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
 
                 Tx["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
             }
-
+            //int count = 0;
             for(auto & vout : tx.utxo().vout())
             {
                 nlohmann::json utxoVout;
-                utxoVout["addr"] = vout.addr();
+                 if(vout.addr().substr(0, 6) == "Virtua")
+                {
+                   utxoVout["addr"] = vout.addr();
+                    
+                }
+                else
+                {
+                    utxoVout["addr"] =  addHexPrefix(vout.addr());
+                }
+                
                 utxoVout["value"] = vout.value();
 
                 Tx["utxo"]["vout"].push_back(utxoVout); 
+                //count += 1;
             }
 
             for(auto & multiSign : tx.utxo().multisign())
             {
                 nlohmann::json utxoMultisign;
                 utxoMultisign["sign"] = Base64Encode(multiSign.sign());
-                utxoMultisign["pub"] = Base64Encode(multiSign.sign());
+                utxoMultisign["pub"] = Base64Encode(multiSign.pub());
 
                 Tx["utxo"]["multisign"].push_back(utxoMultisign);
             }
 
             Tx["Type"] = tx.type();
+            Tx["info"] = tx.info();
             Tx["Consensus"] = tx.consensus();
-            Tx["Gas"] = 0;
-            Tx["Cost"] = 0;
             Tx["txType"] = tx.txtype();
-
+ 
             if((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx)
             {
                 nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+                if (dataJson.contains("TxInfo") && dataJson["TxInfo"].contains("BonusAddr")) 
+                {
+                    std::string bonusAddr = dataJson["TxInfo"]["BonusAddr"].get<std::string>();
+                    dataJson["TxInfo"]["BonusAddr"] = addHexPrefix(bonusAddr);
+                }
+                
+                if (dataJson.contains("TxInfo") && dataJson["TxInfo"].contains("DisinvestUtxo")) 
+                {
+                    std::string disinvestUtxo = dataJson["TxInfo"]["DisinvestUtxo"].get<std::string>();
+                    dataJson["TxInfo"]["DisinvestUtxo"] = addHexPrefix(disinvestUtxo);
+                }
                 Tx["data"] = dataJson;
             }
 
@@ -513,30 +566,30 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
                 nlohmann::json utxoVerifySign;
                 utxoVerifySign["sign"] = Base64Encode(verifySign.sign());
                 utxoVerifySign["pub"] = Base64Encode(verifySign.pub());
-                std::string signAddr = GetBase58Addr(verifySign.pub(), Base58Ver::kBase58Ver_Normal);
-                utxoVerifySign["signaddr"] = signAddr;
+                std::string signAddr = GenerateAddr(verifySign.pub());
+                utxoVerifySign["signaddr"] = addHexPrefix(signAddr);
 
                 Tx["verifySign"].push_back(utxoVerifySign);
             }
             
-            allTx[k++] = Tx;
+            allTx[k++] = FixTxField(Tx);
         }
         else if(tx.type() == global::ca::kGenesisSign)
         {
             Tx["time"] = tx.time();
-            Tx["txHash"] = tx.hash();
-            Tx["identity"] = tx.identity();
+            Tx["txHash"] = addHexPrefix(tx.hash());
+            Tx["identity"] = addHexPrefix(tx.identity());
 
             for(auto & owner: tx.utxo().owner())
             {
-                Tx["utxo"]["owner"].push_back(owner);
+                Tx["utxo"]["owner"].push_back(addHexPrefix(owner));
             }
 
             for(auto & vin : tx.utxo().vin())
             {
                 for(auto &prevout : vin.prevout())
                 {
-                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(prevout.hash());
+                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(addHexPrefix(prevout.hash()));
                 }
 
                 nlohmann::json utxoVinsign;
@@ -549,159 +602,21 @@ void BlockInvert(const std::string & strHeader, nlohmann::json &blocks)
             for(auto & vout : tx.utxo().vout())
             {
                 nlohmann::json utxoVout;
-                utxoVout["addr"] = vout.addr();
-                utxoVout["value"] = vout.value();
-
-                Tx["utxo"]["vout"].push_back(utxoVout); 
-            }
-            Tx["Type"] = tx.type();
-            allTx[k++] = Tx;
-        }
-    }
-
-    blocks["block"] = jsonBlock;
-    blocks["tx"] = allTx;
-
-}
-
-void BlockInvert_V33_1(const std::string & strHeader, nlohmann::json &blocks)
-{
-    CBlock block;
-    if(!block.ParseFromString(strHeader))
-    {
-        ERRORLOG("block_raw parse fail!");
-        return ;
-        
-    }
-
-    nlohmann::json allTx;
-    nlohmann::json jsonBlock;
-    jsonBlock["merkleroot"] = block.merkleroot();
-    jsonBlock["prevhash"] = block.prevhash();
-    jsonBlock["hash"] = block.hash();
-    jsonBlock["height"] = block.height();
-    jsonBlock["time"] = block.time();
-    jsonBlock["bytes"] = block.ByteSizeLong();
-
-    for(auto & blocksign : block.sign())
-    {
-        nlohmann::json block_verifySign;
-        block_verifySign["sign"] = Base64Encode(blocksign.sign());
-        block_verifySign["pub"] = Base64Encode(blocksign.pub());
-        std::string sign_addr = GetBase58Addr(blocksign.pub(), Base58Ver::kBase58Ver_Normal);
-        block_verifySign["signaddr"] = sign_addr;
-
-        jsonBlock["blocksign"].push_back(block_verifySign);
-    }
-
-
-    int k = 0;
-    for(auto & tx : block.txs())
-    {
-        nlohmann::json Tx;
-        if(tx.type() == global::ca::kTxSign)
-        {   
-            Tx["time"] = tx.time();
-            Tx["txHash"] = tx.hash();
-            Tx["identity"] = tx.identity();
-
-            for(auto & owner: tx.utxo().owner())
-            {
-                Tx["utxo"]["owner"].push_back(owner);
-            }
-
-            for(auto & vin : tx.utxo().vin())
-            {
-                for(auto &prevout : vin.prevout())
+                if(vout.addr() == global::ca::kVirtualStakeAddr || vout.addr() == global::ca::kVirtualInvestAddr 
+                    || vout.addr() == global::ca::kVirtualBurnGasAddr ||vout.addr() == global::ca::kVirtualDeployContractAddr || 
+                    vout.addr() == global::ca::kVirtualCallContractAddr)
                 {
-                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(prevout.hash());
-                }
-
-                nlohmann::json utxoVinsign;
-                utxoVinsign["sign"] = Base64Encode(vin.vinsign().sign());
-                utxoVinsign["pub"] = Base64Encode(vin.vinsign().pub());
-
-                Tx["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
-            }
-
-            for(auto & vout : tx.utxo().vout())
-            {
-                nlohmann::json utxoVout;
-                utxoVout["addr"] = vout.addr();
-                utxoVout["value"] = vout.value();
-
-                Tx["utxo"]["vout"].push_back(utxoVout); 
-            }
-
-            for(auto & multiSign : tx.utxo().multisign())
-            {
-                nlohmann::json utxoMultisign;
-                utxoMultisign["sign"] = Base64Encode(multiSign.sign());
-                utxoMultisign["pub"] = Base64Encode(multiSign.sign());
-
-                Tx["utxo"]["multisign"].push_back(utxoMultisign);
-            }
-
-            Tx["Type"] = tx.type();
-            Tx["Consensus"] = tx.consensus();
-            Tx["Gas"] = 0;
-            Tx["Cost"] = 0;
-            Tx["txType"] = tx.txtype();
-
-            if((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx)
-            {
-                nlohmann::json dataJson = nlohmann::json::parse(tx.data());
-                Tx["data"] = dataJson;
-            }
-
-            for(auto & verifySign : tx.verifysign())
-            {
-                nlohmann::json utxoVerifySign;
-                utxoVerifySign["sign"] = Base64Encode(verifySign.sign());
-                utxoVerifySign["pub"] = Base64Encode(verifySign.pub());
-                std::string signAddr = GetBase58Addr(verifySign.pub(), Base58Ver::kBase58Ver_Normal);
-                utxoVerifySign["signaddr"] = signAddr;
-
-                Tx["verifySign"].push_back(utxoVerifySign);
-            }
-            
-            allTx[k++] = Tx;
-        }
-        else if(tx.type() == global::ca::kGenesisSign)
-        {
-            Tx["time"] = tx.time();
-            Tx["txHash"] = tx.hash();
-            Tx["identity"] = tx.identity();
-
-            for(auto & owner: tx.utxo().owner())
-            {
-                Tx["utxo"]["owner"].push_back(owner);
-            }
-
-            for(auto & vin : tx.utxo().vin())
-            {
-                for(auto &prevout : vin.prevout())
+                   utxoVout["addr"] = vout.addr();
+                }else
                 {
-                    Tx["utxo"]["vin"]["prevout"]["hash"].push_back(prevout.hash());
+                   utxoVout["addr"] = addHexPrefix(vout.addr());
                 }
-
-                nlohmann::json utxoVinsign;
-                utxoVinsign["sign"] = Base64Encode(vin.vinsign().sign());
-                utxoVinsign["pub"] = Base64Encode(vin.vinsign().pub());
-
-                Tx["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
-            }
-
-            for(auto & vout : tx.utxo().vout())
-            {
-                nlohmann::json utxoVout;
-                utxoVout["addr"] = vout.addr();
                 utxoVout["value"] = vout.value();
 
                 Tx["utxo"]["vout"].push_back(utxoVout); 
             }
             Tx["Type"] = tx.type();
-            allTx[k++] = Tx;
+            allTx[k++] = FixTxField(Tx);
         }
     }
 
@@ -712,7 +627,7 @@ void BlockInvert_V33_1(const std::string & strHeader, nlohmann::json &blocks)
 
 
 std::string PrintCache(int where){
-    string rocksdbUsage;
+    std::string rocksdbUsage;
     MagicSingleton<RocksDB>::GetInstance()->GetDBMemoryUsage(rocksdbUsage);
     std::cout << rocksdbUsage << std::endl;
     std::stringstream ss;
@@ -721,19 +636,12 @@ std::string PrintCache(int where){
         std::time_t t = std::time(NULL);
         char mbstr[100];
         if (std::strftime(mbstr, sizeof(mbstr), "%A %c", std::localtime(&t))) {
-            //std::cout << mbstr << '\n';
         }
-        // if(where==2){
-        //    // ss << "[" << mbstr << "]:" << "["   << whatCahe  << "]:"  << cacheSize << "\n";
-        //     return;
-        // }
-       // ss << "[" << mbstr << "]:" << "[" << GREEN_t  << whatCahe << WHITE_t << "]:" << RED_t << cacheSize << WHITE_t<< "\n";
 
        ss << cacheSize <<( (isEnd) ? ",\n" :",");
        
     };
 
-    auto cblockcahe= MagicSingleton<CBlockCache>::GetInstance();
     auto blcohelper= MagicSingleton<BlockHelper>::GetInstance();
     auto blockMonitor_= MagicSingleton<BlockMonitor>::GetInstance();
     auto blockStroage_=MagicSingleton<BlockStroage>::GetInstance(); 
@@ -741,13 +649,12 @@ std::string PrintCache(int where){
     auto  FailedTransactionCache_cd=MagicSingleton<FailedTransactionCache>::GetInstance(); 
     auto syncBlock_t= MagicSingleton<SyncBlock>::GetInstance();
     auto CtransactionCache_=MagicSingleton<TransactionCache>::GetInstance();
-    auto dbCache_=MagicSingleton<DBCache>::GetInstance();
     auto vrfo= MagicSingleton<VRF>::GetInstance();
     auto TFPBenchMark_C=  MagicSingleton<TFSbenchmark>::GetInstance();
 
-     GlobalDataManager & manager=GlobalDataManager::GetGlobalDataManager();
-     GlobalDataManager & manager2=GlobalDataManager::GetGlobalDataManager2();
-     GlobalDataManager & manager3=GlobalDataManager::GetGlobalDataManager3();
+    GlobalDataManager & manager=GlobalDataManager::GetGlobalDataManager();
+    
+    
     auto UnregisterNode__= MagicSingleton<UnregisterNode>::GetInstance();
 
     auto bufcontrol =MagicSingleton<BufferCrol>::GetInstance();
@@ -760,7 +667,6 @@ std::string PrintCache(int where){
 
     auto workThread =MagicSingleton<WorkThreads>::GetInstance();
 
-    // auto AccountManager_accountList = MagicSingleton<AccountManager>::GetInstance()->_accountList;
     auto phone_list = global::g_phoneList;
     auto cBlockHttpCallback_ = MagicSingleton<CBlockHttpCallback>::GetInstance();
 
@@ -768,63 +674,36 @@ std::string PrintCache(int where){
     std::stack<std::string> emyp;
 
     {
-        CaheString("", cblockcahe->_cache.size());
-            // CaheString("",blcohelper->missing_utxos.size());
-            // CaheString("",blcohelper->_broadcast_blocks.size());
-            // CaheString("",blcohelper->sync_blocks.size());
-            // CaheString("",blcohelper->fast_sync_blocks.size());
-            // CaheString("",blcohelper->rollback_blocks.size());
-            // CaheString("",blcohelper->pending_blocks.size());
-            // CaheString("",blcohelper->hash_pending_blocks.size());
-            // CaheString("",blcohelper->utxo_missing_blocks.size());
-            // CaheString("",blcohelper->missing_blocks.size());
-            // CaheString("",blcohelper->DoubleSpend_blocks.size());
-            // CaheString("",blcohelper->DuplicateChecker.size());
-	        CaheString("",blockStroage_->_preHashMap.size());
-	        CaheString("",blockStroage_->_blockStatusMap.size());
-            // CaheString("",DoubleSpendCache_cd->_pendingAddrs.size());
-            // CaheString("",FailedTransactionCache_cd->txPending.size());
-            // CaheString("",syncBlock_t->sync_from_zero_cache.size());
-            // CaheString("",syncBlock_t->sync_from_zero_reserve_heights.size());
-            // CaheString("",CtransactionCache_->_transactionCache.size());
-            CaheString("",dbCache_->data_.size());
-            CaheString("", dbCache_->time_data_.size());
-            CaheString("",vrfo->vrfCache.size());
-            CaheString("",vrfo->txvrfCache.size());
-            CaheString("", vrfo->vrfVerifyNode.size());
-            // CaheString("",TFPBenchMark_C->transactionVerifyMap.size());
-            // CaheString("",TFPBenchMark_C->agentTransactionReceiveMap.size());
-            // CaheString("",TFPBenchMark_C->transactionSignReceiveMap.size());
-            // CaheString("",TFPBenchMark_C->transactionSignReceiveCache.size());
-            // CaheString("",TFPBenchMark_C->blockContainsTransactionAmountMap.size());
-            // CaheString("",TFPBenchMark_C->blockVerifyMap.size());
-            // CaheString("",TFPBenchMark_C->blockPoolSaveMap.size());
-            CaheString("",manager._globalData.size());
-            CaheString("",manager2._globalData.size());
-            CaheString("",manager3._globalData.size());
-            CaheString("",UnregisterNode__->_nodes.size());
-            CaheString("",UnregisterNode__->_consensusNodeList.size());
-            CaheString("", bufcontrol->_BufferMap.size());
-            CaheString("",pernode->_nodeMap.size());
-            CaheString("",dispach->_caProtocbs.size());
-            CaheString("",dispach->_netProtocbs.size());
-            CaheString("",dispach->_broadcastProtocbs.size());
-            CaheString("",dispach->_txProtocbs.size());
-            CaheString("",dispach->_syncBlockProtocbs.size());
-            CaheString("",dispach->_saveBlockProtocbs.size());
-            CaheString("",dispach->_blockProtocbs.size());
-            CaheString("",global::g_reqCntMap.size());
-            CaheString("",HttpServer::rpcCbs.size());
-	        CaheString("",HttpServer::_cbs.size());
-            CaheString("",_echoCatch->_echoCatch.size());
-            CaheString("",workThread->_threadsWorkList.size());
-	        CaheString("",workThread->_threadsReadList.size());
-	        CaheString("",workThread->_threadsTransList.size());
-            CaheString("",phone_list.size());
-            // CaheString("",AccountManager_accountList.size());
-            CaheString("",cBlockHttpCallback_->_addblocks.size());
-            CaheString("",GetMutexSize());
-	        CaheString("",cBlockHttpCallback_->_rollbackblocks.size(),true);
+        CaheString("",blockStroage_->_preHashMap.size());
+        CaheString("",blockStroage_->_blockStatusMap.size());
+
+        CaheString("",vrfo->vrfCache.size());
+        CaheString("",vrfo->txvrfCache.size());
+        CaheString("", vrfo->vrfVerifyNode.size());
+
+        CaheString("",manager._globalData.size());
+        CaheString("",UnregisterNode__->_nodes.size());
+        CaheString("",UnregisterNode__->_consensusNodeList.size());
+        CaheString("", bufcontrol->_BufferMap.size());
+        CaheString("",pernode->_nodeMap.size());
+        CaheString("",dispach->_caProtocbs.size());
+        CaheString("",dispach->_netProtocbs.size());
+        CaheString("",dispach->_broadcastProtocbs.size());
+        CaheString("",dispach->_txProtocbs.size());
+        CaheString("",dispach->_syncBlockProtocbs.size());
+        CaheString("",dispach->_saveBlockProtocbs.size());
+        CaheString("",dispach->_blockProtocbs.size());
+        CaheString("",global::g_reqCntMap.size());
+        CaheString("",HttpServer::rpcCbs.size());
+        CaheString("",HttpServer::_cbs.size());
+        CaheString("",_echoCatch->_echoCatch.size());
+        CaheString("",workThread->_threadsWorkList.size());
+        CaheString("",workThread->_threadsReadList.size());
+        CaheString("",workThread->_threadsTransList.size());
+        CaheString("",phone_list.size());
+        CaheString("",cBlockHttpCallback_->_addblocks.size());
+        CaheString("",GetMutexSize());
+        CaheString("",cBlockHttpCallback_->_rollbackblocks.size(),true);
     }
 
     switch (where) {
@@ -835,33 +714,15 @@ std::string PrintCache(int where){
             return std::string("hh");
         }break;
         case 1:{
-            cblockcahe->_cache.clear();
-            // blcohelper->missing_utxos.swap(emyp);
-            // blcohelper->_broadcast_blocks.clear();
-            // blcohelper->fast_sync_blocks.clear();
-            // blcohelper->rollback_blocks.clear();
-            // blcohelper->pending_blocks.clear();
-            // blcohelper->hash_pending_blocks.clear();
-            // blcohelper->utxo_missing_blocks.clear();
-            // blcohelper->DoubleSpend_blocks.clear();
-            // blcohelper->DuplicateChecker.clear();
             blockStroage_->_preHashMap.clear();
             blockStroage_->_blockStatusMap.clear();
-            // DoubleSpendCache_cd->_pendingAddrs.clear();
-            // FailedTransactionCache_cd->txPending.clear();
-            // syncBlock_t->sync_from_zero_cache.clear();
-            // syncBlock_t->sync_from_zero_reserve_heights.clear();
-            // CtransactionCache_->_transactionCache.clear();
+    
 
-            dbCache_->data_.clear();
-            dbCache_->time_data_.clear();
             vrfo->vrfCache.clear();
             vrfo->txvrfCache.clear();
             vrfo->vrfVerifyNode.clear();
             manager._globalData.clear();
-            manager2._globalData.clear();
-            manager3._globalData.clear();
-            // AccountManager_accountList.clear();
+
             phone_list.clear();
         }break;
         case 2:
@@ -885,33 +746,28 @@ std::string PrintCache(int where){
             MagicSingleton<Envelop>::DesInstance();
             MagicSingleton<echoTest>::DesInstance();
             MagicSingleton<BufferCrol>::DesInstance();
-            MagicSingleton<CBlockCache>::DesInstance();
             MagicSingleton<BlockHelper>::DesInstance();
             MagicSingleton<TaskPool>::DesInstance();
             MagicSingleton<CBlockHttpCallback>::DesInstance();
             MagicSingleton<VRF>::DesInstance();
             MagicSingleton<BlockMonitor>::DesInstance();
             MagicSingleton<BlockStroage>::DesInstance();
-            MagicSingleton<BounsAddrCache>::DesInstance();
+            MagicSingleton<BonusAddrCache>::DesInstance();
             MagicSingleton<DoubleSpendCache>::DesInstance();
             MagicSingleton<FailedTransactionCache>::DesInstance();
             MagicSingleton<SyncBlock>::DesInstance();
             MagicSingleton<TransactionCache>::DesInstance();
-            MagicSingleton<DBCache>::DesInstance();
             MagicSingleton<EpollMode>::DesInstance();
             MagicSingleton<WorkThreads>::DesInstance();
 
-            //DestoryDB
             MagicSingleton<RocksDB>::GetInstance()->DestoryDB();
             MagicSingleton<RocksDB>::DesInstance();
 
             std::map<std::string, std::shared_ptr<GlobalData>> global_data_temp;
             GlobalDataManager & manager=GlobalDataManager::GetGlobalDataManager();
-            GlobalDataManager & manager2=GlobalDataManager::GetGlobalDataManager2();
-            GlobalDataManager & manager3=GlobalDataManager::GetGlobalDataManager3();
+
             manager._globalData.swap(global_data_temp);
-            manager2._globalData.swap(global_data_temp);
-            manager3._globalData.swap(global_data_temp);
+
             
             std::cout<<"end DesInstance"<<std::endl;
 
@@ -946,12 +802,12 @@ int PrintContractBlock(const CBlock & block, bool isConsoleOutput, std::ostream 
     stream << "blockverifySign[" << block.sign_size() << "]" << std::endl;
     for (auto & verifySign : block.sign())
     {
-        stream << "block Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+        stream << "block Verify Sign " << Str2Hex(verifySign.sign()) << " : " << Str2Hex(verifySign.pub()) << "[" << greenColor.Color() << GenerateAddr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
     }
     
     for (auto & verifySign : block.sign())
     {
-        stream << "block signer -> [" << greenColor.Color() << GetBase58Addr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
+        stream << "block signer -> [" << greenColor.Color() << GenerateAddr(verifySign.pub()) << greenColor.Reset() << "]" << std::endl;
     }
     
     stream << "Time-> ";
@@ -967,7 +823,7 @@ int PrintContractBlock(const CBlock & block, bool isConsoleOutput, std::ostream 
     return 0;
 }
 
-std::string PrintContractBlocks(int num, bool pre_hash_flag)
+std::string PrintContractBlocks(int num, bool preHashFlag)
 {
     DBReader dbRead;
     uint64_t top = 0;
@@ -988,7 +844,7 @@ std::string PrintContractBlocks(int num, bool pre_hash_flag)
             CBlock header;
             header.ParseFromString(strHeader);
             auto tempTransactions = header.txs();
-            if(pre_hash_flag)
+            if(preHashFlag)
             {
                 if((global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeDeployContract)
                 {
@@ -1022,7 +878,7 @@ std::string PrintContractBlocks(int num, bool pre_hash_flag)
     return str;
 }
 
-std::string PrintRangeContractBlocks(int startNum,int num, bool pre_hash_flag)
+std::string PrintRangeContractBlocks(int startNum,int num, bool preHashFlag)
 {
     DBReader dbRead;
     uint64_t top = 0;
@@ -1054,7 +910,7 @@ std::string PrintRangeContractBlocks(int startNum,int num, bool pre_hash_flag)
             CBlock header;
             header.ParseFromString(strHeader);
             auto tempTransactions = header.txs();
-            if(pre_hash_flag)
+            if(preHashFlag)
             {
                 if((global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tempTransactions[0].txtype()==global::ca::TxType::kTxTypeDeployContract)
                 {
@@ -1089,7 +945,168 @@ std::string PrintRangeContractBlocks(int startNum,int num, bool pre_hash_flag)
     return str;
 }
 
+nlohmann::json FixTxField(const nlohmann::json& inTx)
+{
+    nlohmann::json outTx = inTx;
+    if (outTx.contains("data") && outTx["data"].contains("TxInfo") && outTx["data"]["TxInfo"].contains("recipient") && outTx["data"]["TxInfo"].contains("sender")) 
+    {
+        std::string recipient = outTx["data"]["TxInfo"]["recipient"].get<std::string>();
+        outTx["data"]["TxInfo"]["recipient"] = addHexPrefix(recipient);
+
+        std::string sender = outTx["data"]["TxInfo"]["sender"].get<std::string>();
+        outTx["data"]["TxInfo"]["sender"] = addHexPrefix(sender);
+    }
+
+    if (outTx.contains("data") && outTx["data"].contains("TxInfo") && outTx["data"]["TxInfo"].contains("contractDeployer"))     
+    {
+        std::string contractDeployer = outTx["data"]["TxInfo"]["contractDeployer"].get<std::string>();
+        outTx["data"]["TxInfo"]["contractDeployer"] = addHexPrefix(contractDeployer);
+    }
+
+    return outTx;
+}
 
     
+std::string TxInvet(const CTransaction& tx)
+{
+    nlohmann::json outTxJs;
+    if(tx.type() == global::ca::kTxSign)
+    {   
+        outTxJs["time"] = tx.time();
+        outTxJs["txHash"] = addHexPrefix(tx.hash());
+        outTxJs["identity"] = addHexPrefix(tx.identity());
+
+        for(auto & owner: tx.utxo().owner())
+        {
+            outTxJs["utxo"]["owner"].push_back(addHexPrefix(owner));
+        }
+
+        for(auto & vin : tx.utxo().vin())
+        {
+            for(auto &prevout : vin.prevout())
+            {
+                outTxJs["utxo"]["vin"]["prevout"]["hash"].push_back(addHexPrefix(prevout.hash()));
+            }
+
+            nlohmann::json utxoVinsign;
+            utxoVinsign["sign"] = Base64Encode(vin.vinsign().sign());
+            utxoVinsign["pub"] = Base64Encode(vin.vinsign().pub());
+
+            outTxJs["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
+        }
+        //int count = 0;
+        for(auto & vout : tx.utxo().vout())
+        {
+            nlohmann::json utxoVout;
+            if(vout.addr().substr(0, 6) == "Virtua")
+            {
+            utxoVout["addr"] = vout.addr();
+                
+            }
+            else
+            {
+                utxoVout["addr"] =  addHexPrefix(vout.addr());
+            }
+            
+            utxoVout["value"] = vout.value();
+
+            outTxJs["utxo"]["vout"].push_back(utxoVout); 
+            //count += 1;
+        }
+
+        for(auto & multiSign : tx.utxo().multisign())
+        {
+            nlohmann::json utxoMultisign;
+            utxoMultisign["sign"] = Base64Encode(multiSign.sign());
+            utxoMultisign["pub"] = Base64Encode(multiSign.sign());
+
+            outTxJs["utxo"]["multisign"].push_back(utxoMultisign);
+        }
+
+        outTxJs["Type"] = tx.type();
+        outTxJs["info"] = tx.info();
+        outTxJs["Consensus"] = tx.consensus();
+        outTxJs["txType"] = tx.txtype();
+
+        if((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx)
+        {
+            nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+            // if()
+    
+            if (dataJson.contains("TxInfo") && dataJson["TxInfo"].contains("BonusAddr")) {
+
+            std::string bonusAddr = dataJson["TxInfo"]["BonusAddr"].get<std::string>();
+    
+                
+                dataJson["TxInfo"]["BonusAddr"] = addHexPrefix(bonusAddr);;
+            }
+
+            if (dataJson.contains("TxInfo") && dataJson["TxInfo"].contains("DisinvestUtxo")) 
+            {
+                std::string disinvestUtxo = dataJson["TxInfo"]["DisinvestUtxo"].get<std::string>();
+                dataJson["TxInfo"]["DisinvestUtxo"] = addHexPrefix(disinvestUtxo);
+            }
+
+            outTxJs["data"] = dataJson;
+        }
+
+        for(auto & verifySign : tx.verifysign())
+        {
+            nlohmann::json utxoVerifySign;
+            utxoVerifySign["sign"] = Base64Encode(verifySign.sign());
+            utxoVerifySign["pub"] = Base64Encode(verifySign.pub());
+            std::string signAddr = GenerateAddr(verifySign.pub());
+            utxoVerifySign["signaddr"] = addHexPrefix(signAddr);
+
+            outTxJs["verifySign"].push_back(utxoVerifySign);
+        }
+    }
+    else if(tx.type() == global::ca::kGenesisSign)
+    {
+        outTxJs["time"] = tx.time();
+        outTxJs["txHash"] = addHexPrefix(tx.hash());
+        outTxJs["identity"] = addHexPrefix(tx.identity());
+
+        for(auto & owner: tx.utxo().owner())
+        {
+            outTxJs["utxo"]["owner"].push_back(addHexPrefix(owner));
+        }
+
+        for(auto & vin : tx.utxo().vin())
+        {
+            for(auto &prevout : vin.prevout())
+            {
+                outTxJs["utxo"]["vin"]["prevout"]["hash"].push_back(addHexPrefix(prevout.hash()));
+            }
+
+            nlohmann::json utxoVinsign;
+            utxoVinsign["sign"] = Base64Encode(vin.vinsign().sign());
+            utxoVinsign["pub"] = Base64Encode(vin.vinsign().pub());
+
+            outTxJs["utxo"]["vin"]["vinsign"].push_back(utxoVinsign);
+        }
+
+        for(auto & vout : tx.utxo().vout())
+        {
+            nlohmann::json utxoVout;
+            if(vout.addr() == global::ca::kVirtualStakeAddr || vout.addr() == global::ca::kVirtualInvestAddr 
+                || vout.addr() == global::ca::kVirtualBurnGasAddr ||vout.addr() == global::ca::kVirtualDeployContractAddr || 
+                vout.addr() == global::ca::kVirtualCallContractAddr)
+            {
+            utxoVout["addr"] = vout.addr();
+            }else
+            {
+            utxoVout["addr"] = addHexPrefix(vout.addr());
+            }
+            utxoVout["value"] = vout.value();
+
+            outTxJs["utxo"]["vout"].push_back(utxoVout); 
+        }
+        outTxJs["Type"] = tx.type();
+    }
+
+    nlohmann::json txJs = FixTxField(outTxJs);
+    return txJs.dump();
+}
 
 

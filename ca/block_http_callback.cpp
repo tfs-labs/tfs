@@ -1,19 +1,21 @@
-#include <functional>
-#include <iostream>
 #include <sstream>
 #include <random>
 
-#include "block_http_callback.h"
+#include "ca/global.h"
+#include "ca/block_http_callback.h"
+
+#include "include/logging.h"
+#include "include/scope_guard.h"
+
+#include "db/db_api.h"
 #include "net/httplib.h"
 #include "common/config.h"
-#include "include/scope_guard.h"
-#include "include/logging.h"
-#include "txhelper.h"
-#include "global.h"
 #include "utils/magic_singleton.h"
-#include "db/db_api.h"
+#include "test.h"
+#include "ca.h"
 
-CBlockHttpCallback::CBlockHttpCallback() : _running(false),_ip("localhost"),_port(11190),_path("/donetBrowser/block")
+
+CBlockHttpCallback::CBlockHttpCallback() : _running(false),_ip("localhost"),_port(11190),_path("/tfsBrowser/block")
 {
     Config::HttpCallback httpCallback = {};
     MagicSingleton<Config>::GetInstance()->GetHttpCallback(httpCallback);
@@ -64,7 +66,7 @@ bool CBlockHttpCallback::RollbackBlock(const CBlock& block)
 }
 
 
-int CBlockHttpCallback::AddBlockWork(const std::string &method)
+void CBlockHttpCallback::AddBlockWork(const std::string &method)
 {
     while (_running)
     {
@@ -83,12 +85,10 @@ int CBlockHttpCallback::AddBlockWork(const std::string &method)
 
         SendBlockHttp(currentBlock,method);
     }
-
-    return true;
 }
 
 
-int CBlockHttpCallback::RollbackBlockWork(const std::string &method)
+void CBlockHttpCallback::RollbackBlockWork(const std::string &method)
 {
     while (_running)
     {
@@ -106,11 +106,9 @@ int CBlockHttpCallback::RollbackBlockWork(const std::string &method)
         }
         SendBlockHttp(currentBlock,method);
     }
-
-    return true;
 }
 
-bool CBlockHttpCallback::Start(const std::string& ip, int port,const std::string& path)
+void CBlockHttpCallback::Start(const std::string& ip, int port,const std::string& path)
 {
     _ip = ip;
     _port = port;
@@ -122,7 +120,6 @@ bool CBlockHttpCallback::Start(const std::string& ip, int port,const std::string
     _workRollbackThread = std::thread(std::bind(&CBlockHttpCallback::RollbackBlockWork, this, method2));
     _workAddblockThread.detach();
     _workRollbackThread.detach();
-    return true;
 }
 
 void CBlockHttpCallback::Stop()
@@ -156,12 +153,38 @@ std::string CBlockHttpCallback::ToJson(const CBlock& block)
 {
     nlohmann::json allTx;
     nlohmann::json jsonBlock;
-    jsonBlock["hash"] = block.hash();
+    jsonBlock["hash"] = addHexPrefix(block.hash());
     jsonBlock["height"] = block.height();
     jsonBlock["time"] = block.time();
-    nlohmann::json BlockData = nlohmann::json::parse(block.data());
-    jsonBlock["blockdata"] = BlockData;
+    if(!block.data().empty())
+    {
+        nlohmann::json blockdataJson = nlohmann::json::parse(block.data());
+        nlohmann::json modifiedJsonData;
 
+
+        for (auto it = blockdataJson.begin(); it != blockdataJson.end(); ++it) {
+
+            std::string originalKey = it.key();
+            auto value = it.value();
+            std::string modifiedKey = addHexPrefix(originalKey);
+            modifiedJsonData[modifiedKey] = value;
+        }
+        blockdataJson = modifiedJsonData;
+
+        if(blockdataJson.contains("dependentCTx") && !blockdataJson["dependentCTx"].get<std::string>().empty()){
+            blockdataJson["dependentCTx"] = addHexPrefix(blockdataJson["dependentCTx"].get<std::string>());
+        }
+        else
+        {
+            blockdataJson["dependentCTx"] = "";
+        }
+        jsonBlock["blockdata"] = blockdataJson;
+        
+    }
+    else
+    {
+        jsonBlock["blockdata"] = "";
+    }
     int k = 0;
     for(auto & tx : block.txs())
     {
@@ -170,22 +193,35 @@ std::string CBlockHttpCallback::ToJson(const CBlock& block)
         {   
             if((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeTx)
             {
+                
                 nlohmann::json dataJson = nlohmann::json::parse(tx.data());
+                if (dataJson.contains("TxInfo") && dataJson["TxInfo"].contains("BonusAddr")) 
+                {
+                    std::string bonusAddr = dataJson["TxInfo"]["BonusAddr"].get<std::string>();
+                    dataJson["TxInfo"]["BonusAddr"] = addHexPrefix(bonusAddr);
+                }
+                
+                if (dataJson.contains("TxInfo") && dataJson["TxInfo"].contains("DisinvestUtxo")) 
+                {
+                    std::string disinvestUtxo = dataJson["TxInfo"]["DisinvestUtxo"].get<std::string>();
+                    dataJson["TxInfo"]["DisinvestUtxo"] = addHexPrefix(disinvestUtxo);
+                }
                 Tx["data"] = dataJson;
+                
             }
             
             Tx["time"] = tx.time();
-            Tx["hash"] = tx.hash();
+            Tx["hash"] = addHexPrefix(tx.hash());
 
             for(auto & owner: tx.utxo().owner())
             {
-                Tx["from"].push_back(owner);
+                Tx["from"].push_back(addHexPrefix(owner));
             }
 
             for(auto & vout : tx.utxo().vout())
             {
                 nlohmann::json utxoVout;
-                utxoVout["pub"] = vout.addr();
+                utxoVout["pub"] = addHexPrefix(vout.addr());
                 utxoVout["value"] = vout.value();
 
                 Tx["to"].push_back(utxoVout); 
@@ -193,28 +229,28 @@ std::string CBlockHttpCallback::ToJson(const CBlock& block)
 
             Tx["type"] = tx.txtype();
 
-            allTx[k++] = Tx;
+            allTx[k++] = FixTxField(Tx);
         }
         else if(tx.type() == global::ca::kGenesisSign)
         {
             Tx["time"] = tx.time();
-            Tx["hash"] = tx.hash();
+            Tx["hash"] = addHexPrefix(tx.hash());
 
             for(auto & owner: tx.utxo().owner())
             {
-                Tx["from"].push_back(owner);
+                Tx["from"].push_back(addHexPrefix(owner));
             }
 
             for(auto & vout : tx.utxo().vout())
             {
                 nlohmann::json utxoVout;
-                utxoVout["addr"] = vout.addr();
+                utxoVout["addr"] = addHexPrefix(vout.addr());
                 utxoVout["value"] = vout.value();
 
                 Tx["to"].push_back(utxoVout); 
             }
             Tx["type"] = tx.txtype();
-            allTx[k++] = Tx;
+            allTx[k++] = FixTxField(Tx);
         }
     }
     

@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <shared_mutex>
 
+constexpr int cacheExpireTime = 300000000;
+
 class VRF
 {
     public:
@@ -20,8 +22,8 @@ class VRF
                    
                     
                     for (; v1Iter != vrfCache.end();) {
-                        if ((time_ - v1Iter->second.second) > 40000000) {
-                         
+                        if ((time_ - v1Iter->second.second) > cacheExpireTime) {
+                            DEBUGLOG("vrfCache erase hash : {}  time", v1Iter->first, v1Iter->second.second);
                             v1Iter= vrfCache.erase(v1Iter);
                         } else {
                             v1Iter++;
@@ -29,8 +31,8 @@ class VRF
                     }
                     auto v2Iter = txvrfCache.begin();
                     for (; v2Iter != txvrfCache.end();) {
-                        if ((time_ - v2Iter->second.second) > 40000000) {
-                           
+                        if ((time_ - v2Iter->second.second) > cacheExpireTime) {
+                           DEBUGLOG("txvrfCache erase hash : {}  time", v2Iter->first, v2Iter->second.second);
                            v2Iter= txvrfCache.erase(v2Iter);
                         } else {
                             v2Iter++;
@@ -42,9 +44,9 @@ class VRF
                     std::unique_lock<std::shared_mutex> lck(vrfNodeMutex);
                     auto v3Iter = vrfVerifyNode.begin();
                     for(;v3Iter!=vrfVerifyNode.end();){
-                    if((time_ - v3Iter->second.second ) > 40000000 ){
-                     
-                       v3Iter= vrfVerifyNode.erase(v3Iter);
+                    if((time_ - v3Iter->second.second ) > cacheExpireTime){
+                        DEBUGLOG("txvrfCache erase hash : {}  time", v3Iter->first, v3Iter->second.second);
+                        v3Iter= vrfVerifyNode.erase(v3Iter);
                     }else{
                        v3Iter++;
                     }
@@ -55,9 +57,15 @@ class VRF
         }
         ~VRF() = default;
 
-        
-        
-
+        /**
+         * @brief       
+         * 
+         * @param       pkey:
+         * @param       input:
+         * @param       output:
+         * @param       proof:
+         * @return      int
+        */
         int CreateVRF(EVP_PKEY* pkey, const std::string& input, std::string & output, std::string & proof)
         {
             std::string hash = Getsha256hash(input);
@@ -69,7 +77,15 @@ class VRF
             output = Getsha256hash(proof);
             return 0;
         }
-
+        /**
+         * @brief       
+         * 
+         * @param       pkey:
+         * @param       input:
+         * @param       output:
+         * @param       proof:
+         * @return      int
+        */
         int VerifyVRF(EVP_PKEY* pkey, const std::string& input, std::string & output, std::string & proof)
         {
             std::string hash = Getsha256hash(input);
@@ -81,10 +97,14 @@ class VRF
             output = Getsha256hash(proof);
             return 0;
         }
-
+        /**
+         * @brief       
+         *
+         * @return      int
+        */
         int testVRF()
         {
-            Account account;
+            Account account(true);
             auto pkey=account.GetKey();
 
             std::string test="hello,world!";
@@ -104,47 +124,61 @@ class VRF
             return 0;
             
         }
-        
+        /**
+         * @brief       
+         * 
+         * @param       data:
+         * @param       limit:
+         * @return      int
+        */
         int GetRandNum(std::string data, uint32_t limit)
         {
             auto value = stringToll(data);
             return  value % limit;
         }
-
+        /**
+         * @brief       
+         * 
+         * @param       data:
+         * @return      double
+        */
         double GetRandNum(const std::string& data)
         {
             auto value = stringToll(data);
             return  double(value % 100) / 100.0;
         }
-
+        /**
+         * @brief       
+         * 
+         * @param       TxHash:
+         * @param       info:
+        */
         void addVrfInfo(const std::string & TxHash,Vrf & info){
             
             std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
             uint64_t time_= MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
             vrfCache[TxHash]={info,time_};
         }
-
+        /**
+         * @brief       
+         * 
+         * @param       TxHash:
+         * @param       info:
+        */
         void addTxVrfInfo(const std::string & TxHash,const Vrf & info){
             std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
             uint64_t time_= MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
             txvrfCache[TxHash]={info,time_};
         }
-
-        void removeVrfInfo(const std::string & TxHash)
-        {
-            // std::unique_lock<std::shared_mutex> lck(vrfInfoMutex);
-            // auto ite = vrfCache.find(TxHash);
-            // if(ite != vrfCache.end()){
-            //     vrfCache.erase(ite);
-            // }
-            // auto ite2 = txvrfCache.find(TxHash);
-            // if(ite2 != txvrfCache.end()){
-            //     txvrfCache.erase(ite2);
-            // }
-            // removeVerifyNodes(TxHash);
-        }
-
-        bool  getVrfInfo(const std::string & TxHash,std::pair<std::string,Vrf> & vrf){
+        /**
+         * @brief       
+         * 
+         * @param       TxHash:
+         * @param       vrf:
+         * @return      true
+         * @return      false
+        */
+        bool getVrfInfo(const std::string & TxHash,std::pair<std::string,Vrf> & vrf){
             std::shared_lock<std::shared_mutex> lck(vrfInfoMutex);
             auto ite= vrfCache.find(TxHash);
             if(ite!=vrfCache.end()){
@@ -154,7 +188,15 @@ class VRF
             }
             return false;
         }
-        bool  getTxVrfInfo(const std::string & TxHash,std::pair<std::string,Vrf> & vrf){
+        /**
+         * @brief       
+         * 
+         * @param       TxHash:
+         * @param       vrf:
+         * @return      true
+         * @return      false
+        */
+        bool getTxVrfInfo(const std::string & TxHash,std::pair<std::string,Vrf> & vrf){
             std::shared_lock<std::shared_mutex> lck(vrfInfoMutex);
             auto ite= txvrfCache.find(TxHash);
             if(ite!=txvrfCache.end()){
@@ -164,43 +206,52 @@ class VRF
             }
             return false;
         }
-
-         void addVerifyNodes(const std::string & TxHash,std::vector<std::string> & base58_s){
+        /**
+        * @brief       
+        * 
+        * @param       TxHash:
+        * @param       AddressVector:
+        */
+        void addVerifyNodes(const std::string & TxHash,std::vector<std::string> & AddressVector){
             std::unique_lock<std::shared_mutex> lck(vrfNodeMutex);
             uint64_t time_= MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-            vrfVerifyNode[TxHash]={base58_s,time_};
+            vrfVerifyNode[TxHash]={AddressVector, time_};
         }
-
-        void removeVerifyNodes(const std::string & TxHash)
-        {
-            // std::unique_lock<std::shared_mutex> lck(vrfNodeMutex);
-            // auto ite = vrfVerifyNode.find(TxHash);
-            // if(ite != vrfVerifyNode.end())
-            // {
-            //     vrfVerifyNode.erase(ite);
-            // }
-        }
-        
-        bool  getVerifyNodes(const std::string & TxHash,std::pair<std::string,std::vector<std::string>> & res){
+        /**
+        * @brief       
+        * 
+        * @param       TxHash:
+        * @param       nodesPair:
+        * @return      true
+        * @return      false
+        */
+        bool  getVerifyNodes(const std::string & TxHash,std::pair<std::string,std::vector<std::string>> & nodesPair){
             std::shared_lock<std::shared_mutex> lck(vrfNodeMutex);
             auto ite= vrfVerifyNode.find(TxHash);
             if(ite!=vrfVerifyNode.end()){
-                res.first=ite->first;
-                res.second=ite->second.first;
+                nodesPair.first=ite->first;
+                nodesPair.second=ite->second.first;
                 return true;
             }
             return false;
         }
 
+        void StopTimer() { ClearTimer.Cancel(); }
      private:
         
         friend std::string PrintCache(int where);
-        std::map<std::string,std::pair<Vrf,uint64_t>> vrfCache;
-        std::map<std::string,std::pair<Vrf,uint64_t>> txvrfCache;
-        std::map<std::string,std::pair<std::vector<std::string>,uint64_t>> vrfVerifyNode;
+        std::map<std::string,std::pair<Vrf,uint64_t>> vrfCache; //Block flow vrf
+        std::map<std::string,std::pair<Vrf,uint64_t>> txvrfCache; //Vrf of transaction flows
+        std::map<std::string,std::pair<std::vector<std::string>,uint64_t>> vrfVerifyNode; //The vrf corresponds to the verification address required by the hash
         std::shared_mutex vrfInfoMutex;
         std::shared_mutex vrfNodeMutex;
         CTimer ClearTimer;
+        /**
+        * @brief       
+        * 
+        * @param       data:
+        * @return       long long
+        */
         long long stringToll(const std::string& data)
         {
             long long value = 0;

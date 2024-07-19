@@ -96,6 +96,7 @@ PROTOBUF_CONSTEXPR CTransaction::CTransaction(
   , /*decltype(_impl_.n_)*/0u
   , /*decltype(_impl_.consensus_)*/0u
   , /*decltype(_impl_.txtype_)*/0u
+  , /*decltype(_impl_.nonce_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct CTransactionDefaultTypeInternal {
   PROTOBUF_CONSTEXPR CTransactionDefaultTypeInternal()
@@ -167,6 +168,7 @@ const uint32_t TableStruct_transaction_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::CTransaction, _impl_.verifysign_),
   PROTOBUF_FIELD_OFFSET(::CTransaction, _impl_.reserve0_),
   PROTOBUF_FIELD_OFFSET(::CTransaction, _impl_.reserve1_),
+  PROTOBUF_FIELD_OFFSET(::CTransaction, _impl_.nonce_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::CTxPrevOutput)},
@@ -193,20 +195,21 @@ const char descriptor_table_protodef_transaction_2eproto[] PROTOBUF_SECTION_VARI
   "value\030\001 \001(\003\022\014\n\004addr\030\002 \001(\t\"e\n\007CTxUtxo\022\r\n\005"
   "owner\030\001 \003(\t\022\026\n\003vin\030\002 \003(\0132\t.CTxInput\022\030\n\004v"
   "out\030\003 \003(\0132\n.CTxOutput\022\031\n\tmultiSign\030\004 \003(\013"
-  "2\006.CSign\"\375\001\n\014CTransaction\022\017\n\007version\030\001 \001"
+  "2\006.CSign\"\214\002\n\014CTransaction\022\017\n\007version\030\001 \001"
   "(\r\022\014\n\004time\030\002 \001(\004\022\t\n\001n\030\003 \001(\r\022\020\n\010identity\030"
   "\004 \001(\t\022\014\n\004hash\030\005 \001(\t\022\026\n\004utxo\030\006 \001(\0132\010.CTxU"
   "txo\022\014\n\004type\030\007 \001(\t\022\021\n\tconsensus\030\010 \001(\r\022\016\n\006"
   "txType\030\t \001(\r\022\014\n\004data\030\n \001(\t\022\014\n\004info\030\013 \001(\t"
   "\022\032\n\nverifySign\030\014 \003(\0132\006.CSign\022\020\n\010reserve0"
-  "\030\r \001(\t\022\020\n\010reserve1\030\016 \001(\tb\006proto3"
+  "\030\r \001(\t\022\020\n\010reserve1\030\016 \001(\t\022\r\n\005nonce\030\017 \001(\004b"
+  "\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_transaction_2eproto_deps[1] = {
   &::descriptor_table_sign_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_transaction_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_transaction_2eproto = {
-    false, false, 592, descriptor_table_protodef_transaction_2eproto,
+    false, false, 607, descriptor_table_protodef_transaction_2eproto,
     "transaction.proto",
     &descriptor_table_transaction_2eproto_once, descriptor_table_transaction_2eproto_deps, 1, 5,
     schemas, file_default_instances, TableStruct_transaction_2eproto::offsets,
@@ -1329,6 +1332,7 @@ CTransaction::CTransaction(const CTransaction& from)
     , decltype(_impl_.n_){}
     , decltype(_impl_.consensus_){}
     , decltype(_impl_.txtype_){}
+    , decltype(_impl_.nonce_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -1392,8 +1396,8 @@ CTransaction::CTransaction(const CTransaction& from)
     _this->_impl_.utxo_ = new ::CTxUtxo(*from._impl_.utxo_);
   }
   ::memcpy(&_impl_.time_, &from._impl_.time_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.txtype_) -
-    reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.txtype_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.nonce_) -
+    reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.nonce_));
   // @@protoc_insertion_point(copy_constructor:CTransaction)
 }
 
@@ -1416,6 +1420,7 @@ inline void CTransaction::SharedCtor(
     , decltype(_impl_.n_){0u}
     , decltype(_impl_.consensus_){0u}
     , decltype(_impl_.txtype_){0u}
+    , decltype(_impl_.nonce_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.identity_.InitDefault();
@@ -1493,8 +1498,8 @@ void CTransaction::Clear() {
   }
   _impl_.utxo_ = nullptr;
   ::memset(&_impl_.time_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.txtype_) -
-      reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.txtype_));
+      reinterpret_cast<char*>(&_impl_.nonce_) -
+      reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.nonce_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1632,6 +1637,14 @@ const char* CTransaction::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "CTransaction.reserve1"));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 nonce = 15;
+      case 15:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 120)) {
+          _impl_.nonce_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -1779,6 +1792,12 @@ uint8_t* CTransaction::_InternalSerialize(
         14, this->_internal_reserve1(), target);
   }
 
+  // uint64 nonce = 15;
+  if (this->_internal_nonce() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(15, this->_internal_nonce(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1883,6 +1902,11 @@ size_t CTransaction::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_txtype());
   }
 
+  // uint64 nonce = 15;
+  if (this->_internal_nonce() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_nonce());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -1942,6 +1966,9 @@ void CTransaction::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   if (from._internal_txtype() != 0) {
     _this->_internal_set_txtype(from._internal_txtype());
   }
+  if (from._internal_nonce() != 0) {
+    _this->_internal_set_nonce(from._internal_nonce());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -1991,8 +2018,8 @@ void CTransaction::InternalSwap(CTransaction* other) {
       &other->_impl_.reserve1_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(CTransaction, _impl_.txtype_)
-      + sizeof(CTransaction::_impl_.txtype_)
+      PROTOBUF_FIELD_OFFSET(CTransaction, _impl_.nonce_)
+      + sizeof(CTransaction::_impl_.nonce_)
       - PROTOBUF_FIELD_OFFSET(CTransaction, _impl_.utxo_)>(
           reinterpret_cast<char*>(&_impl_.utxo_),
           reinterpret_cast<char*>(&other->_impl_.utxo_));

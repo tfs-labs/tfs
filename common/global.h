@@ -1,14 +1,5 @@
-/**
- * *****************************************************************************
- * @file        global.h
- * @brief       
- * @author  ()
- * @copyright   tfsc
- * *****************************************************************************
- */
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
-#include <cstdint>
 #include <string>
 #include <atomic>
 namespace global{
@@ -29,10 +20,14 @@ namespace global{
         static const BuildType kBuildType = BuildType::kBuildType_Dev;
     #endif
 
-    // version
-    static const std::string kNetVersion = "39";
-    static const std::string kLinuxCompatible = "0.39.0";
-    static const std::string kWindowsCompatible = "0.39.0";
+     
+    /*
+        @brief Version 
+        @brief Network version number depends on the first version number
+    */
+    static const std::string kNetVersion = "1.1";
+    static const std::string kLinuxCompatible = "1.1.1";
+    static const std::string kWindowsCompatible = "1.1.1";
     static const std::string kIOSCompatible = "4.0.4";
     static const std::string kAndroidCompatible = "3.1.0";
 
@@ -62,9 +57,6 @@ namespace global{
 
     static const int kBlockThreadNumber = 50;
     static const int kWorkThreadNumber = 50;
-
-    // const uint64_t g_OldVersionFailureTime = UINT64_MAX;
-    const uint64_t g_OldVersionFailureTime = 1702887254000000;
 }
 
 #endif // !_GLOBAL_H

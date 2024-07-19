@@ -11,9 +11,8 @@
 #define __CA_TEST_H__
 #include <string>
 
-
-#include "proto/block.pb.h"
 #include "utils/json.hpp"
+#include "proto/block.pb.h"
 #include "proto/transaction.pb.h"
 
 /**
@@ -51,29 +50,29 @@ int PrintTx(const CTransaction & tx, bool isConsoleOutput, std::ostream & stream
  * @brief       
  * 
  * @param       num: 
- * @param       pre_hash_flag: 
+ * @param       preHashFlag: 
  * @return      std::string 
  */
-std::string PrintBlocks(int num = 0, bool pre_hash_flag = false);
+std::string PrintBlocks(int num = 0, bool preHashFlag = false);
 
 /**
  * @brief       
  * 
  * @param       num: 
- * @param       pre_hash_flag: 
+ * @param       preHashFlag: 
  * @return      std::string 
  */
-std::string PrintBlocksHash(int num = 0, bool pre_hash_flag = false);
+std::string PrintBlocksHash(int num = 0, bool preHashFlag = false);
 
 /**
  * @brief       
  * 
  * @param       startNum: 
  * @param       num: 
- * @param       pre_hash_flag: 
+ * @param       preHashFlag: 
  * @return      std::string 
  */
-std::string PrintRangeBlocks(int startNum = 0,int num = 0, bool pre_hash_flag = false);
+std::string PrintRangeBlocks(int startNum = 0,int num = 0, bool preHashFlag = false);
 
 /**
  * @brief       
@@ -81,8 +80,10 @@ std::string PrintRangeBlocks(int startNum = 0,int num = 0, bool pre_hash_flag = 
  * @param       strHeader: 
  * @param       blocks: 
  */
-void BlockInvert(const std::string & strHeader, nlohmann::json &blocks);
-void BlockInvert_V33_1(const std::string & strHeader, nlohmann::json &blocks);
+
+std::string TxInvet(const CTransaction& tx);
+void BlockInvert(const std::string& strHeader, nlohmann::json& blocks);
+nlohmann::json FixTxField(const nlohmann::json& inTx);
 
 /**
  * @brief       
@@ -92,7 +93,7 @@ void BlockInvert_V33_1(const std::string & strHeader, nlohmann::json &blocks);
  */
 
 int PrintContractBlock(const CBlock & block, bool isConsoleOutput, std::ostream & stream);
-std::string PrintContractBlocks(int num, bool pre_hash_flag);
-std::string PrintRangeContractBlocks(int startNum,int num, bool pre_hash_flag);
+std::string PrintContractBlocks(int num, bool preHashFlag);
+std::string PrintRangeContractBlocks(int startNum,int num, bool preHashFlag);
 std::string PrintCache(int where);
 #endif

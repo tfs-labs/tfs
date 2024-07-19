@@ -4,18 +4,15 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <regex>
-#include "./ip_port.h"
-#include "./peer_node.h"
-#include "../../include/logging.h"
 #include <netdb.h> 
 #include <stdlib.h>
 #include <unistd.h>
 #include "../utils/util.h"
+#include "./ip_port.h"
+#include "./peer_node.h"
+#include "../../include/logging.h"
 
-char g_localHostIp[16];
-char g_public_net_ip[16];
-char g_publicIP[30];             //IP Store the public IP address
-int g_my_port;
+
 
 //Ip /Get Local IP
 bool IpPort::GetLocalHostIp(std::string & localHostIp)
@@ -66,7 +63,7 @@ u32 IpPort::IpNum(const char* szIp)
 	u32 numIp = inet_addr(szIp);
 	return numIp;
 }
-u32 IpPort::IpNum(const string& szIp)
+u32 IpPort::IpNum(const std::string& szIp)
 {
 	u32 numIp = inet_addr(szIp.c_str());
 	return numIp;
@@ -84,7 +81,7 @@ bool IpPort::IsValidIp(std::string const& strIp)
 {
 	try
 	{
-		string pattern = "^(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|[1-9])\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)$";
+		std::string pattern = "^(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|[1-9])\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)\\.(1\\d{2}|2[0-4]\\d|25[0-5]|[1-9]\\d|\\d)$";
 		std::regex re(pattern);
 		bool rst = std::regex_search(strIp, re);
 		return rst;
@@ -117,7 +114,7 @@ bool IpPort::IsLocalIp(std::string const& strIp)
 
 bool IpPort::IsLocalIp(u32 u32_ip)
 {
-	string strIp = IpSz(u32_ip);
+	std::string strIp = IpSz(u32_ip);
 	return IsLocalIp(strIp);
 }
 
@@ -131,7 +128,7 @@ bool IpPort::IsPublicIp(std::string const& strIp)
 
 bool IpPort::IsPublicIp(u32 u32_ip)
 {
-	string strIp = IpSz(u32_ip);
+	std::string strIp = IpSz(u32_ip);
 	return IsPublicIp(strIp);
 }
 
@@ -183,13 +180,13 @@ u16 IpPort::GetConnectPort(int conFd)
 bool IpPort::IsLan(std::string const& ipString)
 {
 	#if PRIMARYCHAIN || TESTCHAIN
-	istringstream st(ipString);
+	std::istringstream st(ipString);
 	int ip[2];
 	for(int i = 0; i < 2; i++)
 	{
-		string temp;
+		std::string temp;
 		getline(st,temp,'.');
-		istringstream a(temp);
+		std::istringstream a(temp);
 		a >> ip[i];
 	}
 	if((ip[0]==10) || (ip[0]==172 && ip[1]>=16 && ip[1]<=31) || (ip[0]==192 && ip[1]==168))

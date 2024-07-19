@@ -49,12 +49,12 @@ static int WritePidIntoFd(int fd, pid_t pid)
  
 	return ret;
 }
- 
-/*
- * Create MY_PID_FILE, write pid into it.
- *
- * @return: 0 is ok, -1 is error.
- */
+/**
+ * @brief       Create MY_PID_FILE, write pid into it.
+ * 
+ * @param       pid: 
+ * @return      int: 0 is ok, -1 is error. 
+*/
 static int CreatePidFile(pid_t pid)
 {
 	int fd, ret;
@@ -80,14 +80,14 @@ static int CreatePidFile(pid_t pid)
 	
 	return ret;
 }
- 
-/*
- * If pid file already exists, check the pid value in it.
- * If pid from file is still running, this program need exit();
- * If it is not running, write current pid into file.
- *
- * @return: 0 is ok, -1 is error.
- */
+/**
+ * @brief       If pid file already exists, check the pid value in it.
+				If pid from file is still running, this program need exit();
+				If it is not running, write current pid into file.
+ * @param       fd: 
+ * @param       pid: 
+ * @return      int: 0 is ok, -1 is error. 
+*/
 static int CheckPidFile(int fd, pid_t pid)
 {
 	int ret = -1;
@@ -128,12 +128,12 @@ static int CheckPidFile(int fd, pid_t pid)
  
 	return ret;
 }
- 
-/*
- * It will create the only one pid file for app.
- * 
- * @return: 0 is ok, -1 is error.
- */
+
+/**
+ * @brief       It will create the only one pid file for app.
+ *
+ * @return      int: 0 is ok, -1 is error. 
+*/
 static int InitPidFile()
 {
 	pid_t pid;

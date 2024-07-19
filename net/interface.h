@@ -6,9 +6,44 @@
 #include <map>
 #include <vector>
 #include <unordered_map>
-#include "../net/msg_queue.h"
 #include "../net/api.h"
+#include "../net/msg_queue.h"
 #include "../net/dispatcher.h"
+
+static bool NetInit()
+{
+    // register
+    MagicSingleton<TaskPool>::GetInstance()->TaskPoolInit();
+    
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<RegisterNodeReq>(HandleRegisterNodeReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<RegisterNodeAck>(HandleRegisterNodeAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<SyncNodeReq>(HandleSyncNodeReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<SyncNodeAck>(HandleSyncNodeAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<CheckTxReq>(HandleCheckTxReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<CheckTxAck>(HandleCheckTxAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<GetUtxoHashReq>(HandleGetTxUtxoHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<GetUtxoHashAck>(HandleGetTxUtxoHashAck);
+    
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<PrintMsgReq>(HandlePrintMsgReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<PingReq>(HandlePingReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<PongReq>(HandlePongReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<EchoReq>(HandleEchoReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<EchoAck>(HandleEchoAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<TestNetAck>(HandleNetTestAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<TestNetReq>(HandleNetTestReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<NodeHeightChangedReq>(HandleNodeHeightChangedReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<NodeAddrChangedReq>(HandleNodeAddrChangedReq);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<KeyExchangeRequest>(HandleKeyExchangeReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<KeyExchangeResponse>(HandleKeyExchangeAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->BroadcastRegisterCallback<BuildBlockBroadcastMsg>(HandleBroadcastMsg);
+
+    net_com::InitializeNetwork();
+    return true;
+}
 
 /**
  * @brief    Single point to send information, T type is the type of protobuf protocol   
@@ -191,141 +226,17 @@ bool NetBroadcastMessage(const T& msg,
 }
 
 
-
-
-/**
- * @brief       Obtaining the ID of your own node returns 0 successfully
- * 
- * @return      std::string 
- */
-std::string NetGetSelfNodeId();
-
-
-/**
- * @brief       Get node information
- * 
- * @return      Node 
- */
-Node NetGetSelfNode();
-
-/**
- * @brief       Returns all node IDs
- * 
- * @return      std::vector<std::string> 
- */
-std::vector<std::string>  NetGetNodeIds();
-
-/**
- * @brief       Returns the public network node
- * 
- * @return      std::vector<Node> 
- */
-std::vector<Node> NetGetPublicNode();
-
-/**
- * @brief      Returns all public network nodes, regardless of whether they are connected or not 
- * 
- * @return      std::vector<Node> 
- */
-std::vector<Node> NetGetAllPublicNode();
-
-/**
- * @brief       Returns all node IDs and base58Address
- * 
- * @return      std::map<std::string, string> 
- */
-std::map<std::string, string> NetGetNodeIdsAndBase58Address();
-
-/**
- * @brief       Find the ID by IP
- * 
- * @param       ip 
- * @return      std::string 
- */
-std::string NetGetIdByIp(std::string ip);
-
 /**
  * @brief       Send node which was changed
  * 
  */
-void NetSendNodeHeightChanged();
 
-/**
- * @brief       Returns the percentage of nodes on the connection
- * 
- * @return      double 
- */
-double NetGetConnectedPercent();
-
-/**
- * @brief       
- * 
- */
-template <typename T>
-void NetRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
+static void NetSendNodeHeightChanged()
 {
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->NetRegisterCallback<T>(cb);
+	net_com::SendNodeHeightChanged();
 }
 
-/**
- * @brief       
- * 
- */
-template <typename T>
-void CaRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
-{
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<T>(cb);
-}
 
-/**
- * @brief       
- * 
- */
-template <typename T>
-void TxRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
-{
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->TxRegisterCallback<T>(cb);
-}
-
-/**
- * @brief       
- * 
- */
-template <typename T>
-void SyncBlockRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
-{
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<T>(cb);
-}
-
-/**
- * @brief       
- * 
- */
-template <typename T>
-void SaveBlockRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
-{
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->SaveBlockRegisterCallback<T>(cb);
-}
-
-/**
- * @brief       
- * 
- */
-template <typename T>
-void BlockRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
-{
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->BlockRegisterCallback<T>(cb);
-}
-
-/**
- * @brief       
- * 
- */
-template <typename T>
-void BroadcastRegisterCallback(std::function<int( const std::shared_ptr<T>& msg, const MsgData& from)> cb)
-{
-    MagicSingleton<ProtobufDispatcher>::GetInstance()->BroadcastRegisterCallback<T>(cb);
-}
 
 
 /**

@@ -1,40 +1,5 @@
 #include "ca/checker.h"
-
-#include "utils/base58.h"
-
-bool Checker::CheckConflict(const CTransaction &tx, const std::map<uint64_t ,std::list<CTransaction>> &cache)
-{
-    for(const auto& pairHeightTxs : cache)
-    {
-        for(const auto& txEntity : pairHeightTxs.second)
-        {
-            if(CheckConflict(txEntity, tx) == true)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-bool Checker::CheckConflict_V33_1(const CTransaction &tx, const std::map<uint64_t, std::list<TransactionEntity_V33_1>> &cache)
-{
-    CTransaction curTx;
-    for(const auto& pairHeightTxs : cache)
-    {
-        for(const auto& txEntity : pairHeightTxs.second)
-        {
-            curTx = txEntity.GetTransaction();
-            if(CheckConflict(curTx, tx) == true)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
+#include "utils/contract_utils.h"
 
 bool Checker::CheckConflict(const CTransaction &tx, const std::vector<TransactionEntity>  &cache)
 {
@@ -135,7 +100,7 @@ bool Checker::CheckConflict(const CTransaction &tx1, const CTransaction &tx2)
     {
         for (auto & prevout : vin.prevout())
         {
-            vec1.push_back(prevout.hash() + "_" + GetBase58Addr(vin.vinsign().pub()));
+            vec1.push_back(prevout.hash() + "_" + GenerateAddr(vin.vinsign().pub()));
         }
     }
 
@@ -144,7 +109,7 @@ bool Checker::CheckConflict(const CTransaction &tx1, const CTransaction &tx2)
     {
         for (auto & prevout : vin.prevout())
         {
-            vec2.push_back(prevout.hash() + "_" + GetBase58Addr(vin.vinsign().pub()));
+            vec2.push_back(prevout.hash() + "_" + GenerateAddr(vin.vinsign().pub()));
         }
     }
 
@@ -165,7 +130,7 @@ void Checker::CheckConflict(const CBlock &block, std::vector<CTransaction>& doub
         {
             for (auto & prevout : vin.prevout())
             {
-                std::string&& utxo = prevout.hash() + "_" + GetBase58Addr(vin.vinsign().pub());
+                std::string&& utxo = prevout.hash() + "_" + GenerateAddr(vin.vinsign().pub());
                 if(transactionPool.find(utxo) != transactionPool.end() 
                 && global::ca::TxType::kTxTypeUnstake == txType || global::ca::TxType::kTxTypeDisinvest == txType)
                 {

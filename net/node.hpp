@@ -6,10 +6,6 @@
 #include <sstream>
 #include "define.h"
 #include "ip_port.h"
-#include "utils/time_util.h"
-#include "utils/magic_singleton.h"
-#include "common/global.h"
-
 
 enum ConnKind
 {
@@ -21,10 +17,9 @@ enum ConnKind
 class Node
 {
 public:
-	std::string     base58Address     = "";
+	std::string     address     = "";
 	std::string     pub               = "";
 	std::string     sign              = "";
-	std::string 	publicBase58Addr = "";
 	std::string     identity          = "";
 	std::string     name			  = "";
 	std::string 	logo			  = "";
@@ -34,30 +29,29 @@ public:
 	uint32_t        publicIp                = 0;
 	uint32_t        publicPort              = 0;
 	uint32_t        height                   = 0;
-	uint64_t        timeStamp				  = 0;
 	ConnKind 	    connKind                = NOTYET;
 	int32_t         fd                       = -1;
-	int32_t         heartProbes            = HEART_PROBES;
+	int32_t         pulse             = HEART_PROBES;
 
 	Node(){}
-	Node(std::string nodeBase58Address)
+	Node(std::string nodeAddress)
 	{
-		base58Address = nodeBase58Address;
+		address = nodeAddress;
 	}
 
 	bool operator==(const Node &obj) const
 	{
-		return base58Address == obj.base58Address;
+		return address == obj.address;
 	}
 
-	bool operator>(const Node &obj) //
+	bool operator>(const Node &obj)
 	{
-		return (*this).base58Address > obj.base58Address;
+		return (*this).address > obj.address;
 	}
 
 	void ResetHeart()
 	{
-		heartProbes = HEART_PROBES;
+		pulse = HEART_PROBES;
 	}
 	void Print()
 	{
@@ -75,14 +69,17 @@ public:
 			<< "  port_l(" << listenPort << ")"
 			<< "  kind(" << connKind << ")"
 			<< "  fd(" << fd << ")"
-			<< "  base58(" << base58Address << ")"
-			<< "  heartProbes(" << heartProbes << ")"
+			<< "  addr(" << "0x"+ address << ")"
+			<< "  pulse(" << pulse << ")"
 			<< "  height( " << height << " )"
 			<< "  name(" << name << ")"
 			<< "  version(" << ver << ")"
+			<< "  logo(" << logo << ")"
 			<< std::endl;
 		return oss.str();
 	}
+
+
 	bool IsConnected() const
 	{
 		return fd > 0 || fd == -2;

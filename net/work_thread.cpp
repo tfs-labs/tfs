@@ -12,66 +12,9 @@
 #include "../net/interface.h"
 #include "../utils/console.h"
 #include "../include/logging.h"
+#include "../common/bind_thread.h"
+#include "key_exchange.h"
 
-static std::mutex g_MutexForVec;
-static deque<Node> g_dequeNode; //list_nodelist_node is used to store nodes with an empty neighbor node list
-
-static std::mutex g_mutexForMap;
-static std::mutex mutexForCpuIndex;
-static int cpuIndex = 0;
-
-
-/// @brieftid Gets the thread tid
-int SystemGetId()
-{
-	int tid = 0;
-	tid = syscall(__NR_gettid);
-	return tid;
-}
-
-/// @brief Put the thread into the specified CPU to run
-/// @param [in] cpuIndex CPU sequence number, starting from 0, 0 representing the first CPU
-void SysThreadSetCpu(unsigned int cpuIndex)
-{
-	cpu_set_t mask;
-	CPU_ZERO(&mask);
-	CPU_SET(cpuIndex, &mask);
-	int tid = SystemGetId();
-	if (-1 == sched_setaffinity(tid, sizeof(mask), &mask))
-	{
-		printf("%s:%s:%d, WARNING: Could not set thread to CPU %d\n", __FUNCTION__, __FILE__, __LINE__, cpuIndex);
-	}
-}
-
-/// @briefPut the thread into the specified CPU to run
-/// @param [in] cpuIndex CPU CPU sequence number, starting from 0, 0 representing the first CPU
-void SysThreadSetCpu(unsigned int cpuIndex, pthread_t tid)
-{
-
-	cpu_set_t mask;
-	CPU_ZERO(&mask);
-	CPU_SET(cpuIndex, &mask);
-	if (-1 == pthread_setaffinity_np(tid, sizeof(mask), &mask))
-	{
-		printf("%s:%s:%d, WARNING: Could not set thread to CPU %d\n", __FUNCTION__, __FILE__, __LINE__, cpuIndex);
-	}
-}
-
-int GetCpuIndex()
-{
-	std::lock_guard<std::mutex> lck(mutexForCpuIndex);
-	int res = cpuIndex;
-	if (cpuIndex + 1 < global::g_cpuNums)
-	{
-		cpuIndex += 1;
-	}
-	else
-	{
-		cpuIndex = 0;
-	}
-
-	return res;
-}
 //cpu Bind the CPU
 void BindCpu()
 {
@@ -207,6 +150,7 @@ int WorkThreads::HandleNetRead(const MsgData &data)
 		{
 			DEBUGLOG("++++HandleNetRead++++ ip:({}) port:({}) fd:({})",IpPort::IpSz(data.ip),data.port,data.fd);
 			MagicSingleton<PeerNode>::GetInstance()->DeleteByFd(data.fd);
+			MagicSingleton<KeyExchangeManager>::GetInstance()->removeKey(data.fd);
 			return -1;
 		}
 		if (nread < 0)
@@ -219,7 +163,7 @@ int WorkThreads::HandleNetRead(const MsgData &data)
 
 			DEBUGLOG("++++HandleNetRead++++ ip:({}) port:({}) fd:({})",IpPort::IpSz(data.ip),data.port,data.fd);
 			MagicSingleton<PeerNode>::GetInstance()->DeleteByFd(data.fd);
-
+			MagicSingleton<KeyExchangeManager>::GetInstance()->removeKey(data.fd);
 			return -1;
 		}
 	} while (nread >= MAXLINE);
@@ -286,8 +230,6 @@ bool WorkThreads::HandleNetWrite(const MsgData &data)
 		global::g_mutexForPhoneList.unlock();
 		return true;
 	}
-
-	
 
 	return false;
 }

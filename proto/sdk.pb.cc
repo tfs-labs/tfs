@@ -146,8 +146,8 @@ PROTOBUF_CONSTEXPR SDKNodeInfo::SDKNodeInfo(
     /*decltype(_impl_.pub_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.sign_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.identity_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.base58addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.public_base58addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.public_addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.logo_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -402,8 +402,8 @@ const uint32_t TableStruct_sdk_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(prot
   PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.pub_),
   PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.sign_),
   PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.identity_),
-  PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.base58addr_),
-  PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.public_base58addr_),
+  PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.addr_),
+  PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.public_addr_),
   PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.name_),
   PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.logo_),
   PROTOBUF_FIELD_OFFSET(::SDKNodeInfo, _impl_.listen_ip_),
@@ -572,62 +572,62 @@ const char descriptor_table_protodef_sdk_2eproto[] PROTOBUF_SECTION_VARIABLE(pro
   "\001(\t\022\n\n\002tx\030\003 \001(\014\"1\n\017AbnormalAddrCnt\022\017\n\007ad"
   "dress\030\001 \001(\t\022\r\n\005count\030\002 \001(\004\"<\n\017SDKClaimBo"
   "nusTx\022\017\n\007address\030\001 \001(\t\022\014\n\004utxo\030\002 \001(\t\022\n\n\002"
-  "tx\030\003 \001(\014\"\212\002\n\013SDKNodeInfo\022\013\n\003pub\030\001 \001(\014\022\014\n"
-  "\004sign\030\002 \001(\014\022\020\n\010identity\030\003 \001(\014\022\022\n\nbase58a"
-  "ddr\030\004 \001(\t\022\031\n\021public_base58addr\030\005 \001(\t\022\014\n\004"
-  "name\030\006 \001(\t\022\014\n\004logo\030\007 \001(\t\022\021\n\tlisten_ip\030\010 "
-  "\001(\r\022\023\n\013listen_port\030\t \001(\r\022\021\n\tpublic_ip\030\n "
-  "\001(\r\022\023\n\013public_port\030\013 \001(\r\022\016\n\006height\030\014 \001(\r"
-  "\022\022\n\ntime_stamp\030\r \001(\004\022\017\n\007version\030\016 \001(\t\"\334\004"
-  "\n\tGetSDKAck\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001"
-  "(\005\022\017\n\007message\030\003 \001(\t\022\016\n\006height\030\004 \001(\004\022\027\n\005u"
-  "txos\030\005 \003(\0132\010.SDKUtxo\022\016\n\006blocks\030\006 \003(\014\022#\n\013"
-  "bonusamount\030\010 \003(\0132\016.SDKBonusamout\022\036\n\010ple"
-  "dgetx\030\t \003(\0132\014.SDKPledgeTx\022\022\n\npledgeaddr\030"
-  "\n \003(\t\022\022\n\npledgeutxo\030\013 \003(\t\022\021\n\tBonusAddr\030\014"
-  " \003(\t\022\024\n\014InvestedAddr\030\r \003(\t\022\034\n\007BonusTx\030\016 "
-  "\003(\0132\013.SDKBonusTx\022\034\n\024BonusAddrInvestUtxos"
-  "\030\017 \003(\t\022\031\n\007claimtx\030\020 \003(\0132\010.Claimtx\022*\n\020abn"
-  "ormaladdr_cnt\030\021 \003(\0132\020.AbnormalAddrCnt\022\n\n"
-  "\002M2\030\022 \001(\004\022\023\n\013Totalinvest\030\023 \001(\004\022\030\n\020TotalA"
-  "wardAmount\030\024 \001(\004\022\036\n\010nodeinfo\030\026 \003(\0132\014.SDK"
-  "NodeInfo\022\014\n\004type\030\027 \001(\004\022&\n\014ClaimBonusTx\030\030"
-  " \003(\0132\020.SDKClaimBonusTx\022\031\n\021ClaimInvestedA"
-  "ddr\030\032 \003(\t\022!\n\031ClaimBonusAddrInvestUtxos\030\033"
-  " \003(\t\";\n\027SDKNormalTransactionReq\022\017\n\007versi"
-  "on\030\001 \001(\t\022\017\n\007address\030\002 \003(\t\"\217\002\n\027SDKNormalT"
-  "ransactionAck\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002"
-  " \001(\005\022\017\n\007message\030\003 \001(\t\022\016\n\006height\030\004 \001(\004\022\027\n"
-  "\005utxos\030\005 \003(\0132\010.SDKUtxo\022\016\n\006blocks\030\006 \003(\014\022#"
-  "\n\013bonusamount\030\007 \003(\0132\016.SDKBonusamout\022\036\n\010p"
-  "ledgetx\030\010 \003(\0132\014.SDKPledgeTx\022\022\n\npledgeadd"
-  "r\030\t \003(\t\022\022\n\npledgeutxo\030\n \003(\t\022\036\n\010nodeinfo\030"
-  "\013 \003(\0132\014.SDKNodeInfo\"v\n\024SDKContractDeploy"
-  "Req\022\017\n\007version\030\001 \001(\t\022\017\n\007address\030\002 \001(\t\022\025\n"
-  "\rdeploy_amount\030\003 \001(\t\022\025\n\rnContractType\030\004 "
-  "\001(\005\022\016\n\006pubStr\030\005 \001(\t\"\271\001\n\024SDKContractDeplo"
-  "yAck\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007m"
-  "essage\030\003 \001(\t\022\n\n\002tx\030\004 \001(\014\022\013\n\003top\030\005 \001(\004\022\n\n"
-  "\002ip\030\006 \001(\004\022\014\n\004port\030\007 \001(\004\022\'\n\020isNeedAgent_f"
-  "lag\030\010 \001(\0162\r.vrfAgentType\022\025\n\007vrfInfo\030\t \001("
-  "\0132\004.Vrf\"a\n\022SDKContractCallReq\022\017\n\007version"
-  "\030\001 \001(\t\022\020\n\010fromaddr\030\002 \001(\t\022\016\n\006toaddr\030\003 \001(\t"
-  "\022\030\n\020deploy_strTxHash\030\004 \001(\004\"\267\001\n\022SDKContra"
-  "ctCallAck\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005"
-  "\022\017\n\007message\030\003 \001(\t\022\n\n\002tx\030\004 \001(\014\022\013\n\003top\030\005 \001"
-  "(\004\022\n\n\002ip\030\006 \001(\004\022\014\n\004port\030\007 \001(\004\022\'\n\020isNeedAg"
-  "ent_flag\030\010 \001(\0162\r.vrfAgentType\022\025\n\007vrfInfo"
-  "\030\t \001(\0132\004.Vrf*o\n\014vrfAgentType\022\030\n\024vrfAgent"
-  "Type_defalut\020\000\022\024\n\020vrfAgentType_vrf\020\001\022\026\n\022"
-  "vrfAgentType_local\020\002\022\027\n\023vrfAgentType_unk"
-  "now\020\003b\006proto3"
+  "tx\030\003 \001(\014\"\376\001\n\013SDKNodeInfo\022\013\n\003pub\030\001 \001(\014\022\014\n"
+  "\004sign\030\002 \001(\014\022\020\n\010identity\030\003 \001(\014\022\014\n\004addr\030\004 "
+  "\001(\t\022\023\n\013public_addr\030\005 \001(\t\022\014\n\004name\030\006 \001(\t\022\014"
+  "\n\004logo\030\007 \001(\t\022\021\n\tlisten_ip\030\010 \001(\r\022\023\n\013liste"
+  "n_port\030\t \001(\r\022\021\n\tpublic_ip\030\n \001(\r\022\023\n\013publi"
+  "c_port\030\013 \001(\r\022\016\n\006height\030\014 \001(\r\022\022\n\ntime_sta"
+  "mp\030\r \001(\004\022\017\n\007version\030\016 \001(\t\"\334\004\n\tGetSDKAck\022"
+  "\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007messag"
+  "e\030\003 \001(\t\022\016\n\006height\030\004 \001(\004\022\027\n\005utxos\030\005 \003(\0132\010"
+  ".SDKUtxo\022\016\n\006blocks\030\006 \003(\014\022#\n\013bonusamount\030"
+  "\010 \003(\0132\016.SDKBonusamout\022\036\n\010pledgetx\030\t \003(\0132"
+  "\014.SDKPledgeTx\022\022\n\npledgeaddr\030\n \003(\t\022\022\n\nple"
+  "dgeutxo\030\013 \003(\t\022\021\n\tBonusAddr\030\014 \003(\t\022\024\n\014Inve"
+  "stedAddr\030\r \003(\t\022\034\n\007BonusTx\030\016 \003(\0132\013.SDKBon"
+  "usTx\022\034\n\024BonusAddrInvestUtxos\030\017 \003(\t\022\031\n\007cl"
+  "aimtx\030\020 \003(\0132\010.Claimtx\022*\n\020abnormaladdr_cn"
+  "t\030\021 \003(\0132\020.AbnormalAddrCnt\022\n\n\002M2\030\022 \001(\004\022\023\n"
+  "\013Totalinvest\030\023 \001(\004\022\030\n\020TotalAwardAmount\030\024"
+  " \001(\004\022\036\n\010nodeinfo\030\026 \003(\0132\014.SDKNodeInfo\022\014\n\004"
+  "type\030\027 \001(\004\022&\n\014ClaimBonusTx\030\030 \003(\0132\020.SDKCl"
+  "aimBonusTx\022\031\n\021ClaimInvestedAddr\030\032 \003(\t\022!\n"
+  "\031ClaimBonusAddrInvestUtxos\030\033 \003(\t\";\n\027SDKN"
+  "ormalTransactionReq\022\017\n\007version\030\001 \001(\t\022\017\n\007"
+  "address\030\002 \003(\t\"\217\002\n\027SDKNormalTransactionAc"
+  "k\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007mess"
+  "age\030\003 \001(\t\022\016\n\006height\030\004 \001(\004\022\027\n\005utxos\030\005 \003(\013"
+  "2\010.SDKUtxo\022\016\n\006blocks\030\006 \003(\014\022#\n\013bonusamoun"
+  "t\030\007 \003(\0132\016.SDKBonusamout\022\036\n\010pledgetx\030\010 \003("
+  "\0132\014.SDKPledgeTx\022\022\n\npledgeaddr\030\t \003(\t\022\022\n\np"
+  "ledgeutxo\030\n \003(\t\022\036\n\010nodeinfo\030\013 \003(\0132\014.SDKN"
+  "odeInfo\"v\n\024SDKContractDeployReq\022\017\n\007versi"
+  "on\030\001 \001(\t\022\017\n\007address\030\002 \001(\t\022\025\n\rdeploy_amou"
+  "nt\030\003 \001(\t\022\025\n\rnContractType\030\004 \001(\005\022\016\n\006pubSt"
+  "r\030\005 \001(\t\"\271\001\n\024SDKContractDeployAck\022\017\n\007vers"
+  "ion\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001(\t"
+  "\022\n\n\002tx\030\004 \001(\014\022\013\n\003top\030\005 \001(\004\022\n\n\002ip\030\006 \001(\004\022\014\n"
+  "\004port\030\007 \001(\004\022\'\n\020isNeedAgent_flag\030\010 \001(\0162\r."
+  "vrfAgentType\022\025\n\007vrfInfo\030\t \001(\0132\004.Vrf\"a\n\022S"
+  "DKContractCallReq\022\017\n\007version\030\001 \001(\t\022\020\n\010fr"
+  "omaddr\030\002 \001(\t\022\016\n\006toaddr\030\003 \001(\t\022\030\n\020deploy_s"
+  "trTxHash\030\004 \001(\004\"\267\001\n\022SDKContractCallAck\022\017\n"
+  "\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030"
+  "\003 \001(\t\022\n\n\002tx\030\004 \001(\014\022\013\n\003top\030\005 \001(\004\022\n\n\002ip\030\006 \001"
+  "(\004\022\014\n\004port\030\007 \001(\004\022\'\n\020isNeedAgent_flag\030\010 \001"
+  "(\0162\r.vrfAgentType\022\025\n\007vrfInfo\030\t \001(\0132\004.Vrf"
+  "*o\n\014vrfAgentType\022\030\n\024vrfAgentType_defalut"
+  "\020\000\022\024\n\020vrfAgentType_vrf\020\001\022\026\n\022vrfAgentType"
+  "_local\020\002\022\027\n\023vrfAgentType_unknow\020\003b\006proto"
+  "3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_sdk_2eproto_deps[1] = {
   &::descriptor_table_ca_5fprotomsg_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_sdk_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_sdk_2eproto = {
-    false, false, 2453, descriptor_table_protodef_sdk_2eproto,
+    false, false, 2441, descriptor_table_protodef_sdk_2eproto,
     "sdk.proto",
     &descriptor_table_sdk_2eproto_once, descriptor_table_sdk_2eproto_deps, 1, 16,
     schemas, file_default_instances, TableStruct_sdk_2eproto::offsets,
@@ -2988,8 +2988,8 @@ SDKNodeInfo::SDKNodeInfo(const SDKNodeInfo& from)
       decltype(_impl_.pub_){}
     , decltype(_impl_.sign_){}
     , decltype(_impl_.identity_){}
-    , decltype(_impl_.base58addr_){}
-    , decltype(_impl_.public_base58addr_){}
+    , decltype(_impl_.addr_){}
+    , decltype(_impl_.public_addr_){}
     , decltype(_impl_.name_){}
     , decltype(_impl_.logo_){}
     , decltype(_impl_.version_){}
@@ -3026,20 +3026,20 @@ SDKNodeInfo::SDKNodeInfo(const SDKNodeInfo& from)
     _this->_impl_.identity_.Set(from._internal_identity(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.base58addr_.InitDefault();
+  _impl_.addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.base58addr_.Set("", GetArenaForAllocation());
+    _impl_.addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_base58addr().empty()) {
-    _this->_impl_.base58addr_.Set(from._internal_base58addr(), 
+  if (!from._internal_addr().empty()) {
+    _this->_impl_.addr_.Set(from._internal_addr(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.public_base58addr_.InitDefault();
+  _impl_.public_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.public_base58addr_.Set("", GetArenaForAllocation());
+    _impl_.public_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_public_base58addr().empty()) {
-    _this->_impl_.public_base58addr_.Set(from._internal_public_base58addr(), 
+  if (!from._internal_public_addr().empty()) {
+    _this->_impl_.public_addr_.Set(from._internal_public_addr(), 
       _this->GetArenaForAllocation());
   }
   _impl_.name_.InitDefault();
@@ -3080,8 +3080,8 @@ inline void SDKNodeInfo::SharedCtor(
       decltype(_impl_.pub_){}
     , decltype(_impl_.sign_){}
     , decltype(_impl_.identity_){}
-    , decltype(_impl_.base58addr_){}
-    , decltype(_impl_.public_base58addr_){}
+    , decltype(_impl_.addr_){}
+    , decltype(_impl_.public_addr_){}
     , decltype(_impl_.name_){}
     , decltype(_impl_.logo_){}
     , decltype(_impl_.version_){}
@@ -3105,13 +3105,13 @@ inline void SDKNodeInfo::SharedCtor(
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.identity_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.base58addr_.InitDefault();
+  _impl_.addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.base58addr_.Set("", GetArenaForAllocation());
+    _impl_.addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.public_base58addr_.InitDefault();
+  _impl_.public_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.public_base58addr_.Set("", GetArenaForAllocation());
+    _impl_.public_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   _impl_.name_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -3141,8 +3141,8 @@ inline void SDKNodeInfo::SharedDtor() {
   _impl_.pub_.Destroy();
   _impl_.sign_.Destroy();
   _impl_.identity_.Destroy();
-  _impl_.base58addr_.Destroy();
-  _impl_.public_base58addr_.Destroy();
+  _impl_.addr_.Destroy();
+  _impl_.public_addr_.Destroy();
   _impl_.name_.Destroy();
   _impl_.logo_.Destroy();
   _impl_.version_.Destroy();
@@ -3161,8 +3161,8 @@ void SDKNodeInfo::Clear() {
   _impl_.pub_.ClearToEmpty();
   _impl_.sign_.ClearToEmpty();
   _impl_.identity_.ClearToEmpty();
-  _impl_.base58addr_.ClearToEmpty();
-  _impl_.public_base58addr_.ClearToEmpty();
+  _impl_.addr_.ClearToEmpty();
+  _impl_.public_addr_.ClearToEmpty();
   _impl_.name_.ClearToEmpty();
   _impl_.logo_.ClearToEmpty();
   _impl_.version_.ClearToEmpty();
@@ -3205,23 +3205,23 @@ const char* SDKNodeInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // string base58addr = 4;
+      // string addr = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          auto str = _internal_mutable_base58addr();
+          auto str = _internal_mutable_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "SDKNodeInfo.base58addr"));
+          CHK_(::_pbi::VerifyUTF8(str, "SDKNodeInfo.addr"));
         } else
           goto handle_unusual;
         continue;
-      // string public_base58addr = 5;
+      // string public_addr = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          auto str = _internal_mutable_public_base58addr();
+          auto str = _internal_mutable_public_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "SDKNodeInfo.public_base58addr"));
+          CHK_(::_pbi::VerifyUTF8(str, "SDKNodeInfo.public_addr"));
         } else
           goto handle_unusual;
         continue;
@@ -3350,24 +3350,24 @@ uint8_t* SDKNodeInfo::_InternalSerialize(
         3, this->_internal_identity(), target);
   }
 
-  // string base58addr = 4;
-  if (!this->_internal_base58addr().empty()) {
+  // string addr = 4;
+  if (!this->_internal_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_base58addr().data(), static_cast<int>(this->_internal_base58addr().length()),
+      this->_internal_addr().data(), static_cast<int>(this->_internal_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "SDKNodeInfo.base58addr");
+      "SDKNodeInfo.addr");
     target = stream->WriteStringMaybeAliased(
-        4, this->_internal_base58addr(), target);
+        4, this->_internal_addr(), target);
   }
 
-  // string public_base58addr = 5;
-  if (!this->_internal_public_base58addr().empty()) {
+  // string public_addr = 5;
+  if (!this->_internal_public_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_public_base58addr().data(), static_cast<int>(this->_internal_public_base58addr().length()),
+      this->_internal_public_addr().data(), static_cast<int>(this->_internal_public_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "SDKNodeInfo.public_base58addr");
+      "SDKNodeInfo.public_addr");
     target = stream->WriteStringMaybeAliased(
-        5, this->_internal_public_base58addr(), target);
+        5, this->_internal_public_addr(), target);
   }
 
   // string name = 6;
@@ -3473,18 +3473,18 @@ size_t SDKNodeInfo::ByteSizeLong() const {
         this->_internal_identity());
   }
 
-  // string base58addr = 4;
-  if (!this->_internal_base58addr().empty()) {
+  // string addr = 4;
+  if (!this->_internal_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_base58addr());
+        this->_internal_addr());
   }
 
-  // string public_base58addr = 5;
-  if (!this->_internal_public_base58addr().empty()) {
+  // string public_addr = 5;
+  if (!this->_internal_public_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_public_base58addr());
+        this->_internal_public_addr());
   }
 
   // string name = 6;
@@ -3565,11 +3565,11 @@ void SDKNodeInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   if (!from._internal_identity().empty()) {
     _this->_internal_set_identity(from._internal_identity());
   }
-  if (!from._internal_base58addr().empty()) {
-    _this->_internal_set_base58addr(from._internal_base58addr());
+  if (!from._internal_addr().empty()) {
+    _this->_internal_set_addr(from._internal_addr());
   }
-  if (!from._internal_public_base58addr().empty()) {
-    _this->_internal_set_public_base58addr(from._internal_public_base58addr());
+  if (!from._internal_public_addr().empty()) {
+    _this->_internal_set_public_addr(from._internal_public_addr());
   }
   if (!from._internal_name().empty()) {
     _this->_internal_set_name(from._internal_name());
@@ -3630,12 +3630,12 @@ void SDKNodeInfo::InternalSwap(SDKNodeInfo* other) {
       &other->_impl_.identity_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.base58addr_, lhs_arena,
-      &other->_impl_.base58addr_, rhs_arena
+      &_impl_.addr_, lhs_arena,
+      &other->_impl_.addr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.public_base58addr_, lhs_arena,
-      &other->_impl_.public_base58addr_, rhs_arena
+      &_impl_.public_addr_, lhs_arena,
+      &other->_impl_.public_addr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.name_, lhs_arena,

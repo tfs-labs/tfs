@@ -1,6 +1,5 @@
 #include "./peer_node.h"
 
-#include <cstdint>
 #include <sys/time.h>
 #include <chrono>
 #include <bitset>
@@ -12,7 +11,7 @@
 #include "./unregister_node.h"
 
 #include "../include/logging.h"
-#include "../utils/base58.h"
+#include "../utils/contract_utils.h"
 #include "../utils/console.h"
 #include "../net/unregister_node.h"
 #include "../net/global.h"
@@ -20,8 +19,19 @@
 
 bool PeerNode::Add(const Node& node)
 {
+	uint64_t chainHeight = 0;
+	if(!net_callback::calculateChainHeightCallback(chainHeight))
+	{
+		return false;
+	}
+
 	std::unique_lock<std::shared_mutex> lck(_mutexForNodes);
-	if(node.base58Address.size() == 0)
+	if(_nodeMap.size() >= global::ca::KMinSyncQualNodes && node.height > chainHeight + global::ca::KChainHighThreshold)
+	{
+		return false;
+	}
+
+	if(node.address.size() == 0)
 	{
 		return false;
 	} 
@@ -29,26 +39,37 @@ bool PeerNode::Add(const Node& node)
 	{
 		return false;
 	}
-	auto itr = _nodeMap.find(node.base58Address);
+	auto itr = _nodeMap.find(node.address);
 	if (itr != _nodeMap.end())
 	{
 		return false;
 	}
-	this->_nodeMap[node.base58Address] = node;
+	this->_nodeMap[node.address] = node;
 
 	return true;
 }
 
 bool PeerNode::Update(const Node & node)
 {
+	uint64_t chainHeight = 0;
+	if(!net_callback::calculateChainHeightCallback(chainHeight))
+	{
+		return false;
+	}
+
+	if(_nodeMap.size() >= global::ca::KMinSyncQualNodes && node.height > chainHeight + global::ca::KChainHighThreshold)
+	{
+		return false;
+	}
+
 	{
 		std::unique_lock<std::shared_mutex> lck(_mutexForNodes);
-		auto itr = this->_nodeMap.find(node.base58Address);
+		auto itr = this->_nodeMap.find(node.address);
 		if (itr == this->_nodeMap.end())
 		{
 			return false;
 		}
-		this->_nodeMap[node.base58Address] = node;
+		this->_nodeMap[node.address] = node;
 	}
 
 	return true;
@@ -57,15 +78,16 @@ bool PeerNode::Update(const Node & node)
 bool PeerNode::AddOrUpdate(Node node)
 {
 	std::unique_lock<std::shared_mutex> lck(_mutexForNodes);
-	this->_nodeMap[node.base58Address] = node;
+	this->_nodeMap[node.address] = node;
 	
 	return true;
 }
 
-void PeerNode::DeleteNode(std::string base58Addr)
+void PeerNode::DeleteNode(std::string Addr)
 {
+	DEBUGLOG("DeleteNode addr:{}", Addr);
 	std::unique_lock<std::shared_mutex> lck(_mutexForNodes);
-	auto nodeIt = _nodeMap.find(base58Addr);
+	auto nodeIt = _nodeMap.find(Addr);
 	
 	if (nodeIt != _nodeMap.end())
 	{
@@ -87,12 +109,13 @@ void PeerNode::DeleteNode(std::string base58Addr)
 	}
 	else
 	{
-		DEBUGLOG("Not found base58 {} in _nodeMap", base58Addr);
+		DEBUGLOG("Not found  {} in _nodeMap", Addr);
 	}
 }
 
 void PeerNode::CloseFd(int fd)
 {
+	DEBUGLOG("DeleteNode ip:{}", IpPort::IpSz(IpPort::GetPeerNip(fd)));
 	if(fd <= 0)
 	{
 		return;
@@ -109,6 +132,7 @@ void PeerNode::CloseFd(int fd)
 
 void PeerNode::DeleteByFd(int fd)
 {
+	DEBUGLOG("DeleteNode ip:{}", IpPort::IpSz(IpPort::GetPeerNip(fd)));
 	std::unique_lock<std::shared_mutex> lck(_mutexForNodes);
 	auto nodeIt = _nodeMap.begin();
 	for(; nodeIt != _nodeMap.end(); ++nodeIt)
@@ -170,10 +194,9 @@ void PeerNode::Print(const Node & node)
 	std::cout << "localPort: " << node.listenPort << std::endl;
 	std::cout << "connKind: " << node.connKind << std::endl;
 	std::cout << "fd: " << node.fd << std::endl;
-	std::cout << "heartProbes: " << node.heartProbes << std::endl;
-	std::cout << "base58Address: " << node.base58Address << std::endl;
+	std::cout << "pulse: " << node.pulse << std::endl;
+	std::cout << "address: " << node.address << std::endl;
 	std::cout << "chainHeight: " << node.height << std::endl;
-	std::cout << "publicNodeId: " << node.publicBase58Addr << std::endl;
 
 	std::cout << "---------------------------------- end --------------------------------------------------------------------------" << std::endl;
 }
@@ -192,6 +215,8 @@ std::string PeerNode::NodelistInfo(std::vector<Node> & nodeList)
 	return oss.str();
 }
 
+
+
 bool PeerNode::FindNodeByFd(int fd, Node &node)
 {
 	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
@@ -206,12 +231,28 @@ bool PeerNode::FindNodeByFd(int fd, Node &node)
 	return false;
 }
 
+bool PeerNode::PeerNodeVerifyNodeId(const int fd, const std::string &peerId)
+{
+	Node node;
+    if(!MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(fd, node))
+    {
+        ERRORLOG("Invalid message peerNode_id:{}, node.address:{}", peerId, node.address);
+        return false;
+    }
+    if(peerId != node.address)
+    {
+        ERRORLOG("Invalid message peerNode_id:{}, node.address:{}", peerId, node.address);
+        return false;
+    }
+	return true;
+}
+
 // find node
-bool PeerNode::FindNode(std::string const &base58Addr, Node &x)
+bool PeerNode::FindNode(std::string const &Addr, Node &x)
 {
 	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
 
-	string strId = base58Addr;
+	std::string strId = Addr;
 	auto it = _nodeMap.find(strId);
 	if (it != _nodeMap.end())
 	{
@@ -221,10 +262,10 @@ bool PeerNode::FindNode(std::string const &base58Addr, Node &x)
 	return false;
 }
 
-vector<Node> PeerNode::GetNodelist(NodeType type, bool mustAlive)
+std::vector<Node> PeerNode::GetNodelist(NodeType type, bool mustAlive)
 {
 	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
-	vector<Node> rst;
+	std::vector<Node> rst;
 	auto cb = _nodeMap.cbegin(), ce = _nodeMap.cend();
 	for (; cb != ce; ++cb)
 	{
@@ -243,37 +284,6 @@ vector<Node> PeerNode::GetNodelist(NodeType type, bool mustAlive)
 	}
 	return rst;
 }
-std::vector<Node> PeerNode::GetNodelistByHeartBeat(NodeType type, bool mustAlive)
-{
-	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
-	vector<Node> rst;
-	auto cb = _nodeMap.cbegin(), ce = _nodeMap.cend();
-	uint32_t continueNum = 0;
-	for (; cb != ce; ++cb)
-	{
-		if(cb->second.heartProbes < HEART_PROBES)
-		{
-			++continueNum;
-			continue;
-		}
-
-		if(type == NODE_ALL || (type == NODE_PUBLIC))
-		{
-			if(mustAlive)
-			{
-				if(cb->second.IsConnected())
-				{
-					rst.push_back(cb->second);
-				}
-			}else{
-				rst.push_back(cb->second);
-			}
-		}
-	}
-	DEBUGLOG("GetNodelistByHeartBeat continueNum: {}", continueNum);
-	return rst;
-}
-
 void PeerNode::GetNodelist(std::map<std::string, bool>& nodeAddrs, NodeType type, bool mustAlive)
 {
 	std::shared_lock<std::shared_mutex> lck(_mutexForNodes);
@@ -303,7 +313,7 @@ uint64_t PeerNode::GetNodelistSize()
 }
 
 // Refresh threads
-extern atomic<int> g_nodelistRefreshTime;
+extern std::atomic<int> g_nodelistRefreshTime;
 bool PeerNode::NodelistRefreshThreadInit()
 {
 	_refreshThread = std::thread(std::bind(&PeerNode::NodelistRefreshThreadFun, this));
@@ -328,15 +338,7 @@ void PeerNode::NodelistSwitchThreadFun()
 		{
 			return;
 		}
-		// std::vector<Node> NodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
-		// if(NodeList.size() == 0)
-		// {
-		// 	PeerNode::NodelistRefreshThreadFun();
-		// }
-		// else
-		// {
-			MagicSingleton<UnregisterNode>::GetInstance()->StartSyncNode();
-		// }
+		MagicSingleton<UnregisterNode>::GetInstance()->StartSyncNode();
 	} while (true);
 }
 
@@ -405,33 +407,9 @@ int PeerNode::DisconnectNode(Node & node)
 	return 0;
 }
 
-int PeerNode::DeleteOldVersionNode()
-{
-	// std::vector<Node> nodeList = this->GetNodelist();
-	// for(auto& t : nodeList)
-	// {
-	// 	std::vector<std::string> vRecvVersion;
-	// 	StringUtil::SplitString(t.ver, "_", vRecvVersion);
-	// 	if (vRecvVersion.size() < 1 || vRecvVersion.size() > 3 )
-	// 	{
-	// 		ERRORLOG(" version error: -2");
-	// 		return -1;
-	// 	}
-	// 	if(vRecvVersion[1] < global::kLinuxCompatible)
-	// 	{
-	// 		int ret = this->DisconnectNode(t);
-	// 		if(ret)
-	// 		{	
-	// 			ERRORLOG("DisconnectNode error, error num:{}", ret);
-	// 			return ret;
-	// 		}
-	// 	}
-	// }
-	return 0;
-}
-
 int PeerNode::DisconnectNode(uint32_t ip, uint16_t port, int fd)
 {
+	DEBUGLOG("DeleteNode ip:{}", IpPort::IpSz(IpPort::GetPeerNip(fd)));
 	if (fd <= 0)
 	{
 		return -1;
@@ -450,7 +428,7 @@ int PeerNode::DisconnectNode(uint32_t ip, uint16_t port, int fd)
 const std::string PeerNode::GetSelfId()
 {
 	std::lock_guard<std::mutex> lck(_mutexForCurr);
-	return _currNode.base58Address;
+	return _currNode.address;
 }
 
 //Get pub
@@ -461,10 +439,10 @@ const std::string PeerNode::GetSelfPub()
 }
 
 // Set the ID
-void PeerNode::SetSelfId(const std::string &base58Addr)
+void PeerNode::SetSelfId(const std::string &Addr)
 {
 	std::lock_guard<std::mutex> lck(_mutexForCurr);
-	_currNode.base58Address = base58Addr;
+	_currNode.address = Addr;
 }
 
 // Set the node ID
@@ -533,7 +511,7 @@ void PeerNode::SetSelfHeight()
 		if (ret >= 0)
 		{
             SetSelfHeight(height);
-			net_com::SendNodeHeightChanged();
+			//net_com::SendNodeHeightChanged();
 		}
 	}
 	else
@@ -564,33 +542,33 @@ const Node PeerNode::GetSelfNode()
 }
 
 
-// Get the base58 address
-const std::string PeerNode::GetBase58Address()
+// Get the  address
+const std::string PeerNode::GetAddress()
 {
 	std::lock_guard<std::mutex> lck(_mutexForCurr);
-	return _currNode.base58Address;
+	return _currNode.address;
 }
 
-int PeerNode::UpdateBase58Address(const string &oldPub, const std::string & newPub)
+int PeerNode::UpdateAddress(const std::string &oldPub, const std::string & newPub)
 {
 	if (oldPub.size() == 0 || newPub.size() == 0)
 	{
 		return -1;
 	}
 	
-	std::string oldBase58Addr = GetBase58Addr(oldPub, Base58Ver::kBase58Ver_Normal);
-	std::string newBase58Addr = GetBase58Addr(newPub, Base58Ver::kBase58Ver_Normal);
+	std::string oldAddr = GenerateAddr(oldPub);
+	std::string newAddr = GenerateAddr(newPub);
 	
 	Node node;
-	if (!FindNode(oldBase58Addr, node))
+	if (!FindNode(oldAddr, node))
 	{
 		return -2;
 	}
 	
-	node.base58Address = newBase58Addr;
+	node.address = newAddr;
 	node.identity = newPub;
 
-	DeleteNode(oldBase58Addr);
+	DeleteNode(oldAddr);
 	if (!Add(node))
 	{
 		return -3;

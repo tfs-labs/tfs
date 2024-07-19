@@ -15,14 +15,7 @@
 #include <map>
 
 #include "./msg_queue.h"
-
-#include "../protobuf/src/google/protobuf/descriptor.h"
-#include "../utils/magic_singleton.h"
-
-typedef google::protobuf::Message Message;
-typedef google::protobuf::Descriptor Descriptor;
-typedef std::shared_ptr<Message> MessagePtr;
-typedef std::function<int(const MessagePtr &, const MsgData &)> ProtoCallBack;
+#include "../common/protobuf_define.h"
 
 class ProtobufDispatcher
 {
@@ -160,17 +153,6 @@ public:
      */
     template <typename T>
     void BlockUnregisterCallback();
-
-    /**
-     * @brief       
-     * 
-     */
-    void RetisterAll();
-
-    /**
-     * @brief 
-     * 
-     */
 
     /**
      * @brief       

@@ -9,7 +9,9 @@ class MagicSingleton
 {
 public:
 
-	// Gets the global singleton object
+	/**
+ 	 * @brief		Gets the global singleton object
+	*/
 	template<typename ...Args>
 	static std::shared_ptr<T> GetInstance(Args&&... args) 
     {
@@ -24,7 +26,9 @@ public:
 		return _pSington;
 	}
 
-	//Active destruction of singleton objects (generally not required unless specifically required)
+	/**
+ 	 * @brief		Active destruction of singleton objects (generally not required unless specifically required)
+	*/
 	static void DesInstance() 
     {
 		if (_pSington) 

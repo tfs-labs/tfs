@@ -10,11 +10,35 @@ typedef struct _RIPEMD160_CTX {
     uint32_t state[5];    /*!< intermediate digest state  */
     uint8_t buffer[64];   /*!< data block being processed */
 } RIPEMD160_CTX;
-
+/**
+ * @brief
+ * 
+ * @param       ctx:
+*/
 void ripemd160_Init(RIPEMD160_CTX *ctx);
+/**
+ * @brief
+ * 
+ * @param       ctx:
+ * @param       input:
+ * @param       ilen:
+*/
 void ripemd160_Update(RIPEMD160_CTX *ctx, const void *input, uint32_t ilen);
+/**
+ * @brief
+ * 
+ * @param       output:
+ * @param       ctx:
+*/
 void ripemd160_Final(uint8_t output[RIPEMD160_DIGEST_LENGTH],
 		     RIPEMD160_CTX *ctx);
+/**
+ * @brief
+ * 
+ * @param       msg:
+ * @param       msg_len:
+ * @param       hash:
+*/
 void ripemd160(const void *msg,
 	       uint32_t msg_len,
 	       uint8_t hash[RIPEMD160_DIGEST_LENGTH]);

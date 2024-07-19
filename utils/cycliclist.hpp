@@ -36,15 +36,33 @@ public:
 	using difference_type = ptrdiff_t;
 
 	ListIter(pointer p = nullptr) : Iter(p) {}
-
+	/**
+	 * @brief
+	 * 
+	 * @param       rhs:
+	 * @return      true
+	 * @return      false
+	*/
 	bool operator==(const ListIter& rhs) const noexcept
 	{
 		return Iter == rhs.Iter;
 	}
+	/**
+	 * @brief
+	 * 
+	 * @param       rhs:
+	 * @return      true
+	 * @return      false
+	*/
 	bool operator!=(const ListIter& rhs) const noexcept
 	{
 		return Iter != rhs.Iter;
 	}
+	/**
+	 * @brief
+	 * 
+	 * @return      ListIter
+	*/
 	ListIter& operator++(int)
 	{
         if(Iter==nullptr){
@@ -53,6 +71,11 @@ public:
 		Iter = Iter->next();
 		return *this;
 	}
+	/**
+	 * @brief
+	 * 
+	 * @return      ListIter
+	*/
 	ListIter& operator--(int) {
         if(Iter==nullptr){
             return *this;
@@ -60,6 +83,12 @@ public:
 		Iter = Iter->prev();
 		return *this;
 	}
+	/**
+	 * @brief
+	 * 
+	 * @param		value
+	 * @return      ListIter
+	*/
 	ListIter operator+(int value) {
 
 		pointer newPointer = Iter;
@@ -81,6 +110,12 @@ public:
 		}
 		return ListIter<T>(newPointer);
 	}
+	/**
+	 * @brief
+	 * 
+	 * @param		value
+	 * @return      ListIter
+	*/
 	ListIter operator-(int value) {
 		pointer newPointer = Iter;
         if(Iter==nullptr){
@@ -102,20 +137,28 @@ public:
 		}
 		return ListIter<T>(newPointer);
 	}
-	/*ListIter& operator++(int)
-	{
-		value_type tmp = *this;
-		++&* this;
-		return tmp;
-	}*/
-
+	/**
+	 * @brief
+	 * 
+	 * @return      T&
+	*/
 	reference operator*()
 	{
 		return *Iter;
 	}
+	/**
+	 * @brief
+	 * 
+	 * @return      T*
+	*/
 	pointer getPtr() {
 		return Iter;
 	}
+	/**
+	 * @brief
+	 * 
+	 * @return      T*
+	*/
 	pointer operator->()
 	{
 		return Iter;
@@ -159,30 +202,56 @@ public:
 		head = list.head;
 		last = list.last;
 	}
-
-	iterator next(iterator ite) {
-		return ite->next();
+	/**
+	 * @brief
+	 * 
+	 * @param		iter:
+	 * @return      ListIter<Node<T>>
+	*/
+	iterator next(iterator iter) {
+		return iter->next();
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @return      ListIter<Node<T>>
+	*/
 	iterator begin() {
 		return iterator(head);
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @return      ListIter<Node<T>>
+	*/
 	iterator end() {
 		return iterator(last);
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @return      int
+	*/
 	int size() {
 		return m_size;
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @return      true
+	 * @return      false
+	*/
 	bool isEmpty() {
 		if (m_size == 0) {
 			return true;
 		}
 		return false;
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @param      value
+	*/
 	void push_front(const T& value) {
 		if (head == nullptr) {
 
@@ -204,7 +273,11 @@ public:
 		}
 		m_size++;
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @param      value
+	*/
 	void push_back(const T& value) {
 		if (head == nullptr) {
 
@@ -227,13 +300,23 @@ public:
 		}
 		m_size++;
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @param       index:
+	 * @return		T&
+	*/
 	T& operator[](int index) {
 		auto ite = begin();
 		ite =ite+index;
 		return ite->data;
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @param       lamda:
+	 * @return		std::vector<iterator>
+	*/
 	std::vector<iterator> filter(std::function<bool(iterator)> lamda) {
 		auto ite = this->begin();
 		std::vector<iterator> res;
@@ -247,20 +330,25 @@ public:
 		}
 		return res;
 	}
-
-	iterator remove(iterator ite) {
+	/**
+	 * @brief
+	 * 
+	 * @param       lamda:
+	 * @return		iterator
+	*/
+	iterator remove(iterator iter) {
 
 		if (head == nullptr) {
 			return iterator(nullptr);
 		}
 
-		Node<T>* tempNode = ite.getPtr();
+		Node<T>* tempNode = iter.getPtr();
 		Node<T>* next_node = tempNode->next_;
 
-		if (ite.getPtr() == head) {
+		if (iter.getPtr() == head) {
 			head = next_node;
 		}
-		if (ite.getPtr() == last) {
+		if (iter.getPtr() == last) {
 			last = tempNode->pre;
 		}
 
@@ -273,7 +361,12 @@ public:
 		}
 		return iterator(next_node);
 	}
-
+	/**
+	 * @brief
+	 * 
+	 * @param       lamda:
+	 * @return		iterator
+	*/
 	iterator remove(std::function<bool(iterator)> lamda) {
 
 		auto ite = this->begin();
@@ -294,7 +387,9 @@ public:
 		return iterator(nullptr);
 	}
 
-
+	/**
+	 * @brief
+	*/
 	void clear() {
 		if(head == nullptr)
 		{
@@ -315,4 +410,4 @@ private:
 };
 
 
-#endif // !_CYCLICLIST_HPP_
+#endif

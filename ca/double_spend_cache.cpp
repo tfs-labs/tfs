@@ -1,88 +1,90 @@
-#include"double_spend_cache.h"
+#include "ca/double_spend_cache.h"
 
-int DoubleSpendCache::AddFromAddr(const std::vector<std::string> &addrUtxo)
+int DoubleSpendCache::AddFromAddr(const std::pair<std::string,DoubleSpendCache::doubleSpendsuc> &usings)
 {
     std::unique_lock<std::mutex> lck(_doubleSpendMutex);
-	const int64_t kTenSecond = (int64_t)1000000 * 10;
-	std::string underline = "_";
-	uint64_t time = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	for(auto & j : addrUtxo)
+	auto it =  _pending.find(usings.first);
+	if(it != _pending.end())
 	{
-		std::vector<std::string> usingUtxo;
-		if(j.find(underline) != string::npos)
+
+		std::vector<std::string> usingsUtxo(usings.second.utxoVec.begin(), usings.second.utxoVec.end());
+		std::vector<std::string> pendingsUtxo(it->second.utxoVec.begin(), it->second.utxoVec.end());
+		std::sort(usingsUtxo.begin(),usingsUtxo.end());
+		std::sort(pendingsUtxo.begin(),pendingsUtxo.end());
+
+		std::vector<std::string> vIntersection;
+		std::set_intersection(usingsUtxo.begin(), usingsUtxo.end(), pendingsUtxo.begin(), pendingsUtxo.end(), std::back_inserter(vIntersection));
+
+		for(auto & diff : vIntersection)
 		{
-			StringUtil::SplitString(j, "_", usingUtxo);
+			ERRORLOG("utxo:{} is using!",diff);
+			std::cout << "utxo:" << diff << "is using!\n";
+			return -1;
 		}
-		std::string fromaddr = usingUtxo[0];
-		for(auto & item : _pendingAddrs)
-		{
-			std::vector<std::string> pendingUtxo;
-			auto it = std::find(item.first.begin(),item.first.end(),fromaddr);
-			if(it != item.first.end())//Description: The same address was found
-			{
-				if(it->find(underline) != string::npos)
-				{
-					StringUtil::SplitString(*it, "_", pendingUtxo);
-				}
 
-				
-				std::sort(usingUtxo.begin(), usingUtxo.end());
-				std::sort(pendingUtxo.begin(), pendingUtxo.end());
-
-				std::vector<std::string> vIntersection;
-				std::set_intersection(usingUtxo.begin(), usingUtxo.end(), pendingUtxo.begin(), pendingUtxo.end(), std::back_inserter(vIntersection));
-			
-				if(item.second + kTenSecond > time && vIntersection.size() >= 2)
-				{
-					for(auto & diff : vIntersection)
-					{
-					
-						if(diff != fromaddr)
-						{
-							ERRORLOG("utxo:{} is using!");
-							std::cout << "utxo:" << diff <<"is using!";
-							return -1;
-						
-						}
-					}
-				}
-
-			}
-		}
+	}else{
+		_pending.insert(usings);
 	}
-	
-	_pendingAddrs.insert(std::make_pair(addrUtxo,time));
 
 	return 0;
+}
+
+
+void DoubleSpendCache::Remove(const uint64_t& txtimeKey)
+{
+
+	for(auto iter = _pending.begin(); iter != _pending.end();)
+	{
+		if (iter->second.time == txtimeKey)
+		{
+			iter = _pending.erase(iter);
+		}
+		else
+		{
+			iter++;
+		}
+	}  
+	
 }
 
 void DoubleSpendCache::CheckLoop()
 {
 	std::unique_lock<std::mutex> lck(_doubleSpendMutex);
 	std::vector<uint64_t> toRemove;
-	for(auto & item : _pendingAddrs)
+	for(auto & item : _pending)
 	{
-	    const int64_t kTenSecond = (int64_t)1000000 * 10;
+	    const int64_t kTenSecond = (int64_t)1000000 * 30;
 		uint64_t time = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-		if(item.second + kTenSecond < time)
+		if(item.second.time + kTenSecond < time)
 		{
-			toRemove.push_back(item.second);
+			toRemove.push_back(item.second.time);
 		}
 	}
 
-	for(auto & timeKey: toRemove)
+	for(auto & txtimeKey: toRemove)
 	{
-		for(auto iter = _pendingAddrs.begin(); iter != _pendingAddrs.end();)
-		{
-			if (iter->second == timeKey)
-			{
-				iter = _pendingAddrs.erase(iter);
-				DEBUGLOG("DoubleSpendCache::Remove ");
-			}
-			else
-			{
-				iter++;
-			}
-		}  
+		Remove(txtimeKey);
+	}
+}
+
+
+
+void DoubleSpendCache::Detection(const CBlock & block)
+{
+	std::unique_lock<std::mutex> lck(_doubleSpendMutex);
+	std::vector<uint64_t> toRemove;
+	for(auto & tx : block.txs())
+	{	
+		auto it = _pending.find(tx.utxo().owner(0));
+		if(it != _pending.end() && tx.time() == it->second.time)
+		{	
+			toRemove.push_back(it->second.time);
+			DEBUGLOG("Remove pending txhash : {}",tx.hash());
+		}
+	}
+
+	for(auto & txtimeKey: toRemove)
+	{
+		Remove(txtimeKey);
 	}
 }

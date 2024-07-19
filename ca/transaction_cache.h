@@ -19,10 +19,9 @@
 #include <utils/json.hpp>
 #include <shared_mutex>
 
-#include "../proto/transaction.pb.h"
-#include "../proto/ca_protomsg.pb.h"
-#include "../proto/block.pb.h"
-#include "transaction_entity_V33_1.h"
+#include "proto/transaction.pb.h"
+#include "proto/ca_protomsg.pb.h"
+#include "proto/block.pb.h"
 #include "utils/timer.hpp"
 #include "ca/transaction_entity.h"
 #include "net/msg_queue.h"
@@ -36,20 +35,21 @@
 class TransactionCache
 {
     private:
-        typedef std::list<TransactionEntity>::const_iterator txEntitiesIter;
         typedef std::map<uint64_t, std::list<TransactionEntity>>::iterator cacheIter;
 
     private:
-    //    friend std::string PrintCache(int where);
         // Transaction container
-        std::map<uint64_t ,std::list<CTransaction>> _transactionCache;
+        std::vector<TransactionEntity> _transactionCache;
+        std::list<CTransaction> buildTxs;
+        std::mutex _buildTxsMutex;
+
+        //std::map<uint64_t ,std::list<CTransaction>> _transactionCache;
         // The mutex of the transaction container
         std::mutex _transactionCacheMutex;
         // Contract Transaction container
         std::vector<TransactionEntity> _contractCache;
         // The mutex of the Contract transaction container
         std::mutex _contractCacheMutex;
-        std::mutex _contractPreHashMutex;
         // Condition variables are used to package blocks
         std::condition_variable _blockBuilder;
         std::condition_variable _contractPreBlockWaiter;
@@ -57,8 +57,6 @@ class TransactionCache
         CTimer _buildTimer;
         // Thread variables are used for packaging
         std::thread _transactionCacheBuildThread;
-        // Thread variables are used for packaging
-        std::thread _contractCacheBuildThread;
         // Packing interval
         static const int _kBuildInterval;
         // Transaction expiration interval
@@ -67,21 +65,31 @@ class TransactionCache
         static const int _kBuildThreshold;
         // cache of contract info
         std::map<std::string, std::pair<nlohmann::json, uint64_t>> _contractInfoCache;
-    // The mutex of _contractInfoCache
+        // The mutex of _contractInfoCache
         std::shared_mutex _contractInfoCacheMutex;
 
-        constexpr static int _precedingContractBlockLookupInterval = 10;
-        constexpr static int _precedingContractBlockLookupStartTime = 3 * 1000000;
-        constexpr static int _precedingContractBlockLookupEndtime = _precedingContractBlockLookupInterval * 1000000;
-        constexpr static int _contractBlockPackingTime = _precedingContractBlockLookupInterval * 1000000;
         std::string _preContractBlockHash;
-        std::map<std::string, std::pair<uint64_t, std::set<std::string> >> _dirtyContractMap;
+         std::map<std::string, std::pair<uint64_t, std::set<std::string> >> _dirtyContractMap;
         std::shared_mutex _dirtyContractMapMutex;
-
+        std::atomic<bool> _threadRun = true;
+    
         std::mutex _threadMutex;
     public:
         TransactionCache();
         ~TransactionCache() = default;
+
+        /**
+         * @brief
+         * @param       height:
+         * @return      void 
+         */
+        void setBlockCount(uint64_t height);
+
+        /**
+         * @brief
+         * @return      uint64_t 
+         */
+        uint64_t getBlockCount();
         /**
          * @brief       Add a cache
          * 
@@ -89,10 +97,10 @@ class TransactionCache
          * @param       sendTxMsg: 
          * @return      int 
          */
-        int AddCache(const CTransaction& transaction, const uint64_t& height, const std::vector<std::string> dirtyContract);
+        int AddCache(CTransaction& transaction, const std::shared_ptr<TxMsgReq>& msg);
 
         /**
-         * @brief       Start the packaging block building thread  // ca_ini CaInit call
+         * @brief       Start the packaging block building thread 
          * 
          * @return      true 
          * @return      false 
@@ -105,211 +113,128 @@ class TransactionCache
          */
         void Stop();
 
-        /**
-         * @brief       Check for conflicting (overloaded) block pool calls
-         * 
-         * @param       transaction: 
-         * @return      true 
-         * @return      false 
-         */
-//        bool CheckConflict(const CTransaction& transaction);
-
         void AddContractInfoCache(const std::string& transactionHash, const nlohmann::json& jTxInfo, const uint64_t& txtime);
+
+        /**
+         * @brief       Get the contract json information
+         * 
+         * @param       transaction:
+         * @param       jTxInfo:  
+         * @return      int 
+         */
+
         int GetContractInfoCache(const std::string& transactionHash, nlohmann::json& jTxInfo);
+        /**
+         * @brief       
 
+         * @return      string 
+         */
         std::string GetContractPrevBlockHash();
-
+        /**
+         * @brief
+         * @param       blockHash:       
+         */
         void ContractBlockNotify(const std::string& blockHash);
-        std::string _SeekContractPreHash();
-
-        std::string _SeekContractPreHashByNode(const std::vector<std::string> &sendNodeIds);
-
+        /**
+         * @brief
+         *
+         * @param       contractAddress
+         * @param       transactionHash
+         * @param       contractPreHashCache
+         * @return      string
+         */
         std::string GetAndUpdateContractPreHash(const std::string &contractAddress, const std::string &transactionHash,
-                                                std::map<std::string, std::string> &contractPreHashCache);
+                                   std::map<std::string, std::string> &contractPreHashCache);
+        /**
+         * @brief
+         *
+         * @param       transactionHash
+         * @param       dirtyContract
+         */
         void SetDirtyContractMap(const std::string& transactionHash, const std::set<std::string>& dirtyContract);
         bool GetDirtyContractMap(const std::string& transactionHash, std::set<std::string>& dirtyContract);
+ 
         void removeExpiredEntriesFromDirtyContractMap();
-        static bool HasContractPackingPermission(const std::string& addr, uint64_t transactionHeight, uint64_t time);
 
-        std::pair<int, std::string> _ExecuteContracts(const std::map<std::string, CTransaction>& dependentContractTxMap);
+        /**
+         * @brief
+         *
+         * @param       addr
+         * @param       transactionHeight
+         * @param       time
+         * @return      true
+         * @return      false
+         */
+        static bool HasContractPackingPermission(const std::string& addr, uint64_t transactionHeight, uint64_t time);
+        
+        std::pair<int, std::string> _ExecuteContracts(const std::map<std::string, CTransaction> &dependentContractTxMap,
+                                                      int64_t blockNumber);
 
         bool RemoveContractsCacheTransaction(const std::map<std::string, CTransaction>& contractTxs);
 
         bool RemoveContractInfoCacheTransaction(const std::map<std::string, CTransaction>& contractTxs);
 
-        void ProcessContract();
+        void ProcessContract(int64_t topTransactionHeight);
 
         int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, const MsgData &msgdata);
+
     private:
+
+        void _AddBuildTx(const CTransaction &transaction);
+        const std::list<CTransaction>& _GetBuildTxs();
+        void ClearBuildTxs();
+        
+        int GetBuildBlockHeight(std::vector<TransactionEntity>& txcache);
         /**
          * @brief       Threading functions
          */
         void _TransactionCacheProcessingFunc();
-//        void _ContractCacheProcessingFunc();
-
+        /**
+         * @brief
+         * @param       transaction
+         * @param       contractPreHashCache
+         * @param       contractDataCache
+         * @return      int
+         */
         int _AddContractInfoCache(const CTransaction &transaction,
-                                  std::map<std::string, std::string> &contractPreHashCache, ContractDataCache* contractDataCache);
-        static bool _HasContractPackingPermission(uint64_t transactionHeight, uint64_t time);
-
-        std::atomic<bool> _threadRun=true;
-
+                                  std::map<std::string, std::string> &contractPreHashCache,
+                                  ContractDataCache *contractDataCache, int64_t blockNumber);
+        /**
+         * @brief
+         *
+         * @param       transactionHash
+         * @param       calledContract
+         * @return      true
+         * @return      false
+         */
+        bool _VerifyDirtyContract(const std::string &transactionHash, const std::vector<std::string> &calledContract);
         int _GetContractTxPreHash(const std::list<CTransaction>& txs, std::list<std::pair<std::string, std::string>>& contractTxPreHashList);
 
-        bool _VerifyDirtyContract(const std::string &transactionHash, const vector<string> &calledContract);
-
+    	int DealContractTransaction(const std::vector<TxMsgReq> &txMsgReqs);
 };
-
+/**
+ * @brief
+ *
+ * @param       num
+ * @param       selfNodeHeight
+ * @param       pledgeAddr
+ * @param       sendNodeIds
+ * @return      int
+*/
 static int GetContractPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,
                             std::vector<std::string> &sendNodeIds);
-void SendSeekContractPreHashReq(const std::string &nodeId, const std::string &msgId);
-void SendSeekContractPreHashAck(SeekContractPreHashAck& ack,const std::string &nodeId, const std::string &msgId);
+/**
+ * @brief
+ *
+ * @param       msg
+ * @param       msgData
+ * @return      int
+*/  
+int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, const MsgData &msgData);
 
-int HandleSeekContractPreHashReq(const std::shared_ptr<SeekContractPreHashReq> &msg, const MsgData &msgdata);
-int HandleSeekContractPreHashAck(const std::shared_ptr<SeekContractPreHashAck> &msg, const MsgData &msgdata);
-
-int HandleContractPackagerMsg(const std::shared_ptr<ContractPackagerMsg> &msg, const MsgData &msgdata);
-
-
-
-
-
-class TransactionCache_V33_1
-{
-    private:
-        typedef std::list<TransactionEntity_V33_1>::const_iterator txEntitiesIter;
-        typedef std::map<uint64_t, std::list<TransactionEntity_V33_1>>::iterator cacheIter;
-
-    private:
-    //    friend std::string PrintCache(int where);
-        // Transaction container
-        std::map<uint64_t ,std::list<TransactionEntity_V33_1>> _cache;
-        // The mutex of the transaction container
-        std::mutex _cacheMutex;
-        // Condition variables are used to package blocks
-        std::condition_variable _blockBuilder;
-        // Timers are used for packing at specific time intervals
-        CTimer _buildTimer;
-        // Thread variables are used for packaging
-        std::thread _buildThread;
-        // Packing interval
-        static const int _kBuildInterval;
-        // Transaction expiration interval
-        static const time_t _kTxExpireInterval;
-        // Packaging threshold
-        static const int _kBuildThreshold;
-
-    public:
-        TransactionCache_V33_1();
-        ~TransactionCache_V33_1() = default;
-        /**
-         * @brief       Add a cache
-         * 
-         * @param       transaction: 
-         * @param       sendTxMsg: 
-         * @return      int 
-         */
-        int AddCache(const CTransaction& transaction, const TxMsgReq& sendTxMsg);
-
-        /**
-         * @brief       Start the packaging block building thread  // ca_ini CaInit call
-         * 
-         * @return      true 
-         * @return      false 
-         */
-        bool Process();
-
-        /**
-         * @brief       
-         * 
-         */
-        void Stop();
-
-        /**
-         * @brief       Check for conflicting (overloaded) block pool calls
-         * 
-         * @param       transaction: 
-         * @return      true 
-         * @return      false 
-         */
-        bool CheckConflict(const CTransaction& transaction);
-
-        /**
-         * @brief       Get the transaction cache
-         * 
-         * @param       cache: 
-         */
-        void GetCache(std::map<uint64_t, std::list<TransactionEntity_V33_1>>& cache); 
-
-        /**
-         * @brief       Query the cache for the existence of a transaction
-         * 
-         * @param       hash: 
-         * @return      true 
-         * @return      false 
-         */
-        bool ExistInCache(const std::string& hash);
-
-        /**
-         * @brief       Delete the pending transaction cache
-         * 
-         * @param       txHash: 
-         * @return      true 
-         * @return      false 
-         */
-        bool RemovePendingTransaction(const std::string& txHash);
-
-        /**
-         * @brief       Delete the double spend transaction of cache
-         * 
-         * @param       txHash: 
-         * @return      true 
-         * @return      false 
-         */
-        bool RemoveCacheTransaction(const std::string& txHash);
-
-    private:
-        /**
-         * @brief       Threading functions
-         */
-        void _ProcessingFunc();
-        /**
-         * @brief       Get the cache that needs to be blocked
-         * 
-         * @param       txs: 
-         * @return      std::list<txEntitiesIter> 
-         */
-        std::list<txEntitiesIter>  _GetNeededCache(const std::list<TransactionEntity_V33_1>& txs);
-
-        /**
-         * @brief       Delete the block building cache and expired cache
-                        Return value: Whether there are still transactions at that height
-         * 
-         * @param       txEntitiesIter: 
-         * @param       buildSuccess: 
-         * @param       txEntities: 
-         * @return      true 
-         * @return      false 
-         */
-        bool _RemoveProcessedTransaction(const  std::list<txEntitiesIter>& txEntitiesIter, const bool buildSuccess, std::list<TransactionEntity_V33_1>& txEntities);
-
-
-        std::atomic<bool> _threadRun=true;
-
-        /**
-         * @brief       Clean up functions
-         * 
-         * @param       txEntitiesIters: 
-         * @param       buildSuccess: 
-         * @param       emptyHeightCache: 
-         * @param       cacheEntity: 
-         */
-        void _TearDown(const  std::list<txEntitiesIter>& txEntitiesIters, const bool buildSuccess, std::vector<cacheIter>& emptyHeightCache , cacheIter cacheEntity);
-};
-                           
 
 int _HandleSeekContractPreHashReq(const std::shared_ptr<newSeekContractPreHashReq> &msg, const MsgData &msgdata);
 int _HandleSeekContractPreHashAck(const std::shared_ptr<newSeekContractPreHashAck> &msg, const MsgData &msgdata);
-
 int _newSeekContractPreHash(const std::list<std::pair<std::string, std::string>> &contractTxPreHashList);
 
 #endif

@@ -54,9 +54,9 @@ extern EchoAckDefaultTypeInternal _EchoAck_default_instance_;
 class EchoReq;
 struct EchoReqDefaultTypeInternal;
 extern EchoReqDefaultTypeInternal _EchoReq_default_instance_;
-class NodeBase58AddrChangedReq;
-struct NodeBase58AddrChangedReqDefaultTypeInternal;
-extern NodeBase58AddrChangedReqDefaultTypeInternal _NodeBase58AddrChangedReq_default_instance_;
+class NodeAddrChangedReq;
+struct NodeAddrChangedReqDefaultTypeInternal;
+extern NodeAddrChangedReqDefaultTypeInternal _NodeAddrChangedReq_default_instance_;
 class NodeHeightChangedReq;
 struct NodeHeightChangedReqDefaultTypeInternal;
 extern NodeHeightChangedReqDefaultTypeInternal _NodeHeightChangedReq_default_instance_;
@@ -97,7 +97,7 @@ PROTOBUF_NAMESPACE_OPEN
 template<> ::BroadcastMsgReq* Arena::CreateMaybeMessage<::BroadcastMsgReq>(Arena*);
 template<> ::EchoAck* Arena::CreateMaybeMessage<::EchoAck>(Arena*);
 template<> ::EchoReq* Arena::CreateMaybeMessage<::EchoReq>(Arena*);
-template<> ::NodeBase58AddrChangedReq* Arena::CreateMaybeMessage<::NodeBase58AddrChangedReq>(Arena*);
+template<> ::NodeAddrChangedReq* Arena::CreateMaybeMessage<::NodeAddrChangedReq>(Arena*);
 template<> ::NodeHeightChangedReq* Arena::CreateMaybeMessage<::NodeHeightChangedReq>(Arena*);
 template<> ::NodeInfo* Arena::CreateMaybeMessage<::NodeInfo>(Arena*);
 template<> ::NodeSign* Arena::CreateMaybeMessage<::NodeSign>(Arena*);
@@ -402,8 +402,8 @@ class NodeInfo final :
     kPubFieldNumber = 1,
     kSignFieldNumber = 2,
     kIdentityFieldNumber = 3,
-    kBase58AddrFieldNumber = 4,
-    kPublicBase58AddrFieldNumber = 5,
+    kAddrFieldNumber = 4,
+    kPublicAddrFieldNumber = 5,
     kNameFieldNumber = 6,
     kLogoFieldNumber = 7,
     kVersionFieldNumber = 14,
@@ -456,32 +456,32 @@ class NodeInfo final :
   std::string* _internal_mutable_identity();
   public:
 
-  // string base58addr = 4;
-  void clear_base58addr();
-  const std::string& base58addr() const;
+  // string addr = 4;
+  void clear_addr();
+  const std::string& addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_base58addr(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_base58addr();
-  PROTOBUF_NODISCARD std::string* release_base58addr();
-  void set_allocated_base58addr(std::string* base58addr);
+  void set_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_addr();
+  PROTOBUF_NODISCARD std::string* release_addr();
+  void set_allocated_addr(std::string* addr);
   private:
-  const std::string& _internal_base58addr() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_base58addr(const std::string& value);
-  std::string* _internal_mutable_base58addr();
+  const std::string& _internal_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_addr(const std::string& value);
+  std::string* _internal_mutable_addr();
   public:
 
-  // string public_base58addr = 5;
-  void clear_public_base58addr();
-  const std::string& public_base58addr() const;
+  // string public_addr = 5;
+  void clear_public_addr();
+  const std::string& public_addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_public_base58addr(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_public_base58addr();
-  PROTOBUF_NODISCARD std::string* release_public_base58addr();
-  void set_allocated_public_base58addr(std::string* public_base58addr);
+  void set_public_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_public_addr();
+  PROTOBUF_NODISCARD std::string* release_public_addr();
+  void set_allocated_public_addr(std::string* public_addr);
   private:
-  const std::string& _internal_public_base58addr() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_public_base58addr(const std::string& value);
-  std::string* _internal_mutable_public_base58addr();
+  const std::string& _internal_public_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_public_addr(const std::string& value);
+  std::string* _internal_mutable_public_addr();
   public:
 
   // string name = 6;
@@ -591,8 +591,8 @@ class NodeInfo final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pub_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr sign_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr identity_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr base58addr_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr public_base58addr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr addr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr public_addr_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr logo_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
@@ -2558,24 +2558,24 @@ class NodeSign final :
 };
 // -------------------------------------------------------------------
 
-class NodeBase58AddrChangedReq final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:NodeBase58AddrChangedReq) */ {
+class NodeAddrChangedReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:NodeAddrChangedReq) */ {
  public:
-  inline NodeBase58AddrChangedReq() : NodeBase58AddrChangedReq(nullptr) {}
-  ~NodeBase58AddrChangedReq() override;
-  explicit PROTOBUF_CONSTEXPR NodeBase58AddrChangedReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline NodeAddrChangedReq() : NodeAddrChangedReq(nullptr) {}
+  ~NodeAddrChangedReq() override;
+  explicit PROTOBUF_CONSTEXPR NodeAddrChangedReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  NodeBase58AddrChangedReq(const NodeBase58AddrChangedReq& from);
-  NodeBase58AddrChangedReq(NodeBase58AddrChangedReq&& from) noexcept
-    : NodeBase58AddrChangedReq() {
+  NodeAddrChangedReq(const NodeAddrChangedReq& from);
+  NodeAddrChangedReq(NodeAddrChangedReq&& from) noexcept
+    : NodeAddrChangedReq() {
     *this = ::std::move(from);
   }
 
-  inline NodeBase58AddrChangedReq& operator=(const NodeBase58AddrChangedReq& from) {
+  inline NodeAddrChangedReq& operator=(const NodeAddrChangedReq& from) {
     CopyFrom(from);
     return *this;
   }
-  inline NodeBase58AddrChangedReq& operator=(NodeBase58AddrChangedReq&& from) noexcept {
+  inline NodeAddrChangedReq& operator=(NodeAddrChangedReq&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -2598,20 +2598,20 @@ class NodeBase58AddrChangedReq final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const NodeBase58AddrChangedReq& default_instance() {
+  static const NodeAddrChangedReq& default_instance() {
     return *internal_default_instance();
   }
-  static inline const NodeBase58AddrChangedReq* internal_default_instance() {
-    return reinterpret_cast<const NodeBase58AddrChangedReq*>(
-               &_NodeBase58AddrChangedReq_default_instance_);
+  static inline const NodeAddrChangedReq* internal_default_instance() {
+    return reinterpret_cast<const NodeAddrChangedReq*>(
+               &_NodeAddrChangedReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     13;
 
-  friend void swap(NodeBase58AddrChangedReq& a, NodeBase58AddrChangedReq& b) {
+  friend void swap(NodeAddrChangedReq& a, NodeAddrChangedReq& b) {
     a.Swap(&b);
   }
-  inline void Swap(NodeBase58AddrChangedReq* other) {
+  inline void Swap(NodeAddrChangedReq* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -2624,7 +2624,7 @@ class NodeBase58AddrChangedReq final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(NodeBase58AddrChangedReq* other) {
+  void UnsafeArenaSwap(NodeAddrChangedReq* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -2632,14 +2632,14 @@ class NodeBase58AddrChangedReq final :
 
   // implements Message ----------------------------------------------
 
-  NodeBase58AddrChangedReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<NodeBase58AddrChangedReq>(arena);
+  NodeAddrChangedReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<NodeAddrChangedReq>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const NodeBase58AddrChangedReq& from);
+  void CopyFrom(const NodeAddrChangedReq& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const NodeBase58AddrChangedReq& from) {
-    NodeBase58AddrChangedReq::MergeImpl(*this, from);
+  void MergeFrom( const NodeAddrChangedReq& from) {
+    NodeAddrChangedReq::MergeImpl(*this, from);
   }
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
@@ -2657,15 +2657,15 @@ class NodeBase58AddrChangedReq final :
   void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(NodeBase58AddrChangedReq* other);
+  void InternalSwap(NodeAddrChangedReq* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "NodeBase58AddrChangedReq";
+    return "NodeAddrChangedReq";
   }
   protected:
-  explicit NodeBase58AddrChangedReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit NodeAddrChangedReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -2733,7 +2733,7 @@ class NodeBase58AddrChangedReq final :
       ::NodeSign* newsign);
   ::NodeSign* unsafe_arena_release_newsign();
 
-  // @@protoc_insertion_point(class_scope:NodeBase58AddrChangedReq)
+  // @@protoc_insertion_point(class_scope:NodeAddrChangedReq)
  private:
   class _Internal;
 
@@ -3376,104 +3376,104 @@ inline void NodeInfo::set_allocated_identity(std::string* identity) {
   // @@protoc_insertion_point(field_set_allocated:NodeInfo.identity)
 }
 
-// string base58addr = 4;
-inline void NodeInfo::clear_base58addr() {
-  _impl_.base58addr_.ClearToEmpty();
+// string addr = 4;
+inline void NodeInfo::clear_addr() {
+  _impl_.addr_.ClearToEmpty();
 }
-inline const std::string& NodeInfo::base58addr() const {
-  // @@protoc_insertion_point(field_get:NodeInfo.base58addr)
-  return _internal_base58addr();
+inline const std::string& NodeInfo::addr() const {
+  // @@protoc_insertion_point(field_get:NodeInfo.addr)
+  return _internal_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void NodeInfo::set_base58addr(ArgT0&& arg0, ArgT... args) {
+void NodeInfo::set_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.base58addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:NodeInfo.base58addr)
+ _impl_.addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:NodeInfo.addr)
 }
-inline std::string* NodeInfo::mutable_base58addr() {
-  std::string* _s = _internal_mutable_base58addr();
-  // @@protoc_insertion_point(field_mutable:NodeInfo.base58addr)
+inline std::string* NodeInfo::mutable_addr() {
+  std::string* _s = _internal_mutable_addr();
+  // @@protoc_insertion_point(field_mutable:NodeInfo.addr)
   return _s;
 }
-inline const std::string& NodeInfo::_internal_base58addr() const {
-  return _impl_.base58addr_.Get();
+inline const std::string& NodeInfo::_internal_addr() const {
+  return _impl_.addr_.Get();
 }
-inline void NodeInfo::_internal_set_base58addr(const std::string& value) {
+inline void NodeInfo::_internal_set_addr(const std::string& value) {
   
-  _impl_.base58addr_.Set(value, GetArenaForAllocation());
+  _impl_.addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* NodeInfo::_internal_mutable_base58addr() {
+inline std::string* NodeInfo::_internal_mutable_addr() {
   
-  return _impl_.base58addr_.Mutable(GetArenaForAllocation());
+  return _impl_.addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* NodeInfo::release_base58addr() {
-  // @@protoc_insertion_point(field_release:NodeInfo.base58addr)
-  return _impl_.base58addr_.Release();
+inline std::string* NodeInfo::release_addr() {
+  // @@protoc_insertion_point(field_release:NodeInfo.addr)
+  return _impl_.addr_.Release();
 }
-inline void NodeInfo::set_allocated_base58addr(std::string* base58addr) {
-  if (base58addr != nullptr) {
+inline void NodeInfo::set_allocated_addr(std::string* addr) {
+  if (addr != nullptr) {
     
   } else {
     
   }
-  _impl_.base58addr_.SetAllocated(base58addr, GetArenaForAllocation());
+  _impl_.addr_.SetAllocated(addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.base58addr_.IsDefault()) {
-    _impl_.base58addr_.Set("", GetArenaForAllocation());
+  if (_impl_.addr_.IsDefault()) {
+    _impl_.addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:NodeInfo.base58addr)
+  // @@protoc_insertion_point(field_set_allocated:NodeInfo.addr)
 }
 
-// string public_base58addr = 5;
-inline void NodeInfo::clear_public_base58addr() {
-  _impl_.public_base58addr_.ClearToEmpty();
+// string public_addr = 5;
+inline void NodeInfo::clear_public_addr() {
+  _impl_.public_addr_.ClearToEmpty();
 }
-inline const std::string& NodeInfo::public_base58addr() const {
-  // @@protoc_insertion_point(field_get:NodeInfo.public_base58addr)
-  return _internal_public_base58addr();
+inline const std::string& NodeInfo::public_addr() const {
+  // @@protoc_insertion_point(field_get:NodeInfo.public_addr)
+  return _internal_public_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void NodeInfo::set_public_base58addr(ArgT0&& arg0, ArgT... args) {
+void NodeInfo::set_public_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.public_base58addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:NodeInfo.public_base58addr)
+ _impl_.public_addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:NodeInfo.public_addr)
 }
-inline std::string* NodeInfo::mutable_public_base58addr() {
-  std::string* _s = _internal_mutable_public_base58addr();
-  // @@protoc_insertion_point(field_mutable:NodeInfo.public_base58addr)
+inline std::string* NodeInfo::mutable_public_addr() {
+  std::string* _s = _internal_mutable_public_addr();
+  // @@protoc_insertion_point(field_mutable:NodeInfo.public_addr)
   return _s;
 }
-inline const std::string& NodeInfo::_internal_public_base58addr() const {
-  return _impl_.public_base58addr_.Get();
+inline const std::string& NodeInfo::_internal_public_addr() const {
+  return _impl_.public_addr_.Get();
 }
-inline void NodeInfo::_internal_set_public_base58addr(const std::string& value) {
+inline void NodeInfo::_internal_set_public_addr(const std::string& value) {
   
-  _impl_.public_base58addr_.Set(value, GetArenaForAllocation());
+  _impl_.public_addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* NodeInfo::_internal_mutable_public_base58addr() {
+inline std::string* NodeInfo::_internal_mutable_public_addr() {
   
-  return _impl_.public_base58addr_.Mutable(GetArenaForAllocation());
+  return _impl_.public_addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* NodeInfo::release_public_base58addr() {
-  // @@protoc_insertion_point(field_release:NodeInfo.public_base58addr)
-  return _impl_.public_base58addr_.Release();
+inline std::string* NodeInfo::release_public_addr() {
+  // @@protoc_insertion_point(field_release:NodeInfo.public_addr)
+  return _impl_.public_addr_.Release();
 }
-inline void NodeInfo::set_allocated_public_base58addr(std::string* public_base58addr) {
-  if (public_base58addr != nullptr) {
+inline void NodeInfo::set_allocated_public_addr(std::string* public_addr) {
+  if (public_addr != nullptr) {
     
   } else {
     
   }
-  _impl_.public_base58addr_.SetAllocated(public_base58addr, GetArenaForAllocation());
+  _impl_.public_addr_.SetAllocated(public_addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.public_base58addr_.IsDefault()) {
-    _impl_.public_base58addr_.Set("", GetArenaForAllocation());
+  if (_impl_.public_addr_.IsDefault()) {
+    _impl_.public_addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:NodeInfo.public_base58addr)
+  // @@protoc_insertion_point(field_set_allocated:NodeInfo.public_addr)
 }
 
 // string name = 6;
@@ -5142,44 +5142,44 @@ inline void NodeSign::set_allocated_pub(std::string* pub) {
 
 // -------------------------------------------------------------------
 
-// NodeBase58AddrChangedReq
+// NodeAddrChangedReq
 
 // string version = 1;
-inline void NodeBase58AddrChangedReq::clear_version() {
+inline void NodeAddrChangedReq::clear_version() {
   _impl_.version_.ClearToEmpty();
 }
-inline const std::string& NodeBase58AddrChangedReq::version() const {
-  // @@protoc_insertion_point(field_get:NodeBase58AddrChangedReq.version)
+inline const std::string& NodeAddrChangedReq::version() const {
+  // @@protoc_insertion_point(field_get:NodeAddrChangedReq.version)
   return _internal_version();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void NodeBase58AddrChangedReq::set_version(ArgT0&& arg0, ArgT... args) {
+void NodeAddrChangedReq::set_version(ArgT0&& arg0, ArgT... args) {
  
  _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:NodeBase58AddrChangedReq.version)
+  // @@protoc_insertion_point(field_set:NodeAddrChangedReq.version)
 }
-inline std::string* NodeBase58AddrChangedReq::mutable_version() {
+inline std::string* NodeAddrChangedReq::mutable_version() {
   std::string* _s = _internal_mutable_version();
-  // @@protoc_insertion_point(field_mutable:NodeBase58AddrChangedReq.version)
+  // @@protoc_insertion_point(field_mutable:NodeAddrChangedReq.version)
   return _s;
 }
-inline const std::string& NodeBase58AddrChangedReq::_internal_version() const {
+inline const std::string& NodeAddrChangedReq::_internal_version() const {
   return _impl_.version_.Get();
 }
-inline void NodeBase58AddrChangedReq::_internal_set_version(const std::string& value) {
+inline void NodeAddrChangedReq::_internal_set_version(const std::string& value) {
   
   _impl_.version_.Set(value, GetArenaForAllocation());
 }
-inline std::string* NodeBase58AddrChangedReq::_internal_mutable_version() {
+inline std::string* NodeAddrChangedReq::_internal_mutable_version() {
   
   return _impl_.version_.Mutable(GetArenaForAllocation());
 }
-inline std::string* NodeBase58AddrChangedReq::release_version() {
-  // @@protoc_insertion_point(field_release:NodeBase58AddrChangedReq.version)
+inline std::string* NodeAddrChangedReq::release_version() {
+  // @@protoc_insertion_point(field_release:NodeAddrChangedReq.version)
   return _impl_.version_.Release();
 }
-inline void NodeBase58AddrChangedReq::set_allocated_version(std::string* version) {
+inline void NodeAddrChangedReq::set_allocated_version(std::string* version) {
   if (version != nullptr) {
     
   } else {
@@ -5191,32 +5191,32 @@ inline void NodeBase58AddrChangedReq::set_allocated_version(std::string* version
     _impl_.version_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:NodeBase58AddrChangedReq.version)
+  // @@protoc_insertion_point(field_set_allocated:NodeAddrChangedReq.version)
 }
 
 // .NodeSign oldSign = 2;
-inline bool NodeBase58AddrChangedReq::_internal_has_oldsign() const {
+inline bool NodeAddrChangedReq::_internal_has_oldsign() const {
   return this != internal_default_instance() && _impl_.oldsign_ != nullptr;
 }
-inline bool NodeBase58AddrChangedReq::has_oldsign() const {
+inline bool NodeAddrChangedReq::has_oldsign() const {
   return _internal_has_oldsign();
 }
-inline void NodeBase58AddrChangedReq::clear_oldsign() {
+inline void NodeAddrChangedReq::clear_oldsign() {
   if (GetArenaForAllocation() == nullptr && _impl_.oldsign_ != nullptr) {
     delete _impl_.oldsign_;
   }
   _impl_.oldsign_ = nullptr;
 }
-inline const ::NodeSign& NodeBase58AddrChangedReq::_internal_oldsign() const {
+inline const ::NodeSign& NodeAddrChangedReq::_internal_oldsign() const {
   const ::NodeSign* p = _impl_.oldsign_;
   return p != nullptr ? *p : reinterpret_cast<const ::NodeSign&>(
       ::_NodeSign_default_instance_);
 }
-inline const ::NodeSign& NodeBase58AddrChangedReq::oldsign() const {
-  // @@protoc_insertion_point(field_get:NodeBase58AddrChangedReq.oldSign)
+inline const ::NodeSign& NodeAddrChangedReq::oldsign() const {
+  // @@protoc_insertion_point(field_get:NodeAddrChangedReq.oldSign)
   return _internal_oldsign();
 }
-inline void NodeBase58AddrChangedReq::unsafe_arena_set_allocated_oldsign(
+inline void NodeAddrChangedReq::unsafe_arena_set_allocated_oldsign(
     ::NodeSign* oldsign) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.oldsign_);
@@ -5227,9 +5227,9 @@ inline void NodeBase58AddrChangedReq::unsafe_arena_set_allocated_oldsign(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:NodeBase58AddrChangedReq.oldSign)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:NodeAddrChangedReq.oldSign)
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::release_oldsign() {
+inline ::NodeSign* NodeAddrChangedReq::release_oldsign() {
   
   ::NodeSign* temp = _impl_.oldsign_;
   _impl_.oldsign_ = nullptr;
@@ -5244,14 +5244,14 @@ inline ::NodeSign* NodeBase58AddrChangedReq::release_oldsign() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::unsafe_arena_release_oldsign() {
-  // @@protoc_insertion_point(field_release:NodeBase58AddrChangedReq.oldSign)
+inline ::NodeSign* NodeAddrChangedReq::unsafe_arena_release_oldsign() {
+  // @@protoc_insertion_point(field_release:NodeAddrChangedReq.oldSign)
   
   ::NodeSign* temp = _impl_.oldsign_;
   _impl_.oldsign_ = nullptr;
   return temp;
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::_internal_mutable_oldsign() {
+inline ::NodeSign* NodeAddrChangedReq::_internal_mutable_oldsign() {
   
   if (_impl_.oldsign_ == nullptr) {
     auto* p = CreateMaybeMessage<::NodeSign>(GetArenaForAllocation());
@@ -5259,12 +5259,12 @@ inline ::NodeSign* NodeBase58AddrChangedReq::_internal_mutable_oldsign() {
   }
   return _impl_.oldsign_;
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::mutable_oldsign() {
+inline ::NodeSign* NodeAddrChangedReq::mutable_oldsign() {
   ::NodeSign* _msg = _internal_mutable_oldsign();
-  // @@protoc_insertion_point(field_mutable:NodeBase58AddrChangedReq.oldSign)
+  // @@protoc_insertion_point(field_mutable:NodeAddrChangedReq.oldSign)
   return _msg;
 }
-inline void NodeBase58AddrChangedReq::set_allocated_oldsign(::NodeSign* oldsign) {
+inline void NodeAddrChangedReq::set_allocated_oldsign(::NodeSign* oldsign) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete _impl_.oldsign_;
@@ -5281,32 +5281,32 @@ inline void NodeBase58AddrChangedReq::set_allocated_oldsign(::NodeSign* oldsign)
     
   }
   _impl_.oldsign_ = oldsign;
-  // @@protoc_insertion_point(field_set_allocated:NodeBase58AddrChangedReq.oldSign)
+  // @@protoc_insertion_point(field_set_allocated:NodeAddrChangedReq.oldSign)
 }
 
 // .NodeSign newSign = 3;
-inline bool NodeBase58AddrChangedReq::_internal_has_newsign() const {
+inline bool NodeAddrChangedReq::_internal_has_newsign() const {
   return this != internal_default_instance() && _impl_.newsign_ != nullptr;
 }
-inline bool NodeBase58AddrChangedReq::has_newsign() const {
+inline bool NodeAddrChangedReq::has_newsign() const {
   return _internal_has_newsign();
 }
-inline void NodeBase58AddrChangedReq::clear_newsign() {
+inline void NodeAddrChangedReq::clear_newsign() {
   if (GetArenaForAllocation() == nullptr && _impl_.newsign_ != nullptr) {
     delete _impl_.newsign_;
   }
   _impl_.newsign_ = nullptr;
 }
-inline const ::NodeSign& NodeBase58AddrChangedReq::_internal_newsign() const {
+inline const ::NodeSign& NodeAddrChangedReq::_internal_newsign() const {
   const ::NodeSign* p = _impl_.newsign_;
   return p != nullptr ? *p : reinterpret_cast<const ::NodeSign&>(
       ::_NodeSign_default_instance_);
 }
-inline const ::NodeSign& NodeBase58AddrChangedReq::newsign() const {
-  // @@protoc_insertion_point(field_get:NodeBase58AddrChangedReq.newSign)
+inline const ::NodeSign& NodeAddrChangedReq::newsign() const {
+  // @@protoc_insertion_point(field_get:NodeAddrChangedReq.newSign)
   return _internal_newsign();
 }
-inline void NodeBase58AddrChangedReq::unsafe_arena_set_allocated_newsign(
+inline void NodeAddrChangedReq::unsafe_arena_set_allocated_newsign(
     ::NodeSign* newsign) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.newsign_);
@@ -5317,9 +5317,9 @@ inline void NodeBase58AddrChangedReq::unsafe_arena_set_allocated_newsign(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:NodeBase58AddrChangedReq.newSign)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:NodeAddrChangedReq.newSign)
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::release_newsign() {
+inline ::NodeSign* NodeAddrChangedReq::release_newsign() {
   
   ::NodeSign* temp = _impl_.newsign_;
   _impl_.newsign_ = nullptr;
@@ -5334,14 +5334,14 @@ inline ::NodeSign* NodeBase58AddrChangedReq::release_newsign() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::unsafe_arena_release_newsign() {
-  // @@protoc_insertion_point(field_release:NodeBase58AddrChangedReq.newSign)
+inline ::NodeSign* NodeAddrChangedReq::unsafe_arena_release_newsign() {
+  // @@protoc_insertion_point(field_release:NodeAddrChangedReq.newSign)
   
   ::NodeSign* temp = _impl_.newsign_;
   _impl_.newsign_ = nullptr;
   return temp;
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::_internal_mutable_newsign() {
+inline ::NodeSign* NodeAddrChangedReq::_internal_mutable_newsign() {
   
   if (_impl_.newsign_ == nullptr) {
     auto* p = CreateMaybeMessage<::NodeSign>(GetArenaForAllocation());
@@ -5349,12 +5349,12 @@ inline ::NodeSign* NodeBase58AddrChangedReq::_internal_mutable_newsign() {
   }
   return _impl_.newsign_;
 }
-inline ::NodeSign* NodeBase58AddrChangedReq::mutable_newsign() {
+inline ::NodeSign* NodeAddrChangedReq::mutable_newsign() {
   ::NodeSign* _msg = _internal_mutable_newsign();
-  // @@protoc_insertion_point(field_mutable:NodeBase58AddrChangedReq.newSign)
+  // @@protoc_insertion_point(field_mutable:NodeAddrChangedReq.newSign)
   return _msg;
 }
-inline void NodeBase58AddrChangedReq::set_allocated_newsign(::NodeSign* newsign) {
+inline void NodeAddrChangedReq::set_allocated_newsign(::NodeSign* newsign) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete _impl_.newsign_;
@@ -5371,7 +5371,7 @@ inline void NodeBase58AddrChangedReq::set_allocated_newsign(::NodeSign* newsign)
     
   }
   _impl_.newsign_ = newsign;
-  // @@protoc_insertion_point(field_set_allocated:NodeBase58AddrChangedReq.newSign)
+  // @@protoc_insertion_point(field_set_allocated:NodeAddrChangedReq.newSign)
 }
 
 // -------------------------------------------------------------------

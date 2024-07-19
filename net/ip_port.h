@@ -21,10 +21,6 @@
 
 #include "./define.h"
 
-extern char g_localHostIp[16];
-extern char g_public_net_ip[16];
-extern int g_my_port;
-
 class IpPort
 {
 public:
@@ -38,7 +34,7 @@ public:
 	static bool GetLocalHostIp(std::string & localHostIp);
 	
 	/**
-	 * @brief       
+	 * @brief       converts dotted decimal notation char * to u32
 	 * 
 	 * @param       szIp 
 	 * @return      u32 
@@ -46,15 +42,15 @@ public:
 	static u32 IpNum(const char * szIp);
 
 	/**
-	 * @brief       
-	 * 
+	 * @brief       converts the dotted decimal notation string type to u32
+
 	 * @param       szIp 
 	 * @return      u32 
 	 */
 	static u32 IpNum(const std::string& szIp);
 
 	/**
-	 * @brief       
+	 * @brief       converts the u32 type to dotted decimal notation char *
 	 * 
 	 * @param       numIp 
 	 * @return      const char* 
@@ -62,7 +58,7 @@ public:
 	static const char * IpSz(const u32 numIp);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the IPv4 address format is correct
 	 * 
 	 * @param       strIp 
 	 * @return      true 
@@ -71,7 +67,7 @@ public:
 	static bool IsValidIp(std::string const& strIp);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the local IPv4 address format is correct for string
 	 * 
 	 * @param       strIp 
 	 * @return      true 
@@ -80,7 +76,7 @@ public:
 	static bool IsLocalIp(std::string const& strIp);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the local IPv4 address format is correct for string for u32
 	 * 
 	 * @param       u32_ip 
 	 * @return      true 
@@ -89,7 +85,7 @@ public:
 	static bool IsLocalIp(u32 u32_ip);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the public IPv4 address format is correct for string
 	 * 
 	 * @param       strIp 
 	 * @return      true 
@@ -98,7 +94,7 @@ public:
 	static bool IsPublicIp(std::string const& strIp);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the public IPv4 address format is correct for u32
 	 * 
 	 * @param       u32_ip 
 	 * @return      true 
@@ -107,7 +103,7 @@ public:
 	static bool IsPublicIp(u32 u32_ip);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the  port format is correct
 	 * 
 	 * @param       u16_port 
 	 * @return      true 
@@ -140,7 +136,7 @@ public:
 	static u16 GetConnectPort(int conFd);
 
 	/**
-	 * @brief       
+	 * @brief       Check whether the LAN can be connected locally according to the version
 	 * 
 	 * @param       ipString 
 	 * @return      true 

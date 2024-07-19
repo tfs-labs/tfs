@@ -55,19 +55,94 @@ typedef struct _SHA512_CTX {
 	uint64_t	bitcount[2];
 	uint8_t	buffer[SHA512_BLOCK_LENGTH];
 } SHA512_CTX;
-
+/**
+ * @brief
+*/
 void sha256_Init(SHA256_CTX *);
+/**
+ * @brief
+ * 
+ * @param       SHA256_CTX*:
+ * @param       size_t:
+*/
 void sha256_Update(SHA256_CTX*, const void*, size_t);
+/**
+ * @brief
+ * 
+ * @param       uint8_t[SHA256_DIGEST_LENGTH]:
+ * @param       SHA256_CTX*:
+*/
 void sha256_Final(uint8_t[SHA256_DIGEST_LENGTH], SHA256_CTX*);
+/**
+ * @brief
+ * 
+ * @param       SHA256_CTX*:
+ * @param       char[SHA256_DIGEST_STRING_LENGTH]:
+ * @return		char*
+*/
 char* sha256_End(SHA256_CTX*, char[SHA256_DIGEST_STRING_LENGTH]);
+/**
+ * @brief
+ * 
+ * @param       const void*:
+ * @param       size_t:
+ * @param       uint8_t[SHA256_DIGEST_LENGTH]:
+*/
 void sha256_Raw(const void*, size_t, uint8_t[SHA256_DIGEST_LENGTH]);
+/**
+ * @brief
+ * 
+ * @param       const void*:
+ * @param       size_t:
+ * @param       char[SHA256_DIGEST_STRING_LENGTH]:
+ * @return		char*
+*/
 char* sha256_Data(const void*, size_t, char[SHA256_DIGEST_STRING_LENGTH]);
-
+/**
+ * @brief
+ * 
+ * @param       SHA512_CTX*:
+*/
 void sha512_Init(SHA512_CTX*);
+/**
+ * @brief
+ * 
+ * @param       SHA512_CTX*:
+ * @param       const void*:
+ * @param       size_t:
+*/
 void sha512_Update(SHA512_CTX*, const void*, size_t);
+/**
+ * @brief
+ * 
+ * @param       uint8_t[SHA512_DIGEST_LENGTH]:
+ * @param       SHA512_CTX*:
+*/
 void sha512_Final(uint8_t[SHA512_DIGEST_LENGTH], SHA512_CTX*);
+/**
+ * @brief
+ * 
+ * @param       SHA512_CTX*:
+ * @param       char[SHA512_DIGEST_STRING_LENGTH]:
+ * @return		char*
+*/
 char* sha512_End(SHA512_CTX*, char[SHA512_DIGEST_STRING_LENGTH]);
+/**
+ * @brief
+ * 
+ * @param       const void*:
+ * @param       size_t:
+ * @param		uint8_t[SHA512_DIGEST_LENGTH]
+*/
 void sha512_Raw(const void*, size_t, uint8_t[SHA512_DIGEST_LENGTH]);
+/**
+ * @brief
+ * 
+ * @param       const void*:
+ * @param       size_t:
+ * @param       char[SHA512_DIGEST_STRING_LENGTH]:
+ * @return		char*
+*/
 char* sha512_Data(const void*, size_t, char[SHA512_DIGEST_STRING_LENGTH]);
 
 #ifdef __cplusplus

@@ -1,30 +1,27 @@
 #include "block_helper.h"
 
-#include <cstdint>
-#include <utility>
 
-#include "logging.h"
-#include "utils/magic_singleton.h"
-#include "include/scope_guard.h"
-#include "net/api.h"
-#include "db/db_api.h"
-#include "algorithm.h"
-#include "block_cache.h"
-#include "block_http_callback.h"
-#include "transaction_cache.h"
-#include "transaction.h"
-#include "common.pb.h"
-#include "common/global_data.h"
-#include "utils/account_manager.h"
-#include "utils/tmp_log.h"
-#include "utils/vrf.hpp"
-#include "checker.h"
-#include "utils/tfs_bench_mark.h"
-#include "common/time_report.h"
-#include "common/task_pool.h"
 #include "ca/test.h"
-#include "net/interface.h"
+#include "ca/checker.h"
+#include "ca/algorithm.h"
+#include "ca/block_http_callback.h"
+#include "ca/transaction_cache.h"
+#include "ca/double_spend_cache.h"
+#include "ca/sync_block.h"
 
+#include "common.pb.h"
+#include "common/task_pool.h"
+#include "common/global_data.h"
+
+#include "utils/account_manager.h"
+#include "utils/magic_singleton.h"
+#include "utils/tfs_bench_mark.h"
+#include "utils/contract_utils.h"
+
+#include "db/db_api.h"
+#include "net/interface.h"
+#include "include/scope_guard.h"
+#include "ca/evm/evm_manager.h"
 
 static global::ca::SaveType g_syncType = global::ca::SaveType::Unknow;
 
@@ -67,14 +64,22 @@ int SendBlockByUtxoReq(const std::string &utxo)
         {
             return -2;
         }
-        status = dbReader.GetStakeAddress(pledgeAddr);
-        if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+
+        std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+
+        for (const auto &node : nodelist)
         {
-            return -3;
+            int ret = VerifyBonusAddr(node.address);
+
+            int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+            if (stakeTime > 0 && ret == 0)
+            {
+                pledgeAddr.push_back(node.address);
+            }
         }
     }
     
-    if (GetUtxoFindNode(10, chainHeight, pledgeAddr, sendNodeIds) != 0)
+    if (GetUtxoFindNode(global::ca::KMinSyncQualNodes, chainHeight, pledgeAddr, sendNodeIds) != 0)
     {
         ERRORLOG("get sync node fail");
         return -4;
@@ -87,23 +92,27 @@ int SendBlockByUtxoReq(const std::string &utxo)
     {
         return -5;
     }
-    std::string selfNodeId = NetGetSelfNodeId();
+    std::string selfNodeId = MagicSingleton<PeerNode>::GetInstance()->GetSelfId();
     for (auto &nodeId : sendNodeIds)
     {
         GetBlockByUtxoReq req;
         req.set_addr(selfNodeId);
         req.set_utxo(utxo);
         req.set_msg_id(msgId);
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, nodeId))
+        {
+            return -6;
+        }
         NetSendMessage<GetBlockByUtxoReq>(nodeId, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
 
     std::vector<std::string> retDatas;
     if (!GLOBALDATAMGRPTR.WaitData(msgId, retDatas))
     {
-        if(!SyncBlock::check_byzantine(sendNum, retDatas.size()))
+        if(!SyncBlock::checkByzantine(sendNum, retDatas.size()))
         {
             ERRORLOG("wait sync height time out send:{} recv:{}", sendNum, retDatas.size());
-            return -6;
+            return -7;
         }
     }
     GetBlockByUtxoAck ack;
@@ -124,7 +133,7 @@ int SendBlockByUtxoReq(const std::string &utxo)
             if( blockRaw != ack.block_raw())
             {
                 ERRORLOG("get different block");
-                return -7;
+                return -8;
             }
         }
     }
@@ -132,14 +141,14 @@ int SendBlockByUtxoReq(const std::string &utxo)
     if(blockRaw == "")
     {
         ERRORLOG("blockRaw is empty!");
-        return -8;
+        return -9;
     }
 
     CBlock block;
     if(!block.ParseFromString(blockRaw))
     {
         ERRORLOG("blockRaw parse fail!");
-        return -9;
+        return -10;
     }
 
     std::string strHeader;
@@ -152,7 +161,7 @@ int SendBlockByUtxoReq(const std::string &utxo)
         if(ret != 0)
         {
             ERRORLOG("RollbackPreviousBlocks fail, fail num: {}", ret);
-            return -10 - ret;
+            return -11;
         }
     }
 
@@ -190,7 +199,7 @@ int BlockHelper::RollbackPreviousBlocks(const std::string utxo, uint64_t shelfHe
         CBlock tempBlock;
         for(const auto& self_block_hashe: selfBlockHashes)
         { 
-            string strblock;
+            std::string strblock;
             auto res = dbReader.GetBlockByBlockHash(self_block_hashe, strblock);
             if (DBStatus::DB_SUCCESS != res)
             {
@@ -225,50 +234,7 @@ int BlockHelper::RollbackPreviousBlocks(const std::string utxo, uint64_t shelfHe
     return -6;
 }
 
-int SendBlockByUtxoAck(const std::string &utxo, const std::string &addr, const std::string &msgId)
-{
-    DEBUGLOG("handle get missing block utxo {}",utxo);
-    DBReader dbReader;
 
-    std::string strBlockHash = "";
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockHashByTransactionHash(utxo, strBlockHash))
-    {
-        ERRORLOG("GetBlockHashByTransactionHash fail!");
-        return -1;
-    }
-
-    std::string blockstr = "";
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(strBlockHash, blockstr))
-    {
-        ERRORLOG("GetBlockByBlockHash fail!");
-        return -2;
-    }
-    if(blockstr == "")
-    {
-        ERRORLOG("blockstr is empty fail!");
-        return -3;
-    }
-    GetBlockByUtxoAck ack;
-    ack.set_addr(NetGetSelfNodeId());
-    ack.set_utxo(utxo);
-    ack.set_block_raw(blockstr);
-    ack.set_msg_id(msgId);
-
-    NetSendMessage<GetBlockByUtxoAck>(addr, ack, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
-    return 0;
-}
-
-int HandleBlockByUtxoReq(const std::shared_ptr<GetBlockByUtxoReq> &msg, const MsgData &msgdata)
-{
-    SendBlockByUtxoAck(msg->utxo(), msg->addr(),msg->msg_id());
-    return 0;
-}
-
-int HandleBlockByUtxoAck(const std::shared_ptr<GetBlockByUtxoAck> &msg, const MsgData &msgdata)
-{
-    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
-    return 0;
-}
 
 int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs)
 {
@@ -289,14 +255,21 @@ int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs)
         {
             return -2;
         }
-        status = dbReader.GetStakeAddress(pledgeAddr);
-        if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+        std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+        
+        for (const auto &node : nodelist)
         {
-            return -3;
+            int ret = VerifyBonusAddr(node.address);
+
+            int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+            if (stakeTime > 0 && ret == 0)
+            {
+                pledgeAddr.push_back(node.address);
+            }
         }
     }
     
-    if (GetUtxoFindNode(10, chainHeight, pledgeAddr, sendNodeIds) != 0)
+    if (GetUtxoFindNode(global::ca::KMinSyncQualNodes, chainHeight, pledgeAddr, sendNodeIds) != 0)
     {
         ERRORLOG("get sync node fail");
         return -4;
@@ -317,23 +290,26 @@ int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs)
         missingHash->set_tx_or_block(it.second);
     }
 
-    std::string selfNodeId = NetGetSelfNodeId();
+    std::string selfNodeId = MagicSingleton<PeerNode>::GetInstance()->GetSelfId();
     req.set_addr(selfNodeId);
     req.set_msg_id(msgId);
 
-    for (auto &node_id : sendNodeIds)
+    for (auto &nodeId : sendNodeIds)
     {
-        DEBUGLOG("GetBlockByHashReq id:{}", node_id);
-        NetSendMessage<GetBlockByHashReq>(node_id, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, nodeId))
+        {
+            return -6;
+        }
+        NetSendMessage<GetBlockByHashReq>(nodeId, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
 
     std::vector<std::string> retDatas;
     if (!GLOBALDATAMGRPTR.WaitData(msgId, retDatas))
     {
-        if(!SyncBlock::check_byzantine(sendNum, retDatas.size()))
+        if(!SyncBlock::checkByzantine(sendNum, retDatas.size()))
         {
             ERRORLOG("wait sync height time out send:{} recv:{}", sendNum, retDatas.size());
-            return -6;
+            return -7;
         }
     }
 
@@ -369,7 +345,7 @@ int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs)
             if(!block.ParseFromString(it.second.first))
             {
                 ERRORLOG("blockRaw parse fail!");
-                return -7;
+                return -8;
             }
             seekBlocks.push_back({block, it.first});
         }
@@ -398,14 +374,22 @@ int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string&
         {
             return -2;
         }
-        status = dbReader.GetStakeAddress(pledgeAddr);
-        if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+
+        std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+
+        for (const auto &node : nodelist)
         {
-            return -3;
+            int ret = VerifyBonusAddr(node.address);
+
+            int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+            if (stakeTime > 0 && ret == 0)
+            {
+                pledgeAddr.push_back(node.address);
+            }
         }
     }
     
-    if (GetUtxoFindNode(5, chainHeight, pledgeAddr, sendNodeIds) != 0)
+    if (GetUtxoFindNode(global::ca::KMinSyncQualNodes, chainHeight, pledgeAddr, sendNodeIds) != 0)
     {
         ERRORLOG("get sync node fail");
         return -4;
@@ -423,23 +407,26 @@ int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string&
     missingHash->set_hash(seekBlockHash);
     missingHash->set_tx_or_block(false);
     
-    std::string selfNodeId = NetGetSelfNodeId();
+    std::string selfNodeId = MagicSingleton<PeerNode>::GetInstance()->GetSelfId();
     req.set_addr(selfNodeId);
     req.set_msg_id(msgId);
 
     for (auto &node_id : sendNodeIds)
     {
-        DEBUGLOG("GetBlockByHashReq id:{}", node_id);
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, node_id))
+        {
+            return -6;
+        }
         NetSendMessage<GetBlockByHashReq>(node_id, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
 
     std::vector<std::string> retDatas;
     if (!GLOBALDATAMGRPTR.WaitData(msgId, retDatas))
     {
-        if(!SyncBlock::check_byzantine(sendNum, retDatas.size()))
+        if(!SyncBlock::checkByzantine(sendNum, retDatas.size()))
         {
             ERRORLOG("wait sync height time out send:{} recv:{}", sendNum, retDatas.size());
-            return -6;
+            return -7;
         }
     }
 
@@ -459,78 +446,20 @@ int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string&
         }
     }
 
-    return -7;
+    return -8;
 }
 
-int SendBlockByHashAck(const std::map<std::string, bool> &missingHashs, const std::string &addr, const std::string &msgId)
-{
-    DBReader dbReader;
-    GetBlockByHashAck ack;
-    for(const auto& it : missingHashs)
-    {
-        std::string strBlockHash = "";
-        if(it.second)
-        {
-            if (DBStatus::DB_SUCCESS != dbReader.GetBlockHashByTransactionHash(it.first, strBlockHash))
-            {
-                ERRORLOG("GetBlockHashByTransactionHash fail!, txHash:{}", it.first);
-                return -1;
-            }
-        }
-        else
-        {
-            strBlockHash = it.first;
-        }
-        std::string blockstr = "";
-        if (DBStatus::DB_SUCCESS != dbReader.GetBlockByBlockHash(strBlockHash, blockstr))
-        {
-            ERRORLOG("GetBlockByBlockHash fail!, blockHash:{}", strBlockHash);
-            return -2;
-        }
-        if(blockstr == "")
-        {
-            ERRORLOG("blockstr is empty fail!");
-            return -3;
-        }
-        auto block = ack.add_blocks();
-        block->set_hash(it.first);
-        block->set_tx_or_block(it.second);
-        block->set_block_raw(blockstr);
-    }
-    
-    ack.set_addr(NetGetSelfNodeId());
-    ack.set_msg_id(msgId);
 
-    NetSendMessage<GetBlockByHashAck>(addr, ack, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
-    return 0; 
-}
-
-int HandleBlockByHashReq(const std::shared_ptr<GetBlockByHashReq> &msg, const MsgData &msgdata)
-{
-    std::map<std::string, bool> missingHashs;
-    for(const auto& it : msg->missinghashs())
-    {
-        missingHashs[it.hash()] = it.tx_or_block();
-    }
-    SendBlockByHashAck(missingHashs, msg->addr(), msg->msg_id());
-    return 0;
-}
-
-int HandleBlockByHashAck(const std::shared_ptr<GetBlockByHashAck> &msg, const MsgData &msgdata)
-{
-    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
-    return 0;
-}
 
 int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus , BlockMsg *msg)
 {
-    if(block.version() != global::ca::kInitBlockVersion && block.version() != global::ca::kCurrentBlockVersion)
+    if( block.version() != global::ca::kCurrentBlockVersion)
 	{
 		return -1;
 	}
     bool isVerify = true;
-    auto selfBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if(GetBase58Addr(block.sign(0).pub()) == selfBase58Addr)
+    auto selfAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
+    if(GenerateAddr(block.sign(0).pub()) == selfAddr)
     {
         isVerify = false;
     }
@@ -563,7 +492,7 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
     uint64_t chainHeight = 0;
     if(!ObtainChainHeight(chainHeight))
     {
-        return -7;
+        return -6;
     }
 
     //Increase the height and time of the block within a certain height without judgment
@@ -574,7 +503,7 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
         if(blockHeight < (chainHeight - 10) && currentTime - block.time() > kStabilityTime)
         {
             DEBUGLOG("broadcast block overtime , block height{}, block hash{}",blockHeight,blockHash);
-            return -8;
+            return -7;
         }
     }
     
@@ -584,12 +513,12 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
 	if (status != DBStatus::DB_SUCCESS && status != DBStatus::DB_NOT_FOUND)
 	{
 		ERRORLOG("get block not success or not found ");
-		return -9;
+		return -8;
 	}
 
 	if (strTempHeader.size() != 0)
 	{
-		return -10;
+		return -9;
 	}
 
 	std::string strPrevHeader;
@@ -597,12 +526,12 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
 	if (status != DBStatus::DB_SUCCESS && status != DBStatus::DB_NOT_FOUND)
 	{
 		ERRORLOG("get block not success or not found ");
-		return -11;
+		return -10;
 	}
 
 	if (strPrevHeader.size() == 0)
 	{
-        return -12;
+        return -11;
 	}
     std::vector<CTransaction> doubleSpentTransactions;
     Checker::CheckConflict(block, doubleSpentTransactions);
@@ -623,32 +552,19 @@ int BlockHelper::VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus
 
         std::string testStr = filestream.str();
         DEBUGLOG("doubleSpentTransactions block --> {}", testStr);
-        return -13;
+        return -12;
     }
     auto startT5 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-
-    DEBUGLOG("verifying block {} , isVerify:{}", blockHash.substr(0, 6), isVerify);
-
     if(block.sign_size() >= 1)
     {
-        DEBUGLOG("verifying block {} , isVerify:{}, blockPackage:{}", blockHash.substr(0, 6), isVerify, GetBase58Addr(block.sign(0).pub()));
+        DEBUGLOG("verifying block {} , isVerify:{}, addr:{}", blockHash.substr(0, 6), isVerify, GenerateAddr(block.sign(0).pub()));
     }
+	auto ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus,msg);
 
-    int ret;
-    //add condition of height and version
-	if(blockHeight <= global::ca::OldVersionSmartContractFailureHeight)
-    {
-         ret = ca_algorithm::VerifyBlock_V33_1(block, false, true, isVerify, blockStatus);
-    }
-    else
-    {
-         ret = ca_algorithm::VerifyBlock(block, false, true, isVerify, blockStatus,msg);
-    }
-	
 	if (0 != ret)
 	{
 		ERRORLOG("verify block fail ret:{}:{}:{}", ret, blockHeight, blockHash);
-		return -14;
+		return -13;
 	}
     
     if(!isVerify){
@@ -666,6 +582,7 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         if (dbWriterPtr != nullptr)
         {
             delete dbWriterPtr;
+            dbWriterPtr = nullptr;
         }
         if (saveType == global::ca::SaveType::Broadcast)
         {
@@ -673,10 +590,23 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
         }
     };
 
+
+    uint64_t nodeHeight = 0;
+    if (DBStatus::DB_SUCCESS != dbWriterPtr->GetBlockTop(nodeHeight))
+    {
+         ERRORLOG("GetBlockTop error!");
+        return -3;
+    }
+
+    if (block.height() >= nodeHeight + 2)
+    {
+        ERRORLOG("block.height:{} >= (nodeHeight + 2):{}", block.height(), nodeHeight + 2);
+        return -4;
+    }
+
     int ret = 0;
     std::string blockRaw;
     std::string blockHash = block.hash();
-    int blockHeight = block.height();
     ret = dbWriterPtr->GetBlockByBlockHash(block.hash(), blockRaw);
     if (DBStatus::DB_SUCCESS == ret)
     {
@@ -687,40 +617,16 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
     ret = PreSaveProcess(block, saveType, obtainMean);
     if (ret < 0)
     {
-        delete dbWriterPtr;
-        dbWriterPtr = nullptr;
-        return ret;
+        ERRORLOG("PreSaveProcess ret : {}", ret);
+        return -5;
     }
     DEBUGLOG("PreSaveProcess doubleSpendCheck ret:{}", ret);
     
-    //add condition of height and version
-	if(block.height() <= global::ca::OldVersionSmartContractFailureHeight)
-    {
-        if(ret == 1 || ret == 2) //doubleSpend error
-        {
-            return 0;
-        }
-    }
-    
-    // if(ret == 1) //doubleSpend error
-    // {
-    //     return 0;
-    // }
-    
     ResetMissingPrehash();
-    //add condition of height and version
-	if(block.height() <= global::ca::OldVersionSmartContractFailureHeight)
-    {
-        ret = ca_algorithm::SaveBlock_V33_1(*dbWriterPtr, block, saveType, obtainMean);
-    }
-    else
-    {
-        ret = ca_algorithm::SaveBlock(*dbWriterPtr, block, saveType, obtainMean);
-    }
+    uint64_t blockHeight = block.height();
+    ret = ca_algorithm::SaveBlock(*dbWriterPtr, block, saveType, obtainMean);
     if (0 != ret)
     {
-        delete dbWriterPtr;
-        dbWriterPtr = nullptr;
         ERRORLOG("save block ret:{}:{}:{}", ret, blockHeight, blockHash);
         if(saveType == global::ca::SaveType::SyncNormal || saveType == global::ca::SaveType::SyncFromZero)
         {
@@ -732,38 +638,30 @@ int BlockHelper::SaveBlock(const CBlock& block, global::ca::SaveType saveType, g
             ResetMissingPrehash();
             DEBUGLOG("run new sync, start height: {}", blockHeight - 1);
             SyncBlock::SetNewSyncHeight(blockHeight - 1);
-            return -5;
+            return -6;
         }
         if(!_missingUtxos.empty())
         {
             GetMissBlock();
-            return -6;
+            return -7;
         }
-        return -7;
-    }
-    if(DBStatus::DB_SUCCESS == dbWriterPtr->TransactionCommit())
-    {        
-        INFOLOG("save block ret:{}:{}:{}", ret, blockHeight, blockHash);
-        auto startTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-        PostSaveProcess(block);
-        auto endTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp(); 
-        postCommitCost += (endTime - startTime);
-        postCommitCount++;
-    }
-    else
-    {
-        for (int i = 0; i < block.txs_size(); i++)
-        {
-            CTransaction tx = block.txs(i);
-            if (GetTransactionType(tx) == kTransactionType_Tx)
-            {
-                MagicSingleton<VRF>::GetInstance()->removeVrfInfo(tx.hash());
-            }
-        }
-        MagicSingleton<VRF>::GetInstance()->removeVrfInfo(block.hash());
-        ERRORLOG("Transaction commit fail");
         return -8;
     }
+    if(DBStatus::DB_SUCCESS != dbWriterPtr->TransactionCommit())
+    {     
+        ERRORLOG("Transaction commit fail");
+        return -9;   
+    }
+    //TODO::
+    MagicSingleton<DoubleSpendCache>::GetInstance()->Detection(block);
+
+    INFOLOG("save block ret:{}:{}:{}", ret, blockHeight, blockHash);
+    auto startTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
+    PostSaveProcess(block);
+    auto endTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp(); 
+    postCommitCost += (endTime - startTime);
+    postCommitCount++;
+
     return 0;
 }
 
@@ -834,7 +732,7 @@ void BlockHelper::PostMembershipCancellationProcess(const CBlock &block)
 
                     for (int i = (isNeedAgent ? 0 : 1); i < block.sign_size(); ++i)
                     {
-                        std::string signAddr = GetBase58Addr(block.sign(i).pub(), Base58Ver::kBase58Ver_Normal);
+                        std::string signAddr = GenerateAddr(block.sign(i).pub());
                         if(std::find(tx.utxo().owner().begin(), tx.utxo().owner().end(), signAddr) != tx.utxo().owner().end())
                         {
                             int ret = ca_algorithm::RollBackByHash(heightBlock.hash());
@@ -896,7 +794,7 @@ std::pair<doubleSpendType, CBlock> BlockHelper::DealDoubleSpend(const CBlock& bl
                 }
                 for (auto &PVin : PTx.utxo().vin())
                 {
-                    std::string PVinAddr = GetBase58Addr(PVin.vinsign().pub());
+                    std::string PVinAddr = GenerateAddr(PVin.vinsign().pub());
                     if(setOwner.find(PVinAddr) != setOwner.end())
                     {
                         for (auto & PPrevout : PVin.prevout())
@@ -945,17 +843,7 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
     {
         DEBUGLOG("verifying block {}", blockHash.substr(0, 6));
         ResetMissingPrehash();
-        int ret;
-        //add condition of height and version
-	    if(blockHeight <= global::ca::OldVersionSmartContractFailureHeight)
-        {
-            ret = ca_algorithm::VerifyBlock_V33_1(block, true, false);
-        }
-        else
-        {
-            ret = ca_algorithm::VerifyBlock(block, true, false);
-        }
-        
+        auto ret = ca_algorithm::VerifyBlock(block, true, false);
         if (0 != ret)
         {
             ERRORLOG("verify block ret:{}:{}:{}", ret, blockHeight, blockHash);
@@ -993,12 +881,6 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
             ERRORLOG("Verify PreSave Block fail!");
             return -6;
         }
-        // bool isRollback;
-        // checkContractBlockConflicts(block, isRollback);
-        // if(isRollback)
-        // {
-        //     return 1;
-        // }
         
         for (auto& tx : block.txs())
         {
@@ -1013,7 +895,7 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
                 if(ret == -5 || ret == -7 || ret == -8 && !missingUtxo.empty())
                 {
                     std::string blockHash;
-                    if(dbReader.GetBlockHashByTransactionHash(missingUtxo, blockHash) == DBStatus::DB_SUCCESS)//DoubleSpend
+                    if(dbReader.GetBlockHashByTransactionHash(missingUtxo, blockHash) == DBStatus::DB_SUCCESS)
                     {
                         DEBUGLOG("DoubleSpendCheck fail!! <utxo>: {}, ", missingUtxo);
                         auto doubleSpendInfo = DealDoubleSpend(block, tx , missingUtxo);
@@ -1061,25 +943,11 @@ int BlockHelper::PreSaveProcess(const CBlock& block, global::ca::SaveType saveTy
 
 void BlockHelper::PostTransactionProcess(const CBlock &block)
 {
-    
-    //add condition of height and version
-	if(block.height() > global::ca::OldVersionSmartContractFailureHeight)
-    { 
     if (IsContractBlock(block))
     {
         MagicSingleton<TransactionCache>::GetInstance()->ContractBlockNotify(block.hash());
     }
-    }
 
-    for (int i = 0; i < block.txs_size(); i++)
-    {
-        CTransaction tx = block.txs(i);
-        if (GetTransactionType(tx) == kTransactionType_Tx)
-        {
-            MagicSingleton<VRF>::GetInstance()->removeVrfInfo(tx.hash());
-        }
-    }
-    MagicSingleton<VRF>::GetInstance()->removeVrfInfo(block.hash());
     MagicSingleton<PeerNode>::GetInstance()->SetSelfHeight(block.height());
 
     // Run http callback
@@ -1106,17 +974,6 @@ void BlockHelper::PostSaveProcess(const CBlock &block)
             SaveBlock(targetBegin->second, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::ByPreHash);
         }     
     }
-    //add condition of height and version
-	// uint64_t selfNodeHeight = 0;
-	// DBReader dbReader;
-	// auto status = dbReader.GetBlockTop(selfNodeHeight);
-	// if (DBStatus::DB_SUCCESS != status)
-	// {
-	// 	ERRORLOG("Get block top error");
-	// 	return ;
-	// }
-	if(block.height() > global::ca::OldVersionSmartContractFailureHeight)
-    {
     for(auto& tx : block.txs())
     {
         if ((global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeCallContract || (global::ca::TxType)tx.txtype() != global::ca::TxType::kTxTypeDeployContract)
@@ -1156,10 +1013,9 @@ void BlockHelper::PostSaveProcess(const CBlock &block)
             }
         }
     }
-    }
+
     PostMembershipCancellationProcess(block);
 }
-
 
 int BlockHelper::RollbackContractBlock()
 {
@@ -1239,6 +1095,7 @@ int BlockHelper::RollbackContractBlock()
     return 0;
 }
 
+
 int BlockHelper::RollbackBlocks()
 {
     if (_rollbackBlocks.empty())
@@ -1262,7 +1119,7 @@ int BlockHelper::RollbackBlocks()
             if (ret != 0)
             {
                 ERRORLOG("rollback hash {} fail, ret: ", sit->hash(), ret);
-                return -2;
+                return -1;
             }
             
         }
@@ -1342,6 +1199,7 @@ void BlockHelper::Process()
 
     ON_SCOPE_EXIT{
         processing_ = false;
+        MagicSingleton<BlockManager>::GetInstance()->removeExpiredBlocks(std::chrono::seconds(60));
         uint64_t newTop = 0;
         DBReader reader;
         if (reader.GetBlockTop(newTop) == DBStatus::DB_SUCCESS)
@@ -1396,8 +1254,7 @@ void BlockHelper::Process()
                 ++iter;
             }
         }
-        if(newTop > global::ca::OldVersionSmartContractFailureHeight)
-        {
+
         for(auto iter = _contractBlocks.begin(); iter != _contractBlocks.end();)
         {
             if(newTop >= iter->second.height() + 10 || nowTime >= iter->second.time() + 30 * 1000000ull)
@@ -1409,8 +1266,6 @@ void BlockHelper::Process()
                 ++iter;
             }
         }
-        }
-                
     };
 
 
@@ -1434,7 +1289,7 @@ void BlockHelper::Process()
         {
             for(auto& rollBack : iter.second)
             {
-                DEBUGLOG("RollBackBlock No timeout blockHash:{}", rollBack->hash().substr(0,6));// 60S
+                DEBUGLOG("RollBackBlock No timeout blockHash:{}", rollBack->hash().substr(0,6));
                 _rollbackBlocks[iter.first].erase(rollBack);
                 
             }
@@ -1455,7 +1310,7 @@ void BlockHelper::Process()
     uint64_t chainHeight = 0;
     if(!ObtainChainHeight(chainHeight))
     {
-        ERRORLOG("fail to get chain height");
+        //ERRORLOG("fail to get chain height");
         return;
     }
 
@@ -1523,16 +1378,7 @@ void BlockHelper::Process()
             continue;
         }
         DEBUGLOG("_broadcastBlocks SaveBlock Hash: {}, height: {}, PreHash:{}", block.hash().substr(0, 6), block.height(), block.prevhash().substr(0, 6));
-        /*result =*/SaveBlock(block, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::Normal);
-        // if(result == 0)
-        // {
-        //     MagicSingleton<BlockMonitor>::GetInstance()->SendSuccessBlockSituationAck(block);
-        // }
-        // else if(result < 0)
-        // {
-        //     MagicSingleton<BlockMonitor>::GetInstance()->SendFailedBlockSituationAck(block);
-        //     INFOLOG("_broadcastBlocks SaveBlock fail!!! result:{} ,BlockHash:{}", result, block.hash().substr(0,6));
-        // }
+        SaveBlock(block, global::ca::SaveType::Broadcast, global::ca::BlockObtainMean::Normal);
     }
 
     auto begin = _hashPendingBlocks.begin();
@@ -1540,7 +1386,7 @@ void BlockHelper::Process()
     std::vector<decltype(begin)> deleteUtxoBlocks;
     for(auto iter = begin; iter != end; ++iter)
     {
-        if(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp() - iter->second.first > 1 * 60 * 1000000)
+        if(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp() - iter->second.first > 3 * 1000000)
         {
             DEBUGLOG("_hashPendingBlocks.erase timeout block height:{}, hash:{}",iter->second.second.height(), iter->second.second.hash());
             deleteUtxoBlocks.push_back(iter);
@@ -1713,12 +1559,12 @@ void BlockHelper::MakeTxStatusMsg(const CBlock &oldBlock, const CBlock &newBlock
         }
     }
 
-    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
     blockStatus.set_blockhash(newBlock.hash());
     blockStatus.set_status(-99);
-    blockStatus.set_id(NetGetSelfNodeId());
-    std::string destNode = GetBase58Addr(newBlock.sign(0).pub());
-    if(destNode != defaultBase58Addr)
+    blockStatus.set_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
+    std::string destNode = GenerateAddr(newBlock.sign(0).pub());
+    if(destNode != defaultAddr)
     {
         DEBUGLOG("AAAC DoProtoBlockStatus, destNode:{}, ret:{}, blockHash:{}", destNode, -99, newBlock.hash().substr(0,6));
         DoProtoBlockStatus(blockStatus, destNode);
@@ -1775,7 +1621,7 @@ ContractPreHashStatus BlockHelper::CheckContractPreHashStatus(const std::string&
         {
             if(key == DBContractPreHash)
             {
-                for(auto &it : value["PrevHash"].items())
+                for(auto &it : value[Evmone::contractPreHashKeyName].items())
                 {
                     if(it.key() == contractAddr && MEMContractPreHash == it.value())
                     {
@@ -1839,7 +1685,7 @@ int BlockHelper::checkContractBlock(const CBlock& block, std::string& contractTx
         nlohmann::json dataJson = nlohmann::json::parse(block.data());
         for (const auto&[key, value] : dataJson.items())
         {
-            for(auto &it : value["PrevHash"].items())
+            for(auto &it : value[Evmone::contractPreHashKeyName].items())
             {
                 contractTxPreHashMap[key].push_back({it.key(), it.value()});
             }
@@ -1873,6 +1719,10 @@ int BlockHelper::checkContractBlock(const CBlock& block, std::string& contractTx
                 else if(preHashStatus == ContractPreHashStatus::DbBlockException)
                 {
                     DEBUGLOG("contractBlock rollback RollBlockHash:{},blockHash:{}", DBBlockHash.substr(0,6), block.hash().substr(0,6));
+                    if(DBBlockHash == block.hash())
+                    {
+                        continue;
+                    }
                     auto ret = ca_algorithm::RollBackByHash(DBBlockHash);
                     if (ret != 0)
                     {
@@ -1912,7 +1762,6 @@ int BlockHelper::checkContractBlock(const CBlock& block, std::string& contractTx
     }
     return 0;
 }
-
 void BlockHelper::AddPendingBlock(const CBlock& block)
 {
     DBReader dbReader;
@@ -1977,7 +1826,7 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
     {
         auto &curr_block = *it;
         bool ret = Checker::CheckConflict(curr_block, block);
-        if(ret)   // Conflicting
+        if(ret)
         {
             if((curr_block.height() == block.height() && curr_block.time() <= block.time()) || (curr_block.height() < block.height()))
             {
@@ -2020,17 +1869,11 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
     bool isContractBlock = false;
     if(IsContractBlock(block))
     {
-        std::string blockRaw;
-        if (DBStatus::DB_SUCCESS == dbReader.GetBlockByBlockHash(block.hash(), blockRaw))
-        {
-            return;
-        }
-
         std::string contractTxPreHash;
         auto ret = checkContractBlock(block, contractTxPreHash);
         if(ret < 0)
         {
-            DEBUGLOG("checkContractBlock error, contractBlockHash:{}, contractTxPreHash:{}, ret:{}",block.hash().substr(0,6), contractTxPreHash, ret);
+            DEBUGLOG("checkContractBlock error, contractBlockHash:{}, contractTxPreHash:{}",block.hash().substr(0,6), contractTxPreHash);
             return;
         }
         if(ret == 0 && !contractTxPreHash.empty())
@@ -2073,112 +1916,6 @@ void BlockHelper::AddBroadcastBlock(const CBlock& block, bool status)
                 AddPendingBlock(block);
             }
         }
-    }
-}
-
-void BlockHelper::AddBroadcastBlock_V33_1(const CBlock& block, bool status)
-{
-
-    std::lock_guard<std::mutex> lock_low1(_helperMutexLow1);
-    std::lock_guard<std::mutex> lock(_helperMutex);
-    
-    if(_duplicateChecker.find(block.hash()) != _duplicateChecker.end())
-    {
-        DEBUGLOG("+++Duplicate Block hash:{}, status:{}", block.hash().substr(0,6), status);
-        if(status) _duplicateChecker[block.hash()] = {status, block.time()};
-        return;
-    }
-
-    if(_doubleSpendBlocks.find(block.hash()) != _doubleSpendBlocks.end())
-    {
-        DEBUGLOG("_doubleSpendBlocks blockHash:{}", block.hash().substr(0, 6));
-        return;
-    }
-
-    DEBUGLOG("Duplicate Block hash:{}, status:{}", block.hash().substr(0,6), status);
-    _duplicateChecker[block.hash()] = {status, block.time()};
-
-    for (auto it = _broadcastBlocks.begin(); it != _broadcastBlocks.end(); ++it) 
-    {
-        auto &curr_block = *it;
-        bool ret = Checker::CheckConflict(curr_block, block);
-        if(ret)   // Conflicting
-        {
-            if((curr_block.height() == block.height() && curr_block.time() <= block.time()) || (curr_block.height() < block.height()))
-            {
-                if(status)
-                {
-                    MagicSingleton<TaskPool>::GetInstance()->CommitCaTask(std::bind(&BlockHelper::MakeTxStatusMsg, this, curr_block, block));
-                } 
-                INFOLOG("block {} has conflict, discard!", block.hash().substr(0,6));
-                return;
-            }
-            else
-            {
-                auto result = _duplicateChecker.find(curr_block.hash());
-                if(result != _duplicateChecker.end() && result->second.first)
-                {
-                    MagicSingleton<TaskPool>::GetInstance()->CommitCaTask(std::bind(&BlockHelper::MakeTxStatusMsg, this, block, curr_block));
-                }
-                INFOLOG("blockHash:{}, deleteBlockHash:{}", block.hash().substr(0,6), curr_block.hash().substr(0,6));
-                it = _broadcastBlocks.erase(it);
-                break;
-            }
-        }
-    }
-    DEBUGLOG("_broadcastBlocks _broadcastBlocks.size:{}", _broadcastBlocks.size());
-    std::string blockRaw;
-    DBReader dbReader;
-
-    uint64_t selfNodeHeight;
-    auto res = dbReader.GetBlockTop(selfNodeHeight);
-    if (DBStatus::DB_SUCCESS != res)
-    {
-        DEBUGLOG("Get selfNodeHeight error");
-        return;
-    }
-
-    if (DBStatus::DB_SUCCESS == dbReader.GetBlockByBlockHash(block.prevhash(), blockRaw))
-    {
-        INFOLOG("_broadcastBlocks height:{}, hash:{}, status:{}", block.height(), block.hash().substr(0,6), status);
-        MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(block.hash());
-        if(block.height() <= selfNodeHeight + 1000)
-        {
-            _broadcastBlocks.insert(block); 
-        }
-
-    }
-    else
-    {
-        uint64_t blockHeight = block.height();
-        auto found = _pendingBlocks.find(blockHeight);
-        if (found == _pendingBlocks.end())
-        {
-            _pendingBlocks[blockHeight] = {};
-        }
-        INFOLOG("_pendingBlocks height:{}, hash:{}, status:{}", block.height(), block.hash().substr(0,6), status);
-        MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(block.hash());
-        
-        if(_pendingBlocks.size() < 1000)
-        {
-            _pendingBlocks[blockHeight].insert({block.prevhash(), block}); 
-        }
-        
-        uint64_t nodeHeight = 0;
-        if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(nodeHeight))
-        {
-            INFOLOG("GetBlockTop Error");
-        }
-        if(block.height() > nodeHeight + 3)
-        {
-            return;
-        }
-
-        DEBUGLOG("_missingBlocks.insert height:{}, hash:{}, prevhash:{}, ", block.height(), block.hash().substr(0,6), block.prevhash().substr(0,6));
-        uint64_t nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-        MagicSingleton<TFSbenchmark>::GetInstance()->AddBlockPoolSaveMapStart(block.hash());
-        std::unique_lock<std::mutex> locker(_seekMutex);
-        _missingBlocks.insert({block.prevhash(), nowTime, 0});
     }
 }
 
@@ -2226,31 +1963,59 @@ void BlockHelper::AddMissingBlock(const CBlock& block)
 
 bool BlockHelper::ObtainChainHeight(uint64_t& chainHeight)
 {
-    std::vector<Node> nodes;
-    auto peerNode = MagicSingleton<PeerNode>::GetInstance();
-    nodes = peerNode->GetNodelist();
-    uint64_t nodeAmount = nodes.size();
-    if (nodes.empty())
+    DBReader dbReader;
+    uint64_t top = 0;
+    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(top))
     {
+        ERRORLOG("db get top failed!!");
         return false;
     }
+
+    std::vector<Node> nodes = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    // uint64_t nodeAmount = nodes.size();
+    if (nodes.empty())
+    {
+        DEBUGLOG("nodes.empty() == true, chainHeight:{}", chainHeight);
+        chainHeight = top;
+        return true;
+    }
+
+    std::vector<Node> qualifyingNode;
+
+    if(top < global::ca::kMinUnstakeHeight)
+    {
+        qualifyingNode = nodes;
+    }
+    else
+    {
+        for (const auto &node : nodes)
+        {
+            int ret = VerifyBonusAddr(node.address);
+
+            int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+            if (stakeTime > 0 && ret == 0)
+            {
+                qualifyingNode.push_back(node);
+            }
+        }
+        if(qualifyingNode.empty())
+        {
+            DEBUGLOG("qualifyingNode.empty() == true, chainHeight:{}", chainHeight);
+            chainHeight = top;
+            return true;
+        }
+    }
+
+
     std::vector<uint64_t> nodeHeights;
-    for (auto &node : nodes)
+    for (auto &node : qualifyingNode)
     {
         nodeHeights.push_back(node.height);
     }
     std::sort(nodeHeights.begin(), nodeHeights.end());
-    const static int malicious_node_tolerated_amount = 25;
-    double sampleRate = 0;
-    if(nodeAmount <= 25)
-    {
-        sampleRate = 0.95;
-    }
-    else
-    {
-        sampleRate = static_cast<double>((nodeAmount - malicious_node_tolerated_amount)) / static_cast<double>(nodeAmount);
-    }
-     
+    //const static int malicious_node_tolerated_amount = 25;
+    double sampleRate = 0.75;
+
     int verifyNum = nodeHeights.size() * sampleRate;
     if (verifyNum >= nodeHeights.size())
     {
@@ -2258,21 +2023,19 @@ bool BlockHelper::ObtainChainHeight(uint64_t& chainHeight)
         return false;
     }
     chainHeight = nodeHeights.at(verifyNum);
-    
+
     return true;
 }
 
 
 void BlockHelper::RollbackTest()
 {
-    // std::lock_guard<std::mutex> lock(_helperMutex); 
-
-    cout << "1.Rollback block from Height" << endl;
-    cout << "2.Rollback block from Hash" << endl;
-    cout << "0.Quit" << endl;
+    std::cout << "1.Rollback block from Height" << std::endl;
+    std::cout << "2.Rollback block from Hash" << std::endl;
+    std::cout << "0.Quit" << std::endl;
 
     int iSwitch = 0;
-    cin >> iSwitch;
+    std::cin >> iSwitch;
     switch (iSwitch)
     {
         case 0:
@@ -2282,14 +2045,14 @@ void BlockHelper::RollbackTest()
         case 1:
         {
             unsigned int height = 0;
-            cout << "Rollback block height: ";
-            cin >> height;
+            std::cout << "Rollback block height: ";
+            std::cin >> height;
             std::lock_guard<std::mutex> lock(_helperMutex);
             auto ret = ca_algorithm::RollBackToHeight(height);
             if (0 != ret)
             {
-                cout << endl
-                          << "ca_algorithm::RollBackToHeight:" << ret << endl;
+                std::cout << std::endl
+                          << "ca_algorithm::RollBackToHeight:" << ret << std::endl;
                 break;
             }
             MagicSingleton<PeerNode>::GetInstance()->SetSelfHeight();
@@ -2298,9 +2061,9 @@ void BlockHelper::RollbackTest()
         case 2:
         {
             std::map<uint64_t, std::set<CBlock, CBlockCompare>> rollBackMap;
-            string hash;
-            cout << "Enter rollback block hash, Enter 0 exit" << std::endl;
-            cin >> hash;
+            std::string hash;
+            std::cout << "Enter rollback block hash, Enter 0 exit" << std::endl;
+            std::cin >> hash;
             while(hash != "0")
             {
                 CBlock block;
@@ -2314,8 +2077,8 @@ void BlockHelper::RollbackTest()
                 block.ParseFromString(blockStr);
                 rollBackMap[block.height()].insert(block);
                 hash.clear();
-                cout << "Enter rollback block hash, Enter 0 exit" << std::endl;
-                cin >> hash;
+                std::cout << "Enter rollback block hash, Enter 0 exit" << std::endl;
+                std::cin >> hash;
             }
             if(!rollBackMap.empty())
             {
@@ -2325,8 +2088,9 @@ void BlockHelper::RollbackTest()
         }
         default:
         {
-            cout << "Input error !" << endl;
+            std::cout << "Input error !" << std::endl;
             break;
         }
     }
 }
+

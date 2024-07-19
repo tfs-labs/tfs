@@ -1,23 +1,23 @@
 #include "ca/block_stroage.h"
-#include "global.h"
-#include "utils/vrf.hpp"
-#include "utils/tfs_bench_mark.h"
-#include "ca/sync_block.h"
-#include "proto/block.pb.h"
-#include "ca/block_helper.h"
-#include "ca/transaction.h"
-#include "ca/sync_block.h"
-#include "common/global_data.h"
-#include "net/peer_node.h"
-#include "proto/block.pb.h"
-#include "common/task_pool.h"
-#include "common/global.h"
-#include "ca/algorithm.h"
+
 #include "ca/test.h"
+#include "ca/algorithm.h"
+#include "ca/sync_block.h"
+#include "ca/transaction.h"
+#include "ca/block_helper.h"
+
+#include "common/global.h"
+#include "common/task_pool.h"
+#include "common/global_data.h"
+
+#include "proto/block.pb.h"
+#include "net/peer_node.h"
+#include "utils/tfs_bench_mark.h"
+#include "utils/contract_utils.h"
 
 void BlockStroage::_StartTimer()
 {
-	_blockTimer.AsyncLoop(1000, [this](){
+	_blockTimer.AsyncLoop(100, [this](){
 		_BlockCheck();
         ExpiredDeleteCheck();
 	});
@@ -26,7 +26,7 @@ void BlockStroage::_StartTimer()
 
 int BlockStroage::AddBlock(const BlockMsg &msg)
 {
-	std::unique_lock<std::shared_mutex> lck(_blockMutex); 
+	std::unique_lock<std::shared_mutex> lck(_blockMutex);
 
     CBlock block;
     block.ParseFromString(msg.block());
@@ -46,7 +46,7 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 
     CBlock block;
     block.ParseFromString(msg.block());
-    INFOLOG("recv block sign addr = {}",GetBase58Addr(block.sign(1).pub()));
+    INFOLOG("recv block sign addr = {}, blockhash:{}",GenerateAddr(block.sign(1).pub()), block.hash());
 
     if(block.sign_size() != 2)
     {
@@ -64,6 +64,7 @@ int BlockStroage::UpdateBlock(const BlockMsg &msg)
 
 	return 0;
 }
+
 
 void BlockStroage::_BlockCheck()
 {
@@ -107,7 +108,7 @@ void BlockStroage::_BlockCheck()
                     ERRORLOG("Verify Block Flow SignNode Failed! ret : {}",ret);
                 }
             }else{
-                ERRORLOG("Compose blockmsg failed!");
+                ERRORLOG("Compose blockMsg failed!");
             }
             hashKey.push_back(temBlock.hash());
         }else if(lagTime > kTenSecond){
@@ -126,15 +127,16 @@ void BlockStroage::_BlockCheck()
 	hashKey.clear();    
 }
 
-int BlockStroage::_ComposeEndBlockmsg(const std::vector<BlockMsg> &msgvec, BlockMsg & outMsg , bool isVrf)
+
+int BlockStroage::_ComposeEndBlockmsg(const std::vector<BlockMsg> &msgVec, BlockMsg & outMsg , bool isVrf)
 {
     std::vector<BlockMsg> _vrfMsgVec;
     if(isVrf)
     {
         CBlock temBlock;
-        temBlock.ParseFromString(msgvec.at(0).block());
+        temBlock.ParseFromString(msgVec.at(0).block());
         Cycliclist<BlockMsg> list;
-        std::vector<BlockMsg> secondMsg = msgvec;
+        std::vector<BlockMsg> secondMsg = msgVec;
         secondMsg.erase(secondMsg.begin());
 
         for(auto &msgBlock : secondMsg)
@@ -182,7 +184,7 @@ int BlockStroage::_ComposeEndBlockmsg(const std::vector<BlockMsg> &msgvec, Block
     }    
 
     CBlock endBlock;
-    endBlock.ParseFromString(msgvec[0].block()); 
+    endBlock.ParseFromString(msgVec[0].block()); 
 	for(auto &msg : _vrfMsgVec)
 	{   
         CBlock block;
@@ -198,15 +200,14 @@ int BlockStroage::_ComposeEndBlockmsg(const std::vector<BlockMsg> &msgvec, Block
             CSign * sign  = endBlock.add_sign();
             sign->set_pub(block.sign(1).pub());
             sign->set_sign(block.sign(1).sign());
-            INFOLOG("rand block sign = {}",GetBase58Addr(block.sign(1).pub()));
+            INFOLOG("rand block sign = {}",GenerateAddr(block.sign(1).pub()));
 
         }
     }
-    std::string addr = GetBase58Addr(endBlock.sign(0).pub());
+    std::string addr = GenerateAddr(endBlock.sign(0).pub());
     outMsg.set_block(endBlock.SerializeAsString());
     return 0;       
 }
-
 void BlockStroage::_Remove(const std::string &hash)
 {
 
@@ -299,27 +300,31 @@ void BlockStroage::ClearPreHashMap()
     _preHashMap.clear();
 }
 
-int GetPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,
+int GetPrehashFindNode(uint32_t num, uint64_t seekHeight, const std::vector<std::string> &pledgeAddr,
                             std::vector<std::string> &sendNodeIds)
 {
+    DEBUGLOG("find node base on Prehash height {}", seekHeight);
+    auto discardComparator = std::less<>();
+    auto reserveComparator = std::greater_equal<>();
+    
     int ret = 0;
-    if ((ret = SyncBlock::GetSyncNodeSimplify(num, selfNodeHeight, pledgeAddr,
-                                                                             sendNodeIds)) != 0)
+    if ((ret = SyncBlock::_GetSyncNodeBasic(num, seekHeight, discardComparator, reserveComparator, pledgeAddr, sendNodeIds)) != 0)
     {
         ERRORLOG("get seek node fail, ret:{}", ret);
         return -1;
     }
     return 0;
 }
+
 RetType BlockStroage::_SeekPreHashThread(uint64_t seekHeight)
 {
     DEBUGLOG("_SeekPreHashThread Start");
-    uint64_t chainHeight = 0;
-    if(!MagicSingleton<BlockHelper>::GetInstance()->ObtainChainHeight(chainHeight))
-    {
-        DEBUGLOG("ObtainChainHeight fail!!!");
-        return {"",0};
-    }
+    // uint64_t chainHeight = 0;
+    // if(!MagicSingleton<BlockHelper>::GetInstance()->ObtainChainHeight(chainHeight))
+    // {
+    //     DEBUGLOG("ObtainChainHeight fail!!!");
+    //     return {"",0};
+    // }
     uint64_t selfNodeHeight = 0;
     std::vector<std::string> pledgeAddr; // stake and invested addr
     {
@@ -330,26 +335,21 @@ RetType BlockStroage::_SeekPreHashThread(uint64_t seekHeight)
             DEBUGLOG("GetBlockTop fail!!!");
             return {"",0};
         }
-        std::vector<std::string> stakeAddr;
-        status = dbReader.GetStakeAddress(stakeAddr);
-        if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
-        {
-            DEBUGLOG("GetStakeAddress fail!!!");
-            return {"",0};
-        }
+        std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 
-        for(const auto& addr : stakeAddr)
+        for (const auto &node : nodelist)
         {
-            if(VerifyBonusAddr(addr) != 0)
+            int ret = VerifyBonusAddr(node.address);
+
+            int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+            if (stakeTime > 0 && ret == 0)
             {
-                DEBUGLOG("{} doesn't get invested, skip", addr);
-                continue;
+                pledgeAddr.push_back(node.address);
             }
-            pledgeAddr.push_back(addr);
         }
     }
     std::vector<std::string> sendNodeIds;
-    if (GetPrehashFindNode(10, chainHeight, pledgeAddr, sendNodeIds) != 0)
+    if (GetPrehashFindNode(global::ca::KMinSyncQualNodes, seekHeight, pledgeAddr, sendNodeIds) != 0)
     {
         ERRORLOG("get sync node fail");
         return {"",0};
@@ -358,11 +358,11 @@ RetType BlockStroage::_SeekPreHashThread(uint64_t seekHeight)
     {
         DEBUGLOG("seekHeight:{}, selfNodeHeight:{}", seekHeight, selfNodeHeight);
     }
-    return _SeekPreHashByNode(sendNodeIds, seekHeight, selfNodeHeight, chainHeight);
+    return _SeekPreHashByNode(sendNodeIds, seekHeight, selfNodeHeight);
 }
 
 RetType BlockStroage::_SeekPreHashByNode(
-		const std::vector<std::string> &sendNodeIds, uint64_t seekHeight, const uint64_t &selfNodeHeight, const uint64_t &chainHeight)
+		const std::vector<std::string> &sendNodeIds, uint64_t seekHeight, const uint64_t &selfNodeHeight)
 {
     std::string msgId;
     uint64_t succentCount = 0;
@@ -373,6 +373,10 @@ RetType BlockStroage::_SeekPreHashByNode(
     }
     for (auto &nodeId : sendNodeIds)
     {
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, nodeId))
+        {
+            return {"", 0};
+        }
         DEBUGLOG("new seek get block hash from {}", nodeId);
         SendSeekGetPreHashReq(nodeId, msgId, seekHeight);
     }
@@ -645,21 +649,18 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
         DEBUGLOG("AAAC txstatus , txHash:{}, err:{}",it.first, it.second);
     }
 
-    BlockMsg blockmsg;
+    BlockMsg blockMsg;
     for(auto &tx : oldBlock.txs())
     {
         if(GetTransactionType(tx) != kTransactionType_Tx)
         {
             continue;
         }
-        
-        if(oldBlock.height() > global::ca::OldVersionSmartContractFailureHeight)
+
+        if((global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeCallContract ||
+        (global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeDeployContract)
         {
-            if((global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeCallContract ||
-            (global::ca::TxType)tx.txtype() == global::ca::TxType::kTxTypeDeployContract)
-            {
-                return;
-            }
+            return;
         }
 
         if(txsStatus.find(tx.hash()) != txsStatus.end() && txsStatus[tx.hash()] >= FailThreshold)
@@ -684,8 +685,8 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
         auto foundVrf = _blockStatusMap[blockHash].vrfMap.find(tx.hash());
         if(foundVrf != _blockStatusMap[blockHash].vrfMap.end())
         {
-            // blockmsg.mutable_vrfinfomap()->insert({tx.hash(), foundVrf->second});
-            blockmsg.add_vrfinfo()->CopyFrom(foundVrf->second);
+            blockMsg.add_vrfinfo()->CopyFrom(foundVrf->second);
+            
         } 
         else
         {
@@ -694,19 +695,12 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
         auto foundTxVrf = _blockStatusMap[blockHash].txvrfMap.find(tx.hash());
         if(foundTxVrf != _blockStatusMap[blockHash].txvrfMap.end())
         {
-            // auto vrfJson = nlohmann::json::parse(foundTxVrf->second.data());
-            // vrfJson["txhash"] = tx.hash();
-            // foundTxVrf->second.set_data(vrfJson.dump());
 
             foundTxVrf->second.mutable_vrfdata()->set_txvrfinfohash(tx.hash());
-            blockmsg.add_txvrfinfo()->CopyFrom(foundTxVrf->second);
-
-            //foundTxVrf->second.mutable_vrfdata()->set_hash(tx.hash());
-            // blockmsg.mutable_txvrfinfomap()->insert({tx.hash(), foundTxVrf->second});
+            blockMsg.add_txvrfinfo()->CopyFrom(foundTxVrf->second);
             *newBlock.add_txs() = tx;
         } 
     }
-    
     lck.unlock();
     if(newBlock.txs_size() == 0)
     {
@@ -722,38 +716,38 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
     std::string test_str = filestream.str();
     DEBUGLOG("AAAC newBuildBlock --> {}", test_str);
 
-    blockmsg.set_version(global::kVersion);
-    blockmsg.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
-    blockmsg.set_block(newBlock.SerializeAsString());
+    blockMsg.set_version(global::kVersion);
+    blockMsg.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
+    blockMsg.set_block(newBlock.SerializeAsString());
 
-    BlockMsg _cpMsg = blockmsg;
+    BlockMsg _cpMsg = blockMsg;
     _cpMsg.clear_block();
 
-    std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
     std::string _cpMsgHash = Getsha256hash(_cpMsg.SerializeAsString());
 	std::string signature;
 	std::string pub;
-	if (TxHelper::Sign(defaultBase58Addr, _cpMsgHash, signature, pub) != 0)
+	if (TxHelper::Sign(defaultAddr, _cpMsgHash, signature, pub) != 0)
 	{
 		return;
 	}
 
-	CSign * sign = blockmsg.mutable_sign();
+	CSign * sign = blockMsg.mutable_sign();
 	sign->set_sign(signature);
 	sign->set_pub(pub);
 
-    auto msg = make_shared<BlockMsg>(blockmsg);
+    auto msg = std::make_shared<BlockMsg>(blockMsg);
 	auto ret = DoHandleBlock(msg);
     if(ret != 0)
     {
-        ERRORLOG("AAAC DoHandleBlock failed The error code is {}",ret);
         CBlock cblock;
 	    if (!cblock.ParseFromString(msg->block()))
 	    {
 		    ERRORLOG("fail to serialization!!");
 		    return;
 	    }
-        ClearVRF(cblock);
+        ERRORLOG("AAAC DoHandleBlock failed The error code is {}, block hash : {}",ret, cblock.hash().substr(0, 6));
+
         return;
     }
 
@@ -763,14 +757,7 @@ void BlockStroage::NewbuildBlockByBlockStatus(const std::string blockHash)
 
 int BlockStroage::InitNewBlock(const CBlock& oldBlock, CBlock& newBlock)
 {
-    if(oldBlock.height() <= global::ca::OldVersionSmartContractFailureHeight)
-    {
-        newBlock.set_version(0);
-    }
-    else
-    {
-        newBlock.set_version(global::ca::kCurrentBlockVersion);
-    }
+	newBlock.set_version(global::ca::kCurrentBlockVersion);
 	newBlock.set_time(MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp());
 	newBlock.set_height(oldBlock.height());
     newBlock.set_prevhash(oldBlock.prevhash());
@@ -782,7 +769,7 @@ int BlockStroage::InitNewBlock(const CBlock& oldBlock, CBlock& newBlock)
 void SendSeekGetPreHashReq(const std::string &nodeId, const std::string &msgId, uint64_t seekHeight)
 {
     SeekPreHashByHightReq req;
-    req.set_self_node_id(NetGetSelfNodeId());
+    req.set_self_node_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
     req.set_msg_id(msgId);
     req.set_seek_height(seekHeight);
     NetSendMessage<SeekPreHashByHightReq>(nodeId, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
@@ -792,7 +779,7 @@ void SendSeekGetPreHashReq(const std::string &nodeId, const std::string &msgId, 
 void SendSeekGetPreHashAck(SeekPreHashByHightAck& ack,const std::string &nodeId, const std::string &msgId, uint64_t seekHeight)
 {
     DEBUGLOG("SendSeekGetPreHashAck, id:{}, height:{}",  nodeId, seekHeight);
-    ack.set_self_node_id(NetGetSelfNodeId());
+    ack.set_self_node_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
     DBReader dbReader;
     uint64_t selfNodeHeight = 0;
     if (0 != dbReader.GetBlockTop(selfNodeHeight))
@@ -822,16 +809,25 @@ void SendSeekGetPreHashAck(SeekPreHashByHightAck& ack,const std::string &nodeId,
     return;
 }
 
-int HandleSeekGetPreHashReq(const std::shared_ptr<SeekPreHashByHightReq> &msg, const MsgData &msgdata)
+int HandleSeekGetPreHashReq(const std::shared_ptr<SeekPreHashByHightReq> &msg, const MsgData &msgData)
 {
+    if(!PeerNode::PeerNodeVerifyNodeId(msgData.fd, msg->self_node_id()))
+    {
+        return -1;
+    }
     SeekPreHashByHightAck ack;
     SendSeekGetPreHashAck(ack,msg->self_node_id(), msg->msg_id(), msg->seek_height());
     NetSendMessage<SeekPreHashByHightAck>(msg->self_node_id(), ack, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     return 0;
 }
-int HandleSeekGetPreHashAck(const std::shared_ptr<SeekPreHashByHightAck> &msg, const MsgData &msgdata)
+int HandleSeekGetPreHashAck(const std::shared_ptr<SeekPreHashByHightAck> &msg, const MsgData &msgData)
 {
-    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
+    if(!PeerNode::PeerNodeVerifyNodeId(msgData.fd, msg->self_node_id()))
+    {
+        return -1;
+    }
+
+    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->self_node_id(), msg->SerializeAsString());
     return 0;
 }
 
@@ -841,16 +837,21 @@ int DoProtoBlockStatus(const BlockStatus& blockStatus, const std::string destNod
     return 0;
 }
 
-int HandleBlockStatusMsg(const std::shared_ptr<BlockStatus> &msg, const MsgData &msgdata)
+int HandleBlockStatusMsg(const std::shared_ptr<BlockStatus> &msg, const MsgData &msgData)
 {
+    if(!PeerNode::PeerNodeVerifyNodeId(msgData.fd, msg->id()))
+    {
+        return -1;
+    }
+
     MagicSingleton<BlockStroage>::GetInstance()->AddBlockStatus(*msg);
     return 0;
 }
 
-int BlockStroage::VerifyBlockFlowSignNode(const BlockMsg & blockmsg)
+int BlockStroage::VerifyBlockFlowSignNode(const BlockMsg & blockMsg)
 {
     CBlock block;
-    block.ParseFromString(blockmsg.block());
+    block.ParseFromString(blockMsg.block());
 
 	// Verify Block flow verifies the signature of the node
     std::pair<std::string, std::vector<std::string>> nodesPair;
@@ -862,11 +863,11 @@ int BlockStroage::VerifyBlockFlowSignNode(const BlockMsg & blockmsg)
 
     //The signature node in the block flow
     std::vector<std::string> verifyNodes;
-    std::string defaultBase58addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    std::string defaultaddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
     for(auto &item : block.sign())
     {
-        std::string addr = GetBase58Addr(item.pub());
-        if(addr != defaultBase58addr)
+        std::string addr = GenerateAddr(item.pub());
+        if(addr != defaultaddr)
         {
             verifyNodes.push_back(addr);
         }
@@ -885,4 +886,5 @@ int BlockStroage::VerifyBlockFlowSignNode(const BlockMsg & blockmsg)
 
     return 0;
 }
+
 

@@ -9,19 +9,15 @@
 #ifndef _TRAN_STROAGE_
 #define _TRAN_STROAGE_
 
-#include <net/if.h>
-#include <unistd.h>
-
-#include <shared_mutex>
 #include <map>
+#include <unistd.h>
+#include <shared_mutex>
 
-#include "txhelper.h"
-#include "global.h"
+#include "utils/timer.hpp"
+#include "ca/txhelper.h"
+#include "ca/transaction_cache.h"
 #include "proto/transaction.pb.h"
 #include "proto/ca_protomsg.pb.h"
-#include "net/msg_queue.h"
-#include "utils/time_util.h"
-#include "ca/transaction_cache.h"
 
 /**
  * @brief       
@@ -45,6 +41,12 @@ public:
      * @return      int 
      */
 	int Add(uint64_t height,const TxMsgReq& msg);
+    
+    /**
+     * @brief       
+     * 
+     */
+	void _StartTimer();
 
     /**
      * @brief       
@@ -52,12 +54,6 @@ public:
      */
     void StopTimer() { _timer.Cancel(); }
 private:
-    /**
-     * @brief       
-     * 
-     */
-	void _StartTimer();
-
     /**
      * @brief       
      * 
@@ -72,7 +68,6 @@ private:
      */
 	void _Check();
 private:
-//    friend std::string PrintCache(int where);
     mutable std::shared_mutex _txPendingMutex;
     std::map<uint64_t, std::vector<TxMsgReq>> _txPending;
 	CTimer _timer;

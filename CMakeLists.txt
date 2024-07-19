@@ -6,8 +6,10 @@ cmake_minimum_required(VERSION 3.0)
 
 project (tfs) 
 
-set(CMAKE_CXX_STANDARD 17)
-
+#set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD 20)
+add_compile_options(-w)
 # Debug or Release
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -rdynamic")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -rdynamic")
@@ -31,6 +33,12 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "Rele
     message(FATAL_ERROR "CMAKE_BUILD_TYPE must be Debug or Release!!!")
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    ADD_DEFINITIONS(-DNDEBUG)
+    message("release")
+endif()
+
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_definitions(-Wno-builtin-macro-redefined)
@@ -43,6 +51,7 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CMAKE_COMMAND} -E time")
 
 set(CXX_FLAGS
         -Wall
+	-g
         )
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -save-temps")
 
@@ -70,11 +79,13 @@ file(GLOB SOURCES
     "utils/*.c"
     "common/*.cpp"
     "ca/*.cpp"
+    "ca/evm/*.cpp"
     "db/*.cpp"
     "net/*.cpp"
     "main/*.cpp"
     "proto/*.cc"
     "mpt/*.cpp"
+    "contract/*.cpp"
     )
 
 file(GLOB_RECURSE MAIN_FILE entry.cpp)
@@ -100,6 +111,7 @@ set(EXECUTABLE_OUTPUT_PATH bin)
 
 include_directories("${ROOT_DIR}/")
 include_directories("${ROOT_DIR}/ca")
+include_directories("${ROOT_DIR}/ca/evm")
 include_directories("${ROOT_DIR}/db")
 include_directories("${ROOT_DIR}/include")
 include_directories("${ROOT_DIR}/mpt")
@@ -110,13 +122,18 @@ include_directories("${ROOT_DIR}/spdlog/include")
 include_directories("${ROOT_DIR}/openssl/include")
 include_directories("${ROOT_DIR}/evmone/evmc/include/")
 include_directories("${ROOT_DIR}/evmone/include/")
-include_directories("${ROOT_DIR}/boost") 
+include_directories("${ROOT_DIR}/wasmtime-cpp/include") 
+include_directories("${ROOT_DIR}/silkpre/lib/")
+include_directories("${ROOT_DIR}/silkpre/")
+include_directories("${ROOT_DIR}/evmone/lib/")
+include_directories("${ROOT_DIR}/boost")
+include_directories("${ROOT_DIR}/contract")
 #include_directories(${Boost_INCLUDE_DIRS})
 
 
 target_link_libraries(${PROJECT_NAME}  dl)
 target_link_libraries(${PROJECT_NAME}  z)
-#target_link_libraries(${PROJECT_NAME}  bz2)
+# target_link_libraries(${PROJECT_NAME}  bz2)
 target_link_libraries(${PROJECT_NAME} -pthread ) 
 
 
@@ -148,6 +165,18 @@ add_library(evmone STATIC IMPORTED)
 
 set_property(TARGET evmone PROPERTY IMPORTED_LOCATION ${ROOT_DIR}/evmone/build/lib64/libevmone-standalone.a) 
 target_link_libraries(${PROJECT_NAME}  evmone )
+
+add_library(silkpre STATIC IMPORTED)
+set_property(TARGET silkpre PROPERTY IMPORTED_LOCATION ${ROOT_DIR}/silkpre/build/lib/libsilkpre-standalone.a) 
+target_link_libraries(${PROJECT_NAME}  silkpre )
+
+add_library(wasmtime STATIC IMPORTED)
+set_property(TARGET wasmtime PROPERTY IMPORTED_LOCATION ${ROOT_DIR}/wasmtime-cpp/lib/libwasmtime.a) 
+target_link_libraries(${PROJECT_NAME} wasmtime)
+
+add_library(cryptopp STATIC IMPORTED)
+set_property(TARGET cryptopp PROPERTY IMPORTED_LOCATION ${ROOT_DIR}/cryptopp/libcryptopp.a)
+target_link_libraries(${PROJECT_NAME}  cryptopp )
 
 find_package(GTest)
 if(GTEST_FOUND)

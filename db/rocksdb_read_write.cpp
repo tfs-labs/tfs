@@ -19,31 +19,30 @@ bool RocksDBReadWriter::TransactionInit()
     txn_ = rocksdb_->db_->BeginTransaction(write_options_);
     if (nullptr == txn_)
     {
-        // ERRORLOG("{} rocksdb begintransaction fail", txn_name_); 
         return false;
     }
     return true;
 }
 
-bool RocksDBReadWriter::TransactionCommit(rocksdb::Status &ret_status)
+bool RocksDBReadWriter::TransactionCommit(rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
-    ret_status = txn_->Commit();
-    if (!ret_status.ok())
+    retStatus = txn_->Commit();
+    if (!retStatus.ok())
     {
         ERRORLOG("{} transction commit failed code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
         return false;
     }
     delete txn_;
@@ -51,18 +50,18 @@ bool RocksDBReadWriter::TransactionCommit(rocksdb::Status &ret_status)
     return true;
 }
 
-bool RocksDBReadWriter::TransactionRollBack(rocksdb::Status &ret_status)
+bool RocksDBReadWriter::TransactionRollBack(rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     auto status = txn_->Rollback();
@@ -77,34 +76,34 @@ bool RocksDBReadWriter::TransactionRollBack(rocksdb::Status &ret_status)
     return true;
 }
 
-bool RocksDBReadWriter::MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &ret_status)
+bool RocksDBReadWriter::MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status.push_back(rocksdb::Status::Aborted());
+        retStatus.push_back(rocksdb::Status::Aborted());
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status.push_back(rocksdb::Status::Aborted());
+        retStatus.push_back(rocksdb::Status::Aborted());
         return false;
     }
     if (keys.empty())
     {
         ERRORLOG("key is empty");
-        ret_status.push_back(rocksdb::Status::Aborted());
+        retStatus.push_back(rocksdb::Status::Aborted());
         return false;
     }
-    ret_status.clear();
+    retStatus.clear();
     {
-        ret_status = txn_->MultiGet(read_options_, keys, &values);
+        retStatus = txn_->MultiGet(read_options_, keys, &values);
     }
     bool flag = true;
-    for(size_t i = 0; i < ret_status.size(); ++i)
+    for(size_t i = 0; i < retStatus.size(); ++i)
     {
-        auto status = ret_status.at(i);
+        auto status = retStatus.at(i);
         if (!status.ok())
         {
             flag = false;
@@ -134,41 +133,41 @@ bool RocksDBReadWriter::MultiReadData(const std::vector<rocksdb::Slice> &keys, s
 
 }
 
-bool RocksDBReadWriter::MergeValue(const std::string &key, const std::string &value, rocksdb::Status &ret_status, bool first_or_last)
+bool RocksDBReadWriter::MergeValue(const std::string &key, const std::string &value, rocksdb::Status &retStatus, bool firstOrLast)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (value.empty())
     {
         ERRORLOG("value is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     std::string ret_value;
-    if (ReadForUpdate(key, ret_value, ret_status))
+    if (ReadForUpdate(key, ret_value, retStatus))
     {
         std::vector<std::string> split_values;
         StringUtil::SplitString(ret_value, "_", split_values);
         auto it = std::find(split_values.begin(), split_values.end(), value);
         if(split_values.end() == it)
         {
-            if(first_or_last)
+            if(firstOrLast)
             {
                 std::vector<std::string> tmp_values;
                 tmp_values.push_back(value);
@@ -190,46 +189,46 @@ bool RocksDBReadWriter::MergeValue(const std::string &key, const std::string &va
             ret_value += split_value;
             ret_value += "_";
         }
-        return WriteData(key, ret_value, ret_status);
+        return WriteData(key, ret_value, retStatus);
     }
     else
     {
-        if (ret_status.IsNotFound())
+        if (retStatus.IsNotFound())
         {
-            return WriteData(key, value, ret_status);
+            return WriteData(key, value, retStatus);
         }
     }
     return false;
 }
 
-bool RocksDBReadWriter::RemoveMergeValue(const std::string &key, const std::string &value, rocksdb::Status &ret_status)
+bool RocksDBReadWriter::RemoveMergeValue(const std::string &key, const std::string &value, rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (value.empty())
     {
         ERRORLOG("value is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     std::string ret_value;
-    if (ReadForUpdate(key, ret_value, ret_status))
+    if (ReadForUpdate(key, ret_value, retStatus))
     {
         std::vector<std::string> split_values;
         StringUtil::SplitString(ret_value, "_", split_values);
@@ -251,57 +250,57 @@ bool RocksDBReadWriter::RemoveMergeValue(const std::string &key, const std::stri
         }
         if(ret_value.empty())
         {
-            return DeleteData(key, ret_status);
+            return DeleteData(key, retStatus);
         }
-        return WriteData(key, ret_value, ret_status);
+        return WriteData(key, ret_value, retStatus);
     }
     else
     {
-        if(ret_status.IsNotFound())
+        if(retStatus.IsNotFound())
         {
             return true;
         }
     }
     return false;
 }
-bool RocksDBReadWriter::ReadData(const std::string &key, std::string &value, rocksdb::Status &ret_status)
+bool RocksDBReadWriter::ReadData(const std::string &key, std::string &value, rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     {
-        ret_status = txn_->Get(read_options_, key, &value);
+        retStatus = txn_->Get(read_options_, key, &value);
     }
-    if (ret_status.ok())
+    if (retStatus.ok())
     {
         return true;
     }
-    if (ret_status.IsNotFound())
+    if (retStatus.IsNotFound())
     {
         TRACELOG("{} rocksdb ReadData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     else
     {
         ERRORLOG("{} rocksdb ReadData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
-    if(ret_status.code() == rocksdb::Status::Code::kIOError)
+    if(retStatus.code() == rocksdb::Status::Code::kIOError)
     {
         DBDestory();
         exit(-1);
@@ -309,128 +308,128 @@ bool RocksDBReadWriter::ReadData(const std::string &key, std::string &value, roc
     return false;
 }
 
-bool RocksDBReadWriter::WriteData(const std::string &key, const std::string &value, rocksdb::Status &ret_status)
+bool RocksDBReadWriter::WriteData(const std::string &key, const std::string &value, rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (value.empty())
     {
         ERRORLOG("value is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     {
-        ret_status = txn_->Put(key, value);
+        retStatus = txn_->Put(key, value);
     }
-    if (ret_status.ok())
+    if (retStatus.ok())
     {
         return true;
     }
-    if (ret_status.IsNotFound())
+    if (retStatus.IsNotFound())
     {
         TRACELOG("{} rocksdb WriteData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     else
     {
         ERRORLOG("{} rocksdb WriteData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     return false;
 }
-bool RocksDBReadWriter::DeleteData(const std::string &key, rocksdb::Status &ret_status)
+bool RocksDBReadWriter::DeleteData(const std::string &key, rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     {
-        ret_status = txn_->Delete(key);
+        retStatus = txn_->Delete(key);
     }
-    if (ret_status.ok())
+    if (retStatus.ok())
     {
         return true;
     }
-    if (ret_status.IsNotFound())
+    if (retStatus.IsNotFound())
     {
         TRACELOG("{} rocksdb DeleteData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     else
     {
         ERRORLOG("{} rocksdb DeleteData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     return false;
 }
-bool RocksDBReadWriter::ReadForUpdate(const std::string &key, std::string &value, rocksdb::Status &ret_status)
+bool RocksDBReadWriter::ReadForUpdate(const std::string &key, std::string &value, rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (nullptr == txn_)
     {
         ERRORLOG("transaction is null");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     {
-        ret_status = txn_->GetForUpdate(read_options_, key, &value);
+        retStatus = txn_->GetForUpdate(read_options_, key, &value);
     }
-    if (ret_status.ok())
+    if (retStatus.ok())
     {
         return true;
     }
-    if (ret_status.IsNotFound())
+    if (retStatus.IsNotFound())
     {
         TRACELOG("{} rocksdb ReadForUpdate failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     else
     {
         ERRORLOG("{} rocksdb ReadForUpdate failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 txn_name_, key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 txn_name_, key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
-    if(ret_status.code() == rocksdb::Status::Code::kIOError)
+    if(retStatus.code() == rocksdb::Status::Code::kIOError)
     {
         DBDestory();
         exit(-1);

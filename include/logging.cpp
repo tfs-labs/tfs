@@ -5,78 +5,72 @@
 #include <signal.h>
 #include <execinfo.h>
 
-static std::shared_ptr<spdlog::logger> g_sink[LOGEND] = { nullptr };
-static const char * g_sink_names[] = {"tfs", "net", "ca", "contract"};
-static const char * g_level_strs[] = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL", "OFF" };
-static void SystemErrorHandler(int signum);
-static spdlog::level::level_enum GetLogLevel(const std::string &level);
 
-bool LogInit(const std::string &path, bool console_out, const std::string &level)
+bool Log::LogInit(const std::string &path, bool console_out, const std::string &level)
 {  
-    spdlog::level::level_enum l = GetLogLevel(level);
-    return LogInit(path, console_out, l);
+    spdlog::level::level_enum convertLevel = GetLogLevel(level);
+    return LogInit(path, console_out, convertLevel);
 }
-bool LogInit(const std::string &path, bool console_out, spdlog::level::level_enum level)
+bool Log::LogInit(const std::string &path, bool console_out, spdlog::level::level_enum level)
 {
     if(level >= spdlog::level::level_enum::off)
     {
         return true;
     }
+    std::lock_guard lock(_logMutex);
     try {
-        auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        std::vector<spdlog::sink_ptr> sinks;
+        spdlog::sink_ptr _consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         if(console_out)
-            sinks.push_back(console_sink);
+        {
+            _sinks.push_back(_consoleSink);
+        }
         for (int i = LOGMAIN; i < LOGEND; i++)
         {
-            sinks.push_back(std::make_shared<spdlog::sinks::daily_file_sink_mt>(path + "/" + g_sink_names[i] + ".log", 0, 0, false, 7));
-            g_sink[i] = std::make_shared<spdlog::logger>(g_sink_names[i], begin(sinks), end(sinks));
-
+            _sinks.push_back(std::make_shared<spdlog::sinks::daily_file_sink_mt>(path + "/" + _loggerType[i] + ".log", 0, 0, false, 7));
+            _logger[i] = std::make_shared<spdlog::logger>(_loggerType[i], begin(_sinks), end(_sinks));
             //Set the minimum log level
-            g_sink[i]->set_level(level);
-
+            _logger[i]->set_level(level);
             //Writes cached data to a file as soon as an err-level log occurs
-            g_sink[i]->flush_on(spdlog::level::trace);
-
+            _logger[i]->flush_on(spdlog::level::trace);
+            
             //Set the log output format
-            g_sink[i]->set_pattern("[%Y-%m-%d %H:%M:%S.%e][-%o][%t][%@:%!]%^[%l]:%v%$");
-
+            _logger[i]->set_pattern("[%Y-%m-%d %H:%M:%S.%e][-%o][%t][%@:%!]%^[%l]:%v%$");       
+      
             //Set up error handling
-            g_sink[i]->set_error_handler([=](const std::string &msg) {
-                std::cout << " An error occurred in the " << g_sink_names[i] << " log system: " << msg << std::endl;
+            _logger[i]->set_error_handler([=](const std::string &msg) {
+            std::cout << " An error occurred in the " << _loggerType[i] << " log system: " << msg << std::endl;
             });
-            sinks.pop_back();
         }
-
         //Prints the function call stack when the program crashes
 	    signal(SIGSEGV, SystemErrorHandler);
     }
     catch (const spdlog::spdlog_ex& ex)
     {
         std::cout << "Log initialization failed: " << ex.what() << std::endl;
-        LogFini();
+        LogDeinit();
         return false;
     }
     catch (...)
     {
         std::cout << "Log initialization failed" << std::endl;
-        LogFini();
+        LogDeinit();
         return false;
     }
     return true;
 }
 
-spdlog::level::level_enum GetLogLevel(const std::string &level)
+spdlog::level::level_enum Log::GetLogLevel(const std::string &level)
 {
-	for (size_t i = 0; i < sizeof(g_level_strs) / sizeof(const char *); i++)
-	{
-		if (strcasecmp(g_level_strs[i], level.c_str()) == 0)
-		{
-			return (spdlog::level::level_enum)i;
-		}
-	}
+    auto it = std::find(_loggerLevel.begin(),_loggerLevel.end(),level);
+    if(it != _loggerLevel.end())
+    {
+        std::lock_guard lock(_logMutex);
+        auto levelEnum = levelMap[level];
+        return levelEnum;
+    }
     return spdlog::level::warn;
 }
+
 void SystemErrorHandler(int signum)
 {
     const int len = 1024;
@@ -89,14 +83,22 @@ void SystemErrorHandler(int signum)
 		ERRORLOG("{}: {}", i, funs[i]);
     free(funs);
 }
-std::shared_ptr<spdlog::logger> GetSink(LOGSINK sink)
+
+std::shared_ptr<spdlog::logger> Log::GetSink(LOGSINK sink)
 {
-    if(sink > LOGMAIN && sink < LOGEND)
-        return g_sink[sink];
-    return g_sink[LOGMAIN];
+    return _logger[LOGMAIN];
 }
 
-void LogFini()
+void Log::LogDeinit()
 {
-    spdlog::shutdown();
+  for(auto& logger : _logger) 
+  {  
+    logger.reset(); 
+  }
+
+  _logMutex.lock();
+
+  spdlog::shutdown();
+
+  _logMutex.unlock();
 }

@@ -11,6 +11,12 @@ struct GlobalData
     std::mutex mutex;
     std::condition_variable condition;
     std::vector<std::string> data;
+    std::set<std::string> res_ids;
+    ~GlobalData()
+    {
+        data.clear();
+        res_ids.clear();
+    }
 };
 
 bool GlobalDataManager::CreateWait(uint32_t timeOutSec, uint32_t retNum, std::string &outMsgId)
@@ -28,7 +34,7 @@ bool GlobalDataManager::CreateWait(uint32_t timeOutSec, uint32_t retNum, std::st
     return true;
 }
 
-bool GlobalDataManager::AddWaitData(const std::string &msgId, const std::string &data)
+bool GlobalDataManager::AddResNode(const std::string &msgId, const std::string &resId)
 {
     std::shared_ptr<GlobalData> dataPtr;
     {
@@ -42,6 +48,32 @@ bool GlobalDataManager::AddWaitData(const std::string &msgId, const std::string 
     }
     {
         std::lock_guard lock(dataPtr->mutex);
+        dataPtr->res_ids.insert(resId);
+    }
+    return true;
+}
+
+bool GlobalDataManager::AddWaitData(const std::string &msgId, const std::string &resId, const std::string &data)
+{
+    std::shared_ptr<GlobalData> dataPtr;
+    {
+        std::lock_guard lock(_globalDataMutex);
+        auto it = _globalData.find(msgId);
+        if (_globalData.end() == it)
+        {
+            return false;
+        }
+        dataPtr = it->second;
+    }
+    {
+        std::lock_guard lock(dataPtr->mutex);
+        auto found = dataPtr->res_ids.find(resId);
+        if(found == dataPtr->res_ids.end())
+        {
+            ERRORLOG("not found msg_id:{}, res_id:{}",msgId, resId);
+            return false;
+        }
+        dataPtr->res_ids.erase(found);
         dataPtr->data.push_back(data);
         if (dataPtr->data.size() >= dataPtr->retNum)
         {
@@ -69,7 +101,19 @@ bool GlobalDataManager::WaitData(const std::string &msgId, std::vector<std::stri
     {
         dataPtr->condition.wait_for(lock, std::chrono::seconds(dataPtr->timeOutSec));
     }
-    dataPtr->mutex.unlock();
+
+    {
+        retData = dataPtr->data;
+    }
+
+    if (retData.size() < dataPtr->retNum)
+    {
+        flag = false;
+    }
+
+    // Only unlock data_ptr->mutex after all operations on it are complete.
+    lock.unlock();
+
     {
         std::lock_guard lock(_globalDataMutex);
         auto it = _globalData.find(msgId);
@@ -78,14 +122,7 @@ bool GlobalDataManager::WaitData(const std::string &msgId, std::vector<std::stri
             _globalData.erase(it);
         }
     }
-    {
-        std::lock_guard lock(dataPtr->mutex);
-        retData = dataPtr->data;
-    }
-    if (retData.size() < dataPtr->retNum)
-    {
-        flag = false;
-    }
+
     return flag;
 }
 
@@ -95,14 +132,3 @@ GlobalDataManager &GlobalDataManager::GetGlobalDataManager()
     return g_globalDataMgr;
 }
 
-GlobalDataManager &GlobalDataManager::GetGlobalDataManager2()
-{
-    static GlobalDataManager g_globalDataMgr;
-    return g_globalDataMgr;
-}
-
-GlobalDataManager &GlobalDataManager::GetGlobalDataManager3()
-{
-    static GlobalDataManager g_globalDataMgr;
-    return g_globalDataMgr;
-}

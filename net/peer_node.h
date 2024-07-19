@@ -27,8 +27,6 @@
 
 #include "../net/node.hpp"
 
-using namespace std;
-
 enum NodeType
 {
 	NODE_ALL,
@@ -46,12 +44,12 @@ public:
 	/**
 	 * @brief       
 	 * 
-	 * @param       base58Addr 
+	 * @param       Addr 
 	 * @param       x 
 	 * @return      true 
 	 * @return      false 
 	 */
-	bool FindNode(std::string const& base58Addr, Node& x);
+	bool FindNode(std::string const& Addr, Node& x);
 
 	/**
 	 * @brief       
@@ -62,6 +60,16 @@ public:
 	 * @return      false 
 	 */
 	bool FindNodeByFd(int fd, Node& node);
+
+	/**
+	 * @brief       
+	 * 
+	 * @param       fd 
+	 * @param       peerId 
+	 * @return      true 
+	 * @return      false 
+	 */
+	static bool PeerNodeVerifyNodeId(const int fd, const std::string &peerId);
 	
 	/**
 	 * @brief       Get the Nodelist object
@@ -71,7 +79,6 @@ public:
 	 * @return      std::vector<Node> 
 	 */
 	std::vector<Node> GetNodelist(NodeType type = NODE_ALL, bool mustAlive = false);
-	std::vector<Node> GetNodelistByHeartBeat(NodeType type = NODE_ALL, bool mustAlive = false);
 
 	/**
 	 * @brief       Get the Nodelist object
@@ -92,9 +99,9 @@ public:
 	/**
 	 * @brief       
 	 * 
-	 * @param       base58Addr 
+	 * @param       Addr 
 	 */
-	void DeleteNode(std::string base58Addr);
+	void DeleteNode(std::string Addr);
 
 	/**
 	 * @brief       When adding to the node list fails close fd
@@ -208,13 +215,6 @@ public:
 	/**
 	 * @brief       
 	 * 
-	 * @return      int 
-	 */
-	int DeleteOldVersionNode(); 
-
-	/**
-	 * @brief       
-	 * 
 	 * @param       ip 
 	 * @param       port 
 	 * @param       fd 
@@ -241,9 +241,9 @@ public:
 	/**
 	 * @brief       Set the Self Id object
 	 * 
-	 * @param       base58Addr 
+	 * @param       Addr 
 	 */
-	void SetSelfId(const std::string &base58Addr);
+	void SetSelfId(const std::string &Addr);
 
 	/**
 	 * @brief       Set the Self Ip Public object
@@ -339,7 +339,7 @@ public:
 	 * 
 	 * @return      const std::string 
 	 */
-	const std::string GetBase58Address();
+	const std::string GetAddress();
 
 	/**
 	 * @brief       
@@ -348,7 +348,7 @@ public:
 	 * @param       newPub 
 	 * @return      int 
 	 */
-    int UpdateBase58Address(const string &oldPub, const std::string & newPub);
+    int UpdateAddress(const std::string &oldPub, const std::string & newPub);
 
 	/**
 	 * @brief       

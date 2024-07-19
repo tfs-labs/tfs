@@ -81,12 +81,45 @@ extern "C"{
 #endif  /* __cplusplus */
 
 
-
+/**
+ * @brief
+ * 
+ * @param       version:
+ * @return      uint16_t
+*/
 uint16_t qrcode_getBufferSize(uint8_t version);
-
+/**
+ * @brief
+ * 
+ * @param       qrcode:
+ * @param       modules:
+ * @param       version:
+ * @param       ecc:
+ * @param       data:
+ * @return      int8_t
+*/
 int8_t qrcode_initText(QRCode *qrcode, uint8_t *modules, uint8_t version, uint8_t ecc, const char *data);
+/**
+ * @brief
+ * 
+ * @param       qrcode:
+ * @param       modules:
+ * @param       version:
+ * @param       ecc:
+ * @param       data:
+ * @param       length:
+ * @return      int8_t
+*/
 int8_t qrcode_initBytes(QRCode *qrcode, uint8_t *modules, uint8_t version, uint8_t ecc, uint8_t *data, uint16_t length);
-
+/**
+ * @brief
+ * 
+ * @param       qrcode:
+ * @param       x:
+ * @param       y:
+ * @return      return
+ * @return      false
+*/
 bool qrcode_getModule(QRCode *qrcode, uint8_t x, uint8_t y);
 
 

@@ -1,0 +1,43 @@
+/**
+ * *****************************************************************************
+ * @file        key_exchange.proto
+ * @brief       exchange public keys agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
+
+syntax = "proto3";
+
+//key exchange request
+message KeyExchangeRequest {
+    string    msg_id     = 1;   //mark message
+    KeyInfo   key_info   = 2;   
+}
+
+//key exchange response
+message KeyExchangeResponse {
+    string    msg_id     = 1;   //mark message
+    KeyInfo   key_info   = 2;   
+}
+
+//Key information
+message KeyInfo {
+    bytes salt_32bytes              = 1;  // Random digit
+    bytes ec_public_key_65bytes     = 2;  // Public-key of EC NIST P-256
+}
+
+message Token {
+    bytes  salt_3bytes             = 1;  // random at each request
+    bytes  hmac_3bytes             = 2;  // calculated by salt_3bytes and its public-key
+}
+
+message Ciphertext {
+    int32  cipher_version          = 1;  // default 1
+    bytes  aes_iv_12bytes          = 2;  // randomly generated each time
+    bytes  ciphertext_nbytes       = 3;  // PlainText message serialized and encrypted
+    bytes  aes_tag_16bytes         = 4;  // generated after AES encryption
+    Token  token                   = 5;
+}

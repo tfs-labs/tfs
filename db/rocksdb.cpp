@@ -4,12 +4,12 @@
 #include "db/db_api.h"
 #include "ca/ca.h"
 
-void BackgroundErrorListener::OnBackgroundError(rocksdb::BackgroundErrorReason reason, rocksdb::Status *bg_error)
+void BackgroundErrorListener::OnBackgroundError(rocksdb::BackgroundErrorReason reason, rocksdb::Status *errorStatus)
 {
-    if (bg_error != nullptr)
+    if (errorStatus != nullptr)
     {
         ERRORLOG("RocksDB Background Error {} code:({}),subcode:({}),severity:({}),info:({})", reason,
-                 bg_error->code(), bg_error->subcode(), bg_error->severity(), bg_error->ToString());
+                 errorStatus->code(), errorStatus->subcode(), errorStatus->severity(), errorStatus->ToString());
     }
     else
     {
@@ -33,12 +33,12 @@ RocksDB::~RocksDB()
     is_init_success_ = false;
 }
 
-void RocksDB::SetDBPath(const std::string &db_path)
+void RocksDB::SetDBPath(const std::string &dbPath)
 {
-    db_path_ = db_path;
+    db_path_ = dbPath;
 }
 
-bool RocksDB::InitDB(rocksdb::Status &ret_status)
+bool RocksDB::InitDB(rocksdb::Status &retStatus)
 {
     if (is_init_success_)
     {
@@ -52,15 +52,15 @@ bool RocksDB::InitDB(rocksdb::Status &ret_status)
     auto listener = std::make_shared<BackgroundErrorListener>();
     options.listeners.push_back(listener);
     rocksdb::TransactionDBOptions txn_db_options;
-    ret_status = rocksdb::TransactionDB::Open(options, txn_db_options, db_path_, &db_);
-    if (ret_status.ok())
+    retStatus = rocksdb::TransactionDB::Open(options, txn_db_options, db_path_, &db_);
+    if (retStatus.ok())
     {
         is_init_success_ = true;
     }
     else
     {
         ERRORLOG("rocksdb {} Open failed code:({}),subcode:({}),severity:({}),info:({})",
-                 db_path_, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 db_path_, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     return is_init_success_;
 }
@@ -71,14 +71,14 @@ void RocksDB::DestoryDB()
         is_init_success_ = false;
     }
 
-    rocksdb::Status ret_status;
+    rocksdb::Status retStatus;
     if (nullptr != db_)
     {
-        ret_status = db_->Close();
-        if (!ret_status.ok())
+        retStatus = db_->Close();
+        if (!retStatus.ok())
         {
             ERRORLOG("rocksdb {} Close failed code:({}),subcode:({}),severity:({}),info:({})",
-                     db_path_, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                     db_path_, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
             return;
         }
         delete db_;

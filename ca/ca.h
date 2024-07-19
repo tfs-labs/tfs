@@ -14,17 +14,14 @@
 #include <thread>
 #include <shared_mutex>
 
-#include "proto/ca_protomsg.pb.h"
-#include "net/msg_queue.h"
-#include "transaction.pb.h"
+#include "proto/transaction.pb.h"
 
 extern bool bStopTx;
 extern bool bIsCreateTx;
 
 void RegisterCallback();
 void TestCreateTx(const std::vector<std::string> & addrs, const int & sleepTime);
-void CreateMultiThreadAutomaticDeployContract();
-void printJson();
+
 /**
  * @brief       CA initialization
  * 
@@ -87,13 +84,11 @@ void HandleSetdefaultAccount();
  * @brief       
  */
 void HandleDeployContract();
-void HandleDeployContract_V33_1();
 
 /**
  * @brief       
  */
 void HandleCallContract();
-void HandleCallContract_V33_1();
 
 /**
  * @brief       
@@ -132,27 +127,37 @@ std::string RpcCallContract(void * arg,void *ack);
  * @param       ack: 
  * @return      std::string 
  */
-std::string RpcCallContract_V33_1(void * arg,void *ack);
-
-/**
- * @brief       
- * 
- * @param       arg: 
- * @param       ack: 
- * @return      std::string 
- */
 std::string RpcDeployContract(void * arg,void *ack);
 
-
 /**
  * @brief       
  * 
- * @param       arg: 
- * @param       ack: 
- * @return      std::string 
+ * @param       tx: 
+ * @param       addr: 
+ * @return      int 
  */
-std::string RpcDeployContract_V33_1(void * arg,void *ack);
-
 int SigTx(CTransaction &tx,const std::string & addr);
+/**
+ * @brief   Deploy multiple contracts with one click   
+ * 
+ */
+void CreateAutomaticDeployContract();
+/**
+ * @brief   Processing contract transactions   
+ * 
+ */
+void HandleMultiDeployContract(const std::string &strFromAddr);
+/**
+ * @brief   The contract data is exported to json
+ * 
+ */
+void printJson();
 
+std::string remove0xPrefix(std::string str);
+
+std::vector<uint8_t> hexStringToBytes(const std::string& hexString);
+
+std::string seedToHexString(const uint8_t seed[], size_t length);
+
+std::string addHexPrefix(std::string hexStr);
 #endif

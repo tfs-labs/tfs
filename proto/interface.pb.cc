@@ -724,38 +724,6 @@ struct SuccessRateDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SuccessRateDefaultTypeInternal _SuccessRate_default_instance_;
-PROTOBUF_CONSTEXPR IsOnChainReq::IsOnChainReq(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.txhash_)*/{}
-  , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.time_)*/uint64_t{0u}
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct IsOnChainReqDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR IsOnChainReqDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~IsOnChainReqDefaultTypeInternal() {}
-  union {
-    IsOnChainReq _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 IsOnChainReqDefaultTypeInternal _IsOnChainReq_default_instance_;
-PROTOBUF_CONSTEXPR IsOnChainAck::IsOnChainAck(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.percentage_)*/{}
-  , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.time_)*/uint64_t{0u}
-  , /*decltype(_impl_.code_)*/0
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct IsOnChainAckDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR IsOnChainAckDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~IsOnChainAckDefaultTypeInternal() {}
-  union {
-    IsOnChainAck _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 IsOnChainAckDefaultTypeInternal _IsOnChainAck_default_instance_;
 PROTOBUF_CONSTEXPR ConfirmTransactionReq::ConfirmTransactionReq(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.txhash_)*/{}
@@ -777,6 +745,7 @@ PROTOBUF_CONSTEXPR ConfirmTransactionAck::ConfirmTransactionAck(
     /*decltype(_impl_.percentage_)*/{}
   , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.tx_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.time_)*/uint64_t{0u}
   , /*decltype(_impl_.code_)*/0
   , /*decltype(_impl_.send_size_)*/0u
@@ -810,6 +779,7 @@ PROTOBUF_CONSTEXPR CheckTxReq::CheckTxReq(
     /*decltype(_impl_.txhash_)*/{}
   , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.isresponse_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct CheckTxReqDefaultTypeInternal {
   PROTOBUF_CONSTEXPR CheckTxReqDefaultTypeInternal()
@@ -820,12 +790,44 @@ struct CheckTxReqDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CheckTxReqDefaultTypeInternal _CheckTxReq_default_instance_;
-PROTOBUF_CONSTEXPR CheckTxAck::CheckTxAck(
+PROTOBUF_CONSTEXPR GetUtxoHashReq::GetUtxoHashReq(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.utxohash_)*/{}
+  , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct GetUtxoHashReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetUtxoHashReqDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetUtxoHashReqDefaultTypeInternal() {}
+  union {
+    GetUtxoHashReq _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetUtxoHashReqDefaultTypeInternal _GetUtxoHashReq_default_instance_;
+PROTOBUF_CONSTEXPR GetUtxoHashAck::GetUtxoHashAck(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.flaghash_)*/{}
   , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.base58addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct GetUtxoHashAckDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetUtxoHashAckDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetUtxoHashAckDefaultTypeInternal() {}
+  union {
+    GetUtxoHashAck _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetUtxoHashAckDefaultTypeInternal _GetUtxoHashAck_default_instance_;
+PROTOBUF_CONSTEXPR CheckTxAck::CheckTxAck(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.flaghash_)*/{}
+  , /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.msg_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.tx_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct CheckTxAckDefaultTypeInternal {
   PROTOBUF_CONSTEXPR CheckTxAckDefaultTypeInternal()
@@ -839,7 +841,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR GetRestInvestAmountReq::GetRestInvestAmountReq(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.base58_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct GetRestInvestAmountReqDefaultTypeInternal {
   PROTOBUF_CONSTEXPR GetRestInvestAmountReqDefaultTypeInternal()
@@ -854,7 +856,7 @@ PROTOBUF_CONSTEXPR GetRestInvestAmountAck::GetRestInvestAmountAck(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.version_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.base58_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.amount_)*/uint64_t{0u}
   , /*decltype(_impl_.code_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
@@ -1311,26 +1313,6 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::SuccessRate, _impl_.hash_),
   PROTOBUF_FIELD_OFFSET(::SuccessRate, _impl_.rate_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::IsOnChainReq, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::IsOnChainReq, _impl_.version_),
-  PROTOBUF_FIELD_OFFSET(::IsOnChainReq, _impl_.txhash_),
-  PROTOBUF_FIELD_OFFSET(::IsOnChainReq, _impl_.time_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.version_),
-  PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.code_),
-  PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.message_),
-  PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.time_),
-  PROTOBUF_FIELD_OFFSET(::IsOnChainAck, _impl_.percentage_),
-  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::ConfirmTransactionReq, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -1353,6 +1335,7 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.percentage_),
   PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.send_size_),
   PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.received_size_),
+  PROTOBUF_FIELD_OFFSET(::ConfirmTransactionAck, _impl_.tx_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::CorresHash, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1370,6 +1353,26 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::CheckTxReq, _impl_.version_),
   PROTOBUF_FIELD_OFFSET(::CheckTxReq, _impl_.txhash_),
   PROTOBUF_FIELD_OFFSET(::CheckTxReq, _impl_.msg_id_),
+  PROTOBUF_FIELD_OFFSET(::CheckTxReq, _impl_.isresponse_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashReq, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashReq, _impl_.version_),
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashReq, _impl_.utxohash_),
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashReq, _impl_.msg_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashAck, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashAck, _impl_.version_),
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashAck, _impl_.flaghash_),
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashAck, _impl_.msg_id_),
+  PROTOBUF_FIELD_OFFSET(::GetUtxoHashAck, _impl_.base58addr_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::CheckTxAck, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1379,7 +1382,8 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::CheckTxAck, _impl_.version_),
   PROTOBUF_FIELD_OFFSET(::CheckTxAck, _impl_.flaghash_),
   PROTOBUF_FIELD_OFFSET(::CheckTxAck, _impl_.msg_id_),
-  PROTOBUF_FIELD_OFFSET(::CheckTxAck, _impl_.base58addr_),
+  PROTOBUF_FIELD_OFFSET(::CheckTxAck, _impl_.addr_),
+  PROTOBUF_FIELD_OFFSET(::CheckTxAck, _impl_.tx_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountReq, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1387,7 +1391,7 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountReq, _impl_.version_),
-  PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountReq, _impl_.base58_),
+  PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountReq, _impl_.addr_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountAck, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1398,7 +1402,7 @@ const uint32_t TableStruct_interface_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountAck, _impl_.code_),
   PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountAck, _impl_.message_),
   PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountAck, _impl_.amount_),
-  PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountAck, _impl_.base58_),
+  PROTOBUF_FIELD_OFFSET(::GetRestInvestAmountAck, _impl_.addr_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::GetBlockReq)},
@@ -1445,15 +1449,15 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 405, -1, -1, sizeof(::TransactionStatusItem)},
   { 420, -1, -1, sizeof(::GetTransactionStatusListAck)},
   { 430, -1, -1, sizeof(::SuccessRate)},
-  { 438, -1, -1, sizeof(::IsOnChainReq)},
-  { 447, -1, -1, sizeof(::IsOnChainAck)},
-  { 458, -1, -1, sizeof(::ConfirmTransactionReq)},
-  { 468, -1, -1, sizeof(::ConfirmTransactionAck)},
-  { 481, -1, -1, sizeof(::CorresHash)},
-  { 489, -1, -1, sizeof(::CheckTxReq)},
-  { 498, -1, -1, sizeof(::CheckTxAck)},
-  { 508, -1, -1, sizeof(::GetRestInvestAmountReq)},
-  { 516, -1, -1, sizeof(::GetRestInvestAmountAck)},
+  { 438, -1, -1, sizeof(::ConfirmTransactionReq)},
+  { 448, -1, -1, sizeof(::ConfirmTransactionAck)},
+  { 462, -1, -1, sizeof(::CorresHash)},
+  { 470, -1, -1, sizeof(::CheckTxReq)},
+  { 480, -1, -1, sizeof(::GetUtxoHashReq)},
+  { 489, -1, -1, sizeof(::GetUtxoHashAck)},
+  { 499, -1, -1, sizeof(::CheckTxAck)},
+  { 510, -1, -1, sizeof(::GetRestInvestAmountReq)},
+  { 518, -1, -1, sizeof(::GetRestInvestAmountAck)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -1501,12 +1505,12 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::_TransactionStatusItem_default_instance_._instance,
   &::_GetTransactionStatusListAck_default_instance_._instance,
   &::_SuccessRate_default_instance_._instance,
-  &::_IsOnChainReq_default_instance_._instance,
-  &::_IsOnChainAck_default_instance_._instance,
   &::_ConfirmTransactionReq_default_instance_._instance,
   &::_ConfirmTransactionAck_default_instance_._instance,
   &::_CorresHash_default_instance_._instance,
   &::_CheckTxReq_default_instance_._instance,
+  &::_GetUtxoHashReq_default_instance_._instance,
+  &::_GetUtxoHashAck_default_instance_._instance,
   &::_CheckTxAck_default_instance_._instance,
   &::_GetRestInvestAmountReq_default_instance_._instance,
   &::_GetRestInvestAmountAck_default_instance_._instance,
@@ -1612,34 +1616,35 @@ const char descriptor_table_protodef_interface_2eproto[] PROTOBUF_SECTION_VARIAB
   "n\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001(\t\022$"
   "\n\004list\030\005 \001(\0132\026.TransactionStatusItem\")\n\013"
   "SuccessRate\022\014\n\004hash\030\001 \001(\t\022\014\n\004rate\030\002 \001(\001\""
-  "=\n\014IsOnChainReq\022\017\n\007version\030\001 \001(\t\022\016\n\006txha"
-  "sh\030\002 \003(\t\022\014\n\004time\030\003 \001(\004\"n\n\014IsOnChainAck\022\017"
-  "\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message"
-  "\030\003 \001(\t\022\014\n\004time\030\004 \001(\004\022 \n\npercentage\030\005 \003(\013"
-  "2\014.SuccessRate\"V\n\025ConfirmTransactionReq\022"
-  "\017\n\007version\030\001 \001(\t\022\016\n\006txhash\030\002 \003(\t\022\014\n\004time"
-  "\030\003 \001(\004\022\016\n\006height\030\004 \001(\004\"\241\001\n\025ConfirmTransa"
-  "ctionAck\022\017\n\007version\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022"
-  "\017\n\007message\030\003 \001(\t\022\014\n\004time\030\004 \001(\004\022 \n\npercen"
-  "tage\030\005 \003(\0132\014.SuccessRate\022\021\n\tsend_size\030\006 "
-  "\001(\r\022\025\n\rreceived_size\030\007 \001(\r\"(\n\nCorresHash"
-  "\022\014\n\004hash\030\001 \001(\t\022\014\n\004flag\030\002 \001(\r\"=\n\nCheckTxR"
-  "eq\022\017\n\007version\030\001 \001(\t\022\016\n\006txhash\030\002 \003(\t\022\016\n\006m"
-  "sg_id\030\003 \001(\t\"`\n\nCheckTxAck\022\017\n\007version\030\001 \001"
-  "(\t\022\035\n\010flaghash\030\002 \003(\0132\013.CorresHash\022\016\n\006msg"
-  "_id\030\003 \001(\t\022\022\n\nbase58addr\030\004 \001(\t\"9\n\026GetRest"
-  "InvestAmountReq\022\017\n\007version\030\001 \001(\t\022\016\n\006base"
-  "58\030\002 \001(\t\"h\n\026GetRestInvestAmountAck\022\017\n\007ve"
-  "rsion\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001"
-  "(\t\022\016\n\006amount\030\004 \001(\004\022\016\n\006base58\030\005 \001(\t*\205\001\n\006T"
-  "xType\022\021\n\rTxTypeUnknown\020\000\022\014\n\010TxTypeTx\020\001\022\017"
-  "\n\013TxTypeStake\020\002\022\021\n\rTxTypeUnstake\020\003\022\020\n\014Tx"
-  "TypeInvest\020\004\022\023\n\017TxTypeDisinvest\020\005\022\017\n\013TxT"
-  "ypeBonus\020\006b\006proto3"
+  "V\n\025ConfirmTransactionReq\022\017\n\007version\030\001 \001("
+  "\t\022\016\n\006txhash\030\002 \003(\t\022\014\n\004time\030\003 \001(\004\022\016\n\006heigh"
+  "t\030\004 \001(\004\"\255\001\n\025ConfirmTransactionAck\022\017\n\007ver"
+  "sion\030\001 \001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001("
+  "\t\022\014\n\004time\030\004 \001(\004\022 \n\npercentage\030\005 \003(\0132\014.Su"
+  "ccessRate\022\021\n\tsend_size\030\006 \001(\r\022\025\n\rreceived"
+  "_size\030\007 \001(\r\022\n\n\002tx\030\010 \001(\014\"(\n\nCorresHash\022\014\n"
+  "\004hash\030\001 \001(\t\022\014\n\004flag\030\002 \001(\r\"Q\n\nCheckTxReq\022"
+  "\017\n\007version\030\001 \001(\t\022\016\n\006txhash\030\002 \003(\t\022\016\n\006msg_"
+  "id\030\003 \001(\t\022\022\n\nisresponse\030\004 \001(\r\"C\n\016GetUtxoH"
+  "ashReq\022\017\n\007version\030\001 \001(\t\022\020\n\010utxoHash\030\002 \003("
+  "\t\022\016\n\006msg_id\030\003 \001(\t\"d\n\016GetUtxoHashAck\022\017\n\007v"
+  "ersion\030\001 \001(\t\022\035\n\010flaghash\030\002 \003(\0132\013.CorresH"
+  "ash\022\016\n\006msg_id\030\003 \001(\t\022\022\n\nbase58addr\030\004 \001(\t\""
+  "f\n\nCheckTxAck\022\017\n\007version\030\001 \001(\t\022\035\n\010flagha"
+  "sh\030\002 \003(\0132\013.CorresHash\022\016\n\006msg_id\030\003 \001(\t\022\014\n"
+  "\004addr\030\004 \001(\t\022\n\n\002tx\030\005 \001(\014\"7\n\026GetRestInvest"
+  "AmountReq\022\017\n\007version\030\001 \001(\t\022\014\n\004addr\030\002 \001(\t"
+  "\"f\n\026GetRestInvestAmountAck\022\017\n\007version\030\001 "
+  "\001(\t\022\014\n\004code\030\002 \001(\005\022\017\n\007message\030\003 \001(\t\022\016\n\006am"
+  "ount\030\004 \001(\004\022\014\n\004addr\030\005 \001(\t*\205\001\n\006TxType\022\021\n\rT"
+  "xTypeUnknown\020\000\022\014\n\010TxTypeTx\020\001\022\017\n\013TxTypeSt"
+  "ake\020\002\022\021\n\rTxTypeUnstake\020\003\022\020\n\014TxTypeInvest"
+  "\020\004\022\023\n\017TxTypeDisinvest\020\005\022\017\n\013TxTypeBonus\020\006"
+  "b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_interface_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_interface_2eproto = {
-    false, false, 4898, descriptor_table_protodef_interface_2eproto,
+    false, false, 4928, descriptor_table_protodef_interface_2eproto,
     "interface.proto",
     &descriptor_table_interface_2eproto_once, nullptr, 0, 53,
     schemas, file_default_instances, TableStruct_interface_2eproto::offsets,
@@ -15681,622 +15686,6 @@ void SuccessRate::InternalSwap(SuccessRate* other) {
 
 // ===================================================================
 
-class IsOnChainReq::_Internal {
- public:
-};
-
-IsOnChainReq::IsOnChainReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:IsOnChainReq)
-}
-IsOnChainReq::IsOnChainReq(const IsOnChainReq& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  IsOnChainReq* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.txhash_){from._impl_.txhash_}
-    , decltype(_impl_.version_){}
-    , decltype(_impl_.time_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.version_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.version_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_version().empty()) {
-    _this->_impl_.version_.Set(from._internal_version(), 
-      _this->GetArenaForAllocation());
-  }
-  _this->_impl_.time_ = from._impl_.time_;
-  // @@protoc_insertion_point(copy_constructor:IsOnChainReq)
-}
-
-inline void IsOnChainReq::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.txhash_){arena}
-    , decltype(_impl_.version_){}
-    , decltype(_impl_.time_){uint64_t{0u}}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.version_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.version_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-}
-
-IsOnChainReq::~IsOnChainReq() {
-  // @@protoc_insertion_point(destructor:IsOnChainReq)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void IsOnChainReq::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.txhash_.~RepeatedPtrField();
-  _impl_.version_.Destroy();
-}
-
-void IsOnChainReq::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void IsOnChainReq::Clear() {
-// @@protoc_insertion_point(message_clear_start:IsOnChainReq)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.txhash_.Clear();
-  _impl_.version_.ClearToEmpty();
-  _impl_.time_ = uint64_t{0u};
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* IsOnChainReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // string version = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_version();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "IsOnChainReq.version"));
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated string txhash = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            auto str = _internal_add_txhash();
-            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-            CHK_(ptr);
-            CHK_(::_pbi::VerifyUTF8(str, "IsOnChainReq.txhash"));
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // uint64 time = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          _impl_.time_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* IsOnChainReq::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:IsOnChainReq)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // string version = 1;
-  if (!this->_internal_version().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "IsOnChainReq.version");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_version(), target);
-  }
-
-  // repeated string txhash = 2;
-  for (int i = 0, n = this->_internal_txhash_size(); i < n; i++) {
-    const auto& s = this->_internal_txhash(i);
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "IsOnChainReq.txhash");
-    target = stream->WriteString(2, s, target);
-  }
-
-  // uint64 time = 3;
-  if (this->_internal_time() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_time(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:IsOnChainReq)
-  return target;
-}
-
-size_t IsOnChainReq::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:IsOnChainReq)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // repeated string txhash = 2;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.txhash_.size());
-  for (int i = 0, n = _impl_.txhash_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      _impl_.txhash_.Get(i));
-  }
-
-  // string version = 1;
-  if (!this->_internal_version().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_version());
-  }
-
-  // uint64 time = 3;
-  if (this->_internal_time() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_time());
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData IsOnChainReq::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    IsOnChainReq::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*IsOnChainReq::GetClassData() const { return &_class_data_; }
-
-
-void IsOnChainReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<IsOnChainReq*>(&to_msg);
-  auto& from = static_cast<const IsOnChainReq&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:IsOnChainReq)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  _this->_impl_.txhash_.MergeFrom(from._impl_.txhash_);
-  if (!from._internal_version().empty()) {
-    _this->_internal_set_version(from._internal_version());
-  }
-  if (from._internal_time() != 0) {
-    _this->_internal_set_time(from._internal_time());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void IsOnChainReq::CopyFrom(const IsOnChainReq& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:IsOnChainReq)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool IsOnChainReq::IsInitialized() const {
-  return true;
-}
-
-void IsOnChainReq::InternalSwap(IsOnChainReq* other) {
-  using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.txhash_.InternalSwap(&other->_impl_.txhash_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.version_, lhs_arena,
-      &other->_impl_.version_, rhs_arena
-  );
-  swap(_impl_.time_, other->_impl_.time_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata IsOnChainReq::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[44]);
-}
-
-// ===================================================================
-
-class IsOnChainAck::_Internal {
- public:
-};
-
-IsOnChainAck::IsOnChainAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:IsOnChainAck)
-}
-IsOnChainAck::IsOnChainAck(const IsOnChainAck& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  IsOnChainAck* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.percentage_){from._impl_.percentage_}
-    , decltype(_impl_.version_){}
-    , decltype(_impl_.message_){}
-    , decltype(_impl_.time_){}
-    , decltype(_impl_.code_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.version_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.version_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_version().empty()) {
-    _this->_impl_.version_.Set(from._internal_version(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.message_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.message_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_message().empty()) {
-    _this->_impl_.message_.Set(from._internal_message(), 
-      _this->GetArenaForAllocation());
-  }
-  ::memcpy(&_impl_.time_, &from._impl_.time_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.code_) -
-    reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.code_));
-  // @@protoc_insertion_point(copy_constructor:IsOnChainAck)
-}
-
-inline void IsOnChainAck::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.percentage_){arena}
-    , decltype(_impl_.version_){}
-    , decltype(_impl_.message_){}
-    , decltype(_impl_.time_){uint64_t{0u}}
-    , decltype(_impl_.code_){0}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.version_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.version_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.message_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.message_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-}
-
-IsOnChainAck::~IsOnChainAck() {
-  // @@protoc_insertion_point(destructor:IsOnChainAck)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void IsOnChainAck::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.percentage_.~RepeatedPtrField();
-  _impl_.version_.Destroy();
-  _impl_.message_.Destroy();
-}
-
-void IsOnChainAck::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void IsOnChainAck::Clear() {
-// @@protoc_insertion_point(message_clear_start:IsOnChainAck)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.percentage_.Clear();
-  _impl_.version_.ClearToEmpty();
-  _impl_.message_.ClearToEmpty();
-  ::memset(&_impl_.time_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.code_) -
-      reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.code_));
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* IsOnChainAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // string version = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_version();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "IsOnChainAck.version"));
-        } else
-          goto handle_unusual;
-        continue;
-      // int32 code = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.code_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // string message = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_message();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "IsOnChainAck.message"));
-        } else
-          goto handle_unusual;
-        continue;
-      // uint64 time = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
-          _impl_.time_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .SuccessRate percentage = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_percentage(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* IsOnChainAck::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:IsOnChainAck)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // string version = 1;
-  if (!this->_internal_version().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "IsOnChainAck.version");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_version(), target);
-  }
-
-  // int32 code = 2;
-  if (this->_internal_code() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteInt32ToArray(2, this->_internal_code(), target);
-  }
-
-  // string message = 3;
-  if (!this->_internal_message().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_message().data(), static_cast<int>(this->_internal_message().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "IsOnChainAck.message");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_message(), target);
-  }
-
-  // uint64 time = 4;
-  if (this->_internal_time() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_time(), target);
-  }
-
-  // repeated .SuccessRate percentage = 5;
-  for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_percentage_size()); i < n; i++) {
-    const auto& repfield = this->_internal_percentage(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-        InternalWriteMessage(5, repfield, repfield.GetCachedSize(), target, stream);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:IsOnChainAck)
-  return target;
-}
-
-size_t IsOnChainAck::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:IsOnChainAck)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // repeated .SuccessRate percentage = 5;
-  total_size += 1UL * this->_internal_percentage_size();
-  for (const auto& msg : this->_impl_.percentage_) {
-    total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
-  }
-
-  // string version = 1;
-  if (!this->_internal_version().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_version());
-  }
-
-  // string message = 3;
-  if (!this->_internal_message().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_message());
-  }
-
-  // uint64 time = 4;
-  if (this->_internal_time() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_time());
-  }
-
-  // int32 code = 2;
-  if (this->_internal_code() != 0) {
-    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_code());
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData IsOnChainAck::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    IsOnChainAck::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*IsOnChainAck::GetClassData() const { return &_class_data_; }
-
-
-void IsOnChainAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<IsOnChainAck*>(&to_msg);
-  auto& from = static_cast<const IsOnChainAck&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:IsOnChainAck)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  _this->_impl_.percentage_.MergeFrom(from._impl_.percentage_);
-  if (!from._internal_version().empty()) {
-    _this->_internal_set_version(from._internal_version());
-  }
-  if (!from._internal_message().empty()) {
-    _this->_internal_set_message(from._internal_message());
-  }
-  if (from._internal_time() != 0) {
-    _this->_internal_set_time(from._internal_time());
-  }
-  if (from._internal_code() != 0) {
-    _this->_internal_set_code(from._internal_code());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void IsOnChainAck::CopyFrom(const IsOnChainAck& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:IsOnChainAck)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool IsOnChainAck::IsInitialized() const {
-  return true;
-}
-
-void IsOnChainAck::InternalSwap(IsOnChainAck* other) {
-  using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.percentage_.InternalSwap(&other->_impl_.percentage_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.version_, lhs_arena,
-      &other->_impl_.version_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.message_, lhs_arena,
-      &other->_impl_.message_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(IsOnChainAck, _impl_.code_)
-      + sizeof(IsOnChainAck::_impl_.code_)
-      - PROTOBUF_FIELD_OFFSET(IsOnChainAck, _impl_.time_)>(
-          reinterpret_cast<char*>(&_impl_.time_),
-          reinterpret_cast<char*>(&other->_impl_.time_));
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata IsOnChainAck::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[45]);
-}
-
-// ===================================================================
-
 class ConfirmTransactionReq::_Internal {
  public:
 };
@@ -16594,7 +15983,7 @@ void ConfirmTransactionReq::InternalSwap(ConfirmTransactionReq* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ConfirmTransactionReq::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[46]);
+      file_level_metadata_interface_2eproto[44]);
 }
 
 // ===================================================================
@@ -16616,6 +16005,7 @@ ConfirmTransactionAck::ConfirmTransactionAck(const ConfirmTransactionAck& from)
       decltype(_impl_.percentage_){from._impl_.percentage_}
     , decltype(_impl_.version_){}
     , decltype(_impl_.message_){}
+    , decltype(_impl_.tx_){}
     , decltype(_impl_.time_){}
     , decltype(_impl_.code_){}
     , decltype(_impl_.send_size_){}
@@ -16639,6 +16029,14 @@ ConfirmTransactionAck::ConfirmTransactionAck(const ConfirmTransactionAck& from)
     _this->_impl_.message_.Set(from._internal_message(), 
       _this->GetArenaForAllocation());
   }
+  _impl_.tx_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.tx_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_tx().empty()) {
+    _this->_impl_.tx_.Set(from._internal_tx(), 
+      _this->GetArenaForAllocation());
+  }
   ::memcpy(&_impl_.time_, &from._impl_.time_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.received_size_) -
     reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.received_size_));
@@ -16653,6 +16051,7 @@ inline void ConfirmTransactionAck::SharedCtor(
       decltype(_impl_.percentage_){arena}
     , decltype(_impl_.version_){}
     , decltype(_impl_.message_){}
+    , decltype(_impl_.tx_){}
     , decltype(_impl_.time_){uint64_t{0u}}
     , decltype(_impl_.code_){0}
     , decltype(_impl_.send_size_){0u}
@@ -16666,6 +16065,10 @@ inline void ConfirmTransactionAck::SharedCtor(
   _impl_.message_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.message_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.tx_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.tx_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -16683,6 +16086,7 @@ inline void ConfirmTransactionAck::SharedDtor() {
   _impl_.percentage_.~RepeatedPtrField();
   _impl_.version_.Destroy();
   _impl_.message_.Destroy();
+  _impl_.tx_.Destroy();
 }
 
 void ConfirmTransactionAck::SetCachedSize(int size) const {
@@ -16698,6 +16102,7 @@ void ConfirmTransactionAck::Clear() {
   _impl_.percentage_.Clear();
   _impl_.version_.ClearToEmpty();
   _impl_.message_.ClearToEmpty();
+  _impl_.tx_.ClearToEmpty();
   ::memset(&_impl_.time_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.received_size_) -
       reinterpret_cast<char*>(&_impl_.time_)) + sizeof(_impl_.received_size_));
@@ -16771,6 +16176,15 @@ const char* ConfirmTransactionAck::_InternalParse(const char* ptr, ::_pbi::Parse
       case 7:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 56)) {
           _impl_.received_size_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes tx = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+          auto str = _internal_mutable_tx();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -16856,6 +16270,12 @@ uint8_t* ConfirmTransactionAck::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(7, this->_internal_received_size(), target);
   }
 
+  // bytes tx = 8;
+  if (!this->_internal_tx().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        8, this->_internal_tx(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -16891,6 +16311,13 @@ size_t ConfirmTransactionAck::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_message());
+  }
+
+  // bytes tx = 8;
+  if (!this->_internal_tx().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_tx());
   }
 
   // uint64 time = 4;
@@ -16938,6 +16365,9 @@ void ConfirmTransactionAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, 
   if (!from._internal_message().empty()) {
     _this->_internal_set_message(from._internal_message());
   }
+  if (!from._internal_tx().empty()) {
+    _this->_internal_set_tx(from._internal_tx());
+  }
   if (from._internal_time() != 0) {
     _this->_internal_set_time(from._internal_time());
   }
@@ -16978,6 +16408,10 @@ void ConfirmTransactionAck::InternalSwap(ConfirmTransactionAck* other) {
       &_impl_.message_, lhs_arena,
       &other->_impl_.message_, rhs_arena
   );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.tx_, lhs_arena,
+      &other->_impl_.tx_, rhs_arena
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ConfirmTransactionAck, _impl_.received_size_)
       + sizeof(ConfirmTransactionAck::_impl_.received_size_)
@@ -16989,7 +16423,7 @@ void ConfirmTransactionAck::InternalSwap(ConfirmTransactionAck* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ConfirmTransactionAck::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[47]);
+      file_level_metadata_interface_2eproto[45]);
 }
 
 // ===================================================================
@@ -17219,7 +16653,7 @@ void CorresHash::InternalSwap(CorresHash* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CorresHash::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[48]);
+      file_level_metadata_interface_2eproto[46]);
 }
 
 // ===================================================================
@@ -17241,6 +16675,7 @@ CheckTxReq::CheckTxReq(const CheckTxReq& from)
       decltype(_impl_.txhash_){from._impl_.txhash_}
     , decltype(_impl_.version_){}
     , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.isresponse_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -17260,6 +16695,7 @@ CheckTxReq::CheckTxReq(const CheckTxReq& from)
     _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
       _this->GetArenaForAllocation());
   }
+  _this->_impl_.isresponse_ = from._impl_.isresponse_;
   // @@protoc_insertion_point(copy_constructor:CheckTxReq)
 }
 
@@ -17271,6 +16707,7 @@ inline void CheckTxReq::SharedCtor(
       decltype(_impl_.txhash_){arena}
     , decltype(_impl_.version_){}
     , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.isresponse_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.version_.InitDefault();
@@ -17312,6 +16749,7 @@ void CheckTxReq::Clear() {
   _impl_.txhash_.Clear();
   _impl_.version_.ClearToEmpty();
   _impl_.msg_id_.ClearToEmpty();
+  _impl_.isresponse_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -17353,6 +16791,14 @@ const char* CheckTxReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "CheckTxReq.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 isresponse = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.isresponse_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -17415,6 +16861,12 @@ uint8_t* CheckTxReq::_InternalSerialize(
         3, this->_internal_msg_id(), target);
   }
 
+  // uint32 isresponse = 4;
+  if (this->_internal_isresponse() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(4, this->_internal_isresponse(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -17453,6 +16905,11 @@ size_t CheckTxReq::ByteSizeLong() const {
         this->_internal_msg_id());
   }
 
+  // uint32 isresponse = 4;
+  if (this->_internal_isresponse() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_isresponse());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -17477,6 +16934,9 @@ void CheckTxReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   }
   if (!from._internal_msg_id().empty()) {
     _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  if (from._internal_isresponse() != 0) {
+    _this->_internal_set_isresponse(from._internal_isresponse());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -17506,29 +16966,322 @@ void CheckTxReq::InternalSwap(CheckTxReq* other) {
       &_impl_.msg_id_, lhs_arena,
       &other->_impl_.msg_id_, rhs_arena
   );
+  swap(_impl_.isresponse_, other->_impl_.isresponse_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata CheckTxReq::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
-      file_level_metadata_interface_2eproto[49]);
+      file_level_metadata_interface_2eproto[47]);
 }
 
 // ===================================================================
 
-class CheckTxAck::_Internal {
+class GetUtxoHashReq::_Internal {
  public:
 };
 
-CheckTxAck::CheckTxAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+GetUtxoHashReq::GetUtxoHashReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:CheckTxAck)
+  // @@protoc_insertion_point(arena_constructor:GetUtxoHashReq)
 }
-CheckTxAck::CheckTxAck(const CheckTxAck& from)
+GetUtxoHashReq::GetUtxoHashReq(const GetUtxoHashReq& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  CheckTxAck* const _this = this; (void)_this;
+  GetUtxoHashReq* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.utxohash_){from._impl_.utxohash_}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.msg_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_version().empty()) {
+    _this->_impl_.version_.Set(from._internal_version(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_msg_id().empty()) {
+    _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:GetUtxoHashReq)
+}
+
+inline void GetUtxoHashReq::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.utxohash_){arena}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.msg_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+GetUtxoHashReq::~GetUtxoHashReq() {
+  // @@protoc_insertion_point(destructor:GetUtxoHashReq)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void GetUtxoHashReq::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.utxohash_.~RepeatedPtrField();
+  _impl_.version_.Destroy();
+  _impl_.msg_id_.Destroy();
+}
+
+void GetUtxoHashReq::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GetUtxoHashReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:GetUtxoHashReq)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.utxohash_.Clear();
+  _impl_.version_.ClearToEmpty();
+  _impl_.msg_id_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GetUtxoHashReq::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string version = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_version();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetUtxoHashReq.version"));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated string utxoHash = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_utxohash();
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            CHK_(::_pbi::VerifyUTF8(str, "GetUtxoHashReq.utxoHash"));
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // string msg_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_msg_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetUtxoHashReq.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GetUtxoHashReq::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:GetUtxoHashReq)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetUtxoHashReq.version");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_version(), target);
+  }
+
+  // repeated string utxoHash = 2;
+  for (int i = 0, n = this->_internal_utxohash_size(); i < n; i++) {
+    const auto& s = this->_internal_utxohash(i);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetUtxoHashReq.utxoHash");
+    target = stream->WriteString(2, s, target);
+  }
+
+  // string msg_id = 3;
+  if (!this->_internal_msg_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetUtxoHashReq.msg_id");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_msg_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:GetUtxoHashReq)
+  return target;
+}
+
+size_t GetUtxoHashReq::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:GetUtxoHashReq)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated string utxoHash = 2;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.utxohash_.size());
+  for (int i = 0, n = _impl_.utxohash_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+      _impl_.utxohash_.Get(i));
+  }
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_version());
+  }
+
+  // string msg_id = 3;
+  if (!this->_internal_msg_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_msg_id());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetUtxoHashReq::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GetUtxoHashReq::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetUtxoHashReq::GetClassData() const { return &_class_data_; }
+
+
+void GetUtxoHashReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GetUtxoHashReq*>(&to_msg);
+  auto& from = static_cast<const GetUtxoHashReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:GetUtxoHashReq)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.utxohash_.MergeFrom(from._impl_.utxohash_);
+  if (!from._internal_version().empty()) {
+    _this->_internal_set_version(from._internal_version());
+  }
+  if (!from._internal_msg_id().empty()) {
+    _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GetUtxoHashReq::CopyFrom(const GetUtxoHashReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:GetUtxoHashReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GetUtxoHashReq::IsInitialized() const {
+  return true;
+}
+
+void GetUtxoHashReq::InternalSwap(GetUtxoHashReq* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.utxohash_.InternalSwap(&other->_impl_.utxohash_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.version_, lhs_arena,
+      &other->_impl_.version_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.msg_id_, lhs_arena,
+      &other->_impl_.msg_id_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata GetUtxoHashReq::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
+      file_level_metadata_interface_2eproto[48]);
+}
+
+// ===================================================================
+
+class GetUtxoHashAck::_Internal {
+ public:
+};
+
+GetUtxoHashAck::GetUtxoHashAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:GetUtxoHashAck)
+}
+GetUtxoHashAck::GetUtxoHashAck(const GetUtxoHashAck& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  GetUtxoHashAck* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.flaghash_){from._impl_.flaghash_}
     , decltype(_impl_.version_){}
@@ -17561,10 +17314,10 @@ CheckTxAck::CheckTxAck(const CheckTxAck& from)
     _this->_impl_.base58addr_.Set(from._internal_base58addr(), 
       _this->GetArenaForAllocation());
   }
-  // @@protoc_insertion_point(copy_constructor:CheckTxAck)
+  // @@protoc_insertion_point(copy_constructor:GetUtxoHashAck)
 }
 
-inline void CheckTxAck::SharedCtor(
+inline void GetUtxoHashAck::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -17589,6 +17342,357 @@ inline void CheckTxAck::SharedCtor(
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
+GetUtxoHashAck::~GetUtxoHashAck() {
+  // @@protoc_insertion_point(destructor:GetUtxoHashAck)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void GetUtxoHashAck::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.flaghash_.~RepeatedPtrField();
+  _impl_.version_.Destroy();
+  _impl_.msg_id_.Destroy();
+  _impl_.base58addr_.Destroy();
+}
+
+void GetUtxoHashAck::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GetUtxoHashAck::Clear() {
+// @@protoc_insertion_point(message_clear_start:GetUtxoHashAck)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.flaghash_.Clear();
+  _impl_.version_.ClearToEmpty();
+  _impl_.msg_id_.ClearToEmpty();
+  _impl_.base58addr_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GetUtxoHashAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string version = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_version();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetUtxoHashAck.version"));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .CorresHash flaghash = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_flaghash(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // string msg_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_msg_id();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetUtxoHashAck.msg_id"));
+        } else
+          goto handle_unusual;
+        continue;
+      // string base58addr = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          auto str = _internal_mutable_base58addr();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "GetUtxoHashAck.base58addr"));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GetUtxoHashAck::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:GetUtxoHashAck)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetUtxoHashAck.version");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_version(), target);
+  }
+
+  // repeated .CorresHash flaghash = 2;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_flaghash_size()); i < n; i++) {
+    const auto& repfield = this->_internal_flaghash(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // string msg_id = 3;
+  if (!this->_internal_msg_id().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_msg_id().data(), static_cast<int>(this->_internal_msg_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetUtxoHashAck.msg_id");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_msg_id(), target);
+  }
+
+  // string base58addr = 4;
+  if (!this->_internal_base58addr().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_base58addr().data(), static_cast<int>(this->_internal_base58addr().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "GetUtxoHashAck.base58addr");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_base58addr(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:GetUtxoHashAck)
+  return target;
+}
+
+size_t GetUtxoHashAck::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:GetUtxoHashAck)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .CorresHash flaghash = 2;
+  total_size += 1UL * this->_internal_flaghash_size();
+  for (const auto& msg : this->_impl_.flaghash_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string version = 1;
+  if (!this->_internal_version().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_version());
+  }
+
+  // string msg_id = 3;
+  if (!this->_internal_msg_id().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_msg_id());
+  }
+
+  // string base58addr = 4;
+  if (!this->_internal_base58addr().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_base58addr());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetUtxoHashAck::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GetUtxoHashAck::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetUtxoHashAck::GetClassData() const { return &_class_data_; }
+
+
+void GetUtxoHashAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GetUtxoHashAck*>(&to_msg);
+  auto& from = static_cast<const GetUtxoHashAck&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:GetUtxoHashAck)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.flaghash_.MergeFrom(from._impl_.flaghash_);
+  if (!from._internal_version().empty()) {
+    _this->_internal_set_version(from._internal_version());
+  }
+  if (!from._internal_msg_id().empty()) {
+    _this->_internal_set_msg_id(from._internal_msg_id());
+  }
+  if (!from._internal_base58addr().empty()) {
+    _this->_internal_set_base58addr(from._internal_base58addr());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GetUtxoHashAck::CopyFrom(const GetUtxoHashAck& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:GetUtxoHashAck)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GetUtxoHashAck::IsInitialized() const {
+  return true;
+}
+
+void GetUtxoHashAck::InternalSwap(GetUtxoHashAck* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.flaghash_.InternalSwap(&other->_impl_.flaghash_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.version_, lhs_arena,
+      &other->_impl_.version_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.msg_id_, lhs_arena,
+      &other->_impl_.msg_id_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.base58addr_, lhs_arena,
+      &other->_impl_.base58addr_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata GetUtxoHashAck::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_interface_2eproto_getter, &descriptor_table_interface_2eproto_once,
+      file_level_metadata_interface_2eproto[49]);
+}
+
+// ===================================================================
+
+class CheckTxAck::_Internal {
+ public:
+};
+
+CheckTxAck::CheckTxAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:CheckTxAck)
+}
+CheckTxAck::CheckTxAck(const CheckTxAck& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  CheckTxAck* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.flaghash_){from._impl_.flaghash_}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.addr_){}
+    , decltype(_impl_.tx_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_version().empty()) {
+    _this->_impl_.version_.Set(from._internal_version(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_msg_id().empty()) {
+    _this->_impl_.msg_id_.Set(from._internal_msg_id(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.addr_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.addr_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_addr().empty()) {
+    _this->_impl_.addr_.Set(from._internal_addr(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.tx_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.tx_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_tx().empty()) {
+    _this->_impl_.tx_.Set(from._internal_tx(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:CheckTxAck)
+}
+
+inline void CheckTxAck::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.flaghash_){arena}
+    , decltype(_impl_.version_){}
+    , decltype(_impl_.msg_id_){}
+    , decltype(_impl_.addr_){}
+    , decltype(_impl_.tx_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.version_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.version_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.msg_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.addr_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.addr_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.tx_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.tx_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
 CheckTxAck::~CheckTxAck() {
   // @@protoc_insertion_point(destructor:CheckTxAck)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
@@ -17603,7 +17707,8 @@ inline void CheckTxAck::SharedDtor() {
   _impl_.flaghash_.~RepeatedPtrField();
   _impl_.version_.Destroy();
   _impl_.msg_id_.Destroy();
-  _impl_.base58addr_.Destroy();
+  _impl_.addr_.Destroy();
+  _impl_.tx_.Destroy();
 }
 
 void CheckTxAck::SetCachedSize(int size) const {
@@ -17619,7 +17724,8 @@ void CheckTxAck::Clear() {
   _impl_.flaghash_.Clear();
   _impl_.version_.ClearToEmpty();
   _impl_.msg_id_.ClearToEmpty();
-  _impl_.base58addr_.ClearToEmpty();
+  _impl_.addr_.ClearToEmpty();
+  _impl_.tx_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -17662,13 +17768,22 @@ const char* CheckTxAck::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
         } else
           goto handle_unusual;
         continue;
-      // string base58addr = 4;
+      // string addr = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          auto str = _internal_mutable_base58addr();
+          auto str = _internal_mutable_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "CheckTxAck.base58addr"));
+          CHK_(::_pbi::VerifyUTF8(str, "CheckTxAck.addr"));
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes tx = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          auto str = _internal_mutable_tx();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -17729,14 +17844,20 @@ uint8_t* CheckTxAck::_InternalSerialize(
         3, this->_internal_msg_id(), target);
   }
 
-  // string base58addr = 4;
-  if (!this->_internal_base58addr().empty()) {
+  // string addr = 4;
+  if (!this->_internal_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_base58addr().data(), static_cast<int>(this->_internal_base58addr().length()),
+      this->_internal_addr().data(), static_cast<int>(this->_internal_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "CheckTxAck.base58addr");
+      "CheckTxAck.addr");
     target = stream->WriteStringMaybeAliased(
-        4, this->_internal_base58addr(), target);
+        4, this->_internal_addr(), target);
+  }
+
+  // bytes tx = 5;
+  if (!this->_internal_tx().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        5, this->_internal_tx(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -17776,11 +17897,18 @@ size_t CheckTxAck::ByteSizeLong() const {
         this->_internal_msg_id());
   }
 
-  // string base58addr = 4;
-  if (!this->_internal_base58addr().empty()) {
+  // string addr = 4;
+  if (!this->_internal_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_base58addr());
+        this->_internal_addr());
+  }
+
+  // bytes tx = 5;
+  if (!this->_internal_tx().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_tx());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -17808,8 +17936,11 @@ void CheckTxAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   if (!from._internal_msg_id().empty()) {
     _this->_internal_set_msg_id(from._internal_msg_id());
   }
-  if (!from._internal_base58addr().empty()) {
-    _this->_internal_set_base58addr(from._internal_base58addr());
+  if (!from._internal_addr().empty()) {
+    _this->_internal_set_addr(from._internal_addr());
+  }
+  if (!from._internal_tx().empty()) {
+    _this->_internal_set_tx(from._internal_tx());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -17840,8 +17971,12 @@ void CheckTxAck::InternalSwap(CheckTxAck* other) {
       &other->_impl_.msg_id_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.base58addr_, lhs_arena,
-      &other->_impl_.base58addr_, rhs_arena
+      &_impl_.addr_, lhs_arena,
+      &other->_impl_.addr_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.tx_, lhs_arena,
+      &other->_impl_.tx_, rhs_arena
   );
 }
 
@@ -17868,7 +18003,7 @@ GetRestInvestAmountReq::GetRestInvestAmountReq(const GetRestInvestAmountReq& fro
   GetRestInvestAmountReq* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.version_){}
-    , decltype(_impl_.base58_){}
+    , decltype(_impl_.addr_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -17880,12 +18015,12 @@ GetRestInvestAmountReq::GetRestInvestAmountReq(const GetRestInvestAmountReq& fro
     _this->_impl_.version_.Set(from._internal_version(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.base58_.InitDefault();
+  _impl_.addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.base58_.Set("", GetArenaForAllocation());
+    _impl_.addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_base58().empty()) {
-    _this->_impl_.base58_.Set(from._internal_base58(), 
+  if (!from._internal_addr().empty()) {
+    _this->_impl_.addr_.Set(from._internal_addr(), 
       _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:GetRestInvestAmountReq)
@@ -17897,16 +18032,16 @@ inline void GetRestInvestAmountReq::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.version_){}
-    , decltype(_impl_.base58_){}
+    , decltype(_impl_.addr_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.version_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.version_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.base58_.InitDefault();
+  _impl_.addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.base58_.Set("", GetArenaForAllocation());
+    _impl_.addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -17922,7 +18057,7 @@ GetRestInvestAmountReq::~GetRestInvestAmountReq() {
 inline void GetRestInvestAmountReq::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.version_.Destroy();
-  _impl_.base58_.Destroy();
+  _impl_.addr_.Destroy();
 }
 
 void GetRestInvestAmountReq::SetCachedSize(int size) const {
@@ -17936,7 +18071,7 @@ void GetRestInvestAmountReq::Clear() {
   (void) cached_has_bits;
 
   _impl_.version_.ClearToEmpty();
-  _impl_.base58_.ClearToEmpty();
+  _impl_.addr_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -17956,13 +18091,13 @@ const char* GetRestInvestAmountReq::_InternalParse(const char* ptr, ::_pbi::Pars
         } else
           goto handle_unusual;
         continue;
-      // string base58 = 2;
+      // string addr = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_base58();
+          auto str = _internal_mutable_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "GetRestInvestAmountReq.base58"));
+          CHK_(::_pbi::VerifyUTF8(str, "GetRestInvestAmountReq.addr"));
         } else
           goto handle_unusual;
         continue;
@@ -18005,14 +18140,14 @@ uint8_t* GetRestInvestAmountReq::_InternalSerialize(
         1, this->_internal_version(), target);
   }
 
-  // string base58 = 2;
-  if (!this->_internal_base58().empty()) {
+  // string addr = 2;
+  if (!this->_internal_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_base58().data(), static_cast<int>(this->_internal_base58().length()),
+      this->_internal_addr().data(), static_cast<int>(this->_internal_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "GetRestInvestAmountReq.base58");
+      "GetRestInvestAmountReq.addr");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_base58(), target);
+        2, this->_internal_addr(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -18038,11 +18173,11 @@ size_t GetRestInvestAmountReq::ByteSizeLong() const {
         this->_internal_version());
   }
 
-  // string base58 = 2;
-  if (!this->_internal_base58().empty()) {
+  // string addr = 2;
+  if (!this->_internal_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_base58());
+        this->_internal_addr());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -18066,8 +18201,8 @@ void GetRestInvestAmountReq::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg,
   if (!from._internal_version().empty()) {
     _this->_internal_set_version(from._internal_version());
   }
-  if (!from._internal_base58().empty()) {
-    _this->_internal_set_base58(from._internal_base58());
+  if (!from._internal_addr().empty()) {
+    _this->_internal_set_addr(from._internal_addr());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -18093,8 +18228,8 @@ void GetRestInvestAmountReq::InternalSwap(GetRestInvestAmountReq* other) {
       &other->_impl_.version_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.base58_, lhs_arena,
-      &other->_impl_.base58_, rhs_arena
+      &_impl_.addr_, lhs_arena,
+      &other->_impl_.addr_, rhs_arena
   );
 }
 
@@ -18122,7 +18257,7 @@ GetRestInvestAmountAck::GetRestInvestAmountAck(const GetRestInvestAmountAck& fro
   new (&_impl_) Impl_{
       decltype(_impl_.version_){}
     , decltype(_impl_.message_){}
-    , decltype(_impl_.base58_){}
+    , decltype(_impl_.addr_){}
     , decltype(_impl_.amount_){}
     , decltype(_impl_.code_){}
     , /*decltype(_impl_._cached_size_)*/{}};
@@ -18144,12 +18279,12 @@ GetRestInvestAmountAck::GetRestInvestAmountAck(const GetRestInvestAmountAck& fro
     _this->_impl_.message_.Set(from._internal_message(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.base58_.InitDefault();
+  _impl_.addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.base58_.Set("", GetArenaForAllocation());
+    _impl_.addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_base58().empty()) {
-    _this->_impl_.base58_.Set(from._internal_base58(), 
+  if (!from._internal_addr().empty()) {
+    _this->_impl_.addr_.Set(from._internal_addr(), 
       _this->GetArenaForAllocation());
   }
   ::memcpy(&_impl_.amount_, &from._impl_.amount_,
@@ -18165,7 +18300,7 @@ inline void GetRestInvestAmountAck::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.version_){}
     , decltype(_impl_.message_){}
-    , decltype(_impl_.base58_){}
+    , decltype(_impl_.addr_){}
     , decltype(_impl_.amount_){uint64_t{0u}}
     , decltype(_impl_.code_){0}
     , /*decltype(_impl_._cached_size_)*/{}
@@ -18178,9 +18313,9 @@ inline void GetRestInvestAmountAck::SharedCtor(
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.message_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.base58_.InitDefault();
+  _impl_.addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.base58_.Set("", GetArenaForAllocation());
+    _impl_.addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -18197,7 +18332,7 @@ inline void GetRestInvestAmountAck::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.version_.Destroy();
   _impl_.message_.Destroy();
-  _impl_.base58_.Destroy();
+  _impl_.addr_.Destroy();
 }
 
 void GetRestInvestAmountAck::SetCachedSize(int size) const {
@@ -18212,7 +18347,7 @@ void GetRestInvestAmountAck::Clear() {
 
   _impl_.version_.ClearToEmpty();
   _impl_.message_.ClearToEmpty();
-  _impl_.base58_.ClearToEmpty();
+  _impl_.addr_.ClearToEmpty();
   ::memset(&_impl_.amount_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.code_) -
       reinterpret_cast<char*>(&_impl_.amount_)) + sizeof(_impl_.code_));
@@ -18261,13 +18396,13 @@ const char* GetRestInvestAmountAck::_InternalParse(const char* ptr, ::_pbi::Pars
         } else
           goto handle_unusual;
         continue;
-      // string base58 = 5;
+      // string addr = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          auto str = _internal_mutable_base58();
+          auto str = _internal_mutable_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "GetRestInvestAmountAck.base58"));
+          CHK_(::_pbi::VerifyUTF8(str, "GetRestInvestAmountAck.addr"));
         } else
           goto handle_unusual;
         continue;
@@ -18332,14 +18467,14 @@ uint8_t* GetRestInvestAmountAck::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_amount(), target);
   }
 
-  // string base58 = 5;
-  if (!this->_internal_base58().empty()) {
+  // string addr = 5;
+  if (!this->_internal_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_base58().data(), static_cast<int>(this->_internal_base58().length()),
+      this->_internal_addr().data(), static_cast<int>(this->_internal_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "GetRestInvestAmountAck.base58");
+      "GetRestInvestAmountAck.addr");
     target = stream->WriteStringMaybeAliased(
-        5, this->_internal_base58(), target);
+        5, this->_internal_addr(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -18372,11 +18507,11 @@ size_t GetRestInvestAmountAck::ByteSizeLong() const {
         this->_internal_message());
   }
 
-  // string base58 = 5;
-  if (!this->_internal_base58().empty()) {
+  // string addr = 5;
+  if (!this->_internal_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_base58());
+        this->_internal_addr());
   }
 
   // uint64 amount = 4;
@@ -18413,8 +18548,8 @@ void GetRestInvestAmountAck::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg,
   if (!from._internal_message().empty()) {
     _this->_internal_set_message(from._internal_message());
   }
-  if (!from._internal_base58().empty()) {
-    _this->_internal_set_base58(from._internal_base58());
+  if (!from._internal_addr().empty()) {
+    _this->_internal_set_addr(from._internal_addr());
   }
   if (from._internal_amount() != 0) {
     _this->_internal_set_amount(from._internal_amount());
@@ -18450,8 +18585,8 @@ void GetRestInvestAmountAck::InternalSwap(GetRestInvestAmountAck* other) {
       &other->_impl_.message_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.base58_, lhs_arena,
-      &other->_impl_.base58_, rhs_arena
+      &_impl_.addr_, lhs_arena,
+      &other->_impl_.addr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(GetRestInvestAmountAck, _impl_.code_)
@@ -18645,14 +18780,6 @@ template<> PROTOBUF_NOINLINE ::SuccessRate*
 Arena::CreateMaybeMessage< ::SuccessRate >(Arena* arena) {
   return Arena::CreateMessageInternal< ::SuccessRate >(arena);
 }
-template<> PROTOBUF_NOINLINE ::IsOnChainReq*
-Arena::CreateMaybeMessage< ::IsOnChainReq >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::IsOnChainReq >(arena);
-}
-template<> PROTOBUF_NOINLINE ::IsOnChainAck*
-Arena::CreateMaybeMessage< ::IsOnChainAck >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::IsOnChainAck >(arena);
-}
 template<> PROTOBUF_NOINLINE ::ConfirmTransactionReq*
 Arena::CreateMaybeMessage< ::ConfirmTransactionReq >(Arena* arena) {
   return Arena::CreateMessageInternal< ::ConfirmTransactionReq >(arena);
@@ -18668,6 +18795,14 @@ Arena::CreateMaybeMessage< ::CorresHash >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::CheckTxReq*
 Arena::CreateMaybeMessage< ::CheckTxReq >(Arena* arena) {
   return Arena::CreateMessageInternal< ::CheckTxReq >(arena);
+}
+template<> PROTOBUF_NOINLINE ::GetUtxoHashReq*
+Arena::CreateMaybeMessage< ::GetUtxoHashReq >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::GetUtxoHashReq >(arena);
+}
+template<> PROTOBUF_NOINLINE ::GetUtxoHashAck*
+Arena::CreateMaybeMessage< ::GetUtxoHashAck >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::GetUtxoHashAck >(arena);
 }
 template<> PROTOBUF_NOINLINE ::CheckTxAck*
 Arena::CreateMaybeMessage< ::CheckTxAck >(Arena* arena) {

@@ -63,14 +63,15 @@ void CTimer::Cancel()
     }
     
     m_bTryExpired = true;
-    std::thread::native_handle_type handle = m_Thread->native_handle();
-    
-#if defined(__unix__) || defined(__APPLE__) || defined(__ANDROID__)
-    pthread_cancel(handle);        
-#endif
-    
-    m_ThreadCon.notify_all();      
-    m_Thread->join();              
+    m_ThreadCon.notify_all();     
+    if (m_Thread->joinable()) {
+        m_Thread->join();
+    }
+    else
+    {
+        m_Thread->detach();
+    }
+
 }
 
 void CTimer::DeleteThread()
@@ -78,7 +79,7 @@ void CTimer::DeleteThread()
     if (m_Thread) {
         m_ThreadCon.notify_all();   //Wake from sleep
         m_Thread->join();           //Wait for the thread to exit
-        m_Thread.reset();           
+        m_Thread.reset();        
     }
 }
 

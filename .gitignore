@@ -12,6 +12,10 @@
 /rocksdb
 /protobuf
 /boost
+/silkpre
+/gmp
+/cryptopp
+
 
 # Precompiled Headers
 .gch
@@ -71,4 +75,9 @@ cmake-build-debug/
 /libevent
 openssl/
 ./CMakeLists.txt
-tfs_v0.2.0_53faf1c_devnet
+/silkpre/
+/wasmtime-cpp/
+/gmp-6.1.0/
+/GPATH
+/GRTAGS
+/GTAGS

@@ -1,8 +1,18 @@
+/**
+ * *****************************************************************************
+ * @file        sign.proto
+ * @brief       sign agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax = "proto3";
 
 
-
+//sign
 message CSign{
-    bytes sign = 1;
-    bytes pub = 2;
+    bytes sign = 1; //sign
+    bytes pub  = 2; //public key
 }

@@ -1,130 +1,150 @@
+/**
+ * *****************************************************************************
+ * @file        net.proto
+ * @brief       node sync agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax                  = "proto3";
 
 import "sign.proto";
 
+//send broadcast message
 message PrintMsgReq 
 {
-    string data         = 1;
-    int32  type         = 2;
+    string data         = 1;  //broadcast data
+    int32  type         = 2;  //type
 }
 
 
-//node
+//node information
 message NodeInfo 
 {
-  bytes pub = 1;
-  bytes sign = 2;
-  bytes identity = 3;
-  string base58addr = 4;
-  string public_base58addr = 5;
-	string name	= 6;
-	string logo	= 7;
-  uint32 listen_ip = 8;
-  uint32 listen_port = 9;
-  uint32 public_ip = 10;
-  uint32 public_port = 11;  
-  uint32 height = 12;
-  uint64 time_stamp = 13;
-  string version = 14;
+  bytes pub          = 1;   //public key
+  bytes sign         = 2;   //sign
+  bytes identity     = 3;   //identity
+  string addr  = 4;   //addr  
+  string public_addr = 5; //public addr
+	string name	       = 6;   //name
+	string logo	       = 7;   //logo
+  uint32 listen_ip   = 8;   //listen ip
+  uint32 listen_port = 9;   //listen port
+  uint32 public_ip   = 10;  //ip
+  uint32 public_port = 11;  //port 
+  uint32 height      = 12;  //height
+  uint64 time_stamp  = 13;  //time stamp
+  string version     = 14;  //version
 }
 
 
+//get register node list
 message RegisterNodeReq 
 {
-  NodeInfo mynode = 1;
-  bool     is_get_nodelist = 2;
-  string msg_id            = 3;
+  NodeInfo  mynode                 = 1; 
+  bool      is_get_nodelist        = 2; //is get nodelist
+  string    msg_id                 = 3; //mark message
 }
 
-
+//send register node list
 message RegisterNodeAck 
 {
-  repeated NodeInfo nodes = 1;
-  string msg_id           = 2;
-  uint32 from_ip          = 3;
-  uint32 from_port        = 4;
-  uint32 fd               = 5;
+  repeated  NodeInfo nodes   = 1; 
+  string    msg_id           = 2; //mark message
+  uint32    from_ip          = 3; //from ip
+  uint32    from_port        = 4; //from port
+  uint32    fd               = 5; //from fd
 }
 
-
+//get sync node list
 message SyncNodeReq 
 {
-  string ids = 1;
+  string ids              = 1;  //self node Address
   //repeated NodeInfo nodes = 2;  
-  string msg_id           = 3;
+  string msg_id           = 3;  //mark message
 }
 
 
 message SyncNodeAck 
 {
-  repeated NodeInfo nodes = 1;
-  CSign  sign             = 2; 
-  string ids              = 3;
-  string msg_id           = 4;
+  repeated NodeInfo nodes = 1;  
+  CSign  sign             = 2;  //sign
+  string ids              = 3;  //node Address
+  string msg_id           = 4;  //mark message
 }
 
+//broadcast message
 message BroadcastMsgReq
 {
-  NodeInfo from = 1;
-  bytes data = 2;
-  uint32 priority = 3;
+  NodeInfo from   = 1;  
+  bytes data      = 2;  //broadcast data
+  uint32 priority = 3;  //priority
 }
 
+//send ping 
 message PingReq 
 {
-  string id        = 1;
+  string id        = 1; //self Id
 }
 
+//send pang 
 message PongReq 
 {
-  string id        = 1;
+  string id        = 1; //self Id
 }
 
-
+//get echo
 message EchoReq 
 {
-  string id = 1;
-  string message = 2;
+  string id      = 1; //self Id
+  string message = 2; //echo message
 }
 
+//send echo
 message EchoAck 
 {
-  string id = 1;
-  string message = 2;
+  string id      = 1; //self Id
+  string message = 2; //echo message
 }
 
+//Highly informed 
 message NodeHeightChangedReq
 {
-  string id = 1;
-  uint32 height = 2;
-  CSign  sign = 3;
+  string id     = 1;  //self Id
+  uint32 height = 2;  //height
+  CSign  sign   = 3;  //sign
 }
 
+//sign
 message NodeSign{
-  bytes sign = 1;
-  bytes pub = 2;
+  bytes sign = 1; //sign
+  bytes pub  = 2; //pub
 }
 
-message NodeBase58AddrChangedReq
+//node addr informed
+message NodeAddrChangedReq
 {
-  string version = 1;
-  NodeSign oldSign = 2;
-  NodeSign newSign = 3;
+  string version   = 1; //version
+  NodeSign oldSign = 2; //oldSign
+  NodeSign newSign = 3; //newSign
 }
 
-
+//test net
 message TestNetAck
 {
-  string data = 1;
-  string hash = 2;
-  uint64 time = 3;
-  string id   = 4;
+  string data = 1;  //data
+  string hash = 2;  //hash
+  uint64 time = 3;  //time
+  string id   = 4;  //self Id
 }
 
+//test net
 message TestNetReq
 {
-  string data = 1;
-  string hash = 2;
-  uint64 time = 3;
-  string id   = 4;
+  string data = 1;  //data
+  string hash = 2;  //hash
+  uint64 time = 3;  //time
+  string id   = 4;  //self Id
 }

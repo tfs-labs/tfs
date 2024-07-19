@@ -25,16 +25,35 @@
 #define __BIP39_H__
 
 #include <stdint.h>
-
+#include "utils/hex_code.h"
 #define BIP39_PBKDF2_ROUNDS 2048
 # ifdef __cplusplus
+
 extern "C" {
 # endif
 
-
+/**
+ * @brief
+ * 
+ * @param       data: 
+ * @param       dataLen: 
+ * @param       out: 
+ * @param       outLen: 
+ * @return      int 
+ */
 int mnemonic_from_data(const uint8_t *data, int dataLen, char *out, size_t outLen);
 
+/**
+ * @brief
+ * 
+ * @param       mnemonic: 
+ * @param       out:
+ * @param       outlen: 
+ * @return      int 
+ */
 int mnemonic_check(const char *mnemonic, char *out, int *outLen);
+
+int import_mnemonic(const std::string & mnemonic,uint8_t* seed);
 
 # ifdef __cplusplus
 }

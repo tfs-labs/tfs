@@ -9,28 +9,28 @@ RocksDBReader::RocksDBReader(std::shared_ptr<RocksDB> rocksdb)
     rocksdb_ = rocksdb;
 }
 
-bool RocksDBReader::MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &ret_status)
+bool RocksDBReader::MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &retStatus)
 {
-    ret_status.clear();
+    retStatus.clear();
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status.push_back(rocksdb::Status::Aborted());
+        retStatus.push_back(rocksdb::Status::Aborted());
         return false;
     }
     if (keys.empty())
     {
         ERRORLOG("key is empty");
-        ret_status.push_back(rocksdb::Status::Aborted());
+        retStatus.push_back(rocksdb::Status::Aborted());
         return false;
     }
     {
-        ret_status = rocksdb_->db_->MultiGet(read_options_, keys, &values);
+        retStatus = rocksdb_->db_->MultiGet(read_options_, keys, &values);
     }
     bool flag = true;
-    for(size_t i = 0; i < ret_status.size(); ++i)
+    for(size_t i = 0; i < retStatus.size(); ++i)
     {
-        auto status = ret_status.at(i);
+        auto status = retStatus.at(i);
         if (!status.ok())
         {
             flag = false;
@@ -59,38 +59,38 @@ bool RocksDBReader::MultiReadData(const std::vector<rocksdb::Slice> &keys, std::
     return flag;
 }
 
-bool RocksDBReader::ReadData(const std::string &key, std::string &value, rocksdb::Status &ret_status)
+bool RocksDBReader::ReadData(const std::string &key, std::string &value, rocksdb::Status &retStatus)
 {
     if (!rocksdb_->IsInitSuccess())
     {
         ERRORLOG("rocksdb not init");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     if (key.empty())
     {
         ERRORLOG("key is empty");
-        ret_status = rocksdb::Status::Aborted();
+        retStatus = rocksdb::Status::Aborted();
         return false;
     }
     {
-        ret_status = rocksdb_->db_->Get(read_options_, key, &value);
+        retStatus = rocksdb_->db_->Get(read_options_, key, &value);
     }
-    if (ret_status.ok())
+    if (retStatus.ok())
     {
         return true;
     }
-    if (ret_status.IsNotFound())
+    if (retStatus.IsNotFound())
     {
         TRACELOG("rocksdb ReadData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
     else
     {
         ERRORLOG("rocksdb ReadData failed key:{} code:({}),subcode:({}),severity:({}),info:({})",
-                 key, ret_status.code(), ret_status.subcode(), ret_status.severity(), ret_status.ToString());
+                 key, retStatus.code(), retStatus.subcode(), retStatus.severity(), retStatus.ToString());
     }
-    if(ret_status.code() == rocksdb::Status::Code::kIOError)
+    if(retStatus.code() == rocksdb::Status::Code::kIOError)
     {
         DBDestory();
         exit(-1);

@@ -33,6 +33,7 @@
 #include "../proto/common.pb.h"
 #include "../utils/util.h"
 #include "../proto/ca_protomsg.pb.h"
+#include "key_exchange.h"
 /**
  * @brief       
  * 
@@ -213,6 +214,17 @@ namespace net_com
 	/**
 	 * @brief       
 	 * 
+	 * @param       dest 
+	 * @param       msg 
+	 * @return      true 
+	 * @return      false 
+	 */
+	bool SendEcdhMessage(const Node &dest, KeyExchangeRequest &msg);
+
+
+	/**
+	 * @brief       
+	 * 
 	 * @param       to 
 	 * @param       pack 
 	 * @return      true 
@@ -240,19 +252,19 @@ namespace net_com
 	 * @return      false 
 	 */
 	bool SendOneMessage(const MsgData &to, const NetPack &pack);
+
 	/**
 	 * @brief       
 	 * 
-	 * @param       to 
-	 * @param       pack 
+	 * @param       addr 
+	 * @param       msg 
 	 */
 	void SendMessageTask(const std::string& addr, BuildBlockBroadcastMsg &msg);
-
-	template <typename T>
 	/**
 	 * @brief       
 	 * 
 	 */
+	template <typename T>
 	bool SendMessage(const std::string id,
 					  T &msg,
 					  const net_com::Compress isCompress = net_com::Compress::kCompress_True,
@@ -267,7 +279,6 @@ namespace net_com
 	bool SendMessage(const Node &dest,
 					  T &msg,
 					  const net_com::Compress isCompress = net_com::Compress::kCompress_True,
-					  const net_com::Encrypt isEncrypt = net_com::Encrypt::kEncrypt_False,
 					  const net_com::Priority priority = net_com::Priority::kPriority_Low_0);
 
 	/**
@@ -307,15 +318,6 @@ namespace net_com
 	 * @return      int 
 	 */
 	int AnalysisConnectionKind(Node &to);
-
-	/**
-	 * @brief       
-	 * 
-	 * @param       to 
-	 * @return      true 
-	 * @return      false 
-	 */
-	bool IsNeedSendTransactionMessage(const Node &to);
 
 	/**
 	 * @brief       
@@ -423,33 +425,34 @@ namespace net_callback
 	 * 
 	 * @param       callback 
 	 */
-	void RegisterChainHeightCallback(std::function<int(uint32_t &)> callback);
-	extern std::function<int(uint32_t &)> chainHeightCallback;
+	using GetChainHeightCallback = std::function<int(uint32_t &)>;
+	using CalculateChainHeightCallback = std::function<bool(uint64_t &)>;
+	void RegisterChainHeightCallback(GetChainHeightCallback callback);
+	extern GetChainHeightCallback chainHeightCallback;
+
+	void RegisterCalculateChainHeightCallback(CalculateChainHeightCallback callback);
+	extern CalculateChainHeightCallback calculateChainHeightCallback;
 }
+
 
 
 template <typename T>
-/**
- * @brief       
- * 
- * @param       dest 
- * @param       msg 
- * @param       isCompress 
- * @param       isEncrypt 
- * @param       priority 
- * @return      true 
- * @return      false 
- */
-bool net_com::SendMessage(const Node &dest, T &msg, const net_com::Compress isCompress, const net_com::Encrypt isEncrypt, const net_com::Priority priority)
+bool net_com::SendMessage(const Node &dest, T &msg, const net_com::Compress isCompress, const net_com::Priority priority)
 {
-	CommonMsg commonMsg;
-
-	Pack::InitCommonMsg(commonMsg, msg, (uint8_t)isEncrypt, (uint8_t)isCompress);
+	CommonMsg commMsg;
+	auto key = MagicSingleton<KeyExchangeManager>::GetInstance()->getKey(dest.fd);
+	if(key == nullptr)
+	{
+		ERRORLOG("null key");
+		return false;
+	}
+	Pack::InitCommonMsg(commMsg, msg, *key.get(), (uint8_t)net_com::Encrypt::kEncrypt_True, (uint8_t)isCompress);
 	NetPack pack;
+	Pack::PackCommonMsg(commMsg, (uint8_t)priority, pack);
 
-	Pack::PackCommonMsg(commonMsg, (uint8_t)priority, pack);
 	return net_com::SendOneMessage(dest, pack);
 }
+
 
 template <typename T>
 bool net_com::SendMessage(const std::string id, T &msg, const net_com::Compress isCompress, const net_com::Encrypt isEncrypt, const net_com::Priority priority)
@@ -458,13 +461,13 @@ bool net_com::SendMessage(const std::string id, T &msg, const net_com::Compress 
 	auto find = MagicSingleton<PeerNode>::GetInstance()->FindNode(id, node);
 	if (find)
 	{
-		return net_com::SendMessage(node, msg, isCompress, isEncrypt, priority);
+		return net_com::SendMessage(node, msg, isCompress, priority);
 	}
-	else
+	else if(id != MagicSingleton<PeerNode>::GetInstance()->GetSelfId())
 	{
 		Node transNode;
-		transNode.base58Address = id;
-		return net_com::SendMessage(transNode, msg, isCompress, isEncrypt, priority);
+		transNode.address = id;
+		return net_com::SendMessage(transNode, msg, isCompress, priority);
 	}
 }
 
@@ -475,7 +478,7 @@ bool net_com::SendMessage(const MsgData &from, T &msg, const net_com::Compress i
 	auto find = MagicSingleton<PeerNode>::GetInstance()->FindNodeByFd(from.fd, node);
 	if (find)
 	{
-		return net_com::SendMessage(node, msg, isCompress, isEncrypt, priority);
+		return net_com::SendMessage(node, msg, isCompress, priority);
 	}
 	else
 	{
@@ -495,22 +498,11 @@ bool net_com::SendMessage(const MsgData &from, T &msg, const net_com::Compress i
 template <typename T>
 bool net_com::BroadCastMessage(T &msg, const net_com::Compress isCompress, const net_com::Encrypt isEncrypt, const net_com::Priority priority)
 {
-	BroadcastMsgReq broadcastMsgReq;
-	broadcastMsgReq.set_priority(static_cast<uint32_t>(priority));
-
-	CommonMsg commonMsg;
-	Pack::InitCommonMsg(commonMsg, msg, (uint8_t)isEncrypt, (uint8_t)isCompress);
-	broadcastMsgReq.set_data(commonMsg.SerializeAsString());
-
-	NodeInfo *pNodeInfo = broadcastMsgReq.mutable_from();
 	const Node &selfNode = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
-	pNodeInfo->set_pub(selfNode.pub);
-	pNodeInfo->set_base58addr(selfNode.base58Address);
 
 	const std::vector<Node> &&publicNodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 	if (global::kBuildType == global::BuildType::kBuildType_Dev)
 	{
-		// std::cout << "Total number of public nodelists:" << publicNodeList.size() << std::endl;
 		INFOLOG("Total number of public nodelists: {}",  publicNodeList.size());
 	}
 	if (publicNodeList.empty())
@@ -519,24 +511,14 @@ bool net_com::BroadCastMessage(T &msg, const net_com::Compress isCompress, const
 		return false;
 	}
 
-	const double threshold = 0.25;
-	const std::size_t cntUnConnected = std::count_if(publicNodeList.cbegin(), publicNodeList.cend(), [](const Node &node)
-													 { return node.fd == -1; });
-	double percent = static_cast<double>(cntUnConnected) / publicNodeList.size();
-	if (percent > threshold)
-	{
-		ERRORLOG("Unconnected nodes are {},accounting for {}%", cntUnConnected, percent * 100);
-		return false;
-	}
-	// std::cout << "Verification passed, start broadcasting!" << std::endl;
 	INFOLOG("Verification passed, start broadcasting!");
 
 	// Send to public nodelist
 	for (auto &item : publicNodeList)
 	{
-		if (broadcastMsgReq.from().base58addr() != item.base58Address)
+		if (selfNode.address != item.address)
 		{
-			net_com::SendMessage(item, broadcastMsgReq);
+			net_com::SendMessage(item, msg);
 		}
 	}
 	return true;

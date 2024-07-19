@@ -1,3 +1,13 @@
+/**
+ * *****************************************************************************
+ * @file        ca_protomsg.proto
+ * @brief       Transaction related agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax = "proto3";
 
 
@@ -5,7 +15,7 @@ syntax = "proto3";
 import "sign.proto";
 // import "block.proto";
 
-
+//sign node massage
 message SignNodeMsg
 {
 	string id   = 1; //id Signing node ID
@@ -13,23 +23,25 @@ message SignNodeMsg
 	bytes pub   = 3; //The signer's public key
 }
 
+//Transaction transfer information
 message TxMsgInfo
 {
-  uint32    type = 1; //Transaction flow type
-  bytes     tx = 2; //Transaction Information
-  uint64    height = 3; //The height value of the initiating transaction node
-  repeated string contractStorageList = 4;
+  uint32    type    = 1; //Transaction flow type
+  bytes     tx      = 2; //Transaction Information
+  uint64    nodeHeight  = 3; //The height value of the initiating transaction node
+  uint64    txUtxoHeight  = 4;
+  repeated string contractStorageList = 5;  //contract storage list
 }
 
-//PC-side transaction information body
+//PC-side transaction Req information body
 message TxMsgReq
 {
   string       version              = 1; //version					
-  TxMsgInfo    txMsgInfo            = 2;
-  Vrf      vrfInfo              = 3;
-  Vrf      txvrfInfo              = 4;
-	repeated SignNodeMsg signNodeMsg  = 5;  //The signature information of the signing node in the transaction flow
-	repeated string prevBlkHashs      = 6;	//hashs		Pre-block hashs	
+  TxMsgInfo    txMsgInfo            = 2; //transaction information
+  Vrf          vrfInfo              = 3; 
+  Vrf          txvrfInfo            = 4;
+	repeated SignNodeMsg signNodeMsg  = 5; //The signature information of the signing node in the transaction flow
+	repeated string prevBlkHashs      = 6; //hashs		Pre-block hashs	
 
 }
 
@@ -49,52 +61,53 @@ message Vrf
   CSign  Vrfsign = 2;
 }
 
+
+////PC-side transaction Ack information body
 message TxMsgAck
 {
   string version = 1; //version
-  int32 code = 2; //Error code
+  int32 code     = 2; //Error code
   string message = 3; //Returns an error message
 
-  bytes tx = 4;
+  bytes tx = 4;       //transaction
 }
 
+//block broadcast msg
 message BuildBlockBroadcastMsg
 {
-  string      version         = 1;                         //version	
-  string      id              = 2;
-	bytes 		  blockRaw		    = 3;				          		//Block information
-  Vrf         vrfInfo         = 4;
-  int32       flag            = 5;
-  int32       type            = 6;
-  repeated string      castAddrs     = 7;
+  string      version         = 1;   //version	
+  string      id              = 2;   //self node id
+	bytes 		  blockRaw		    = 3;	 //block information
+  Vrf         blockVrfInfo    = 4;   
+  int32       flag            = 5;   //flag
+  int32       type            = 6;   //type
+  repeated string castAddrs     = 7; //broadcast destination address
+  
+  repeated  Vrf  vrfInfo        = 8;  
+  repeated  Vrf  txvrfInfo      = 9;  
 }
 
-message BuildBlockBroadcastMsgAck 
-{
-  string version          = 1;
-  string id               = 2;
-  string success          = 3;
-  string blockhash		    = 4;				          		//Block information
-}
-
+//Contract transaction massage
 message ContractTxMsgReq
 {
-  string version = 1;
-  TxMsgReq txMsgReq = 2;
-  repeated string contractDependentAddress = 3;
+  string   version   = 1; //version
+  TxMsgReq txMsgReq  = 2; 
+  repeated string contractDependentAddress = 3; //contract address
 }
 
+//vrf data source
 message VrfDataSource
 {
-  repeated  string  vrfNodelist  = 1;
+  repeated  string  vrfNodelist  = 1; //vrf data source node list
 }
 
+//Contract transaction Packager massage
 message ContractPackagerMsg
 {
-  string version = 1;
-  CSign  sign = 2;
+  string version  = 1;  //version
+  CSign  sign     = 2;  //sign
   repeated TxMsgReq txMsgReq = 3;
-  Vrf    vrfInfo  = 4;
-  VrfDataSource vrfDataSource = 5;
+  Vrf    vrfInfo  = 4;  
+  VrfDataSource vrfDataSource = 5; //vrf data source
 
 }

@@ -9,16 +9,17 @@
 #ifndef _CA_BLOCKHELPER_H
 #define _CA_BLOCKHELPER_H
 
-#include <cstdint>
+#include <map>
 #include <stack>
 #include <mutex>
+#include <shared_mutex>
 #include <string>
-#include <map>
-#include <thread>
-#include <condition_variable>
 #include <atomic>
+#include <thread>
+#include <cstdint>
+#include <condition_variable>
 
-#include "sync_block.h"
+#include "ca/block_compare.h"
 #include "global.h"
 
 namespace compator
@@ -77,6 +78,39 @@ enum class doubleSpendType
     err
 };
 
+class BlockManager {
+public:
+    using Timestamp = std::chrono::steady_clock::time_point;
+
+    bool addBlock(const std::string& blockHash) {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        auto now = std::chrono::steady_clock::now();
+        auto result = blocks_.emplace(blockHash, now);
+        return result.second; // true if the block was added, false if it already existed
+    }
+
+    bool hasBlock(const std::string& blockHash) {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        return blocks_.find(blockHash) != blocks_.end();
+    }
+
+    void removeExpiredBlocks(std::chrono::seconds timeout) {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        auto now = std::chrono::steady_clock::now();
+        for (auto it = blocks_.begin(); it != blocks_.end(); ) {
+            if (now - it->second > timeout) {
+                it = blocks_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+private:
+    std::unordered_map<std::string, Timestamp> blocks_;
+    std::shared_mutex mutex_;
+};
+
 /**
  * @brief       
  */
@@ -93,7 +127,6 @@ class BlockHelper
          * @return      int 
          */
         int VerifyFlowedBlock(const CBlock& block, BlockStatus* blockStatus = nullptr,BlockMsg *msg = nullptr);
-        // int SaveBlock(const CBlock& block, bool NeedVerify);
 
         /**
          * @brief       
@@ -154,14 +187,6 @@ class BlockHelper
          */
         void AddBroadcastBlock(const CBlock& block, bool status = false);
 
-        /**
-         * @brief       
-         * 
-         * @param       block: 
-         * @param       status: 
-         */
-        void AddBroadcastBlock_V33_1(const CBlock& block, bool status = false);
-        
         /**
          * @brief       
          * 
@@ -414,33 +439,8 @@ static int GetUtxoFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vec
  */
 int SendBlockByUtxoReq(const std::string &utxo);
 
-/**
- * @brief       
- * 
- * @param       utxo: 
- * @param       addr: 
- * @param       msgId: 
- * @return      int 
- */
-int SendBlockByUtxoAck(const std::string &utxo, const std::string &addr, const std::string &msgId);
 
-/**
- * @brief       
- * 
- * @param       msg: 
- * @param       msgdata: 
- * @return      int 
- */
-int HandleBlockByUtxoReq(const std::shared_ptr<GetBlockByUtxoReq> &msg, const MsgData &msgdata);
 
-/**
- * @brief       
- * 
- * @param       msg: 
- * @param       msgdata: 
- * @return      int 
- */
-int HandleBlockByUtxoAck(const std::shared_ptr<GetBlockByUtxoAck> &msg, const MsgData &msgdata);
 
 /**
  * @brief       
@@ -459,32 +459,7 @@ int SendBlockByHashReq(const std::map<std::string, bool> &missingHashs);
  */
 int SeekBlockByContractPreHashReq(const std::string &seekBlockHash, std::string& contractBlockStr);
 
-/**
- * @brief       
- * 
- * @param       missingHashs: 
- * @param       addr: 
- * @param       msgId: 
- * @return      int 
- */
-int SendBlockByHashAck(const std::map<std::string, bool> &missingHashs, const std::string &addr, const std::string &msgId);
 
-/**
- * @brief       
- * 
- * @param       msg: 
- * @param       msgdata: 
- * @return      int 
- */
-int HandleBlockByHashReq(const std::shared_ptr<GetBlockByHashReq> &msg, const MsgData &msgdata);
 
-/**
- * @brief       
- * 
- * @param       msg: 
- * @param       msgdata: 
- * @return      int 
- */
-int HandleBlockByHashAck(const std::shared_ptr<GetBlockByHashAck> &msg, const MsgData &msgdata);
 
 #endif

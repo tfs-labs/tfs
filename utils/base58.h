@@ -36,14 +36,28 @@ enum class Base58Ver
     kBase58Ver_MultiSign = 0x05,
     kBase58Ver_All = 99,
 };
-
+/**
+ * @brief
+ * 
+ * @param       key:
+ * @return      string
+*/
 std::string GetMd160(std::string key);
+/**
+ * @brief
+ * 
+ * @param       key:
+ * @param       ver:
+ * @return      string
+*/
 std::string GetBase58Addr(std::string key, Base58Ver ver = Base58Ver::kBase58Ver_Normal);
 
 /**
- * @description:
- * @param: base58
- * @return: 
- */
+ * @brief
+ * 
+ * @param       base58Addr:
+ * @param       ver:
+ * @return      bool
+*/
 bool CheckBase58Addr(const std::string & base58Addr, Base58Ver ver = Base58Ver::kBase58Ver_All);
 #endif

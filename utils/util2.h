@@ -17,9 +17,29 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+/**
+ * @brief       
+ * 
+ * @param       md32:
+ * @param       data:
+ * @param       data_len:
+*/
 void bu_Hash4(unsigned char *md32, const void *data, size_t data_len);
+/**
+ * @brief       
+ * 
+ * @param       md256:
+ * @param       data:
+ * @param       data_len:
+*/
 void bu_Hash(unsigned char *md256, const void *data, size_t data_len);
+/**
+ * @brief       
+ * 
+ * @param       md160:
+ * @param       data:
+ * @param       data_len:
+*/
 void bu_Hash160(unsigned char *md160, const void *data, size_t data_len);
 
 #ifdef __cplusplus

@@ -1,11 +1,3 @@
-/*
- * @Author: HaoXuDong 2848973813@qq.com
- * @Date: 2023-12-06 16:33:00
- * @LastEditors: HaoXuDong 2848973813@qq.com
- * @LastEditTime: 2023-12-06 16:53:29
- * @FilePath: /tfs/ca/checker.h
- * @Description:https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
- */
 /**
  * *****************************************************************************
  * @file        checker.h
@@ -20,25 +12,16 @@
 #include <vector>
 #include <map>
 
-#include "proto/transaction.pb.h"
-#include "proto/block.pb.h"
-#include "block_helper.h"
 #include "ca/transaction.h"
+#include "ca/block_helper.h"
 #include "ca/transaction_entity.h"
-#include "ca/transaction_entity_V33_1.h"
+
+#include "proto/block.pb.h"
+#include "proto/transaction.pb.h"
+
 
 namespace Checker 
 {
-    /**
-     * @brief       
-     * 
-     * @param       tx: 
-     * @param       cache: 
-     * @return      true 
-     * @return      false 
-     */
-    bool CheckConflict(const CTransaction &tx, const std::map<uint64_t ,std::list<CTransaction>> &cache);
-    bool CheckConflict_V33_1(const CTransaction &tx, const std::map<uint64_t, std::list<TransactionEntity_V33_1>> &cache);
     /**
      * @brief
      *

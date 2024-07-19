@@ -12,10 +12,10 @@ namespace global{
 
     namespace ca{
 
-        extern const std::string kInitAccountBase58Addr;
-        extern const std::string kGenesisBlockRaw;
-        extern const uint64_t kGenesisTime;
-        extern const std::string kConfigJson;
+        extern const std::string kInitAccountAddr ;
+        extern const std::string kGenesisBlockRaw ;
+        extern const uint64_t kGenesisTime ;
+        extern const std::string kConfigJson ;
 
         // consensus
         extern const int kConsensus ;
@@ -24,14 +24,12 @@ namespace global{
         extern const int kNeed_node_threshold ;
         extern const int KSign_node_threshold ;
         extern const int KRandomNodeGroup ;
-
         extern const int TxTimeoutMin ;
 
-        // timer
         extern CTimer kBlockPoolTimer;
         extern CTimer kSeekBlockTimer;
         extern CTimer kDataBaseTimer;
-        // mutex
+
         extern std::mutex kBonusMutex;
         extern std::mutex kInvestMutex;
         extern std::mutex kBurnMutex;
@@ -42,23 +40,24 @@ namespace global{
         extern const uint64_t kM2 ;
 
         extern const uint64_t kMinStakeAmt ;
-        extern const uint64_t kMinInvestAmt;
+        extern const uint64_t kMinInvestAmt ;
         extern const std::string kGenesisSign ;
-        extern const std::string kTxSign;
+        extern const std::string kTxSign ;
         extern const std::string kVirtualStakeAddr ;
-        extern const std::string kVirtualInvestAddr;
+        extern const std::string kVirtualInvestAddr ;
         extern const std::string kVirtualBurnGasAddr ;
         extern const std::string kStakeTypeNet ;
         extern const std::string kInvestTypeNormal ;
         extern const uint64_t kMinUnstakeHeight ;
         extern const std::string kVirtualDeployContractAddr ;
+        extern const std::string kVirtualCallContractAddr ;
+		
+        extern const uint64_t KtxTimeout ;
+        extern const uint64_t KPackNodeThreshold ;
 
-        extern const uint64_t KtxTimeout;
-        extern const uint64_t KPackNodeThreshold;
-
-        extern const double KBonusPumping ;
-        extern const double KMaxBonusPumping ;
-        extern const double KMinBonusPumping ;
+        extern const double KCommissionRate ;
+        extern const double KMaxCommissionRate ;
+        extern const double KMinCommissionRate ;
 
         enum class StakeType
         {
@@ -97,6 +96,7 @@ namespace global{
             ByPreHash,
             ByUtxo
         };
+
         extern const uint64_t sum_hash_range ;
         extern const uint64_t thousand_sum_hash_range ;
 
@@ -105,23 +105,21 @@ namespace global{
             const int DoubleBlock = -99;
         };
 
-        // contract
+
         enum VmType {
             EVM,
             WASM
         };
-        //test
-        extern std::atomic<uint64_t> TxNumber;
 
-        extern const uint64_t OldVersionSmartContractFailureHeight ;
-        // const uint64_t OldVersionSmartContractFailureHeight;
+        extern std::atomic<uint64_t> TxNumber;
 
         extern const uint32_t kInitTransactionVersion ;
         extern const uint32_t kInitBlockVersion ;
-        extern const uint32_t kOldTransactionVersion ;
         extern const uint32_t kCurrentTransactionVersion ;
         extern const uint32_t kCurrentBlockVersion ;
-        extern const uint32_t kTempCurrentBlockVersion ;
+
+        extern const uint32_t KChainHighThreshold ;
+        extern const uint32_t KMinSyncQualNodes ;
     }
 }
 

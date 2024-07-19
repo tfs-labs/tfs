@@ -1,84 +1,85 @@
+/**
+ * *****************************************************************************
+ * @file        block.proto
+ * @brief       Block-related agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax = "proto3";
 
 import "transaction.proto";
 import "ca_protomsg.proto";
 import "sign.proto";
 
-
+//block related information
 message CBlock {
-  uint32 version = 1;
-  uint64 time = 2;
-  string hash = 3;
-  string prevHash = 4;
-  int64 height = 5;
-  string merkleRoot = 6;
-  repeated CTransaction txs = 7;
-  string data = 8;
-  string info = 9;
+  uint32 version    = 1;  //block version
+  uint64 time       = 2;  //block creation time
+  string hash       = 3;  //block hash
+  string prevHash   = 4;  //block prev hash
+  int64 height      = 5;  //block height
+  string merkleRoot = 6;  //Merkle
+  repeated CTransaction txs = 7;  //all transactions in the block
+  string data       = 8;  //block data
+  string info       = 9;  //block info
 
-  repeated CSign sign = 10;
+  repeated CSign sign = 10; //block sign
 
-  string reserve0 = 11;
-  string reserve1 = 12;
+  string reserve0   = 11;
+  string reserve1   = 12;
 }
 
+//block transfer information
 message BlockMsg
 {
-  string    version             = 1;
-  sint32    code                = 2;
-  string    message             = 3;
-  uint64    time                = 4;
-  bytes     block               = 5;
-  repeated Vrf  vrfInfo      = 6;
-  repeated Vrf  txvrfInfo    = 7;
-  VrfDataSource vrfDataSource   = 8;
-  CSign         sign            = 9;
+  uint64    nonce               = 1;
+  string    version             = 2;  //block version
+  sint32    code                = 3;  //error number
+  string    message             = 4;  //message
+  uint64    time                = 5;  //block transfer time
+  bytes     block               = 6;  //block related information 
+  repeated  Vrf  vrfInfo        = 7;  
+  repeated  Vrf  txvrfInfo      = 8;  
+  CSign         sign            = 9;  //sign
 }
 
+//transaction status
 message TxStatus
 {
-  string  txHash      = 1;
-  int32   status      = 2;
+  string  txHash      = 1;  //transaction hash
+  int32   status      = 2;  //error num
 }
 
+//block status
 message BlockStatus
 {
-  string              blockHash   = 1;
-  int32               status      = 2;
-  repeated TxStatus   txStatus    = 3;
-  string              id          = 4;
+  string              blockHash   = 1;  //block hash
+  int32               status      = 2;  //error number
+  repeated TxStatus   txStatus    = 3;  //fail transaction
+  string              id          = 4;  //SelfNodeId
 }
 
+//seek preHash by hight
 message SeekPreHashByHightReq
 {
-    string                  self_node_id         = 1;
-    string                  msg_id               = 2;
-    uint64 		              seek_height          = 3;
+    string                  self_node_id         = 1; //self node id
+    string                  msg_id               = 2; //sign massage
+    uint64 		              seek_height          = 3; //seek height
 }
 
+//send seek preHash by hight
 message SeekPreHashByHightAck
 {
-    string                  self_node_id       = 1;
-    string                  msg_id             = 2;
-    uint64 		              seek_height        = 3;
-    repeated string         prehashes          = 4;
-}
-
-message SeekContractPreHashReq
-{
-    string                  self_node_id         = 1;
-    string                  msg_id               = 2;
-}
-
-message SeekContractPreHashAck
-{
-    string                  self_node_id       = 1;
-    string                  msg_id             = 2;
-    string                  ContractPreHash    = 3;
+    string                  self_node_id       = 1; //self node id
+    string                  msg_id             = 2; //sign massage
+    uint64 		              seek_height        = 3; //seek height
+    repeated string         prehashes          = 4; //prehashes
 }
 
 
-//--
 message preHashPair
 {
   string ContractAddr = 1;

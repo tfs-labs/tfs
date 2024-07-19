@@ -81,50 +81,13 @@ void Trie::GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::m
     }
     return;
 }
-void Trie::GetBlockStorage_V33_1(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash)
-{
-    if(root == NULL) return ;
-    auto hashnode = root->ToSonClass<HashNode>();
-    if(this->dirtyHash.empty())
-    {
-        rootHash.first = hashnode->data;
-        rootHash.second = "";
-        return;
-    }
-    else
-    {
-        auto it = this->dirtyHash.find(hashnode->data);
-        rootHash.first = it->first;
-        rootHash.second = it->second;
-        if (it != this->dirtyHash.end())
-        {
-            this->dirtyHash.erase(it);
-        }
-        dirtyHash = this->dirtyHash;
-    }
-    return;
-}
 
 nodePtr Trie::ResolveHash(nodePtr n, std::string prefix) const
 {
     std::string strSha1;
     auto v = n->ToSonClass<HashNode>();
 
-    uint64_t selfNodeHeight = 0;
-    DBReader dbReader;
-    auto status = dbReader.GetBlockTop(selfNodeHeight);
-    if (DBStatus::DB_SUCCESS != status)
-    {
-        DEBUGLOG("Get block top error");
-    }
-    if(selfNodeHeight <= global::ca::OldVersionSmartContractFailureHeight)
-    {
-        return DescendKey_V33_1(v->data);
-    }
-    else
-    {
-        return DescendKey(v->data);
-    }
+    return DescendKey(v->data);
 }
 ReturnNode Trie::Get(nodePtr n, std::string key, int pos) const
 {
@@ -303,21 +266,6 @@ nodePtr Trie::DescendKey(std::string key) const
     dev::RLP r = dev::RLP(bs);
     return DecodeNode(key, r);  // if not, it must be a list
 }
-
-nodePtr Trie::DescendKey_V33_1(std::string key) const
-{
-    DBReader dataReader;
-    std::string value;
-    if(dataReader.GetMptValueByMptKey(contractAddr + "_" + key, value) != 0)
-    {
-        ERRORLOG("GetContractStorageByKey error");
-    }
-    dev::bytes bs = dev::fromHex(value);
-    if (value == "") return NULL;
-    dev::RLP r = dev::RLP(bs);
-    return DecodeNode(key, r);  // if not, it must be a list
-}
-
 nodePtr Trie::DecodeShort(std::string hash, dev::RLP const& r) const
 {
     NodeFlag flag;

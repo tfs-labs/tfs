@@ -153,6 +153,12 @@ extern GetTxPendingListReqDefaultTypeInternal _GetTxPendingListReq_default_insta
 class GetUtxoAck;
 struct GetUtxoAckDefaultTypeInternal;
 extern GetUtxoAckDefaultTypeInternal _GetUtxoAck_default_instance_;
+class GetUtxoHashAck;
+struct GetUtxoHashAckDefaultTypeInternal;
+extern GetUtxoHashAckDefaultTypeInternal _GetUtxoHashAck_default_instance_;
+class GetUtxoHashReq;
+struct GetUtxoHashReqDefaultTypeInternal;
+extern GetUtxoHashReqDefaultTypeInternal _GetUtxoHashReq_default_instance_;
 class GetUtxoReq;
 struct GetUtxoReqDefaultTypeInternal;
 extern GetUtxoReqDefaultTypeInternal _GetUtxoReq_default_instance_;
@@ -162,12 +168,6 @@ extern InvestAddressItemDefaultTypeInternal _InvestAddressItem_default_instance_
 class InvestItem;
 struct InvestItemDefaultTypeInternal;
 extern InvestItemDefaultTypeInternal _InvestItem_default_instance_;
-class IsOnChainAck;
-struct IsOnChainAckDefaultTypeInternal;
-extern IsOnChainAckDefaultTypeInternal _IsOnChainAck_default_instance_;
-class IsOnChainReq;
-struct IsOnChainReqDefaultTypeInternal;
-extern IsOnChainReqDefaultTypeInternal _IsOnChainReq_default_instance_;
 class MultiSignTxAck;
 struct MultiSignTxAckDefaultTypeInternal;
 extern MultiSignTxAckDefaultTypeInternal _MultiSignTxAck_default_instance_;
@@ -241,11 +241,11 @@ template<> ::GetTxFailureListReq* Arena::CreateMaybeMessage<::GetTxFailureListRe
 template<> ::GetTxPendingListAck* Arena::CreateMaybeMessage<::GetTxPendingListAck>(Arena*);
 template<> ::GetTxPendingListReq* Arena::CreateMaybeMessage<::GetTxPendingListReq>(Arena*);
 template<> ::GetUtxoAck* Arena::CreateMaybeMessage<::GetUtxoAck>(Arena*);
+template<> ::GetUtxoHashAck* Arena::CreateMaybeMessage<::GetUtxoHashAck>(Arena*);
+template<> ::GetUtxoHashReq* Arena::CreateMaybeMessage<::GetUtxoHashReq>(Arena*);
 template<> ::GetUtxoReq* Arena::CreateMaybeMessage<::GetUtxoReq>(Arena*);
 template<> ::InvestAddressItem* Arena::CreateMaybeMessage<::InvestAddressItem>(Arena*);
 template<> ::InvestItem* Arena::CreateMaybeMessage<::InvestItem>(Arena*);
-template<> ::IsOnChainAck* Arena::CreateMaybeMessage<::IsOnChainAck>(Arena*);
-template<> ::IsOnChainReq* Arena::CreateMaybeMessage<::IsOnChainReq>(Arena*);
 template<> ::MultiSignTxAck* Arena::CreateMaybeMessage<::MultiSignTxAck>(Arena*);
 template<> ::MultiSignTxReq* Arena::CreateMaybeMessage<::MultiSignTxReq>(Arena*);
 template<> ::OtherStatusItem* Arena::CreateMaybeMessage<::OtherStatusItem>(Arena*);
@@ -9014,407 +9014,6 @@ class SuccessRate final :
 };
 // -------------------------------------------------------------------
 
-class IsOnChainReq final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:IsOnChainReq) */ {
- public:
-  inline IsOnChainReq() : IsOnChainReq(nullptr) {}
-  ~IsOnChainReq() override;
-  explicit PROTOBUF_CONSTEXPR IsOnChainReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  IsOnChainReq(const IsOnChainReq& from);
-  IsOnChainReq(IsOnChainReq&& from) noexcept
-    : IsOnChainReq() {
-    *this = ::std::move(from);
-  }
-
-  inline IsOnChainReq& operator=(const IsOnChainReq& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline IsOnChainReq& operator=(IsOnChainReq&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const IsOnChainReq& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const IsOnChainReq* internal_default_instance() {
-    return reinterpret_cast<const IsOnChainReq*>(
-               &_IsOnChainReq_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    44;
-
-  friend void swap(IsOnChainReq& a, IsOnChainReq& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(IsOnChainReq* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(IsOnChainReq* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  IsOnChainReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<IsOnChainReq>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const IsOnChainReq& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const IsOnChainReq& from) {
-    IsOnChainReq::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(IsOnChainReq* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "IsOnChainReq";
-  }
-  protected:
-  explicit IsOnChainReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kTxhashFieldNumber = 2,
-    kVersionFieldNumber = 1,
-    kTimeFieldNumber = 3,
-  };
-  // repeated string txhash = 2;
-  int txhash_size() const;
-  private:
-  int _internal_txhash_size() const;
-  public:
-  void clear_txhash();
-  const std::string& txhash(int index) const;
-  std::string* mutable_txhash(int index);
-  void set_txhash(int index, const std::string& value);
-  void set_txhash(int index, std::string&& value);
-  void set_txhash(int index, const char* value);
-  void set_txhash(int index, const char* value, size_t size);
-  std::string* add_txhash();
-  void add_txhash(const std::string& value);
-  void add_txhash(std::string&& value);
-  void add_txhash(const char* value);
-  void add_txhash(const char* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& txhash() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_txhash();
-  private:
-  const std::string& _internal_txhash(int index) const;
-  std::string* _internal_add_txhash();
-  public:
-
-  // string version = 1;
-  void clear_version();
-  const std::string& version() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_version(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_version();
-  PROTOBUF_NODISCARD std::string* release_version();
-  void set_allocated_version(std::string* version);
-  private:
-  const std::string& _internal_version() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
-  std::string* _internal_mutable_version();
-  public:
-
-  // uint64 time = 3;
-  void clear_time();
-  uint64_t time() const;
-  void set_time(uint64_t value);
-  private:
-  uint64_t _internal_time() const;
-  void _internal_set_time(uint64_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:IsOnChainReq)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> txhash_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
-    uint64_t time_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_interface_2eproto;
-};
-// -------------------------------------------------------------------
-
-class IsOnChainAck final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:IsOnChainAck) */ {
- public:
-  inline IsOnChainAck() : IsOnChainAck(nullptr) {}
-  ~IsOnChainAck() override;
-  explicit PROTOBUF_CONSTEXPR IsOnChainAck(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  IsOnChainAck(const IsOnChainAck& from);
-  IsOnChainAck(IsOnChainAck&& from) noexcept
-    : IsOnChainAck() {
-    *this = ::std::move(from);
-  }
-
-  inline IsOnChainAck& operator=(const IsOnChainAck& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline IsOnChainAck& operator=(IsOnChainAck&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const IsOnChainAck& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const IsOnChainAck* internal_default_instance() {
-    return reinterpret_cast<const IsOnChainAck*>(
-               &_IsOnChainAck_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    45;
-
-  friend void swap(IsOnChainAck& a, IsOnChainAck& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(IsOnChainAck* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(IsOnChainAck* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  IsOnChainAck* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<IsOnChainAck>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const IsOnChainAck& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const IsOnChainAck& from) {
-    IsOnChainAck::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(IsOnChainAck* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "IsOnChainAck";
-  }
-  protected:
-  explicit IsOnChainAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kPercentageFieldNumber = 5,
-    kVersionFieldNumber = 1,
-    kMessageFieldNumber = 3,
-    kTimeFieldNumber = 4,
-    kCodeFieldNumber = 2,
-  };
-  // repeated .SuccessRate percentage = 5;
-  int percentage_size() const;
-  private:
-  int _internal_percentage_size() const;
-  public:
-  void clear_percentage();
-  ::SuccessRate* mutable_percentage(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >*
-      mutable_percentage();
-  private:
-  const ::SuccessRate& _internal_percentage(int index) const;
-  ::SuccessRate* _internal_add_percentage();
-  public:
-  const ::SuccessRate& percentage(int index) const;
-  ::SuccessRate* add_percentage();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >&
-      percentage() const;
-
-  // string version = 1;
-  void clear_version();
-  const std::string& version() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_version(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_version();
-  PROTOBUF_NODISCARD std::string* release_version();
-  void set_allocated_version(std::string* version);
-  private:
-  const std::string& _internal_version() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
-  std::string* _internal_mutable_version();
-  public:
-
-  // string message = 3;
-  void clear_message();
-  const std::string& message() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_message(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_message();
-  PROTOBUF_NODISCARD std::string* release_message();
-  void set_allocated_message(std::string* message);
-  private:
-  const std::string& _internal_message() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_message(const std::string& value);
-  std::string* _internal_mutable_message();
-  public:
-
-  // uint64 time = 4;
-  void clear_time();
-  uint64_t time() const;
-  void set_time(uint64_t value);
-  private:
-  uint64_t _internal_time() const;
-  void _internal_set_time(uint64_t value);
-  public:
-
-  // int32 code = 2;
-  void clear_code();
-  int32_t code() const;
-  void set_code(int32_t value);
-  private:
-  int32_t _internal_code() const;
-  void _internal_set_code(int32_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:IsOnChainAck)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate > percentage_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
-    uint64_t time_;
-    int32_t code_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_interface_2eproto;
-};
-// -------------------------------------------------------------------
-
 class ConfirmTransactionReq final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ConfirmTransactionReq) */ {
  public:
@@ -9463,7 +9062,7 @@ class ConfirmTransactionReq final :
                &_ConfirmTransactionReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    46;
+    44;
 
   friend void swap(ConfirmTransactionReq& a, ConfirmTransactionReq& b) {
     a.Swap(&b);
@@ -9664,7 +9263,7 @@ class ConfirmTransactionAck final :
                &_ConfirmTransactionAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    47;
+    45;
 
   friend void swap(ConfirmTransactionAck& a, ConfirmTransactionAck& b) {
     a.Swap(&b);
@@ -9740,6 +9339,7 @@ class ConfirmTransactionAck final :
     kPercentageFieldNumber = 5,
     kVersionFieldNumber = 1,
     kMessageFieldNumber = 3,
+    kTxFieldNumber = 8,
     kTimeFieldNumber = 4,
     kCodeFieldNumber = 2,
     kSendSizeFieldNumber = 6,
@@ -9791,6 +9391,20 @@ class ConfirmTransactionAck final :
   std::string* _internal_mutable_message();
   public:
 
+  // bytes tx = 8;
+  void clear_tx();
+  const std::string& tx() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_tx(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_tx();
+  PROTOBUF_NODISCARD std::string* release_tx();
+  void set_allocated_tx(std::string* tx);
+  private:
+  const std::string& _internal_tx() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_tx(const std::string& value);
+  std::string* _internal_mutable_tx();
+  public:
+
   // uint64 time = 4;
   void clear_time();
   uint64_t time() const;
@@ -9838,6 +9452,7 @@ class ConfirmTransactionAck final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate > percentage_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tx_;
     uint64_t time_;
     int32_t code_;
     uint32_t send_size_;
@@ -9897,7 +9512,7 @@ class CorresHash final :
                &_CorresHash_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    48;
+    46;
 
   friend void swap(CorresHash& a, CorresHash& b) {
     a.Swap(&b);
@@ -10061,7 +9676,7 @@ class CheckTxReq final :
                &_CheckTxReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    47;
 
   friend void swap(CheckTxReq& a, CheckTxReq& b) {
     a.Swap(&b);
@@ -10137,6 +9752,7 @@ class CheckTxReq final :
     kTxhashFieldNumber = 2,
     kVersionFieldNumber = 1,
     kMsgIdFieldNumber = 3,
+    kIsresponseFieldNumber = 4,
   };
   // repeated string txhash = 2;
   int txhash_size() const;
@@ -10190,6 +9806,15 @@ class CheckTxReq final :
   std::string* _internal_mutable_msg_id();
   public:
 
+  // uint32 isresponse = 4;
+  void clear_isresponse();
+  uint32_t isresponse() const;
+  void set_isresponse(uint32_t value);
+  private:
+  uint32_t _internal_isresponse() const;
+  void _internal_set_isresponse(uint32_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:CheckTxReq)
  private:
   class _Internal;
@@ -10201,6 +9826,407 @@ class CheckTxReq final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> txhash_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
+    uint32_t isresponse_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_interface_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetUtxoHashReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:GetUtxoHashReq) */ {
+ public:
+  inline GetUtxoHashReq() : GetUtxoHashReq(nullptr) {}
+  ~GetUtxoHashReq() override;
+  explicit PROTOBUF_CONSTEXPR GetUtxoHashReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetUtxoHashReq(const GetUtxoHashReq& from);
+  GetUtxoHashReq(GetUtxoHashReq&& from) noexcept
+    : GetUtxoHashReq() {
+    *this = ::std::move(from);
+  }
+
+  inline GetUtxoHashReq& operator=(const GetUtxoHashReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetUtxoHashReq& operator=(GetUtxoHashReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetUtxoHashReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetUtxoHashReq* internal_default_instance() {
+    return reinterpret_cast<const GetUtxoHashReq*>(
+               &_GetUtxoHashReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    48;
+
+  friend void swap(GetUtxoHashReq& a, GetUtxoHashReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetUtxoHashReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetUtxoHashReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetUtxoHashReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetUtxoHashReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetUtxoHashReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GetUtxoHashReq& from) {
+    GetUtxoHashReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetUtxoHashReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "GetUtxoHashReq";
+  }
+  protected:
+  explicit GetUtxoHashReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kUtxoHashFieldNumber = 2,
+    kVersionFieldNumber = 1,
+    kMsgIdFieldNumber = 3,
+  };
+  // repeated string utxoHash = 2;
+  int utxohash_size() const;
+  private:
+  int _internal_utxohash_size() const;
+  public:
+  void clear_utxohash();
+  const std::string& utxohash(int index) const;
+  std::string* mutable_utxohash(int index);
+  void set_utxohash(int index, const std::string& value);
+  void set_utxohash(int index, std::string&& value);
+  void set_utxohash(int index, const char* value);
+  void set_utxohash(int index, const char* value, size_t size);
+  std::string* add_utxohash();
+  void add_utxohash(const std::string& value);
+  void add_utxohash(std::string&& value);
+  void add_utxohash(const char* value);
+  void add_utxohash(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& utxohash() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_utxohash();
+  private:
+  const std::string& _internal_utxohash(int index) const;
+  std::string* _internal_add_utxohash();
+  public:
+
+  // string version = 1;
+  void clear_version();
+  const std::string& version() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_version(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_version();
+  PROTOBUF_NODISCARD std::string* release_version();
+  void set_allocated_version(std::string* version);
+  private:
+  const std::string& _internal_version() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
+  std::string* _internal_mutable_version();
+  public:
+
+  // string msg_id = 3;
+  void clear_msg_id();
+  const std::string& msg_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_msg_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_msg_id();
+  PROTOBUF_NODISCARD std::string* release_msg_id();
+  void set_allocated_msg_id(std::string* msg_id);
+  private:
+  const std::string& _internal_msg_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_msg_id(const std::string& value);
+  std::string* _internal_mutable_msg_id();
+  public:
+
+  // @@protoc_insertion_point(class_scope:GetUtxoHashReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> utxohash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_interface_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetUtxoHashAck final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:GetUtxoHashAck) */ {
+ public:
+  inline GetUtxoHashAck() : GetUtxoHashAck(nullptr) {}
+  ~GetUtxoHashAck() override;
+  explicit PROTOBUF_CONSTEXPR GetUtxoHashAck(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetUtxoHashAck(const GetUtxoHashAck& from);
+  GetUtxoHashAck(GetUtxoHashAck&& from) noexcept
+    : GetUtxoHashAck() {
+    *this = ::std::move(from);
+  }
+
+  inline GetUtxoHashAck& operator=(const GetUtxoHashAck& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetUtxoHashAck& operator=(GetUtxoHashAck&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetUtxoHashAck& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetUtxoHashAck* internal_default_instance() {
+    return reinterpret_cast<const GetUtxoHashAck*>(
+               &_GetUtxoHashAck_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    49;
+
+  friend void swap(GetUtxoHashAck& a, GetUtxoHashAck& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetUtxoHashAck* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetUtxoHashAck* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetUtxoHashAck* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetUtxoHashAck>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetUtxoHashAck& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GetUtxoHashAck& from) {
+    GetUtxoHashAck::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetUtxoHashAck* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "GetUtxoHashAck";
+  }
+  protected:
+  explicit GetUtxoHashAck(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kFlaghashFieldNumber = 2,
+    kVersionFieldNumber = 1,
+    kMsgIdFieldNumber = 3,
+    kBase58AddrFieldNumber = 4,
+  };
+  // repeated .CorresHash flaghash = 2;
+  int flaghash_size() const;
+  private:
+  int _internal_flaghash_size() const;
+  public:
+  void clear_flaghash();
+  ::CorresHash* mutable_flaghash(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CorresHash >*
+      mutable_flaghash();
+  private:
+  const ::CorresHash& _internal_flaghash(int index) const;
+  ::CorresHash* _internal_add_flaghash();
+  public:
+  const ::CorresHash& flaghash(int index) const;
+  ::CorresHash* add_flaghash();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CorresHash >&
+      flaghash() const;
+
+  // string version = 1;
+  void clear_version();
+  const std::string& version() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_version(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_version();
+  PROTOBUF_NODISCARD std::string* release_version();
+  void set_allocated_version(std::string* version);
+  private:
+  const std::string& _internal_version() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_version(const std::string& value);
+  std::string* _internal_mutable_version();
+  public:
+
+  // string msg_id = 3;
+  void clear_msg_id();
+  const std::string& msg_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_msg_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_msg_id();
+  PROTOBUF_NODISCARD std::string* release_msg_id();
+  void set_allocated_msg_id(std::string* msg_id);
+  private:
+  const std::string& _internal_msg_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_msg_id(const std::string& value);
+  std::string* _internal_mutable_msg_id();
+  public:
+
+  // string base58addr = 4;
+  void clear_base58addr();
+  const std::string& base58addr() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_base58addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_base58addr();
+  PROTOBUF_NODISCARD std::string* release_base58addr();
+  void set_allocated_base58addr(std::string* base58addr);
+  private:
+  const std::string& _internal_base58addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_base58addr(const std::string& value);
+  std::string* _internal_mutable_base58addr();
+  public:
+
+  // @@protoc_insertion_point(class_scope:GetUtxoHashAck)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CorresHash > flaghash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr base58addr_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -10332,7 +10358,8 @@ class CheckTxAck final :
     kFlaghashFieldNumber = 2,
     kVersionFieldNumber = 1,
     kMsgIdFieldNumber = 3,
-    kBase58AddrFieldNumber = 4,
+    kAddrFieldNumber = 4,
+    kTxFieldNumber = 5,
   };
   // repeated .CorresHash flaghash = 2;
   int flaghash_size() const;
@@ -10380,18 +10407,32 @@ class CheckTxAck final :
   std::string* _internal_mutable_msg_id();
   public:
 
-  // string base58addr = 4;
-  void clear_base58addr();
-  const std::string& base58addr() const;
+  // string addr = 4;
+  void clear_addr();
+  const std::string& addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_base58addr(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_base58addr();
-  PROTOBUF_NODISCARD std::string* release_base58addr();
-  void set_allocated_base58addr(std::string* base58addr);
+  void set_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_addr();
+  PROTOBUF_NODISCARD std::string* release_addr();
+  void set_allocated_addr(std::string* addr);
   private:
-  const std::string& _internal_base58addr() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_base58addr(const std::string& value);
-  std::string* _internal_mutable_base58addr();
+  const std::string& _internal_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_addr(const std::string& value);
+  std::string* _internal_mutable_addr();
+  public:
+
+  // bytes tx = 5;
+  void clear_tx();
+  const std::string& tx() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_tx(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_tx();
+  PROTOBUF_NODISCARD std::string* release_tx();
+  void set_allocated_tx(std::string* tx);
+  private:
+  const std::string& _internal_tx() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_tx(const std::string& value);
+  std::string* _internal_mutable_tx();
   public:
 
   // @@protoc_insertion_point(class_scope:CheckTxAck)
@@ -10405,7 +10446,8 @@ class CheckTxAck final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CorresHash > flaghash_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr msg_id_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr base58addr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr addr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tx_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -10535,7 +10577,7 @@ class GetRestInvestAmountReq final :
 
   enum : int {
     kVersionFieldNumber = 1,
-    kBase58FieldNumber = 2,
+    kAddrFieldNumber = 2,
   };
   // string version = 1;
   void clear_version();
@@ -10551,18 +10593,18 @@ class GetRestInvestAmountReq final :
   std::string* _internal_mutable_version();
   public:
 
-  // string base58 = 2;
-  void clear_base58();
-  const std::string& base58() const;
+  // string addr = 2;
+  void clear_addr();
+  const std::string& addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_base58(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_base58();
-  PROTOBUF_NODISCARD std::string* release_base58();
-  void set_allocated_base58(std::string* base58);
+  void set_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_addr();
+  PROTOBUF_NODISCARD std::string* release_addr();
+  void set_allocated_addr(std::string* addr);
   private:
-  const std::string& _internal_base58() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_base58(const std::string& value);
-  std::string* _internal_mutable_base58();
+  const std::string& _internal_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_addr(const std::string& value);
+  std::string* _internal_mutable_addr();
   public:
 
   // @@protoc_insertion_point(class_scope:GetRestInvestAmountReq)
@@ -10574,7 +10616,7 @@ class GetRestInvestAmountReq final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr base58_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr addr_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -10705,7 +10747,7 @@ class GetRestInvestAmountAck final :
   enum : int {
     kVersionFieldNumber = 1,
     kMessageFieldNumber = 3,
-    kBase58FieldNumber = 5,
+    kAddrFieldNumber = 5,
     kAmountFieldNumber = 4,
     kCodeFieldNumber = 2,
   };
@@ -10737,18 +10779,18 @@ class GetRestInvestAmountAck final :
   std::string* _internal_mutable_message();
   public:
 
-  // string base58 = 5;
-  void clear_base58();
-  const std::string& base58() const;
+  // string addr = 5;
+  void clear_addr();
+  const std::string& addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_base58(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_base58();
-  PROTOBUF_NODISCARD std::string* release_base58();
-  void set_allocated_base58(std::string* base58);
+  void set_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_addr();
+  PROTOBUF_NODISCARD std::string* release_addr();
+  void set_allocated_addr(std::string* addr);
   private:
-  const std::string& _internal_base58() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_base58(const std::string& value);
-  std::string* _internal_mutable_base58();
+  const std::string& _internal_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_addr(const std::string& value);
+  std::string* _internal_mutable_addr();
   public:
 
   // uint64 amount = 4;
@@ -10779,7 +10821,7 @@ class GetRestInvestAmountAck final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr base58_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr addr_;
     uint64_t amount_;
     int32_t code_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -18311,339 +18353,6 @@ inline void SuccessRate::set_rate(double value) {
 
 // -------------------------------------------------------------------
 
-// IsOnChainReq
-
-// string version = 1;
-inline void IsOnChainReq::clear_version() {
-  _impl_.version_.ClearToEmpty();
-}
-inline const std::string& IsOnChainReq::version() const {
-  // @@protoc_insertion_point(field_get:IsOnChainReq.version)
-  return _internal_version();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void IsOnChainReq::set_version(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:IsOnChainReq.version)
-}
-inline std::string* IsOnChainReq::mutable_version() {
-  std::string* _s = _internal_mutable_version();
-  // @@protoc_insertion_point(field_mutable:IsOnChainReq.version)
-  return _s;
-}
-inline const std::string& IsOnChainReq::_internal_version() const {
-  return _impl_.version_.Get();
-}
-inline void IsOnChainReq::_internal_set_version(const std::string& value) {
-  
-  _impl_.version_.Set(value, GetArenaForAllocation());
-}
-inline std::string* IsOnChainReq::_internal_mutable_version() {
-  
-  return _impl_.version_.Mutable(GetArenaForAllocation());
-}
-inline std::string* IsOnChainReq::release_version() {
-  // @@protoc_insertion_point(field_release:IsOnChainReq.version)
-  return _impl_.version_.Release();
-}
-inline void IsOnChainReq::set_allocated_version(std::string* version) {
-  if (version != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.version_.IsDefault()) {
-    _impl_.version_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:IsOnChainReq.version)
-}
-
-// repeated string txhash = 2;
-inline int IsOnChainReq::_internal_txhash_size() const {
-  return _impl_.txhash_.size();
-}
-inline int IsOnChainReq::txhash_size() const {
-  return _internal_txhash_size();
-}
-inline void IsOnChainReq::clear_txhash() {
-  _impl_.txhash_.Clear();
-}
-inline std::string* IsOnChainReq::add_txhash() {
-  std::string* _s = _internal_add_txhash();
-  // @@protoc_insertion_point(field_add_mutable:IsOnChainReq.txhash)
-  return _s;
-}
-inline const std::string& IsOnChainReq::_internal_txhash(int index) const {
-  return _impl_.txhash_.Get(index);
-}
-inline const std::string& IsOnChainReq::txhash(int index) const {
-  // @@protoc_insertion_point(field_get:IsOnChainReq.txhash)
-  return _internal_txhash(index);
-}
-inline std::string* IsOnChainReq::mutable_txhash(int index) {
-  // @@protoc_insertion_point(field_mutable:IsOnChainReq.txhash)
-  return _impl_.txhash_.Mutable(index);
-}
-inline void IsOnChainReq::set_txhash(int index, const std::string& value) {
-  _impl_.txhash_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:IsOnChainReq.txhash)
-}
-inline void IsOnChainReq::set_txhash(int index, std::string&& value) {
-  _impl_.txhash_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:IsOnChainReq.txhash)
-}
-inline void IsOnChainReq::set_txhash(int index, const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.txhash_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:IsOnChainReq.txhash)
-}
-inline void IsOnChainReq::set_txhash(int index, const char* value, size_t size) {
-  _impl_.txhash_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:IsOnChainReq.txhash)
-}
-inline std::string* IsOnChainReq::_internal_add_txhash() {
-  return _impl_.txhash_.Add();
-}
-inline void IsOnChainReq::add_txhash(const std::string& value) {
-  _impl_.txhash_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:IsOnChainReq.txhash)
-}
-inline void IsOnChainReq::add_txhash(std::string&& value) {
-  _impl_.txhash_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:IsOnChainReq.txhash)
-}
-inline void IsOnChainReq::add_txhash(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  _impl_.txhash_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:IsOnChainReq.txhash)
-}
-inline void IsOnChainReq::add_txhash(const char* value, size_t size) {
-  _impl_.txhash_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:IsOnChainReq.txhash)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-IsOnChainReq::txhash() const {
-  // @@protoc_insertion_point(field_list:IsOnChainReq.txhash)
-  return _impl_.txhash_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-IsOnChainReq::mutable_txhash() {
-  // @@protoc_insertion_point(field_mutable_list:IsOnChainReq.txhash)
-  return &_impl_.txhash_;
-}
-
-// uint64 time = 3;
-inline void IsOnChainReq::clear_time() {
-  _impl_.time_ = uint64_t{0u};
-}
-inline uint64_t IsOnChainReq::_internal_time() const {
-  return _impl_.time_;
-}
-inline uint64_t IsOnChainReq::time() const {
-  // @@protoc_insertion_point(field_get:IsOnChainReq.time)
-  return _internal_time();
-}
-inline void IsOnChainReq::_internal_set_time(uint64_t value) {
-  
-  _impl_.time_ = value;
-}
-inline void IsOnChainReq::set_time(uint64_t value) {
-  _internal_set_time(value);
-  // @@protoc_insertion_point(field_set:IsOnChainReq.time)
-}
-
-// -------------------------------------------------------------------
-
-// IsOnChainAck
-
-// string version = 1;
-inline void IsOnChainAck::clear_version() {
-  _impl_.version_.ClearToEmpty();
-}
-inline const std::string& IsOnChainAck::version() const {
-  // @@protoc_insertion_point(field_get:IsOnChainAck.version)
-  return _internal_version();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void IsOnChainAck::set_version(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:IsOnChainAck.version)
-}
-inline std::string* IsOnChainAck::mutable_version() {
-  std::string* _s = _internal_mutable_version();
-  // @@protoc_insertion_point(field_mutable:IsOnChainAck.version)
-  return _s;
-}
-inline const std::string& IsOnChainAck::_internal_version() const {
-  return _impl_.version_.Get();
-}
-inline void IsOnChainAck::_internal_set_version(const std::string& value) {
-  
-  _impl_.version_.Set(value, GetArenaForAllocation());
-}
-inline std::string* IsOnChainAck::_internal_mutable_version() {
-  
-  return _impl_.version_.Mutable(GetArenaForAllocation());
-}
-inline std::string* IsOnChainAck::release_version() {
-  // @@protoc_insertion_point(field_release:IsOnChainAck.version)
-  return _impl_.version_.Release();
-}
-inline void IsOnChainAck::set_allocated_version(std::string* version) {
-  if (version != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.version_.IsDefault()) {
-    _impl_.version_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:IsOnChainAck.version)
-}
-
-// int32 code = 2;
-inline void IsOnChainAck::clear_code() {
-  _impl_.code_ = 0;
-}
-inline int32_t IsOnChainAck::_internal_code() const {
-  return _impl_.code_;
-}
-inline int32_t IsOnChainAck::code() const {
-  // @@protoc_insertion_point(field_get:IsOnChainAck.code)
-  return _internal_code();
-}
-inline void IsOnChainAck::_internal_set_code(int32_t value) {
-  
-  _impl_.code_ = value;
-}
-inline void IsOnChainAck::set_code(int32_t value) {
-  _internal_set_code(value);
-  // @@protoc_insertion_point(field_set:IsOnChainAck.code)
-}
-
-// string message = 3;
-inline void IsOnChainAck::clear_message() {
-  _impl_.message_.ClearToEmpty();
-}
-inline const std::string& IsOnChainAck::message() const {
-  // @@protoc_insertion_point(field_get:IsOnChainAck.message)
-  return _internal_message();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void IsOnChainAck::set_message(ArgT0&& arg0, ArgT... args) {
- 
- _impl_.message_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:IsOnChainAck.message)
-}
-inline std::string* IsOnChainAck::mutable_message() {
-  std::string* _s = _internal_mutable_message();
-  // @@protoc_insertion_point(field_mutable:IsOnChainAck.message)
-  return _s;
-}
-inline const std::string& IsOnChainAck::_internal_message() const {
-  return _impl_.message_.Get();
-}
-inline void IsOnChainAck::_internal_set_message(const std::string& value) {
-  
-  _impl_.message_.Set(value, GetArenaForAllocation());
-}
-inline std::string* IsOnChainAck::_internal_mutable_message() {
-  
-  return _impl_.message_.Mutable(GetArenaForAllocation());
-}
-inline std::string* IsOnChainAck::release_message() {
-  // @@protoc_insertion_point(field_release:IsOnChainAck.message)
-  return _impl_.message_.Release();
-}
-inline void IsOnChainAck::set_allocated_message(std::string* message) {
-  if (message != nullptr) {
-    
-  } else {
-    
-  }
-  _impl_.message_.SetAllocated(message, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.message_.IsDefault()) {
-    _impl_.message_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:IsOnChainAck.message)
-}
-
-// uint64 time = 4;
-inline void IsOnChainAck::clear_time() {
-  _impl_.time_ = uint64_t{0u};
-}
-inline uint64_t IsOnChainAck::_internal_time() const {
-  return _impl_.time_;
-}
-inline uint64_t IsOnChainAck::time() const {
-  // @@protoc_insertion_point(field_get:IsOnChainAck.time)
-  return _internal_time();
-}
-inline void IsOnChainAck::_internal_set_time(uint64_t value) {
-  
-  _impl_.time_ = value;
-}
-inline void IsOnChainAck::set_time(uint64_t value) {
-  _internal_set_time(value);
-  // @@protoc_insertion_point(field_set:IsOnChainAck.time)
-}
-
-// repeated .SuccessRate percentage = 5;
-inline int IsOnChainAck::_internal_percentage_size() const {
-  return _impl_.percentage_.size();
-}
-inline int IsOnChainAck::percentage_size() const {
-  return _internal_percentage_size();
-}
-inline void IsOnChainAck::clear_percentage() {
-  _impl_.percentage_.Clear();
-}
-inline ::SuccessRate* IsOnChainAck::mutable_percentage(int index) {
-  // @@protoc_insertion_point(field_mutable:IsOnChainAck.percentage)
-  return _impl_.percentage_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >*
-IsOnChainAck::mutable_percentage() {
-  // @@protoc_insertion_point(field_mutable_list:IsOnChainAck.percentage)
-  return &_impl_.percentage_;
-}
-inline const ::SuccessRate& IsOnChainAck::_internal_percentage(int index) const {
-  return _impl_.percentage_.Get(index);
-}
-inline const ::SuccessRate& IsOnChainAck::percentage(int index) const {
-  // @@protoc_insertion_point(field_get:IsOnChainAck.percentage)
-  return _internal_percentage(index);
-}
-inline ::SuccessRate* IsOnChainAck::_internal_add_percentage() {
-  return _impl_.percentage_.Add();
-}
-inline ::SuccessRate* IsOnChainAck::add_percentage() {
-  ::SuccessRate* _add = _internal_add_percentage();
-  // @@protoc_insertion_point(field_add:IsOnChainAck.percentage)
-  return _add;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::SuccessRate >&
-IsOnChainAck::percentage() const {
-  // @@protoc_insertion_point(field_list:IsOnChainAck.percentage)
-  return _impl_.percentage_;
-}
-
-// -------------------------------------------------------------------
-
 // ConfirmTransactionReq
 
 // string version = 1;
@@ -19035,6 +18744,56 @@ inline void ConfirmTransactionAck::set_received_size(uint32_t value) {
   // @@protoc_insertion_point(field_set:ConfirmTransactionAck.received_size)
 }
 
+// bytes tx = 8;
+inline void ConfirmTransactionAck::clear_tx() {
+  _impl_.tx_.ClearToEmpty();
+}
+inline const std::string& ConfirmTransactionAck::tx() const {
+  // @@protoc_insertion_point(field_get:ConfirmTransactionAck.tx)
+  return _internal_tx();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ConfirmTransactionAck::set_tx(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.tx_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ConfirmTransactionAck.tx)
+}
+inline std::string* ConfirmTransactionAck::mutable_tx() {
+  std::string* _s = _internal_mutable_tx();
+  // @@protoc_insertion_point(field_mutable:ConfirmTransactionAck.tx)
+  return _s;
+}
+inline const std::string& ConfirmTransactionAck::_internal_tx() const {
+  return _impl_.tx_.Get();
+}
+inline void ConfirmTransactionAck::_internal_set_tx(const std::string& value) {
+  
+  _impl_.tx_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionAck::_internal_mutable_tx() {
+  
+  return _impl_.tx_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ConfirmTransactionAck::release_tx() {
+  // @@protoc_insertion_point(field_release:ConfirmTransactionAck.tx)
+  return _impl_.tx_.Release();
+}
+inline void ConfirmTransactionAck::set_allocated_tx(std::string* tx) {
+  if (tx != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.tx_.SetAllocated(tx, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.tx_.IsDefault()) {
+    _impl_.tx_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ConfirmTransactionAck.tx)
+}
+
 // -------------------------------------------------------------------
 
 // CorresHash
@@ -19288,6 +19047,399 @@ inline void CheckTxReq::set_allocated_msg_id(std::string* msg_id) {
   // @@protoc_insertion_point(field_set_allocated:CheckTxReq.msg_id)
 }
 
+// uint32 isresponse = 4;
+inline void CheckTxReq::clear_isresponse() {
+  _impl_.isresponse_ = 0u;
+}
+inline uint32_t CheckTxReq::_internal_isresponse() const {
+  return _impl_.isresponse_;
+}
+inline uint32_t CheckTxReq::isresponse() const {
+  // @@protoc_insertion_point(field_get:CheckTxReq.isresponse)
+  return _internal_isresponse();
+}
+inline void CheckTxReq::_internal_set_isresponse(uint32_t value) {
+  
+  _impl_.isresponse_ = value;
+}
+inline void CheckTxReq::set_isresponse(uint32_t value) {
+  _internal_set_isresponse(value);
+  // @@protoc_insertion_point(field_set:CheckTxReq.isresponse)
+}
+
+// -------------------------------------------------------------------
+
+// GetUtxoHashReq
+
+// string version = 1;
+inline void GetUtxoHashReq::clear_version() {
+  _impl_.version_.ClearToEmpty();
+}
+inline const std::string& GetUtxoHashReq::version() const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashReq.version)
+  return _internal_version();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetUtxoHashReq::set_version(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetUtxoHashReq.version)
+}
+inline std::string* GetUtxoHashReq::mutable_version() {
+  std::string* _s = _internal_mutable_version();
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashReq.version)
+  return _s;
+}
+inline const std::string& GetUtxoHashReq::_internal_version() const {
+  return _impl_.version_.Get();
+}
+inline void GetUtxoHashReq::_internal_set_version(const std::string& value) {
+  
+  _impl_.version_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashReq::_internal_mutable_version() {
+  
+  return _impl_.version_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashReq::release_version() {
+  // @@protoc_insertion_point(field_release:GetUtxoHashReq.version)
+  return _impl_.version_.Release();
+}
+inline void GetUtxoHashReq::set_allocated_version(std::string* version) {
+  if (version != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.version_.IsDefault()) {
+    _impl_.version_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetUtxoHashReq.version)
+}
+
+// repeated string utxoHash = 2;
+inline int GetUtxoHashReq::_internal_utxohash_size() const {
+  return _impl_.utxohash_.size();
+}
+inline int GetUtxoHashReq::utxohash_size() const {
+  return _internal_utxohash_size();
+}
+inline void GetUtxoHashReq::clear_utxohash() {
+  _impl_.utxohash_.Clear();
+}
+inline std::string* GetUtxoHashReq::add_utxohash() {
+  std::string* _s = _internal_add_utxohash();
+  // @@protoc_insertion_point(field_add_mutable:GetUtxoHashReq.utxoHash)
+  return _s;
+}
+inline const std::string& GetUtxoHashReq::_internal_utxohash(int index) const {
+  return _impl_.utxohash_.Get(index);
+}
+inline const std::string& GetUtxoHashReq::utxohash(int index) const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashReq.utxoHash)
+  return _internal_utxohash(index);
+}
+inline std::string* GetUtxoHashReq::mutable_utxohash(int index) {
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashReq.utxoHash)
+  return _impl_.utxohash_.Mutable(index);
+}
+inline void GetUtxoHashReq::set_utxohash(int index, const std::string& value) {
+  _impl_.utxohash_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:GetUtxoHashReq.utxoHash)
+}
+inline void GetUtxoHashReq::set_utxohash(int index, std::string&& value) {
+  _impl_.utxohash_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:GetUtxoHashReq.utxoHash)
+}
+inline void GetUtxoHashReq::set_utxohash(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.utxohash_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:GetUtxoHashReq.utxoHash)
+}
+inline void GetUtxoHashReq::set_utxohash(int index, const char* value, size_t size) {
+  _impl_.utxohash_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:GetUtxoHashReq.utxoHash)
+}
+inline std::string* GetUtxoHashReq::_internal_add_utxohash() {
+  return _impl_.utxohash_.Add();
+}
+inline void GetUtxoHashReq::add_utxohash(const std::string& value) {
+  _impl_.utxohash_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:GetUtxoHashReq.utxoHash)
+}
+inline void GetUtxoHashReq::add_utxohash(std::string&& value) {
+  _impl_.utxohash_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:GetUtxoHashReq.utxoHash)
+}
+inline void GetUtxoHashReq::add_utxohash(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.utxohash_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:GetUtxoHashReq.utxoHash)
+}
+inline void GetUtxoHashReq::add_utxohash(const char* value, size_t size) {
+  _impl_.utxohash_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:GetUtxoHashReq.utxoHash)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+GetUtxoHashReq::utxohash() const {
+  // @@protoc_insertion_point(field_list:GetUtxoHashReq.utxoHash)
+  return _impl_.utxohash_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+GetUtxoHashReq::mutable_utxohash() {
+  // @@protoc_insertion_point(field_mutable_list:GetUtxoHashReq.utxoHash)
+  return &_impl_.utxohash_;
+}
+
+// string msg_id = 3;
+inline void GetUtxoHashReq::clear_msg_id() {
+  _impl_.msg_id_.ClearToEmpty();
+}
+inline const std::string& GetUtxoHashReq::msg_id() const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashReq.msg_id)
+  return _internal_msg_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetUtxoHashReq::set_msg_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.msg_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetUtxoHashReq.msg_id)
+}
+inline std::string* GetUtxoHashReq::mutable_msg_id() {
+  std::string* _s = _internal_mutable_msg_id();
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashReq.msg_id)
+  return _s;
+}
+inline const std::string& GetUtxoHashReq::_internal_msg_id() const {
+  return _impl_.msg_id_.Get();
+}
+inline void GetUtxoHashReq::_internal_set_msg_id(const std::string& value) {
+  
+  _impl_.msg_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashReq::_internal_mutable_msg_id() {
+  
+  return _impl_.msg_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashReq::release_msg_id() {
+  // @@protoc_insertion_point(field_release:GetUtxoHashReq.msg_id)
+  return _impl_.msg_id_.Release();
+}
+inline void GetUtxoHashReq::set_allocated_msg_id(std::string* msg_id) {
+  if (msg_id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.msg_id_.SetAllocated(msg_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.msg_id_.IsDefault()) {
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetUtxoHashReq.msg_id)
+}
+
+// -------------------------------------------------------------------
+
+// GetUtxoHashAck
+
+// string version = 1;
+inline void GetUtxoHashAck::clear_version() {
+  _impl_.version_.ClearToEmpty();
+}
+inline const std::string& GetUtxoHashAck::version() const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashAck.version)
+  return _internal_version();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetUtxoHashAck::set_version(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.version_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetUtxoHashAck.version)
+}
+inline std::string* GetUtxoHashAck::mutable_version() {
+  std::string* _s = _internal_mutable_version();
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashAck.version)
+  return _s;
+}
+inline const std::string& GetUtxoHashAck::_internal_version() const {
+  return _impl_.version_.Get();
+}
+inline void GetUtxoHashAck::_internal_set_version(const std::string& value) {
+  
+  _impl_.version_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashAck::_internal_mutable_version() {
+  
+  return _impl_.version_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashAck::release_version() {
+  // @@protoc_insertion_point(field_release:GetUtxoHashAck.version)
+  return _impl_.version_.Release();
+}
+inline void GetUtxoHashAck::set_allocated_version(std::string* version) {
+  if (version != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.version_.SetAllocated(version, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.version_.IsDefault()) {
+    _impl_.version_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetUtxoHashAck.version)
+}
+
+// repeated .CorresHash flaghash = 2;
+inline int GetUtxoHashAck::_internal_flaghash_size() const {
+  return _impl_.flaghash_.size();
+}
+inline int GetUtxoHashAck::flaghash_size() const {
+  return _internal_flaghash_size();
+}
+inline void GetUtxoHashAck::clear_flaghash() {
+  _impl_.flaghash_.Clear();
+}
+inline ::CorresHash* GetUtxoHashAck::mutable_flaghash(int index) {
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashAck.flaghash)
+  return _impl_.flaghash_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CorresHash >*
+GetUtxoHashAck::mutable_flaghash() {
+  // @@protoc_insertion_point(field_mutable_list:GetUtxoHashAck.flaghash)
+  return &_impl_.flaghash_;
+}
+inline const ::CorresHash& GetUtxoHashAck::_internal_flaghash(int index) const {
+  return _impl_.flaghash_.Get(index);
+}
+inline const ::CorresHash& GetUtxoHashAck::flaghash(int index) const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashAck.flaghash)
+  return _internal_flaghash(index);
+}
+inline ::CorresHash* GetUtxoHashAck::_internal_add_flaghash() {
+  return _impl_.flaghash_.Add();
+}
+inline ::CorresHash* GetUtxoHashAck::add_flaghash() {
+  ::CorresHash* _add = _internal_add_flaghash();
+  // @@protoc_insertion_point(field_add:GetUtxoHashAck.flaghash)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::CorresHash >&
+GetUtxoHashAck::flaghash() const {
+  // @@protoc_insertion_point(field_list:GetUtxoHashAck.flaghash)
+  return _impl_.flaghash_;
+}
+
+// string msg_id = 3;
+inline void GetUtxoHashAck::clear_msg_id() {
+  _impl_.msg_id_.ClearToEmpty();
+}
+inline const std::string& GetUtxoHashAck::msg_id() const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashAck.msg_id)
+  return _internal_msg_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetUtxoHashAck::set_msg_id(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.msg_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetUtxoHashAck.msg_id)
+}
+inline std::string* GetUtxoHashAck::mutable_msg_id() {
+  std::string* _s = _internal_mutable_msg_id();
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashAck.msg_id)
+  return _s;
+}
+inline const std::string& GetUtxoHashAck::_internal_msg_id() const {
+  return _impl_.msg_id_.Get();
+}
+inline void GetUtxoHashAck::_internal_set_msg_id(const std::string& value) {
+  
+  _impl_.msg_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashAck::_internal_mutable_msg_id() {
+  
+  return _impl_.msg_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashAck::release_msg_id() {
+  // @@protoc_insertion_point(field_release:GetUtxoHashAck.msg_id)
+  return _impl_.msg_id_.Release();
+}
+inline void GetUtxoHashAck::set_allocated_msg_id(std::string* msg_id) {
+  if (msg_id != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.msg_id_.SetAllocated(msg_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.msg_id_.IsDefault()) {
+    _impl_.msg_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetUtxoHashAck.msg_id)
+}
+
+// string base58addr = 4;
+inline void GetUtxoHashAck::clear_base58addr() {
+  _impl_.base58addr_.ClearToEmpty();
+}
+inline const std::string& GetUtxoHashAck::base58addr() const {
+  // @@protoc_insertion_point(field_get:GetUtxoHashAck.base58addr)
+  return _internal_base58addr();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetUtxoHashAck::set_base58addr(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.base58addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetUtxoHashAck.base58addr)
+}
+inline std::string* GetUtxoHashAck::mutable_base58addr() {
+  std::string* _s = _internal_mutable_base58addr();
+  // @@protoc_insertion_point(field_mutable:GetUtxoHashAck.base58addr)
+  return _s;
+}
+inline const std::string& GetUtxoHashAck::_internal_base58addr() const {
+  return _impl_.base58addr_.Get();
+}
+inline void GetUtxoHashAck::_internal_set_base58addr(const std::string& value) {
+  
+  _impl_.base58addr_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashAck::_internal_mutable_base58addr() {
+  
+  return _impl_.base58addr_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetUtxoHashAck::release_base58addr() {
+  // @@protoc_insertion_point(field_release:GetUtxoHashAck.base58addr)
+  return _impl_.base58addr_.Release();
+}
+inline void GetUtxoHashAck::set_allocated_base58addr(std::string* base58addr) {
+  if (base58addr != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.base58addr_.SetAllocated(base58addr, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.base58addr_.IsDefault()) {
+    _impl_.base58addr_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:GetUtxoHashAck.base58addr)
+}
+
 // -------------------------------------------------------------------
 
 // CheckTxAck
@@ -19432,54 +19584,104 @@ inline void CheckTxAck::set_allocated_msg_id(std::string* msg_id) {
   // @@protoc_insertion_point(field_set_allocated:CheckTxAck.msg_id)
 }
 
-// string base58addr = 4;
-inline void CheckTxAck::clear_base58addr() {
-  _impl_.base58addr_.ClearToEmpty();
+// string addr = 4;
+inline void CheckTxAck::clear_addr() {
+  _impl_.addr_.ClearToEmpty();
 }
-inline const std::string& CheckTxAck::base58addr() const {
-  // @@protoc_insertion_point(field_get:CheckTxAck.base58addr)
-  return _internal_base58addr();
+inline const std::string& CheckTxAck::addr() const {
+  // @@protoc_insertion_point(field_get:CheckTxAck.addr)
+  return _internal_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void CheckTxAck::set_base58addr(ArgT0&& arg0, ArgT... args) {
+void CheckTxAck::set_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.base58addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:CheckTxAck.base58addr)
+ _impl_.addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:CheckTxAck.addr)
 }
-inline std::string* CheckTxAck::mutable_base58addr() {
-  std::string* _s = _internal_mutable_base58addr();
-  // @@protoc_insertion_point(field_mutable:CheckTxAck.base58addr)
+inline std::string* CheckTxAck::mutable_addr() {
+  std::string* _s = _internal_mutable_addr();
+  // @@protoc_insertion_point(field_mutable:CheckTxAck.addr)
   return _s;
 }
-inline const std::string& CheckTxAck::_internal_base58addr() const {
-  return _impl_.base58addr_.Get();
+inline const std::string& CheckTxAck::_internal_addr() const {
+  return _impl_.addr_.Get();
 }
-inline void CheckTxAck::_internal_set_base58addr(const std::string& value) {
+inline void CheckTxAck::_internal_set_addr(const std::string& value) {
   
-  _impl_.base58addr_.Set(value, GetArenaForAllocation());
+  _impl_.addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* CheckTxAck::_internal_mutable_base58addr() {
+inline std::string* CheckTxAck::_internal_mutable_addr() {
   
-  return _impl_.base58addr_.Mutable(GetArenaForAllocation());
+  return _impl_.addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* CheckTxAck::release_base58addr() {
-  // @@protoc_insertion_point(field_release:CheckTxAck.base58addr)
-  return _impl_.base58addr_.Release();
+inline std::string* CheckTxAck::release_addr() {
+  // @@protoc_insertion_point(field_release:CheckTxAck.addr)
+  return _impl_.addr_.Release();
 }
-inline void CheckTxAck::set_allocated_base58addr(std::string* base58addr) {
-  if (base58addr != nullptr) {
+inline void CheckTxAck::set_allocated_addr(std::string* addr) {
+  if (addr != nullptr) {
     
   } else {
     
   }
-  _impl_.base58addr_.SetAllocated(base58addr, GetArenaForAllocation());
+  _impl_.addr_.SetAllocated(addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.base58addr_.IsDefault()) {
-    _impl_.base58addr_.Set("", GetArenaForAllocation());
+  if (_impl_.addr_.IsDefault()) {
+    _impl_.addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:CheckTxAck.base58addr)
+  // @@protoc_insertion_point(field_set_allocated:CheckTxAck.addr)
+}
+
+// bytes tx = 5;
+inline void CheckTxAck::clear_tx() {
+  _impl_.tx_.ClearToEmpty();
+}
+inline const std::string& CheckTxAck::tx() const {
+  // @@protoc_insertion_point(field_get:CheckTxAck.tx)
+  return _internal_tx();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CheckTxAck::set_tx(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.tx_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:CheckTxAck.tx)
+}
+inline std::string* CheckTxAck::mutable_tx() {
+  std::string* _s = _internal_mutable_tx();
+  // @@protoc_insertion_point(field_mutable:CheckTxAck.tx)
+  return _s;
+}
+inline const std::string& CheckTxAck::_internal_tx() const {
+  return _impl_.tx_.Get();
+}
+inline void CheckTxAck::_internal_set_tx(const std::string& value) {
+  
+  _impl_.tx_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CheckTxAck::_internal_mutable_tx() {
+  
+  return _impl_.tx_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CheckTxAck::release_tx() {
+  // @@protoc_insertion_point(field_release:CheckTxAck.tx)
+  return _impl_.tx_.Release();
+}
+inline void CheckTxAck::set_allocated_tx(std::string* tx) {
+  if (tx != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.tx_.SetAllocated(tx, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.tx_.IsDefault()) {
+    _impl_.tx_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:CheckTxAck.tx)
 }
 
 // -------------------------------------------------------------------
@@ -19536,54 +19738,54 @@ inline void GetRestInvestAmountReq::set_allocated_version(std::string* version) 
   // @@protoc_insertion_point(field_set_allocated:GetRestInvestAmountReq.version)
 }
 
-// string base58 = 2;
-inline void GetRestInvestAmountReq::clear_base58() {
-  _impl_.base58_.ClearToEmpty();
+// string addr = 2;
+inline void GetRestInvestAmountReq::clear_addr() {
+  _impl_.addr_.ClearToEmpty();
 }
-inline const std::string& GetRestInvestAmountReq::base58() const {
-  // @@protoc_insertion_point(field_get:GetRestInvestAmountReq.base58)
-  return _internal_base58();
+inline const std::string& GetRestInvestAmountReq::addr() const {
+  // @@protoc_insertion_point(field_get:GetRestInvestAmountReq.addr)
+  return _internal_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void GetRestInvestAmountReq::set_base58(ArgT0&& arg0, ArgT... args) {
+void GetRestInvestAmountReq::set_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.base58_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:GetRestInvestAmountReq.base58)
+ _impl_.addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetRestInvestAmountReq.addr)
 }
-inline std::string* GetRestInvestAmountReq::mutable_base58() {
-  std::string* _s = _internal_mutable_base58();
-  // @@protoc_insertion_point(field_mutable:GetRestInvestAmountReq.base58)
+inline std::string* GetRestInvestAmountReq::mutable_addr() {
+  std::string* _s = _internal_mutable_addr();
+  // @@protoc_insertion_point(field_mutable:GetRestInvestAmountReq.addr)
   return _s;
 }
-inline const std::string& GetRestInvestAmountReq::_internal_base58() const {
-  return _impl_.base58_.Get();
+inline const std::string& GetRestInvestAmountReq::_internal_addr() const {
+  return _impl_.addr_.Get();
 }
-inline void GetRestInvestAmountReq::_internal_set_base58(const std::string& value) {
+inline void GetRestInvestAmountReq::_internal_set_addr(const std::string& value) {
   
-  _impl_.base58_.Set(value, GetArenaForAllocation());
+  _impl_.addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* GetRestInvestAmountReq::_internal_mutable_base58() {
+inline std::string* GetRestInvestAmountReq::_internal_mutable_addr() {
   
-  return _impl_.base58_.Mutable(GetArenaForAllocation());
+  return _impl_.addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* GetRestInvestAmountReq::release_base58() {
-  // @@protoc_insertion_point(field_release:GetRestInvestAmountReq.base58)
-  return _impl_.base58_.Release();
+inline std::string* GetRestInvestAmountReq::release_addr() {
+  // @@protoc_insertion_point(field_release:GetRestInvestAmountReq.addr)
+  return _impl_.addr_.Release();
 }
-inline void GetRestInvestAmountReq::set_allocated_base58(std::string* base58) {
-  if (base58 != nullptr) {
+inline void GetRestInvestAmountReq::set_allocated_addr(std::string* addr) {
+  if (addr != nullptr) {
     
   } else {
     
   }
-  _impl_.base58_.SetAllocated(base58, GetArenaForAllocation());
+  _impl_.addr_.SetAllocated(addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.base58_.IsDefault()) {
-    _impl_.base58_.Set("", GetArenaForAllocation());
+  if (_impl_.addr_.IsDefault()) {
+    _impl_.addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:GetRestInvestAmountReq.base58)
+  // @@protoc_insertion_point(field_set_allocated:GetRestInvestAmountReq.addr)
 }
 
 // -------------------------------------------------------------------
@@ -19730,54 +19932,54 @@ inline void GetRestInvestAmountAck::set_amount(uint64_t value) {
   // @@protoc_insertion_point(field_set:GetRestInvestAmountAck.amount)
 }
 
-// string base58 = 5;
-inline void GetRestInvestAmountAck::clear_base58() {
-  _impl_.base58_.ClearToEmpty();
+// string addr = 5;
+inline void GetRestInvestAmountAck::clear_addr() {
+  _impl_.addr_.ClearToEmpty();
 }
-inline const std::string& GetRestInvestAmountAck::base58() const {
-  // @@protoc_insertion_point(field_get:GetRestInvestAmountAck.base58)
-  return _internal_base58();
+inline const std::string& GetRestInvestAmountAck::addr() const {
+  // @@protoc_insertion_point(field_get:GetRestInvestAmountAck.addr)
+  return _internal_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void GetRestInvestAmountAck::set_base58(ArgT0&& arg0, ArgT... args) {
+void GetRestInvestAmountAck::set_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.base58_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:GetRestInvestAmountAck.base58)
+ _impl_.addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:GetRestInvestAmountAck.addr)
 }
-inline std::string* GetRestInvestAmountAck::mutable_base58() {
-  std::string* _s = _internal_mutable_base58();
-  // @@protoc_insertion_point(field_mutable:GetRestInvestAmountAck.base58)
+inline std::string* GetRestInvestAmountAck::mutable_addr() {
+  std::string* _s = _internal_mutable_addr();
+  // @@protoc_insertion_point(field_mutable:GetRestInvestAmountAck.addr)
   return _s;
 }
-inline const std::string& GetRestInvestAmountAck::_internal_base58() const {
-  return _impl_.base58_.Get();
+inline const std::string& GetRestInvestAmountAck::_internal_addr() const {
+  return _impl_.addr_.Get();
 }
-inline void GetRestInvestAmountAck::_internal_set_base58(const std::string& value) {
+inline void GetRestInvestAmountAck::_internal_set_addr(const std::string& value) {
   
-  _impl_.base58_.Set(value, GetArenaForAllocation());
+  _impl_.addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* GetRestInvestAmountAck::_internal_mutable_base58() {
+inline std::string* GetRestInvestAmountAck::_internal_mutable_addr() {
   
-  return _impl_.base58_.Mutable(GetArenaForAllocation());
+  return _impl_.addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* GetRestInvestAmountAck::release_base58() {
-  // @@protoc_insertion_point(field_release:GetRestInvestAmountAck.base58)
-  return _impl_.base58_.Release();
+inline std::string* GetRestInvestAmountAck::release_addr() {
+  // @@protoc_insertion_point(field_release:GetRestInvestAmountAck.addr)
+  return _impl_.addr_.Release();
 }
-inline void GetRestInvestAmountAck::set_allocated_base58(std::string* base58) {
-  if (base58 != nullptr) {
+inline void GetRestInvestAmountAck::set_allocated_addr(std::string* addr) {
+  if (addr != nullptr) {
     
   } else {
     
   }
-  _impl_.base58_.SetAllocated(base58, GetArenaForAllocation());
+  _impl_.addr_.SetAllocated(addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.base58_.IsDefault()) {
-    _impl_.base58_.Set("", GetArenaForAllocation());
+  if (_impl_.addr_.IsDefault()) {
+    _impl_.addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:GetRestInvestAmountAck.base58)
+  // @@protoc_insertion_point(field_set_allocated:GetRestInvestAmountAck.addr)
 }
 
 #ifdef __GNUC__

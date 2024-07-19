@@ -9,10 +9,9 @@
 #ifndef _TFS_CA_INTERFACE_H_
 #define _TFS_CA_INTERFACE_H_
 
+#include "proto/sdk.pb.h"
 #include "utils/return_ack.h"
 #include "proto/interface.pb.h"
-#include "net/msg_queue.h"
-#include "proto/sdk.pb.h"
 
 
 /**
@@ -113,15 +112,6 @@ int GetBonusListReqImpl(const std::shared_ptr<GetBonusListReq> & req, GetBonusLi
  * @param       ack: 
  * @return      int 
  */
-int OldSendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack);
-
-/**
- * @brief       Query whether the transaction is linked
- * 
- * @param       msg: 
- * @param       ack: 
- * @return      int 
- */
 int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,  ConfirmTransactionAck & ack);
 
 /**
@@ -137,128 +127,117 @@ int GetRestInvestAmountReqImpl(const std::shared_ptr<GetRestInvestAmountReq>& ms
  * @brief       Get the block
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetBlockReq(const std::shared_ptr<GetBlockReq>& req, const MsgData & msgdata);
+int HandleGetBlockReq(const std::shared_ptr<GetBlockReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Get the balance
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetBalanceReq(const std::shared_ptr<GetBalanceReq>& req, const MsgData & msgdata);
+int HandleGetBalanceReq(const std::shared_ptr<GetBalanceReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Get node information
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetNodeInfoReqReq(const std::shared_ptr<GetNodeInfoReq>& req, const MsgData& msgdata);
+int HandleGetNodeInfoReqReq(const std::shared_ptr<GetNodeInfoReq>& req, const MsgData& msgData);
 
 /**
  * @brief       Stake list requests
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetStakeListReq(const std::shared_ptr<GetStakeListReq>& req, const MsgData & msgdata);
+int HandleGetStakeListReq(const std::shared_ptr<GetStakeListReq>& req, const MsgData & msgData);
 
 /**
  * @brief       List of investments
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetInvestListReq(const std::shared_ptr<GetInvestListReq>& req, const MsgData & msgdata);
-//  Failed transactions
+int HandleGetInvestListReq(const std::shared_ptr<GetInvestListReq>& req, const MsgData & msgData);
 /**
  * @brief       utxo Get UTXO
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetUtxoReq(const std::shared_ptr<GetUtxoReq>& req, const MsgData & msgdata);
+int HandleGetUtxoReq(const std::shared_ptr<GetUtxoReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Query all investment accounts and amounts on the investee node
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetAllInvestAddressReq(const std::shared_ptr<GetAllInvestAddressReq>& req, const MsgData & msgdata);
+int HandleGetAllInvestAddressReq(const std::shared_ptr<GetAllInvestAddressReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Get all investable nodes
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetAllStakeNodeListReq(const std::shared_ptr<GetAllStakeNodeListReq>& req, const MsgData & msgdata);
+int HandleGetAllStakeNodeListReq(const std::shared_ptr<GetAllStakeNodeListReq>& req, const MsgData & msgData);
 
 /**
  * @brief      Get a list of signatures 
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetSignCountListReq(const std::shared_ptr<GetSignCountListReq>& req, const MsgData & msgdata);
+int HandleGetSignCountListReq(const std::shared_ptr<GetSignCountListReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Calculate the commission
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetHeightReq(const std::shared_ptr<GetHeightReq>& req, const MsgData & msgdata);
+int HandleGetHeightReq(const std::shared_ptr<GetHeightReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Check the current claim amount
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetBonusListReq(const std::shared_ptr<GetBonusListReq>& req, const MsgData & msgdata);
+int HandleGetBonusListReq(const std::shared_ptr<GetBonusListReq>& req, const MsgData & msgData);
 
 /**
  * @brief       Query transaction chain up
  * 
  * @param       msg: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int OldHandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& msg, const MsgData & msgdata);
-
-
-/**
- * @brief       Query transaction chain up
- * 
- * @param       msg: 
- * @param       msgdata: 
- * @return      int 
- */
-int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg, const MsgData & msgdata);
+int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg, const MsgData & msgData);
 
 /**
  * @brief       
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& req, const MsgData & msgdata);
+int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& req, const MsgData & msgData);
 
 /**
  * @brief       
@@ -270,8 +249,8 @@ void RegisterInterface();
  * @brief       
  * 
  * @param       req: 
- * @param       msgdata: 
+ * @param       msgData: 
  * @return      int 
  */
-int HandleGetSDKAllNeedReq(const std::shared_ptr<GetSDKReq>& req, const MsgData & msgdata);
+int HandleGetSDKAllNeedReq(const std::shared_ptr<GetSDKReq>& req, const MsgData & msgData);
 #endif

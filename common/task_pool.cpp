@@ -1,4 +1,5 @@
 #include "task_pool.h"
+#include "../common/bind_thread.h"
 
 std::mutex getTidMutex;
 std::set<boost::thread::id> threadIds;

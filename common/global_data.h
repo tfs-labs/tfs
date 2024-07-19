@@ -41,7 +41,27 @@ public:
      * @return      false 
      */
 
-    bool AddWaitData(const std::string &msgId, const std::string &data);
+    /**
+     * @brief       
+     * 
+     * @param       msg_id 
+     * @param       res_id 
+     * @return      true 
+     * @return      false 
+     */
+    
+    bool AddResNode(const std::string &msgId, const std::string &res_id);
+    
+    /**
+     * @brief       
+     * 
+     * @param       msg_id 
+     * @param       res_id 
+     * @param       data 
+     * @return      true 
+     * @return      false 
+     */
+    bool AddWaitData(const std::string &msgId, const std::string &res_id, const std::string &data);
 
     /**
      * @brief       
@@ -54,8 +74,7 @@ public:
     bool WaitData(const std::string &msgId, std::vector<std::string> &retData);
     
     static GlobalDataManager &GetGlobalDataManager();
-    static GlobalDataManager &GetGlobalDataManager2();
-    static GlobalDataManager &GetGlobalDataManager3();
+
 
 private:
     GlobalDataManager() = default;
@@ -70,6 +89,5 @@ private:
 };
 
 #define GLOBALDATAMGRPTR GlobalDataManager::GetGlobalDataManager()
-#define GLOBALDATAMGRPTR2 GlobalDataManager::GetGlobalDataManager2()
-#define GLOBALDATAMGRPTR3 GlobalDataManager::GetGlobalDataManager3()
+
 #endif

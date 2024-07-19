@@ -14,8 +14,10 @@
 #include <map>
 #include <set>
 #include <vector>
-#include "utils/timer.hpp"
 #include "node.hpp"
+#include "db/cache.h"
+#include "db/db_api.h"
+#include "utils/timer.hpp"
 #include "utils/account_manager.h"
 
 class UnregisterNode
@@ -90,12 +92,12 @@ public:
     struct NodeCompare
     {
         bool operator()(const Node& n1, const Node& n2) const {
-            return n1.base58Address < n2.base58Address;
+            return n1.address < n2.address;
         }
     };
 
     static bool compareStructs(const Node& x1, const Node& x2) {
-    return (x1.base58Address == x2.base58Address);
+    return (x1.address == x2.address);
     }
 
     /**
@@ -117,9 +119,9 @@ public:
     /**
      * @brief       
      * 
-     * @param       base58 
+     * @param        
      */
-    void DeleteSpiltNodeList(const std::string & base58);
+    void DeleteSpiltNodeList(const std::string & );
 
     /**
      * @brief       
@@ -133,7 +135,7 @@ public:
      */
 
     int verifyVrfDataSource(const std::vector<Node>& vrfNodelist, const uint64_t& vrfTxHeight);
-    void splitAndInsertData(const std::map<Node, int, NodeCompare> & syncNodeCount);
+    void splitAndInsertData(const std::map<Node, int, NodeCompare>  syncNodeCount);
     void ClearSplitNodeListData();
 
     void GetConsensusStakeNodelist(std::map<std::string,int>& consensusStakeNodeMap);

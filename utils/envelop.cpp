@@ -1,7 +1,6 @@
 #include "envelop.h"
 #include <openssl/rsa.h>
 #include "utils/util2.h"
-#include "utils/base58.h"
 #include <vector>
 #include <openssl/types.h>
 #include <openssl/crypto.h>
@@ -15,7 +14,7 @@
 
 Envelop::Envelop(/* args */)
 {
-    const int kBits = 2048; //
+    const int kBits = 2048;
     rsaPkey = EVP_PKEY_new();
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
     if(EVP_PKEY_keygen_init(ctx) <= 0)
@@ -251,7 +250,6 @@ int Envelop::OpenEnvelope(const std::string& cipherText, const std::string& out,
         return -2;
     }
     
-    //TODO
     Account account;
 	if(MagicSingleton<AccountManager>::GetInstance()->GetAccountPubByBytes(pub_str, account) == false){
 		return -3;
@@ -262,20 +260,6 @@ int Envelop::OpenEnvelope(const std::string& cipherText, const std::string& out,
 	if(account.Verify(messageHash, signature) == false){
 		return -4;
 	}
-
-    // EVP_PKEY* rsa_key = nullptr;
-    // if(GetEDPubKeyByBytes(pub_str, rsa_key) == false)
-    // {
-    //     return -3; 
-    // }
-    
-    // std::string message256 = Getsha256hash(message);
-    // if(ED25519VerifyMessage(message256, rsa_key, out) == false)
-    // {
-    //     return -4;
-    // }
-    
-    // EVP_PKEY_free(rsa_key);
 
     return 0;
 }

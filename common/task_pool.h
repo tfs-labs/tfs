@@ -14,9 +14,8 @@
 #include "./config.h"
 #include "./global.h"
 
-#include "../net/dispatcher.h"
 #include "../utils/magic_singleton.h"
-#include "../net/work_thread.h"
+#include "../common/protobuf_define.h"
 
 #include <boost/threadpool.hpp>
 using boost::threadpool::pool;
@@ -85,7 +84,6 @@ public:
     {
         _netTaskPool.schedule(boost::bind(func, subMsg, data));
     }
-
     /**
      * @brief       
      * 
@@ -94,7 +92,6 @@ public:
     void CommitBroadcastTask(std::function<void()> task) {
         _broadcastTaskPool.schedule(task);
     }
-    
 
     /**
      * @brief       

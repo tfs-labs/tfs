@@ -1,22 +1,11 @@
-#include "dispatchtx.h"
-#include "logging.h"
-
-
-
-void ContractDispatcher::setValue(const uint64_t& newValue) {
-    std::unique_lock<std::mutex> lock(_mtx);
-    if (!isFirst) {
-        timeValue = newValue;
-        isFirst = true;
-    }
-}
+#include "ca/dispatchtx.h"
+#include "include/logging.h"
 
 void ContractDispatcher::Process()
 {
     _dispatcherThread = std::thread(std::bind(&ContractDispatcher::_DispatcherProcessingFunc, this));
     _dispatcherThread.detach();
 }
-
 void ContractDispatcher::_DispatcherProcessingFunc()
 {
     uint64_t timeBaseline = 0;
@@ -31,17 +20,23 @@ void ContractDispatcher::_DispatcherProcessingFunc()
             }
         }
 
+        // uint64_t currentTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
         if(timeBaseline == 0)
         {
             timeBaseline = MagicSingleton<TimeUtil>::GetInstance()->GetTheTimestampPerUnitOfTime(timeValue);
             auto s1 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(timeValue);
             auto s2 = MagicSingleton<TimeUtil>::GetInstance()->FormatUTCTimestamp(timeBaseline);
-            DEBUGLOG("FFF OOOOOOOO, timeValue:{}, timeBaseline:{}", s1, s2);
+            DEBUGLOG("FFF OOOOOOOO, currentTime:{}, timeBaseline:{}", s1, s2);
         }
-
+        /*
+            A = Transaction reception time in 10 seconds (time interval between two dispatchers' packaging) = Switching dispatcher time (10 seconds)
+            B = Delay in distribution and packaging after receiving the transaction by the dispatcher in 5 seconds
+            C = B (Fastest transaction confirmation time)
+            D = A + B (Slowest transaction confirmation time)
+        */
         if (timeValue >= timeBaseline + _contractWaitingTime)
         {
-            std::unique_lock<std::mutex> lck(_contractHandleMutex);
+            std::unique_lock<std::mutex> lock(_contractHandleMutex);
             DEBUGLOG("************** time out 10s");
    
             std::multimap<std::string, msgInfo> distribution;
@@ -72,14 +67,15 @@ void ContractDispatcher::_DispatcherProcessingFunc()
                 }
                 SendTxInfoToPackager(item.first,item.second.info,item.second.txMsgReq,item.second.nodelist);
             }
+
             
-            std::scoped_lock locker(_contractInfoCacheMutex, _contractMsgMutex, _mtx);
+
+            std::scoped_lock locker(_contractInfoCacheMutex,_contractMsgMutex,_mtx);
             _contractMsgReqCache.clear();
             _contractDependentCache.clear();
             timeBaseline = 0;
             timeValue = 0;
             isFirst = false;
-
         }else
         {
             timeValue+= 1000000;
@@ -89,11 +85,11 @@ void ContractDispatcher::_DispatcherProcessingFunc()
     }
 }
 
+
 void ContractDispatcher::AddContractInfo(const std::string& contractHash, const std::vector<std::string>& dependentContracts)
 {
     std::unique_lock<std::mutex> locker(_contractInfoCacheMutex);
     _contractDependentCache.insert(std::make_pair(contractHash, dependentContracts));
-    DEBUGLOG("+++++++++++++++++AddContractInfo++++++++++++++");
 }
 
 
@@ -103,8 +99,6 @@ void ContractDispatcher::AddContractMsgReq(const std::string& contractHash, cons
     TxMsgReq  txmsg = msg.txmsgreq();
 
     _contractMsgReqCache.insert(std::make_pair(contractHash, txmsg));
-    DEBUGLOG("+++++++++++++++++AddContractMsgReq++++++++++++++");
-
 }
 
 bool ContractDispatcher::HasDuplicate(const std::vector<std::string>& v1, const std::vector<std::string>& v2)
@@ -122,33 +116,32 @@ bool ContractDispatcher::HasDuplicate(const std::vector<std::string>& v1, const 
 	}
 
 	return false;
-
 }
 
-int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsmsg, const std::set<std::string> nodelist)
+int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const Vrf &info, std::vector<TxMsgReq> &txsMsg, const std::set<std::string> nodeList)
 {
     DEBUGLOG("***** SendTxInfoToPackager *****");
     ContractPackagerMsg msg;
     msg.set_version(global::kVersion);
 
-    Vrf * vrfinfo = msg.mutable_vrfinfo();
-    vrfinfo->CopyFrom(info);
+    Vrf * vrfInfo = msg.mutable_vrfinfo();
+    vrfInfo->CopyFrom(info);
     
 
-    for(auto & msgreq : txsmsg)
+    for(auto & msgReq : txsMsg)
     {
         TxMsgReq * _Msg = msg.add_txmsgreq();
-        _Msg -> CopyFrom(msgreq);
+        _Msg -> CopyFrom(msgReq);
     }
 
     VrfDataSource *data = msg.mutable_vrfdatasource();
-    for (const auto& addr : nodelist)
+    for (const auto& addr : nodeList)
     {
         data->add_vrfnodelist(addr);
         DEBUGLOG("add addr = {}",addr);
     }
     
-    std::string owner = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
+    std::string owner = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
     std::string serVinHash = Getsha256hash(msg.SerializeAsString());
     std::string signature;
     std::string pub;
@@ -162,42 +155,39 @@ int ContractDispatcher::SendTxInfoToPackager(const std::string &packager, const 
     Sign->set_sign(signature);
     Sign->set_pub(pub);
 
-	NetSendMessage<ContractPackagerMsg>(packager, msg, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
-
     if(owner == packager)
     {
+        DEBUGLOG("SendTxInfoToPackager onwer : {} , packager : {}", owner, packager);
         auto sendTxmsg = std::make_shared<ContractPackagerMsg>(msg);
         MsgData msgdata;
         HandleContractPackagerMsg(sendTxmsg,msgdata);
+        return 0;
     }
+	NetSendMessage<ContractPackagerMsg>(packager, msg, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     return 0;
-
 }
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 {
-
     DEBUGLOG("DependencyGrouping");
-    std::vector<std::set<std::string>> res;
-
+    std::vector<std::set<std::string>> groupedDependencies;
 	for (const auto& [key, values] : _contractDependentCache) {
 		std::set<std::string> commonKeys;
 		commonKeys.insert(key);
-
+        //Check for duplicate dependencies
 		for (const auto& [otherKey, otherValues] : _contractDependentCache) {
 			if (key == otherKey)  continue;
 
-
 			if (HasDuplicate(values, otherValues) == true)
 			{
-
 				commonKeys.insert(otherKey);
 			}
 		}
-
+        //If there are common dependencies, deal with them
 		if (!commonKeys.empty()) {
 			bool foundDuplicate = false;
-			for (auto& itemSet : res) {
+			// Check for duplicates with previous data
+			for (auto& itemSet : groupedDependencies) {
                 
 				std::set<std::string> intersection;
 				std::set_intersection(
@@ -207,45 +197,48 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GetDependentData()
 				);
 
 				if (!intersection.empty()) {
+                //There are duplicates with the previous data, inserted into the original array
 					foundDuplicate = true;
 					itemSet.insert(commonKeys.begin(), commonKeys.end());
 					break;
 				}
 			}
-
+			//There is no duplication with the previous data, create a new array to insert
 			if (!foundDuplicate) {
-				res.push_back(commonKeys);
+				groupedDependencies.push_back(commonKeys);
 			}
 		}
 	}
-
-    std::vector<std::vector<TxMsgReq>> txMsgVec;
-    for(const auto & hashContainer : res)
+    // Transform dependency data into message data
+    std::vector<std::vector<TxMsgReq>> groupedTxMsg;
+    for(const auto & hashContainer : groupedDependencies)
     {
         std::vector<TxMsgReq> messageVec;
         for(const auto & hash : hashContainer)
         {
-            if(_contractMsgReqCache.count(hash) == 0)
-            {
+            if(_contractMsgReqCache.count(hash) == 0) {
                 continue;
             }
             messageVec.emplace_back(_contractMsgReqCache.at(hash));
         }
-        txMsgVec.push_back(messageVec);
+        if(messageVec.size() != 0)
+        {
+            groupedTxMsg.push_back(messageVec);
+        }
     }
-    return txMsgVec;
+    return groupedTxMsg;
 }
 
 std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const std::vector<std::vector<TxMsgReq>> & txMsgVec)
 {
-
+    //Protocol to group
     int size = txMsgVec.size();
     int parts = 8;
 
     std::vector<std::vector<TxMsgReq>> groupTxMsg;
     if(size <= parts)
     {
-
+        //No segmentation is needed when the threshold is insufficient
         for(const auto & hashContainer : txMsgVec)
         {
             groupTxMsg.emplace_back(hashContainer);
@@ -260,7 +253,6 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
 
         for(int i = 0; i < parts; i++) {
             std::vector<TxMsgReq> part;
-
             for(int j = index; j < index + perPart; j++) 
             {
                 for(auto& txMsg : txMsgVec[j])
@@ -270,9 +262,9 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
             }
 
             index += perPart;
-
+            //If you have any left over you add the rest of this section to the first section
             if(remain > 0) 
-            { 
+            {
                 for(int j = index; j < index + remain; j++)
                 {
                     for(auto& txMsg : txMsgVec[j])
@@ -291,35 +283,33 @@ std::vector<std::vector<TxMsgReq>> ContractDispatcher::GroupDependentData(const 
 
 int ContractDispatcher::DistributionContractTx(std::multimap<std::string, msgInfo>& distribution)
 {
-
-    std::vector<std::vector<TxMsgReq>> txMsgVec = GetDependentData();
-    if(txMsgVec.empty())
+    //1.Fetching dependent data
+    std::vector<std::vector<TxMsgReq>> dependentData = GetDependentData();
+    if(dependentData.empty())
     {
-        ERRORLOG("DependencyGrouping txMsgVec is empty");
+        ERRORLOG("DependencyGrouping dependentData  is empty");
         return -1;
     }
-
-    std::vector<std::vector<TxMsgReq>> groupTxMsg = GroupDependentData(txMsgVec);
-    if(groupTxMsg.empty())
+    //2.Group dependent data
+    std::vector<std::vector<TxMsgReq>> groupedData = GroupDependentData(dependentData);
+    if(groupedData.empty())
     {
-        ERRORLOG("GroupDependentData groupTxMsg is empty");
+        ERRORLOG("GroupDependentData groupedData is empty");
         return -2;
     }
-
-    for(const auto & txMsgContainer : groupTxMsg)
+    //3.Iterate over the grouped data to find the packager
+    for(const auto & txMsgContainer : groupedData)
     {
         
         std::string contractHash;
         std::vector<TxMsgReq> txMsgData;
-
-
         for(const auto & txMsg : txMsgContainer)
         {
             CTransaction ContractTx;
             if (!ContractTx.ParseFromString(txMsg.txmsginfo().tx()))
             {
                 ERRORLOG("Failed to deserialize transaction body!");
-                return -2;
+                return -3;
             }
             contractHash += ContractTx.hash();
             txMsgData.push_back(txMsg);
@@ -330,7 +320,6 @@ int ContractDispatcher::DistributionContractTx(std::multimap<std::string, msgInf
         std::set<std::string>  out_nodelist;
         std::string packAddr;
         Vrf vrf;
-
         auto ret = FindContractPackNode(vrfInput ,packAddr,vrf,out_nodelist);
         if(ret != 0)
         {
@@ -345,5 +334,19 @@ int ContractDispatcher::DistributionContractTx(std::multimap<std::string, msgInf
         distribution.insert(std::make_pair(packAddr, msg));
     }
     
+    if(distribution.empty())
+    {
+        ERRORLOG("DistributionContractTx error , distribution is empty");
+        return -4;
+    }
+
     return 0;
+}
+
+void ContractDispatcher::setValue(const uint64_t& newValue) {
+    std::unique_lock<std::mutex> lock(_mtx);
+    if (!isFirst) {
+        timeValue = newValue;
+        isFirst = true;
+    }
 }

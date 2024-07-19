@@ -1,52 +1,68 @@
+/**
+ * *****************************************************************************
+ * @file        transaction.proto
+ * @brief       transaction related agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax = "proto3";
 
 import "sign.proto";
 
 
-
+//prev out put utxo hash
 message CTxPrevOutput{
-  string hash = 1;
-  uint32 n = 2;
+  string hash = 1;  //utxo hash
+  uint32 n    = 2;  //utxo num
 }
 
+//transaction in put
 message CTxInput{
   repeated CTxPrevOutput prevOut = 1;
-  CSign vinSign = 2;
-  uint32 sequence = 3;
-  string contractAddr = 4;
+  CSign  vinSign      = 2;  //vin sing
+  uint32 sequence     = 3;  //sequence
+  string contractAddr = 4;  //contract addr 
 }
 
+//transaction out put
 message CTxOutput{
-  int64 value = 1;
-  string addr = 2;
+  int64 value = 1;  //transaction to addr num
+  string addr = 2;  //transaction to addr
 }
 
+//transaction utxo
 message CTxUtxo{
-  repeated string owner = 1;
-  repeated CTxInput vin = 2;
-  repeated CTxOutput vout = 3;
-  repeated CSign multiSign = 4;
+  repeated string owner    = 1; //transaction owner
+  repeated CTxInput vin    = 2;
+  repeated CTxOutput vout  = 3;
+  repeated CSign multiSign = 4; //sign
 }
 
+//transaction
 message CTransaction{
-  uint32 version            = 1;
-  uint64 time               = 2;
-  uint32 n                  = 3;
-  string identity           = 4;
-  string hash               = 5;
+  uint32 version            = 1;  //version
+  uint64 time               = 2;  //transaction time
+  uint32 n                  = 3;  
+  string identity           = 4;  //identity
+  string hash               = 5;  //transaction hash
 
-  CTxUtxo utxo              = 6;
+  CTxUtxo utxo              = 6;  
 
-  string type               = 7;
-  uint32 consensus          = 8;
+  string type               = 7;  //type
+  uint32 consensus          = 8;  //consensus num
   
-  uint32 txType             = 9;
+  uint32 txType             = 9;  //transaction type
 
-  string data               = 10;
-  string info               = 11;
+  string data               = 10; //transaction data
+  string info               = 11; //transaction info
 
-  repeated CSign verifySign = 12;
+  repeated CSign verifySign = 12; //sign
 
   string reserve0           = 13;
   string reserve1           = 14;
+  
+  uint64    nonce           = 15;
 }

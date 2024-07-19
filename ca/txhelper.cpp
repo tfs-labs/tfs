@@ -1,29 +1,66 @@
-#include "txhelper.h"
 
-#include "api/interface/rpc_error.h"
-#include "include/logging.h"
-#include "db/db_api.h"
-#include "utils/magic_singleton.h"
-#include "utils/string_util.h"
-#include "utils/time_util.h"
-#include "utils/json.hpp"
+
+#include "api/interface/rpc_tx.h"
+#include "api/rpc_error.h"
+
 #include "ca/global.h"
-#include "ca/transaction.h"
+#include "ca/txhelper.h"
+#include "ca/contract.h"
 #include "ca/algorithm.h"
+#include "ca/transaction.h"
+#include "ca/tfs_wasmtime.h"
+#include "ca/block_helper.h"
+#include "ca/double_spend_cache.h"
+#include "ca/block_helper.h"
+#include "utils/json.hpp"
 #include "utils/console.h"
-
-#include "block_helper.h"
-#include "utils/account_manager.h"
 #include "utils/tmp_log.h"
-#include <cmath>
-#include "ca/evmone.h"
+#include "utils/time_util.h"
+#include "utils/string_util.h"
 #include "utils/tfs_bench_mark.h"
-#include "db/cache.h"
-#include "api/interface/sig.h"
-#include "api/interface/tx.h"
-#include <google/protobuf/util/json_util.h>
-#include <string>
-#include"double_spend_cache.h"
+#include "utils/account_manager.h"
+#include "utils/magic_singleton.h"
+#include "utils/contract_utils.h"
+
+#include "include/logging.h"
+
+#include "db/db_api.h"
+#include "ca/evm/evm_environment.h"
+#include "ca/evm/evm_manager.h"
+#include "ca.h"
+
+int TxHelper::GetTxUtxoHeight(const CTransaction &tx, uint64_t& txUtxoHeight)
+{
+	DBReader dbReader;
+	bool flag = false;
+	txUtxoHeight = 0;
+    for(const auto& vin : tx.utxo().vin())
+    {
+        for (auto & prevout : vin.prevout())
+        {
+            std::string blockHash;
+            if(DBStatus::DB_SUCCESS != dbReader.GetBlockHashByTransactionHash(prevout.hash(), blockHash))
+            {
+				return -1;
+            }
+			uint32_t blockHeight;
+			if(DBStatus::DB_SUCCESS != dbReader.GetBlockHeightByBlockHash(blockHash, blockHeight))
+			{
+				return -2;
+			}
+			if(txUtxoHeight <= blockHeight )
+			{
+				txUtxoHeight = blockHeight;
+				flag = true;
+			}
+        }
+    }
+	if(!flag)
+	{
+		return -3;
+	}
+	return 0;
+}
 
 std::vector<std::string> TxHelper::GetTxOwner(const CTransaction& tx)
 {
@@ -32,7 +69,7 @@ std::vector<std::string> TxHelper::GetTxOwner(const CTransaction& tx)
 	{
 		const CTxInput & txin = tx.utxo().vin(i);
 		auto pub = txin.vinsign().pub();
-		std::string addr = GetBase58Addr(pub);
+		std::string addr = GenerateAddr(pub);
 		auto res = std::find(std::begin(address), std::end(address), addr);
 		if (res == std::end(address))
 		{
@@ -57,9 +94,9 @@ int TxHelper::GetUtxos(const std::string & address, std::vector<TxHelper::Utxo>&
 		if (DBStatus::DB_SUCCESS != dbReader.GetUtxoHashsByAddress(address, vecUtxoHashs))
 		{
 			ERRORLOG("GetUtxoHashsByAddress failed!");
-			return -1;
+			return -2;
 		}
-		//  duplicate removal
+
 		std::sort(vecUtxoHashs.begin(), vecUtxoHashs.end());
 		vecUtxoHashs.erase(std::unique(vecUtxoHashs.begin(), vecUtxoHashs.end()), vecUtxoHashs.end()); 
 
@@ -81,7 +118,7 @@ int TxHelper::GetUtxos(const std::string & address, std::vector<TxHelper::Utxo>&
 			std::string underline = "_";
 			std::vector<std::string> utxoValues;
 
-			if(balance.find(underline) != string::npos)
+			if(balance.find(underline) != std::string::npos)
 			{
 				StringUtil::SplitString(balance, "_", utxoValues);
 				
@@ -114,6 +151,7 @@ int TxHelper::Check(const std::vector<std::string>& fromAddr,
 		ERRORLOG("Fromaddr is empty!");		
 		return -1;
 	}
+
 	//  Fromaddr cannot have duplicate elements
 	std::vector<std::string> tempfromAddr = fromAddr;
 	std::sort(tempfromAddr.begin(),tempfromAddr.end());
@@ -128,12 +166,12 @@ int TxHelper::Check(const std::vector<std::string>& fromAddr,
 	DBReader dbReader;
 	std::map<std::string, std::vector<std::string>> identities;
 
-	//  Fromaddr cannot be a non base58 address
+	//  Fromaddr cannot be a non  address
 	for(auto& from : fromAddr)
 	{
-		if (!CheckBase58Addr(from))
+		if (!isValidAddress(from))
 		{
-			ERRORLOG("Fromaddr is a non base58 address!");
+			ERRORLOG("Fromaddr is a non  address! from:{}", from);
 			return -3;
 		}
 
@@ -156,7 +194,7 @@ int TxHelper::Check(const std::vector<std::string>& fromAddr,
 	if (height == 0)
 	{
 		ERRORLOG("height is zero!");
-		return -6;
+		return -5;
 	}
 
 	return 0;
@@ -166,7 +204,7 @@ int TxHelper::Check(const std::vector<std::string>& fromAddr,
 int TxHelper::FindUtxo(const std::vector<std::string>& fromAddr,
 						const uint64_t needUtxoAmount,
 						uint64_t& total,
-						std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare>& setOutUtxos
+						std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare>& setOutUtxos, bool isFindUtxo
 						)
 {
 	//  Count all utxo
@@ -207,7 +245,7 @@ int TxHelper::FindUtxo(const std::vector<std::string>& fromAddr,
 			std::string underline = "_";
 			std::vector<std::string> utxoValues;
 
-			if(balance.find(underline) != string::npos)
+			if(balance.find(underline) != std::string::npos)
 			{
 				StringUtil::SplitString(balance, "_", utxoValues);
 				
@@ -253,18 +291,155 @@ int TxHelper::FindUtxo(const std::vector<std::string>& fromAddr,
 		}
 	}
 
-	return 0;
+	if(isFindUtxo)
+	{
+		int ret = SendConfirmUtxoHashReq(setOutUtxos);
+		if(ret != 0)
+		{
+			ERRORLOG("SendConfirmUtxoHashReq error ret : {}", ret);
+			return -2;
+		}
+	}
 
+	return 0;
 }
 
 
+static int GetRandomNodeLists(std::vector<Node>& randomNodeLists)
+{
+	std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    auto nodelistsize = nodelist.size();
+    if(nodelistsize == 0)
+    {
+        ERRORLOG("Nodelist Size is empty");
+        return -1;
+    }
+    DEBUGLOG("Nodelist Size {}",nodelistsize);
+    
+	uint64_t height = 0;
+	DBReader db_reader;
+    if (DBStatus::DB_SUCCESS != db_reader.GetBlockTop(height))
+    {
+        return -2; 
+    }
+
+    std::vector<Node> filterHeightNodeLists;
+    for(auto &item : nodelist)
+    {
+        if(item.height >= height)
+        {
+            filterHeightNodeLists.push_back(item);
+        }
+    }
+	auto send_num = filterHeightNodeLists.size() >= 100 ? 100 : filterHeightNodeLists.size();
+	if(send_num == 0)
+	{
+		return -3;
+	}
+
+	std::default_random_engine e;
+  	std::shuffle(filterHeightNodeLists.begin(), filterHeightNodeLists.end(), e);
+
+	for(int i = 0; i < send_num; i++) {
+		randomNodeLists.push_back(filterHeightNodeLists[i]);
+	}
+
+	return 0;
+}
+
+int TxHelper::SendConfirmUtxoHashReq(const std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare>& setOutUtxos){
+	std::vector<Node> randomNodeLists;
+    int ret = GetRandomNodeLists(randomNodeLists);
+	if(ret != 0)
+	{
+		ERRORLOG("GetRandomNodeLists ret : {}", ret);
+		return -1;
+	}
+    //send_size
+    std::string msgId;
+    std::map<std::string, uint32_t> successHash;
+    if (!GLOBALDATAMGRPTR.CreateWait(5, randomNodeLists.size() * 0.8, msgId))
+    {
+        ERRORLOG("SendConfirmTransactionReq CreateWait is error");
+        return -2;
+    }
+
+    GetUtxoHashReq req;
+    req.set_version(global::kVersion);
+    req.set_msg_id(msgId);
+
+	std::string connectHash;
+	for(auto begin = setOutUtxos.begin(); begin != setOutUtxos.end(); ++begin)
+	{
+		req.add_utxohash(begin->hash);
+        successHash.insert(std::make_pair(begin->hash, 0));
+	}
+
+    for (auto &node : randomNodeLists)
+    {
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, node.address))
+        {
+            ERRORLOG("SendConfirmTransactionReq AddResNode is error");
+            return -3;
+        }
+        NetSendMessage<GetUtxoHashReq>(node.address, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+    }
+
+    std::vector<std::string> ret_datas;
+    if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
+    {
+        ERRORLOG("SendConfirmTransactionReq WaitData is error");
+        return -4;
+    }
+
+    GetUtxoHashAck copyAck;
+    std::multimap<std::string, int> txFlagHashs;
+    for (auto &ret_data : ret_datas)
+    {
+        copyAck.Clear();
+        if (!copyAck.ParseFromString(ret_data))
+        {
+            continue;
+        }
+        
+        for(auto & flag_hash : copyAck.flaghash())
+        {
+            txFlagHashs.insert(std::make_pair(flag_hash.hash(),flag_hash.flag()));
+        }
+    }
+
+    for(auto & item : txFlagHashs)
+    {
+        for(auto & success : successHash)
+        {
+            if(item.second == 1 && item.first == success.first)
+            {
+                success.second++;
+            }
+        }
+    }
+
+    for(auto & success : successHash)
+    {
+        double rate = (double)success.second / (double)(ret_datas.size());
+
+        if(rate - 0.5 < 0)
+        {
+            ERRORLOG("SendConfirmTransactionReq = {} , rate = {}", success.second, rate);
+            return -5;
+        }
+    }
+
+    return 0;
+}
 
 int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 									const std::map<std::string, int64_t> & toAddr,
+									const std::string& encodedInfo,
 									uint64_t height,
 									CTransaction& outTx,
 									TxHelper::vrfAgentType & type,
-									Vrf & info)
+									Vrf & info, bool isFindUtxo)
 {
 	MagicSingleton<TFSbenchmark>::GetInstance()->IncreaseTransactionInitiateAmount();
 	//  Check parameters
@@ -284,9 +459,9 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 
 	for (auto& addr : toAddr)
 	{
-		if (!CheckBase58Addr(addr.first))
+		if (!isValidAddress(addr.first))
 		{
-			ERRORLOG(RED "To address is not base58 address!" RESET);
+			ERRORLOG(RED "To address is not  address!" RESET);
 			return -2;
 		}
 
@@ -317,7 +492,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	//  Find utxo
 	uint64_t total = 0;
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(fromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
+	ret = FindUtxo(fromAddr, TxHelper::kMaxVinSize, total, setOutUtxos, isFindUtxo);
 	if (ret != 0)
 	{
 		ERRORLOG(RED "FindUtxo failed! The error code is {}." RESET, ret);
@@ -335,7 +510,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
 	
 	//  Fill Vin
-	std::set<string> setTxowners;
+	std::set<std::string> setTxowners;
 	for (auto & utxo : setOutUtxos)
 	{
 		setTxowners.insert(utxo.addr);
@@ -346,41 +521,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		return -6;
 	}
 
-	std::vector<std::string> addrutxos;
-	for(auto & addr : fromAddr)
-	{
-		std::set<std::string> useUtxos;
-		for (auto & utxo : setOutUtxos)
-		{
-			if(utxo.addr == addr)
-			{
-				useUtxos.insert(utxo.hash);
-			}
-		}
-
-		std::string utxoHash;
-		auto iter = useUtxos.begin();
-		for(;iter != useUtxos.end(); iter ++)
-		{
-			utxoHash += *iter + "_";
-		}
-
-		if(utxoHash[utxoHash.length()-1] == '_')
-		{
-			utxoHash = utxoHash.substr(0,utxoHash.length()-1);
-		}
-
-		std::string addr_Utxo = addr + "_" + utxoHash;
-		addrutxos.push_back(addr_Utxo);
-		
-	}
-
-	if(MagicSingleton<DoubleSpendCache>::GetInstance()->AddFromAddr(addrutxos))
-	{
-		std::cout << "utxo is using!" << std::endl;
-		return -12;
-	}
-	
+	DoubleSpendCache::doubleSpendsuc used;
 	uint32_t n = 0;
 	for (auto & owner : setTxowners)
 	{
@@ -393,6 +534,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 				CTxPrevOutput * prevOutput = vin->add_prevout();
 				prevOutput->set_hash(utxo.hash);
 				prevOutput->set_n(utxo.n);
+				used.utxoVec.push_back(utxo.hash);
 			}
 		}
 		vin->set_sequence(n++);
@@ -403,7 +545,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		if (TxHelper::Sign(owner, serVinHash, signature, pub) != 0)
 		{
 			ERRORLOG("sign fail");
-			return -7;
+			return -8;
 		}
 
 		CSign * vinSign = vin->mutable_vinsign();
@@ -412,6 +554,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	}
 
 	outTx.set_data("");
+	outTx.set_info(encodedInfo);
 	outTx.set_type(global::ca::kTxSign);
 
 	uint64_t gas = 0;
@@ -421,25 +564,20 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
 	{
 		ERRORLOG(" gas = 0 !");
-		return -8;
+		return -9;
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 
 	GetTxStartIdentity(height,currentTime,type);
 	DEBUGLOG("GetTxStartIdentity currentTime = {} type = {}",currentTime ,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		ERRORLOG(" +++++++vrfAgentType_unknow +++++");
-		return -300;
-	}
 	expend +=  gas;
 	
 	//Judge whether utxo is enough
 	if(total < expend)
 	{
 		ERRORLOG("The total cost = {} is less than the cost = {}", total, expend);
-		return -9;
+		return -10;
 	}
 
 	// Fill vout
@@ -463,26 +601,31 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		if (TxHelper::AddMutilSign(owner, outTx) != 0)
 		{
 			ERRORLOG("addd mutil sign fail");
-			return -10;
+			return -11;
 		}
 	}
 
 	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeTx);
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
-		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+		std::string identity = TxHelper::GetIdentityNodes();
+		if (identity.empty())
+        {
+            identity = TxHelper::GetEligibleNodes();
+        }
+		DEBUGLOG("DropshippingTx identity:{}", identity);
+		outTx.set_identity(identity);
 	}
 	else
 	{
 		std::string allUtxos;
 		for(auto & utxo:setOutUtxos)
 		{
-			allUtxos+=utxo.hash;
+			allUtxos += utxo.hash;
 		}
 		std::string id;
 		int count = 0;
@@ -508,7 +651,7 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 		if(count == 6)
 		{
 			ERRORLOG("Packager = {} cannot be the transaction initiator", id);
-			return -11;
+			return -12;
 		}
 		outTx.set_identity(id);
 	}
@@ -517,6 +660,14 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 	
 	std::string txHash = Getsha256hash(outTx.SerializeAsString());
 	outTx.set_hash(txHash);
+	used.time = outTx.time();
+
+
+	if(MagicSingleton<DoubleSpendCache>::GetInstance()->AddFromAddr(std::make_pair(*fromAddr.begin(),used)))
+	{
+		ERRORLOG("utxo is using!");
+		return -7;
+	}
 
 	INFOLOG( "Transaction Start Time = {}");
 	return 0;
@@ -524,11 +675,12 @@ int TxHelper::CreateTxTransaction(const std::vector<std::string>& fromAddr,
 
 int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 										uint64_t stakeAmount,
+										const std::string& encodedInfo,
 										uint64_t height,
 										TxHelper::pledgeType pledgeType,
 										CTransaction & outTx,
 										std::vector<TxHelper::Utxo> & outVin,
-										TxHelper::vrfAgentType &type ,Vrf & information, double commission)
+										TxHelper::vrfAgentType &type ,Vrf & information, double commissionRate, bool isFindUtxo)
 {
 	//  Check parameters
 	std::vector<std::string> vecfromAddr;
@@ -541,7 +693,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 		return ret;
 	}
 
-	if (!CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_Normal)) 
+	if (!isValidAddress(fromAddr)) 
 	{
 		ERRORLOG(RED "From address invlaid!" RESET);
 		return -1;
@@ -582,7 +734,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	//  Find utxo
 	uint64_t total = 0;
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
+	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos, isFindUtxo);
 	if (ret != 0)
 	{
 		ERRORLOG(RED "FindUtxo failed! The error code is {}." RESET, ret);
@@ -599,7 +751,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	outTx.Clear();
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
 	//  Fill Vin
-	std::set<string> setTxowners;
+	std::set<std::string> setTxowners;
 	for (auto & utxo : setOutUtxos)
 	{
 		setTxowners.insert(utxo.addr);
@@ -643,11 +795,12 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	nlohmann::json txInfo;
 	txInfo["StakeType"] = strStakeType;
 	txInfo["StakeAmount"] = stakeAmount;
-	txInfo["BonusPumping"] = commission;
+	txInfo["CommissionRate"] = commissionRate;
 
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
+	outTx.set_info(encodedInfo);
 	outTx.set_type(global::ca::kTxSign);	
 
 	uint64_t gas = 0;
@@ -665,11 +818,6 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-	// At this point, it indicates that the current node does not meet the pledge and investment requirements within 30 seconds beyond the height of 50. At this time, the pledge operation can be initiated
-		type = TxHelper::vrfAgentType_defalut;
-	}
 	expend += gas;
 	if(total < expend)
 	{
@@ -697,8 +845,7 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 			return -11;
 		}
 	}
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);
@@ -706,7 +853,13 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
-		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+		std::string identity = TxHelper::GetIdentityNodes();
+		if (identity.empty())
+        {
+            identity = TxHelper::GetEligibleNodes();
+        }
+		DEBUGLOG("DropshippingTx identity:{}", identity);
+		outTx.set_identity(identity);
 	}
 	else
 	{
@@ -734,10 +887,11 @@ int TxHelper::CreateStakeTransaction(const std::string & fromAddr,
 
 int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 										const std::string& utxoHash,
+										const std::string& encodedInfo,
 										uint64_t height,
 										CTransaction& outTx,
 										std::vector<TxHelper::Utxo> & outVin
-										,TxHelper::vrfAgentType &type ,Vrf & information)
+										,TxHelper::vrfAgentType &type ,Vrf & information, bool isFindUtxo)
 {
 	//  Check parameters
 	std::vector<std::string> vecfromAddr;
@@ -750,9 +904,9 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 		return ret;
 	}
 
-	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
+	if (!isValidAddress(fromAddr))
 	{
-		ERRORLOG(RED "FromAddr is not normal base58 addr." RESET);
+		ERRORLOG(RED "FromAddr is not normal  addr." RESET);
 		return -1;
 	}
 
@@ -771,7 +925,7 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
 	//  The number of utxos to be searched here needs to be reduced by 1 \
 	because a VIN to be redeem is from the pledged utxo, so just look for 99
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos); 
+	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos, isFindUtxo); 
 	if (ret != 0)
 	{
 		ERRORLOG(RED "FindUtxo failed! The error code is {}." RESET, ret);
@@ -790,7 +944,7 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
 	
 	//  Fill Vin
-	std::set<string> setTxowners;
+	std::set<std::string> setTxowners;
 	for (auto & utxo : setOutUtxos)
 	{
 		setTxowners.insert(utxo.addr);
@@ -859,9 +1013,9 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
+	outTx.set_info(encodedInfo);
 	outTx.set_type(global::ca::kTxSign);	
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 
 	uint64_t gas = 0;
 	//The filled quantity only participates in the calculation and does not affect others
@@ -884,15 +1038,8 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-	// At this point, it indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the pledge cancellation operation
-		type = TxHelper::vrfAgentType_defalut;
-	}
 
 	uint64_t expend = gas;
-
-
 	// Judge whether there is enough money
 	if(total < expend)
 	{
@@ -923,15 +1070,20 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 	}
 
 	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeUnstake);
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
-		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+		std::string identity = TxHelper::GetIdentityNodes();
+		if (identity.empty())
+        {
+            identity = TxHelper::GetEligibleNodes();
+        }
+		DEBUGLOG("DropshippingTx identity:{}", identity);
+		outTx.set_identity(identity);
 	}
 	else{
 		
@@ -959,11 +1111,12 @@ int TxHelper::CreatUnstakeTransaction(const std::string& fromAddr,
 int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 										const std::string& toAddr,
 										uint64_t investAmount,
+										const std::string& encodedInfo,
 										uint64_t height,
 										TxHelper::InvestType investType,
 										CTransaction & outTx,
 										std::vector<TxHelper::Utxo> & outVin
-										,TxHelper::vrfAgentType &type ,Vrf & information)
+										,TxHelper::vrfAgentType &type ,Vrf & information, bool isFindUtxo)
 {
 	//  Check parameters
 	std::vector<std::string> vecfromAddr;
@@ -977,15 +1130,15 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	}
 
 	//  Neither fromaddr nor toaddr can be a virtual account
-	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
+	if (!isValidAddress(fromAddr))
 	{
-		ERRORLOG(RED "FromAddr is not normal base58 addr." RESET);
+		ERRORLOG(RED "FromAddr is not normal  addr." RESET);
 		return -1;
 	}
 
-	if (CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign) == true)
+	if (!isValidAddress(toAddr))
 	{
-		ERRORLOG(RED "To address is not base58 address!" RESET);
+		ERRORLOG(RED "To address is not  address!" RESET);
 		return -2;
 	}
 
@@ -1017,7 +1170,7 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	uint64_t expend = investAmount;
 
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
+	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos, isFindUtxo);
 	if (ret != 0)
 	{
 		ERRORLOG(RED "FindUtxo failed! The error code is {}." RESET, ret);
@@ -1035,7 +1188,7 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
 	
 	//  Fill Vin
-	std::set<string> setTxowners;
+	std::set<std::string> setTxowners;
 	for (auto & utxo : setOutUtxos)
 	{
 		setTxowners.insert(utxo.addr);
@@ -1083,6 +1236,7 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
+	outTx.set_info(encodedInfo);
 	outTx.set_type(global::ca::kTxSign);
 
 	uint64_t gas = 0;	
@@ -1094,20 +1248,13 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	
 	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
 	{
-		std::cout << "GenerateGas gas = " << gas << std::endl;
 		ERRORLOG(" gas = 0 !");
 		return -8;
 	}
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		type = TxHelper::vrfAgentType_defalut;
-	}
-
 	expend += gas;
-
 	if(total < expend)
 	{
 		ERRORLOG("The total cost = {} is less than the cost = {}", total, expend);
@@ -1135,8 +1282,7 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 		}
 	}
 	
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_time(currentTime);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeInvest);
@@ -1144,7 +1290,13 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
-		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+		std::string identity = TxHelper::GetIdentityNodes();
+		if (identity.empty())
+        {
+            identity = TxHelper::GetEligibleNodes();
+        }
+		DEBUGLOG("DropshippingTx identity:{}", identity);
+		outTx.set_identity(identity);
 	}
 	else{
 		
@@ -1172,10 +1324,11 @@ int TxHelper::CreateInvestTransaction(const std::string & fromAddr,
 int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 										const std::string& toAddr,
 										const std::string& utxoHash,
+										const std::string& encodedInfo,
 										uint64_t height,
 										CTransaction& outTx,
 										std::vector<TxHelper::Utxo> & outVin
-										,TxHelper::vrfAgentType &type ,Vrf & information)
+										,TxHelper::vrfAgentType &type ,Vrf & information, bool isFindUtxo)
 {
 	//  Check parameters
 	std::vector<std::string> vecfromAddr;
@@ -1188,15 +1341,15 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 		return ret;
 	}
 
-	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
+	if (!isValidAddress(fromAddr))
 	{
-		ERRORLOG(RED "FromAddr is not normal base58 addr." RESET);
+		ERRORLOG(RED "FromAddr is not normal  addr." RESET);
 		return -1;
 	}
 
-	if (CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign) == true)
+	if (!isValidAddress(toAddr))
 	{
-		ERRORLOG(RED "To address is not base58 address!" RESET);
+		ERRORLOG(RED "To address is not  address!" RESET);
 		return -2;
 	}
 
@@ -1211,7 +1364,7 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	uint64_t total = 0;
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
 	//  The utxo quantity sought here needs to be reduced by 1
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos); 
+	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos, isFindUtxo); 
 	if (ret != 0)
 	{
 		ERRORLOG(RED "FindUtxo failed! The error code is {}." RESET, ret);
@@ -1229,7 +1382,7 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
 
 	//  Fill Vin
-	std::set<string> setTxowners;
+	std::set<std::string> setTxowners;
 	for (auto & utxo : setOutUtxos)
 	{
 		setTxowners.insert(utxo.addr);
@@ -1300,6 +1453,7 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
+	outTx.set_info(encodedInfo);
 	outTx.set_type(global::ca::kTxSign);	
 
 	uint64_t gas = 0;
@@ -1318,12 +1472,6 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-	// At this point, it indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can issue the investment cancellation operation
-		type = TxHelper::vrfAgentType_defalut;
-	}
-
 	uint64_t expend = gas;
 	
 	if(total < expend)
@@ -1355,15 +1503,20 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	}
 
 	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDisinvest);
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
-		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+		std::string identity = TxHelper::GetIdentityNodes();
+		if (identity.empty())
+        {
+            identity = TxHelper::GetEligibleNodes();
+        }
+		DEBUGLOG("DropshippingTx identity:{}", identity);
+		outTx.set_identity(identity);
 	}
 	else
 	{	
@@ -1389,16 +1542,16 @@ int TxHelper::CreateDisinvestTransaction(const std::string& fromAddr,
 	return 0;
 }
 
-// 1. Circulation verification The claimed node cannot start with 3
-int TxHelper::CreateBonusTransaction(const std::string& Addr,
+int TxHelper::CreateBonusTransaction(const std::string& addr,
+										const std::string& encodedInfo,
 										uint64_t height,
 										CTransaction& outTx,
 										std::vector<TxHelper::Utxo> & outVin,
 										TxHelper::vrfAgentType &type,
-										Vrf & information)
+										Vrf & information, bool isFindUtxo)
 {
 	std::vector<std::string> vecfromAddr;
-	vecfromAddr.push_back(Addr);
+	vecfromAddr.push_back(addr);
 	int ret = Check(vecfromAddr, height);
 	if(ret != 0)
 	{
@@ -1407,16 +1560,16 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 		return ret;
 	}
 
-	if (CheckBase58Addr(Addr, Base58Ver::kBase58Ver_MultiSign) == true)
+	if (!isValidAddress(addr))
 	{
-		ERRORLOG(RED "Default is not normal base58 addr." RESET);
+		ERRORLOG(RED "Default is not normal  addr." RESET);
 		return -1;
 	}
 
 	DBReader dbReader; 
 	std::vector<std::string> utxos;
 	uint64_t curTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	ret = CheckBonusQualification(Addr, curTime);
+	ret = CheckBonusQualification(addr, curTime);
 	if(ret != 0)
 	{
 		ERRORLOG(RED "Not allowed to Bonus!" RESET);
@@ -1424,7 +1577,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	}
 
 	std::map<std::string, uint64_t> companyDividend;
-    ret=ca_algorithm::CalcBonusValue(curTime, Addr, companyDividend);
+    ret=ca_algorithm::CalcBonusValue(curTime, addr, companyDividend);
 	if(ret < 0)
 	{
 		ERRORLOG("Failed to obtain the amount claimed by the investor ret:({})",ret);
@@ -1435,7 +1588,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	uint64_t expend = 0;
 	uint64_t total = 0;
 	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos);
+	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos, isFindUtxo);
 	if (ret != 0)
 	{
 		ERRORLOG("TxHelper CreatUnstakeTransaction: FindUtxo failed");
@@ -1450,7 +1603,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	outTx.Clear();
 	CTxUtxo * txUtxo = outTx.mutable_utxo();
 	//  Fill Vin
-	std::set<string> setTxowners;
+	std::set<std::string> setTxowners;
 	for (auto & utxo : setOutUtxos)
 	{
 		setTxowners.insert(utxo.addr);
@@ -1494,8 +1647,8 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	uint64_t tempNodeDividend=0;
 	uint64_t tempTotalClaim=0;
 
-	double bonusPumping;
-	int rt = ca_algorithm::GetCommissionPercentage(Addr, bonusPumping);
+	double tempcommissionRate;
+	int rt = ca_algorithm::GetCommissionPercentage(addr, tempcommissionRate);
 	if(rt != 0)
 	{
 		ERRORLOG("GetCommissionPercentage error:{}", rt);
@@ -1503,7 +1656,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	}
 	for(auto company : companyDividend)
 	{
-		tempCosto=company.second*bonusPumping+0.5;
+		tempCosto=company.second*tempcommissionRate+0.5;
 		tempNodeDividend+=tempCosto;
 		std::string addr = company.first;
 		uint64_t award = company.second - tempCosto;
@@ -1517,6 +1670,7 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	nlohmann::json data;
 	data["TxInfo"] = txInfo;
 	outTx.set_data(data.dump());
+	outTx.set_info(encodedInfo);
 	outTx.set_type(global::ca::kTxSign);
 
 	// calculation gas
@@ -1537,34 +1691,26 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 
 	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
 	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		ERRORLOG(" +++++++vrfAgentType_unknow +++++");
-		return -6;
-	}
-
 	expend = gas;
-
 	if(total < expend)
 	{
 		ERRORLOG("The total cost = {} is less than the cost = {}", total, expend);
-		return -7;
+		return -6;
 	}
 
 	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
+	outTx.set_version(global::ca::kCurrentTransactionVersion);
 	outTx.set_consensus(global::ca::kConsensus);
 	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeBonus);
 	// Fill vout
 	uint64_t costo=0;
 	uint64_t nodeDividend=0;
 	uint64_t totalClaim=0;
-	std::cout << YELLOW << "Claim Addr : Claim Amount" << RESET << std::endl;
-	std::cout << "bonusPumping: " << bonusPumping << std::endl;
+	std::cout << YELLOW << "Claim addr : Claim Amount" << RESET << std::endl;
+	std::cout << "Commission: " << tempcommissionRate << std::endl;
 	for(auto company : companyDividend)
 	{
-		costo=company.second*bonusPumping+0.5;
+		costo=company.second*tempcommissionRate+0.5;
 		nodeDividend+=costo;
 		std::string addr = company.first;
 		uint64_t award = company.second - costo;
@@ -1572,11 +1718,11 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 		CTxOutput* txoutToAddr = txUtxo->add_vout();	
 		txoutToAddr->set_addr(addr); 
 		txoutToAddr->set_value(award);		
-		std::cout << company.first << ":" << company.second << std::endl;		
+		std::cout << company.first << ":" << std::fixed << std::setprecision(8) << static_cast<double>(company.second) / global::ca::kDecimalNum << std::endl;	
 	}
 
 	CTxOutput* txoutToAddr = txUtxo->add_vout();
-	txoutToAddr->set_addr(Addr);
+	txoutToAddr->set_addr(addr);
 	txoutToAddr->set_value(total - expend + nodeDividend);
 
 	CTxOutput * voutBurn = txUtxo->add_vout();
@@ -1584,12 +1730,12 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	voutBurn->set_value(gas);
 
 
-	std::cout << Addr << ":" << nodeDividend << std::endl;
+	std::cout << addr << ":" << nodeDividend << std::endl;
 	totalClaim+=nodeDividend;
 	if(totalClaim == 0)
 	{
 		ERRORLOG("The claim amount is 0");
-		return -8;
+		return -7;
 	}
 
 	std::string serUtxoHash = Getsha256hash(txUtxo->SerializeAsString());
@@ -1597,14 +1743,14 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	{	
 		if (TxHelper::AddMutilSign(owner, outTx) != 0)
 		{
-			return -9;
+			return -8;
 		}
 	}
 
 	// Determine whether dropshipping is default or local dropshipping
 	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
 	{
-		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+		outTx.set_identity(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr());
 	}
 	else{
 
@@ -1628,182 +1774,432 @@ int TxHelper::CreateBonusTransaction(const std::string& Addr,
 	return 0;
 }
 
-int TxHelper::CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
-                                                 const std::string &code, uint64_t height,
-                                                 const nlohmann::json &contractInfo, CTransaction &outTx,
-                                                 std::vector<std::string> &dirtyContract,
-                                                 TxHelper::vrfAgentType &type, Vrf &information)
-{
-    std::string strOutput;
-    TfsHost host;
-    int64_t gasCost = 0;
-	auto nowTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	std::string transientContractAddress = evm_utils::GenerateEvmAddr(std::to_string(nowTime));
-    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost, transientContractAddress);
-    if (ret != 0)
-    {
-		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s  %s",ret, strOutput));
-        ERRORLOG("Evmone failed to deploy contract!");
-        ret -= 10;
-        return ret;
-    }
 
-    nlohmann::json jTxInfo;
-    jTxInfo["Version"] = 0;
-    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
-    jTxInfo["VmType"] = global::ca::VmType::EVM;
-	jTxInfo["transientAddress"] = transientContractAddress;
-    jTxInfo["Code"] = code;
-    jTxInfo["Output"] = strOutput;
-//    jTxInfo["Info"] = contractInfo;
+//int TxHelper::CreateWasmDeployContractTransaction(const std::string &fromaddr, const std::string &OwnerWasmAddr,
+//                                            const std::string &code, uint64_t height,
+//                                            CTransaction &outTx,TxHelper::vrfAgentType &type, Vrf &information)
+//{
+//    std::string strOutput;
+//	int64_t gasCost = 0;
+//	int ret = Wasmtime::DeployWasmContract(fromaddr,code,strOutput,gasCost);
+//	if(ret != 0)
+//	{
+//		ERRORLOG("Wasmone failed to deploy contract! ret : {}", ret);
+//        return -1;
+//	}
 //
-//    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
-//    if(ret != 0)
-//    {
-//        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
-//        return -1;
-//    }
+//	nlohmann::json jTxInfo;
+//    jTxInfo["Version"] = 0;
+//    jTxInfo["OwnerWasmAddr"] = OwnerWasmAddr;
+//    jTxInfo[Evmone::contractVirtualMachineKeyName] = global::ca::VmType::WASM;
+//    jTxInfo[Evmone::contractInputKeyName] = Str2Hex(code);
+//    jTxInfo[Evmone::contractOutputKeyName] = strOutput;
+//
+//	ret = Wasmtime::FillWasmOutTx(fromaddr,global::ca::kVirtualDeployContractAddr, global::ca::TxType::kTxTypeDeployContract ,jTxInfo,  height, gasCost, outTx, type, information,0);
+//	if(ret != 0)
+//	{
+//		ERRORLOG("FillWasmOutTx fail ret :{}", ret);
+//		return -2;
+//	}
+//	return 0;
+//}
+
+int TxHelper::MakeEvmDeployContractTransaction(uint64_t height, CTransaction &outTx,
+                                               std::vector<std::string> &dirtyContract,
+                                               TxHelper::vrfAgentType &type, Vrf &information, EvmHost &host,
+                                               evmc_message &message, bool isFindUtxo, const std::string& encodedInfo,
+                                               std::function<int(CTransaction &,std::string &)> signFunction)
+{
+    std::string sender = evm_utils::EvmAddrToString(message.sender);
+    std::string recipient = evm_utils::EvmAddrToString(message.recipient);
+    nlohmann::json jTxInfo;
+    jTxInfo[Evmone::contractVersionKeyName] = 0;
+    jTxInfo[Evmone::contractSenderKeyName] = sender;
+    jTxInfo[Evmone::contractVirtualMachineKeyName] = global::ca::VmType::EVM;
+  	jTxInfo[Evmone::contractRecipientKeyName] = recipient;
+    jTxInfo[Evmone::contractInputKeyName] = evm_utils::BytesToString(host.code) ;
+
+    jTxInfo[Evmone::contractBlockTimestampKeyName] = host.tx_context.block_timestamp;
+    jTxInfo[Evmone::contractBlockPrevRandaoKeyName] = evm_utils::EvmcUint256beToUint32(host.tx_context.block_prev_randao);
 
     Evmone::GetCalledContract(host, dirtyContract);
-    ret = Evmone::FillDeployOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, information);
-    return ret;
+    int ret = Evmone::FillDeployOutTx(sender ,global::ca::kVirtualDeployContractAddr,host.coin_transferrings,
+										jTxInfo, host.gas_cost, height, outTx, type, information, encodedInfo, isFindUtxo);
+	if (ret != 0)
+    {
+		ERRORLOG("FillDeployOutTx fail ret : {}", ret);
+		return ret - 1000;
+	}
+
+	if(signFunction != nullptr)
+	{
+		ret = signFunction(outTx, sender);
+		if (ret!= 0){
+			errorL("sig fial %s", ret);
+			return -2;
+		}
+		std::string txHash = Getsha256hash(outTx.SerializeAsString());
+		outTx.set_hash(txHash);
+	}
+
+    return 0;
 }
 
-
-int TxHelper::CreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, const std::string &OwnerEvmAddr,
-												const std::string &code, uint64_t height,
-												const nlohmann::json &contractInfo, CTransaction &outTx,
-												TxHelper::vrfAgentType &type, Vrf &information)
+int
+TxHelper::MakeEvmCallContractTransaction(uint64_t height, CTransaction &outTx, std::vector<std::string> &dirtyContract,
+                                         TxHelper::vrfAgentType &type, Vrf &information, EvmHost &host,
+                                         evmc_message &message, const std::string &strInput, const uint64_t contractTip,
+                                         const uint64_t contractTransfer, const std::string &toAddr, bool isFindUtxo,
+										 const std::string& encodedInfo,
+                                         std::function<int(CTransaction &,std::string &)> signFunction)
 {
-	std::string strOutput;
-    TfsHost host;
-    int64_t gasCost = 0;
-	std::string transientContractAddress = "xxxxx";
-    int ret = Evmone::DeployContract(fromAddr, OwnerEvmAddr, code, strOutput, host, gasCost, transientContractAddress);
-    if (ret != 0)
-    {
-        ERRORLOG("Evmone failed to deploy contract!");
-        ret -= 10;
-        return ret;
-    }
-
+    std::string sender = evm_utils::EvmAddrToString(message.sender);
+    std::string recipient = evm_utils::EvmAddrToString(message.recipient);
     nlohmann::json jTxInfo;
-    jTxInfo["Version"] = 0;
-    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
-    jTxInfo["VmType"] = global::ca::VmType::EVM;
-    jTxInfo["Code"] = code;
-    jTxInfo["Output"] = strOutput;
-    jTxInfo["Info"] = contractInfo;
+    jTxInfo[Evmone::contractVersionKeyName] = 0;
+    jTxInfo[Evmone::contractSenderKeyName] = sender;
+    jTxInfo[Evmone::contractRecipientKeyName] = recipient;
+    jTxInfo[Evmone::contractVirtualMachineKeyName] = global::ca::VmType::EVM;
+    jTxInfo[Evmone::contractInputKeyName] = strInput;
 
-    ret = Evmone::ContractInfoAdd_V33_1(host, jTxInfo, global::ca::TxType::kTxTypeDeployContract);
-    if(ret != 0)
-    {
-        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
-        return -1;
-    }
+    jTxInfo[Evmone::contractDonationKeyName] = contractTip;
+    jTxInfo[Evmone::contractTransferKeyName] = contractTransfer;
+    jTxInfo[Evmone::contractDeployerKeyName] = toAddr;
 
-    ret = Evmone::FillDeployOutTx(fromAddr,global::ca::kVirtualDeployContractAddr,host.coin_transferrings, jTxInfo, gasCost, height, outTx, type, information);
-    return ret;
-}
+	if(signFunction == nullptr)
+	{
+    	jTxInfo[Evmone::contractOutputKeyName] = host.output;
+	}
 
+    jTxInfo[Evmone::contractBlockTimestampKeyName] = host.tx_context.block_timestamp;
+    jTxInfo[Evmone::contractBlockPrevRandaoKeyName] = evm_utils::EvmcUint256beToUint32(host.tx_context.block_prev_randao);
 
-int TxHelper::CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
-                                               const std::string &txHash, const std::string &strInput,
-                                               const std::string &OwnerEvmAddr, uint64_t height,
-                                               CTransaction &outTx, TxHelper::vrfAgentType &type,
-                                               Vrf &information, const uint64_t contractTip,
-                                               const uint64_t contractTransfer,
-                                               std::vector<std::string> &dirtyContract)
-{
-    std::string strOutput;
-    TfsHost host;
-    int64_t gasCost = 0;
-    int ret = Evmone::CallContract(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
-    if (ret != 0)
-    {
-		SetRpcError("-72019",Sutil::Format("Evmone failed to call contract! %s  %s",ret, strOutput));
-        ERRORLOG("Evmone failed to call contract!");
-        ret -= 10;
-        return ret;
-    }
-
-    nlohmann::json jTxInfo;
-    jTxInfo["Version"] = 0;
-    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
-    jTxInfo["VmType"] = global::ca::VmType::EVM;
-    jTxInfo["DeployerAddr"] = toAddr;
-    jTxInfo["DeployHash"] = txHash;
-    jTxInfo["Input"] = strInput;
-    jTxInfo["Output"] = strOutput;
-	jTxInfo["contractTip"] = contractTip;
-    jTxInfo["contractTransfer"] = contractTransfer;
-
-//    ret = Evmone::ContractInfoAdd(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
-//    if(ret != 0)
-//    {
-//        DEBUGLOG("ContractInfoAdd error! ret:{}", ret);
-//        return -1;
-//    }
     Evmone::GetCalledContract(host, dirtyContract);
-    ret = Evmone::FillCallOutTx(fromAddr, toAddr, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
-                                information, contractTip);
+    int ret = Evmone::FillCallOutTx(sender, toAddr, host.coin_transferrings, jTxInfo, height, host.gas_cost, outTx, type,
+                                information, contractTip,encodedInfo,isFindUtxo);
     if (ret != 0)
     {
         ERRORLOG("FillCallOutTx fail ret: {}", ret);
+        return ret - 1000; 
     }
-    return ret;
+
+	if(signFunction != nullptr)
+	{
+		ret = signFunction(outTx, sender);
+		if (ret!= 0){
+			errorL("sig fial %s", ret);
+			return -2;
+		}
+		std::string txHash = Getsha256hash(outTx.SerializeAsString());
+		outTx.set_hash(txHash);
+	}
+    return 0;
 }
 
 
-int TxHelper::CreateEvmCallContractTransaction_V33_1(const std::string &fromAddr, const std::string &toAddr,
-                                               const std::string &txHash,
-                                               const std::string &strInput, const std::string &OwnerEvmAddr,
-                                               uint64_t height,
-                                               CTransaction &outTx, TxHelper::vrfAgentType &type, Vrf &information,
-											   const uint64_t contractTip,const uint64_t contractTransfer)
+
+int TxHelper::CreateEvmDeployContractTransaction(uint64_t height, CTransaction &outTx,
+                                                 std::vector<std::string> &dirtyContract,
+                                                 TxHelper::vrfAgentType &type, Vrf &information, std::string &code,
+                                                 const std::string &from, uint64_t transfer, const std::string &to,
+												 const std::string& encodedInfo, bool isFindUtxo,bool isRpc)
 {
-    std::string strOutput;
-    TfsHost host;
-    int64_t gasCost = 0;
-    int ret = Evmone::CallContract_V33_1(fromAddr, OwnerEvmAddr, toAddr, txHash, strInput, strOutput, host, gasCost, contractTransfer);
-    if (ret != 0)
+
+	if(!isRpc)
+	{
+		Account launchAccount;
+		if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(from, launchAccount) != 0)
+		{
+			std::cout<<RED << "Failed to find account:"<<from << RESET << std::endl;
+			ERRORLOG("Failed to find account {}", from);
+			return -1;
+		}
+	}
+
+    EvmHost host;
+    code.erase(std::remove_if(code.begin(), code.end(), ::isspace), code.end());
+    host.code = evm_utils::StringTobytes(code);
+    if (code.empty())
     {
-        ERRORLOG("Evmone failed to call contract!");
-        ret -= 10;
-        return ret;
+        ERRORLOG("fail to convert contract code to hex format");
+        return -2;
     }
 
-    nlohmann::json jTxInfo;
-    jTxInfo["Version"] = 0;
-    jTxInfo["OwnerEvmAddr"] = OwnerEvmAddr;
-    jTxInfo["VmType"] = global::ca::VmType::EVM;
-    jTxInfo["DeployerAddr"] = toAddr;
-    jTxInfo["DeployHash"] = txHash;
-    jTxInfo["Input"] = strInput;
-    jTxInfo["Output"] = strOutput;
-	jTxInfo["contractTip"] = contractTip;
-    jTxInfo["contractTransfer"] = contractTransfer;
+    int64_t blockTimestamp = evm_environment::CalculateBlockTimestamp(3);
+    if (blockTimestamp < 0)
+    {
+        return -3;
+    }
+	int64_t blockPrevRandao = evm_environment::CalculateBlockPrevRandao(from);
+	if (blockPrevRandao < 0)
+	{
+		return -4;
+	}
 
-    ret = Evmone::ContractInfoAdd_V33_1(host, jTxInfo, global::ca::TxType::kTxTypeCallContract);
+    int64_t blockNumber = 0;
+    try
+    {
+        blockNumber = Util::Unsign64toSign64(height);
+    }
+    catch (const std::exception& e)
+    {
+        ERRORLOG("{}", e.what())
+        return -5;
+    }
+
+    if (blockNumber < 0)
+    {
+        return -6;
+    }
+
+    evmc_message message{};
+    int ret = Evmone::DeployContract(from, host, message, to, blockTimestamp,
+                                     blockPrevRandao, blockNumber);
+    if (ret != 0)
+    {
+		SetRpcError("-300",Sutil::Format("Evmone failed to call contract! error:%s , output:%s", ret-100, host.outputError));
+        ERRORLOG("failed to deploy contract! The error code is:{}", ret);
+        return -300;
+    }
+
+	int (*ptr)(CTransaction&, const std::string&);
+	if(isRpc)
+	{
+		ptr = nullptr;
+	}
+	else
+	{
+		ptr = SigTx;
+	}
+
+    ret = TxHelper::MakeEvmDeployContractTransaction(height,
+                                                     outTx, dirtyContract,
+                                                     type,
+                                                     information, host, message, isFindUtxo, encodedInfo, ptr);
     if(ret != 0)
     {
-        DEBUGLOG("ContractInfoAdd_V33_1 error! ret:{}", ret);
-        return -1;
+        ERRORLOG("Failed to create DeployContract transaction! The error code is:{}", ret);
+        return ret - 10000;
     }
-
-    ret = Evmone::FillCallOutTx(fromAddr, toAddr, host.coin_transferrings, jTxInfo, height, gasCost, outTx, type,
-                                information, contractTip);
-    if (ret != 0)
-    {
-        ERRORLOG("FillCallOutTx fail ret: {}", ret);
-    }
-    return ret;
+    return 0;
 }
 
+int TxHelper::CreateEvmCallContractTransaction(const std::string &from, const std::string &toAddr, const std::string &strInput,
+ 									const std::string& encodedInfo,
+                                     uint64_t height, CTransaction &outTx, TxHelper::vrfAgentType &type,
+                                     Vrf &information,
+                                     const uint64_t contractTip, const uint64_t contractTransfer,
+                                     std::vector<std::string> &dirtyContract, const std::string &to,
+                                     bool isFindUtxo ,bool isRpc )
+{
+	if(!isRpc)
+	{
+		Account launchAccount;
+		if(MagicSingleton<AccountManager>::GetInstance()->FindAccount(from, launchAccount) != 0)
+		{
+			ERRORLOG("Failed to find account {}", from);
+			return -1;
+		}
+	}
+
+
+    EvmHost host;
+    evmc::bytes contractCode;
+    if (evm_utils::GetContractCode(to, contractCode) != 0)
+    {
+        ERRORLOG("fail to get contract code");
+        return -2;
+    }
+    host.code = contractCode;
+    int64_t blockTimestamp = evm_environment::CalculateBlockTimestamp(3);
+    if (blockTimestamp < 0)
+    {
+        return -3;
+    }
+	
+	int64_t blockPrevRandao = evm_environment::CalculateBlockPrevRandao(from);
+	if (blockPrevRandao < 0)
+	{
+		return -4;
+	}
+
+    int64_t blockNumber = 0;
+    try
+    {
+        blockNumber = Util::Unsign64toSign64(height);
+    }
+    catch (const std::exception& e)
+    {
+        ERRORLOG("{}", e.what())
+        return -5;
+    }
+
+    if (blockNumber < 0)
+    {
+        return -6;
+    }
+	
+    evmc_message message{};
+    int ret = Evmone::CallContract(from, strInput, host,
+                                   contractTransfer, to, message, blockTimestamp, blockPrevRandao, blockNumber);
+    if (ret != 0)
+    {
+		SetRpcError("-300",Sutil::Format("Evmone failed to call contract! error:%s , output:%s", ret-100, host.outputError));
+        ERRORLOG("Evmone failed to call contract! ret : {}", ret);
+        return - 300;
+    }
+
+	int (*ptr)(CTransaction&, const std::string&);
+	if(isRpc)
+	{
+		ptr = nullptr;
+	}
+	else
+	{
+		ptr = SigTx;
+	}
+
+
+    ret = MakeEvmCallContractTransaction(height, outTx, dirtyContract, type, information, host, message, strInput,
+                                         contractTip, contractTransfer, toAddr, isFindUtxo, encodedInfo, ptr);
+    if (ret != 0)
+    {
+        ERRORLOG("Failed to create CallContract transaction! The error code is:{}", ret);
+        return ret - 10000;
+    }
+
+    return 0;
+}
+
+
+
+
+int TxHelper::RPC_CreateEvmCallContractTransaction(const std::string &from, const std::string &toAddr,
+                                               const std::string &strInput,
+                                               uint64_t height, CTransaction &outTx, TxHelper::vrfAgentType &type,
+                                               Vrf &information,
+                                               const uint64_t contractTip, const uint64_t contractTransfer,
+                                               std::vector<std::string> &dirtyContract, const std::string &to,
+                                               bool isFindUtxo,bool isRpc)
+
+{
+	EvmHost host;
+    evmc::bytes contractCode;
+	if (evm_utils::GetContractCode(to, contractCode) != 0)
+    {
+		SetRpcError("-9",Sutil::Format("fail to get contract code"));
+        ERRORLOG("fail to get contract code");
+        return -1;
+    }
+    host.code = contractCode;
+
+	int64_t blockTimestamp = evm_environment::CalculateBlockTimestamp(3);
+    if (blockTimestamp < 0)
+    {
+		SetRpcError("-10",Sutil::Format("Calculate block timestamp failed!"));
+        return -2;
+    }
+
+	int64_t blockPrevRandao = 64;
+	if (blockPrevRandao < 0)
+	{
+		return -3;
+	}
+
+	int64_t blockNumber = 0;
+    try
+    {
+        blockNumber = Util::Unsign64toSign64(height);
+    }
+    catch (const std::exception& e)
+    {
+		SetRpcError("-13",Sutil::Format("%s",e.what()));
+        ERRORLOG("{}", e.what())
+        return -4;
+    }
+
+    if (blockNumber < 0)
+    {
+        return -5;
+    }
+
+	evmc_message message{};
+    int ret = Evmone::RPC_CallContract(from, strInput, host,
+                                   contractTransfer, to, message, blockTimestamp, blockPrevRandao, blockNumber);
+    if (ret != 0)
+    {
+		SetRpcError("-300",Sutil::Format("Evmone failed to call contract! %s , output:%s", ret-100, host.outputError));
+        ERRORLOG("Evmone failed to call contract! ret : {}", ret);
+        return -300;
+    }
+
+	{
+		std::string sender = evm_utils::EvmAddrToString(message.sender);
+		std::string recipient = evm_utils::EvmAddrToString(message.recipient);
+		nlohmann::json jTxInfo;
+		jTxInfo[Evmone::contractVersionKeyName] = 0;
+		jTxInfo[Evmone::contractSenderKeyName] = sender;
+		jTxInfo[Evmone::contractRecipientKeyName] = recipient;
+		jTxInfo[Evmone::contractVirtualMachineKeyName] = global::ca::VmType::EVM;
+		jTxInfo[Evmone::contractInputKeyName] = strInput;
+
+		jTxInfo[Evmone::contractDonationKeyName] = contractTip;
+		jTxInfo[Evmone::contractTransferKeyName] = contractTransfer;
+		jTxInfo[Evmone::contractDeployerKeyName] = toAddr;
+
+		jTxInfo[Evmone::contractOutputKeyName] = host.output;
+	
+		jTxInfo[Evmone::contractBlockTimestampKeyName] = host.tx_context.block_timestamp;
+		jTxInfo[Evmone::contractBlockPrevRandaoKeyName] = evm_utils::EvmcUint256beToUint32(host.tx_context.block_prev_randao);
+
+		outTx.set_type(global::ca::kTxSign);
+		nlohmann::json data;
+		data["TxInfo"] = jTxInfo;
+		std::string s = data.dump();
+		outTx.set_data(s);		
+	}
+
+	return 0;
+}
+
+
+
+//int TxHelper::CreateWasmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr, const std::string &txHash,
+//                                    const std::string &strInput, uint64_t height,CTransaction &outTx, TxHelper::vrfAgentType &type,
+//                                    Vrf &information,const uint64_t contractTip, const std::string &contractFunName)
+//{
+//	std::string strOutput;
+//	int64_t gasCost = 0;
+//	int ret = Wasmtime::CallWasmContract(fromAddr, toAddr, txHash, strInput, contractFunName, strOutput, gasCost);
+//	if(ret != 0)
+//	{
+//		ERRORLOG("Wasmone failed to deploy contract!", ret);
+//        return -1;
+//	}
+//
+//	nlohmann::json jTxInfo;
+//
+//	jTxInfo["Version"] = 0;
+//    jTxInfo["VmType"] = global::ca::VmType::WASM;
+//    jTxInfo["DeployerAddr"] = toAddr;
+//    jTxInfo["DeployHash"] = txHash;
+//    jTxInfo["Input"] = strInput;
+//    jTxInfo["Output"] = strOutput;
+//	jTxInfo["contractTip"] = contractTip;
+//	jTxInfo["contractFunName"] = contractFunName;
+//
+//	ret = Wasmtime::FillWasmOutTx(fromAddr, toAddr, global::ca::TxType::kTxTypeCallContract, jTxInfo,  height, gasCost, outTx, type, information, contractTip);
+//	if (ret != 0)
+//    {
+//        ERRORLOG("FillWasmOutTx fail ret: {}", ret);
+//		return -2;
+//    }
+//	return 0;
+//}
 
 int TxHelper::AddMutilSign(const std::string & addr, CTransaction &tx)
 {
-	if (!CheckBase58Addr(addr))
+	if (!isValidAddress(addr))
 	{
 		return -1;
 	}
@@ -1829,7 +2225,7 @@ int TxHelper::AddMutilSign(const std::string & addr, CTransaction &tx)
 
 int TxHelper::AddVerifySign(const std::string & addr, CTransaction &tx)
 {
-	if (!CheckBase58Addr(addr))
+	if (!isValidAddress(addr))
 	{
 		ERRORLOG("illegal address {}", addr);
 		return -1;
@@ -1851,9 +2247,10 @@ int TxHelper::AddVerifySign(const std::string & addr, CTransaction &tx)
 
 	std::string signature;
 	std::string pub;
-	if (TxHelper::Sign(addr, message, signature, pub) != 0)
+	int ret = TxHelper::Sign(addr, message, signature, pub);
+	if (ret != 0)
 	{
-		ERRORLOG("fail to sign message");
+		ERRORLOG("fail to sign message, ret :{}", ret);
 		return -3;
 	}
 
@@ -1863,7 +2260,6 @@ int TxHelper::AddVerifySign(const std::string & addr, CTransaction &tx)
 	verifySign->set_sign(signature);
 	verifySign->set_pub(pub);
 	
-
 	return 0;
 }
 
@@ -1899,7 +2295,7 @@ bool TxHelper::IsNeedAgent(const std::vector<std::string> & fromAddr)
 	for(auto& owner : fromAddr)
 	{
 		//  If the transaction owner cannot be found in all accounts of the node, it indicates that it is issued on behalf
-		if (owner == MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr())
+		if (owner == MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr())
 		{
 			isNeedAgent = false;
 		}
@@ -1927,9 +2323,7 @@ bool TxHelper::CheckTxTimeOut(const uint64_t & txTime, const uint64_t & timeout,
 		return false;
 	}
     DBReader dbReader;
-   // print_trace();
     std::vector<std::string> blockHashes;
-    //debugL("preHeight:%s",preHeight);
 	auto ret = dbReader.GetBlockHashesByBlockHeight(preHeight, preHeight, blockHashes);
     if (DBStatus::DB_SUCCESS != ret)
     {
@@ -1938,7 +2332,9 @@ bool TxHelper::CheckTxTimeOut(const uint64_t & txTime, const uint64_t & timeout,
 			ERRORLOG("can't GetBlockHashesByBlockHeight, DBStatus::DB_NOT_FOUND");
 			return false;
 		}
-        ERRORLOG("can't GetBlockHashesByBlockHeight, fail!!!");
+		uint64_t top = 0;
+    	dbReader.GetBlockTop(top);
+        ERRORLOG("can't GetBlockHashesByBlockHeight, fail!!!,top:{}, preHeight:{}",top, preHeight);
         return false;
     }
 
@@ -1982,7 +2378,7 @@ bool TxHelper::CheckTxTimeOut(const uint64_t & txTime, const uint64_t & timeout,
 
 TxHelper::vrfAgentType TxHelper::GetVrfAgentType(const CTransaction &tx, uint64_t &preHeight)
 {
-
+	//The type of contract-related transactions is set to vrf
 	global::ca::TxType txType = (global::ca::TxType)tx.txtype();
 	if (global::ca::TxType::kTxTypeDeployContract == txType || global::ca::TxType::kTxTypeCallContract == txType)
 	{
@@ -1990,9 +2386,8 @@ TxHelper::vrfAgentType TxHelper::GetVrfAgentType(const CTransaction &tx, uint64_
 	}
 
 	std::vector<std::string> owners(tx.utxo().owner().begin(), tx.utxo().owner().end());
-
-	//If it is within 30s and you do not find it, it is VRF dropshipping
-	if(!TxHelper::CheckTxTimeOut(tx.time(),global::ca::TxTimeoutMin, preHeight))//30s The block is not larger than 30s
+	//The transaction time is verified to distinguish the agent type of the transaction
+	if(TxHelper::CheckTxTimeOut(tx.time(),global::ca::TxTimeoutMin, preHeight) == false)
 	{	
 		if(std::find(owners.begin(), owners.end(), tx.identity()) == owners.end())
 		{
@@ -2002,1760 +2397,55 @@ TxHelper::vrfAgentType TxHelper::GetVrfAgentType(const CTransaction &tx, uint64_
 	}
 	else
 	{
-
-		// The initiating node and identity are either sent by one person or locally in more than 30 seconds
 		if(std::find(owners.begin(), owners.end(), tx.identity()) == owners.end())
 		{
 			return TxHelper::vrfAgentType::vrfAgentType_local;
 		}
-		else //	After 30 seconds, the initiating node and identity are the same person
+		else
 		{
 			return TxHelper::vrfAgentType::vrfAgentType_defalut;
 		}
 	}
-
-	return TxHelper::vrfAgentType::vrfAgentType_unknow;
+	DEBUGLOG("GetVrfAgentType tx vrf agent type is vrfAgentType_defalut");
+	return TxHelper::vrfAgentType::vrfAgentType_defalut;
 }
 
-void TxHelper::GetTxStartIdentity(const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type)
+void TxHelper::GetTxStartIdentity(const uint64_t &height, const uint64_t &currentTime, TxHelper::vrfAgentType &type)
 {
-		
-	// Judge whether the time is within 30 seconds
-
-	// 1. Within 30 seconds
-
-	// Find the packager (if the packager finds himself, the transaction will fail) and use vrf to send the transaction
-
-	// 2. Within 30 seconds
-
-	// Judge whether the initiating node meets the pledge and investment requirements
-
-	// If the default account is not satisfied, judge whether the default account is satisfied with pledge and investment, and initiate transaction and broadcast from the default account
-
-	// If the initiating account and other accounts fail to meet the requirements of pledge and investment, there is no qualification for initiating the transaction
-
-	//	Previous height of the initiator
 	uint64_t preHeight = height -1;
-	
-	if(CheckTxTimeOut(currentTime,global::ca::TxTimeoutMin, preHeight) == true)
-	{//Beyond 30 seconds
-
-		//Conditional power generation beyond 50 altitude
-		type=vrfAgentType_defalut;
+	//The transaction time is verified to distinguish the agent type of the transaction
+	if(CheckTxTimeOut(currentTime, global::ca::TxTimeoutMin, preHeight) == true)
+	{
+		type = vrfAgentType_defalut;
 		return;
 	}
 	else
-	{//	Within 30 seconds
+	{
 		type = vrfAgentType_vrf;
 		return;
 	}
-	type = vrfAgentType_unknow;
 }
 
-void TxHelper::GetTxStartIdentity_V33_1(const std::vector<std::string> &fromaddr,const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type)
+std::string TxHelper::GetIdentityNodes()
 {
-		
-	// Judge whether the time is within 30 seconds
-
-	// 1. Within 30 seconds
-
-	// Find the packager (if the packager finds himself, the transaction will fail) and use vrf to send the transaction
-
-	// 2. Within 30 seconds
-
-	// Judge whether the initiating node meets the pledge and investment requirements
-
-	// If the default account is not satisfied, judge whether the default account is satisfied with pledge and investment, and initiate transaction and broadcast from the default account
-
-	// If the initiating account and other accounts fail to meet the requirements of pledge and investment, there is no qualification for initiating the transaction
-
-	//	Previous height of the initiator
-	uint64_t preHeight = height -1;
-	
-	if(CheckTxTimeOut(currentTime,global::ca::TxTimeoutMin, preHeight) == true)
-	{//Beyond 30 seconds
-
-		//Conditional power generation beyond 50 altitude
-		type=vrfAgentType_defalut;
-		return;
-	}
-	else
-	{//	Within 30 seconds
-		type = vrfAgentType_vrf;
-		return;
-	}
-	type = vrfAgentType_unknow;
-}
-
-void TxHelper::GetInitiatorType(const std::vector<std::string> &fromaddr, TxHelper::vrfAgentType &type)
-{
-	for(auto &addr : fromaddr)
-		{
-			// Verification of investment and pledge
-			int ret = VerifyBonusAddr(addr);
-
-			int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(addr, global::ca::StakeType::kStakeType_Node);
-			if (stakeTime > 0 && ret == 0)
-			{
-				//Initiate node investment and pledge
-				type = vrfAgentType_defalut;
-			}
-			else
-			{
-				std::vector<std::string> base58_list;
-				MagicSingleton<AccountManager>::GetInstance()->GetAccountList(base58_list);
-
-				// The initiating node does not meet the conditions to check whether other accounts are pledged and invested
-				for(const auto &item : base58_list)
-				{
-					if(VerifyBonusAddr(item) != 0)
-					{
-						DEBUGLOG("base58addr = {} , No investment", item);
-						continue;
-					}
-
-					if(ca_algorithm::GetPledgeTimeByAddr(item, global::ca::StakeType::kStakeType_Node) <= 0)
-					{
-						DEBUGLOG("No pledge or insufficient pledge amount base58addr = {} ", item);
-						continue;
-					}
-					//Other accounts meet investment and pledge
-					type = vrfAgentType_local;
-					return;
-				}
-				type = vrfAgentType_unknow;
-				return;
-			}
-		}
-}
-
-std::string TxHelper::ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
-									const std::map<std::string, int64_t> & toAddr, void * ack)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	MagicSingleton<TFSbenchmark>::GetInstance()->IncreaseTransactionInitiateAmount();
-
-	DBReader dbReader;
-    uint64_t height = 0;
-	
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
+	uint64_t chainHeight = 0;
+    if(!BlockHelper::ObtainChainHeight(chainHeight))
     {
-		ackT->ErrorMessage=" db get top failed!!";
-		ackT->ErrorCode="-1";
-		ERRORLOG("db get top failed!!");
-        return "-1 db get top failed!!"; 
+        return "";
     }
-	//  Check parameters
-	height += 1;
-	int ret = Check(fromAddr, height);
-	if (ret != 0)
-	{
-		ackT->ErrorMessage="Check parameters failed!";
-		ackT->ErrorCode="-2";
-		std::string strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
-		ERRORLOG("Check parameters failed!");
-		return strError; 
-	}
-
-	if(toAddr.empty())
-	{
-		ackT->ErrorMessage="to addr is empty";
-		ackT->ErrorCode="-3";
-		ERRORLOG("to addr is empty");
-		return "-3 to addr is empty";
-	}	
-
-	for (auto& addr : toAddr)
-	{
-		if (!CheckBase58Addr(addr.first))
-		{
-			ackT->ErrorMessage="To address is not base58 address!";
-			ackT->ErrorCode="-4";
-			ERRORLOG("To address is not base58 address!");
-			return "-4 To address is not base58 address!";
-		}
-
-		for (auto& from : fromAddr)
-		{
-			if (addr.first == from)
-			{
-				ackT->ErrorMessage="from address is same with toaddr";
-				ackT->ErrorCode="-5";
-				ERRORLOG("from address is same with toaddr");
-				return "-5 from address is same with toaddr";
-			}
-		}
-		
-		if (addr.second <= 0)
-		{
-			ackT->ErrorMessage="Value is zero!";
-			ackT->ErrorCode="-6";
-			ERRORLOG("Value is zero!");
-			return "-6 Value is zero!";
-		}
-	}
-
-	uint64_t amount = 0;// Transaction fee
-	for (auto& i : toAddr)
-	{
-		amount += i.second;    
-	}
-	uint64_t expend = amount;
-
-	//  Find utxo
-	uint64_t total = 0;
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(fromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
-	if (ret != 0)
-	{
-		ackT->ErrorMessage="FindUtxo failed!";
-		ackT->ErrorCode="-7";
-		std::string strError = "-7 FindUtxo failed! The error code is " + std::to_string(ret-200);
-		ERRORLOG("FindUtxo failed!");
-		return strError; 
-	}
-	if (setOutUtxos.empty())
-	{
-		ackT->ErrorMessage="Utxo is empty!";
-		ackT->ErrorCode="-8";
-		ERRORLOG("Utxo is empty!");
-		return "-8 Utxo is empty!";
-	}
-
-	CTransaction outTx;
-	outTx.Clear();
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	if (setTxowners.empty())
-	{
-		ackT->ErrorMessage="Tx owner is empty!";
-		ackT->ErrorCode="-9";
-		ERRORLOG("Tx owner is empty!");
-		return "-9 Tx owner is empty!";
-	}
-
-	uint32_t n = 0;
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-	}
-
-	outTx.set_data("");
-	outTx.set_type(global::ca::kTxSign);
-
-	uint64_t gas = 0;
-	std::map<std::string, int64_t> targetAddrs = toAddr;
-	targetAddrs.insert(make_pair(*fromAddr.rbegin(), total - expend));
-	targetAddrs.insert(make_pair(global::ca::kVirtualBurnGasAddr,gas));
-	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
-	{
-		ackT->ErrorMessage="gas = 0 !";
-		ackT->ErrorCode="-10";
-		ERRORLOG("gas = 0 !");
-		return " -10 gas = 0 !";
-	}
-
-	TxHelper::vrfAgentType type;
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(height,currentTime,type);
-	DEBUGLOG("GetTxStartIdentity currentTime = {} type = {}",currentTime ,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		ackT->ErrorMessage = "vrfAgentType_unknow";
-		ackT->ErrorCode="-11";
-		ERRORLOG("vrfAgentType_unknow");
-		return "-11 +++++++vrfAgentType_unknow +++++";
-	}
-	expend +=  gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-	//Judge whether utxo is enough
-	if(total < expend)
-	{
-		ackT->ErrorMessage = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend)+"gas is " +std::to_string(gas)+"toAddr amount is "+std::to_string(amount);
-		ackT->ErrorCode="-72013";
-		std::string strError = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend)+"gas is " +std::to_string(gas)+"toAddr amount is "+std::to_string(amount);
-		ERRORLOG("-12 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
-		return strError; 
-	}
-	// fill vout
-	for(auto & to : toAddr)
-	{
-		CTxOutput * vout = txUtxo->add_vout();
-		vout->set_addr(to.first);
-		vout->set_value(to.second);
-	}
-	CTxOutput * voutFromAddr = txUtxo->add_vout();
-	voutFromAddr->set_addr(*fromAddr.rbegin());
-	voutFromAddr->set_value(total - expend);
-	
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_time(currentTime);
-	// outTx.set_version(global::ca::kCurrentTransactionVersion); 
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeTx);
-	// Determine whether dropshipping is default or local dropshipping
-	Vrf info;
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else
-	{
-		std::string allUtxos;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		// Candidate packers are selected based on all utxohashes
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-		
-    	int ret = GetBlockPackager(id,allUtxos, info);
-    	if(ret != 0){
-			ackT->ErrorMessage = "GetBlockPackager error ,error code is";
-			ackT->ErrorCode="-13";
-			std::string strError = "-13 GetBlockPackager error ,error code is " + std::to_string(ret);
-			return strError;
-    	}
-		outTx.set_identity(id);
-
-	}
-
-	DEBUGLOG("GetTxStartIdentity tx time = {}, package = {}", outTx.time(), outTx.identity());
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(info,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-std::string TxHelper::ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stakeAmount, int32_t pledgeType, void* ack, double commission)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	DBReader dbReader;
-    uint64_t height = 0;
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
+	std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
+    if(chainHeight <= global::ca::kMinUnstakeHeight)
     {
-        return "-1 db get top failed!!"; 
-    }
-
-	//  Check parameters
-	height += 1;
-	std::vector<std::string> vecfromAddr;
-	vecfromAddr.push_back(fromAddr);
-	int ret = Check(vecfromAddr, height);
-	if(ret != 0)
-	{
-		std::string strError;
-		strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
-		return strError;
-	}
-
-	if (!CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_Normal)) 
-	{
-		return "-3 From address invlaid!";
-	}
-
-	if(stakeAmount == 0 )
-	{
-		return "-4 Stake amount is zero !";		
+		return defaultAddr;
 	}
 	
-	if(stakeAmount < global::ca::kMinStakeAmt)
+	int ret = VerifyBonusAddr(defaultAddr);
+	int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(defaultAddr, global::ca::StakeType::kStakeType_Node);
+	if (stakeTime > 0 && ret == 0)
 	{
-		std::string strError;
-		errorL("stakeAmount:%s" , std::to_string(stakeAmount));
-		strError = DSTR"-5 The pledge amount must be greater than " + std::to_string(global::ca::kMinStakeAmt);
-		return strError;
+		return defaultAddr;
 	}
-
-	TxHelper::pledgeType pledgeType_ = (TxHelper::pledgeType)pledgeType;
-	std::string strStakeType;
-	if (pledgeType_ == TxHelper::pledgeType::kPledgeType_Node)
-	{
-		strStakeType = global::ca::kStakeTypeNet;
-	}
-	else
-	{
-		return "-6 Unknown stake type!";
-	}
-
-	std::vector<std::string> stakeUtxos;
-    auto dbret = dbReader.GetStakeAddressUtxo(fromAddr,stakeUtxos);
-	if(dbret == DBStatus::DB_SUCCESS)
-	{
-		return "-7 There has been a pledge transaction before !";
-	}
-
-	uint64_t expend = stakeAmount;
-
-	//  Find utxo
-	uint64_t total = 0;
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
-	if (ret != 0)
-	{
-		std::string strError = "-8 FindUtxo failed! The error code is " + std::to_string(ret-200);
-		return strError; 
-	}
-
-	if (setOutUtxos.empty())
-	{
-		return "-9 Utxo is empty!";
-	}
-
-	CTransaction outTx;
-	outTx.Clear();
-
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	
-	if (setTxowners.size() != 1)
-	{
-		return "-10 Tx owner is invalid!";
-	}
-
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		uint32_t n = 0;
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-	}
-
-	nlohmann::json txInfo;
-	txInfo["StakeType"] = strStakeType;
-	txInfo["StakeAmount"] = stakeAmount;
-	if(commission < global::ca::KMinBonusPumping || commission > global::ca::KMaxBonusPumping)
-    {
-        	std::string strError = "-16 commission error , error code is -16";
-			return strError;
-    }
-	txInfo["BonusPumping"] = commission;
-
-	nlohmann::json data;
-	data["TxInfo"] = txInfo;
-	outTx.set_data(data.dump());
-	outTx.set_type(global::ca::kTxSign);	
-
-	uint64_t gas = 0;
-	//  Calculate total expenditure
-	std::map<std::string, int64_t> toAddr;
-	toAddr.insert(std::make_pair(global::ca::kVirtualStakeAddr, stakeAmount));
-	toAddr.insert(std::make_pair(fromAddr, total - expend));
-	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
-	
-	if(GenerateGas(outTx, toAddr.size(), gas) != 0)
-	{
-		return "-12 gas = 0 !";
-	}
-
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	TxHelper::vrfAgentType type;
-	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-	// At this point, it indicates that the current node does not meet the pledge and investment requirements within 30 seconds beyond the height of 50. At this time, the pledge operation can be initiated
-		type = TxHelper::vrfAgentType_defalut;
-	}
-
-	expend += gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-
-	//Judge whether utxo is enough
-	if(total < expend)
-	{
-		std::string strError = "-13 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		ERRORLOG("-13 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
-		return "-72013"; 
-	}
-
-	CTxOutput * vout = txUtxo->add_vout(); 
-	vout->set_addr(global::ca::kVirtualStakeAddr);
-	vout->set_value(stakeAmount);
-
-	CTxOutput * voutFromAddr = txUtxo->add_vout();
-	voutFromAddr->set_addr(fromAddr);
-	voutFromAddr->set_value(total - expend);
-
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_time(currentTime);
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeStake);	
-	//Determine whether dropshipping is default or local dropshipping
-	Vrf info;
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else
-	{
-		// Select dropshippers
-		std::string allUtxos;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-		
-    	int ret= GetBlockPackager(id,allUtxos,info);
-    	if(ret!=0){
-			std::string strError = "-15 GetBlockPackager error , error code is " + std::to_string(ret);
-			return strError;
-    	}
-		outTx.set_identity(id);
-		
-	}
-
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(info,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-std::string TxHelper::ReplaceCreatUnstakeTransaction(const std::string& fromAddr, const std::string& utxoHash, void* ack)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	DBReader dbReader;
-    uint64_t height = 0;
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
-    {
-        return "-1 db get top failed!!"; 
-    }
-
-	height += 1;
-	//  Check parameters
-	std::vector<std::string> vecfromAddr;
-	vecfromAddr.push_back(fromAddr);
-	int ret = Check(vecfromAddr, height);
-	if(ret != 0)
-	{
-		std::string strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
-		return strError;
-	}
-
-	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
-	{
-		return "-3 FromAddr is not normal base58 addr.";
-	}
-
-	uint64_t stakeAmount = 0;
-	ret = IsQualifiedToUnstake(fromAddr, utxoHash, stakeAmount);
-	if(ret != 0)
-	{
-		std::string strError = "-4 FromAddr is not qualified to unstake! The error code is " + std::to_string(ret-200);
-		return strError;
-	}	
-
-	//  Find utxo
-	uint64_t total = 0;
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	//  The number of utxos to be searched here needs to be reduced by 1 \
-	because a VIN to be redeem is from the pledged utxo, so just look for 99
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos); 
-	if (ret != 0)
-	{
-		std::string strError = "-5 FindUtxo failed! The error code is " + std::to_string(ret-300);
-		return strError;
-	}
-
-	if (setOutUtxos.empty())
-	{
-		return "-6 Utxo is empty!";
-	}
-
-	CTransaction outTx;
-	outTx.Clear();
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	if (setTxowners.empty())
-	{
-		return "-7 Tx owner is empty!";
-	}
-
-	{
-		//  Fill vin
-		txUtxo->add_owner(fromAddr);
-		CTxInput* txin = txUtxo->add_vin();
-		txin->set_sequence(0);
-		CTxPrevOutput* prevout = txin->add_prevout();
-		prevout->set_hash(utxoHash);
-		prevout->set_n(1);
-	}
-
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		uint32_t n = 1;
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-
-	}
-
-	nlohmann::json txInfo;
-	txInfo["UnstakeUtxo"] = utxoHash;
-
-	nlohmann::json data;
-	data["TxInfo"] = txInfo;
-	outTx.set_data(data.dump());
-	outTx.set_type(global::ca::kTxSign);	
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-
-	uint64_t gas = 0;
-	// 	The filled quantity only participates in the calculation and does not affect others
-	std::map<std::string, int64_t> toAddr;
-	toAddr.insert(std::make_pair(global::ca::kVirtualStakeAddr, stakeAmount));
-	toAddr.insert(std::make_pair(fromAddr, total));
-	toAddr.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
-	
-	
-	if(GenerateGas(outTx, toAddr.size(), gas) != 0)
-	{
-		return "-10 gas = 0 !";
-	}
-
-	//  Calculate total expenditure
-	uint64_t gasTtoal =  gas;
-
-	uint64_t cost = 0;// Packing fee
-
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	TxHelper::vrfAgentType type;
-	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-	// At this point, it indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the pledge cancellation operation
-		type = TxHelper::vrfAgentType_defalut;
-	}
-
-	uint64_t expend = gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-
-	//	Judge whether there is enough money
-	if(total < expend)
-	{
-		std::string strError = "-11 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		return "-72013";
-	}
-
-	//  Fill vout
-	CTxOutput* txoutToAddr = txUtxo->add_vout();
-	txoutToAddr->set_addr(fromAddr);      	//  Release the pledge to my account number
-	txoutToAddr->set_value(stakeAmount);
-
-	txoutToAddr = txUtxo->add_vout();
-	txoutToAddr->set_addr(fromAddr);  		//  Give myself the rest
-	txoutToAddr->set_value(total - expend);
-
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-
-	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeUnstake);
-
-	// Determine whether dropshipping is default or local dropshipping
-	Vrf info;
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else
-	{
-		// Select dropshippers
-		std::string allUtxos = utxoHash;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-
-    	int ret= GetBlockPackager(id,allUtxos,info);
-    	if(ret!=0){
-			std::string strError = "-13 GetBlockPackager error , error code is " + std::to_string(ret);
-			return strError;
-    	}
-		outTx.set_identity(id);
-	}
-
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(info,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-std::string TxHelper::ReplaceCreateInvestTransaction(const std::string & fromAddr,
-								const std::string& toAddr,uint64_t investAmount, int32_t investType, void* ack)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	TxHelper::vrfAgentType type;
-
-	DBReader dbReader;
-    uint64_t height = 0;
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
-    {
-		ackT->ErrorMessage = "db get top failed!!";
-        ackT->ErrorCode = "-1";
-		ERRORLOG("db get top failed!!");
-        return "-1"; 
-
-    }
-
-	height+=1;
-	//  Check parameters
-	std::vector<std::string> vecfromAddr;
-	vecfromAddr.push_back(fromAddr);
-	int ret = Check(vecfromAddr, height);
-	if(ret != 0)
-	{
-		std::string strError = "Check parameters failed!";
-		ackT->ErrorMessage = "Check parameters failed!";
-        ackT->ErrorCode = "-2";
-		ERRORLOG("Check parameters failed!");
-		return strError;
-
-	}
-
-	//  Neither fromaddr nor toaddr can be a virtual account
-	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
-	{
-		ackT->ErrorMessage = "FromAddr is not normal base58 addr.";
-        ackT->ErrorCode = "-3";
-		ERRORLOG("FromAddr is not normal base58 addr.");
-		return "-3";
-
-	}
-
-	if (CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign) == true)
-	{
-		ackT->ErrorMessage = "To address is not base58 address!";
-        ackT->ErrorCode = "-4";
-		ERRORLOG("To address is not base58 address!");
-		return "-4";
-	}
-
-	if(investAmount <35 * global::ca::kDecimalNum){
-		std::string strError = "Invest less  ";
-		ERRORLOG("{}", strError);
-		ackT->ErrorMessage = "Invest less 35 ";
-        ackT->ErrorCode = "-72021";
-		return strError;
-	}
-
-	ret = CheckInvestQualification(fromAddr, toAddr, investAmount);
-	if(ret != 0)
-	{
-		std::string strError = "FromAddr is not qualified to invest! ";
-		ERRORLOG(strError);
-        auto er=GetRpcError();
-		ackT->ErrorMessage = er.second;
-        ackT->ErrorCode = er.first;
-        return er.first;
-	}	
-	std::string strinvestType;
-	TxHelper::InvestType locaInvestType = (TxHelper::InvestType)investType;
-	if (locaInvestType ==  TxHelper::InvestType::kInvestType_NetLicence)
-	{
-		strinvestType = global::ca::kInvestTypeNormal;
-	}
-	else
-	{
-		ackT->ErrorMessage = "Unknown invest type!";
-	    ackT->ErrorCode = "-7";
-		ERRORLOG("Unknown invest type");
-		return "-7";
-	}
-	
-	//  Find utxo
-	uint64_t total = 0;
-	uint64_t expend = investAmount;
-
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);
-	if (ret != 0)
-	{
-		std::string strError = "FindUtxo failed! The error code is " + std::to_string(ret-300);
-		ackT->ErrorMessage = "FindUtxo failed!";
-	    ackT->ErrorCode = "-8";
-		ERRORLOG(strError);
-		return strError;
-	}
-	if (setOutUtxos.empty())
-	{
-		ackT->ErrorMessage = "Utxo is empty!";
-        ackT->ErrorCode = "-9";
-		ERRORLOG("Utxo is empty!");
-		return "-9";
-
-	}
-
-	CTransaction outTx;
-	outTx.Clear();
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	if (setTxowners.empty())
-	{
-		ackT->ErrorMessage = "Tx owner is empty!";
-        ackT->ErrorCode = "-10";
-		ERRORLOG("Tx owner is empty!");
-		return "-10";
-
-	}
-
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		uint32_t n = 0;
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-	}
-
-	nlohmann::json txInfo;
-	txInfo["InvestType"] = strinvestType;
-	txInfo["BonusAddr"] = toAddr;
-	txInfo["InvestAmount"] = investAmount;
-
-	nlohmann::json data;
-	data["TxInfo"] = txInfo;
-	outTx.set_data(data.dump());
-	outTx.set_type(global::ca::kTxSign);
-
-	uint64_t gas = 0;	
-	//  Calculate total expenditure
-	std::map<std::string, int64_t> toAddrs;
-	toAddrs.insert(std::make_pair(global::ca::kVirtualStakeAddr, investAmount));
-	toAddrs.insert(std::make_pair(fromAddr, total - expend));
-	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
-	
-	
-	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
-	{
-		ERRORLOG("GenerateGas fail gas : {}", gas);
-		std::cout << "GenerateGas gas = " << gas << std::endl;
-		ackT->ErrorMessage = "gas = 0 !";
-        ackT->ErrorCode = "-11";
-		return "-11";
-
-	}
-
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-	// This indicates that the current node has not met the pledge within 30 seconds beyond the height of 50 and the investment node can initiate the investment operation at this time
-		type = TxHelper::vrfAgentType_defalut;
-	}
-
-
-	expend += gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-
-	if(total < expend)
-	{
-		std::string strError = "-12 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		ERRORLOG("The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
-		ackT->ErrorMessage = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-        ackT->ErrorCode = "-72013";
-		return strError; 
-	}
-
-	CTxOutput * vout = txUtxo->add_vout(); 
-	vout->set_addr(global::ca::kVirtualInvestAddr);
-	vout->set_value(investAmount);
-
-	CTxOutput * voutFromAddr = txUtxo->add_vout();
-	voutFromAddr->set_addr(fromAddr);
-	voutFromAddr->set_value(total - expend);
-
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-	
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_time(currentTime);
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeInvest);
-
-	// Determine whether dropshipping is default or local dropshipping
-	Vrf info;
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else
-	{	
-		// Select dropshippers
-		std::string allUtxos;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-		
-    	int ret= GetBlockPackager(id,allUtxos,info);
-    	if(ret!=0){
-			ackT->ErrorMessage = "GetBlockPackager error";
-        	ackT->ErrorCode = "-13";
-			std::string strError = "-13";
-			ERRORLOG("GetBlockPackager error");
-			return strError;
-
-    	}
-		outTx.set_identity(id);
-	}
-
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(info,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-
-std::string TxHelper::ReplaceCreateDisinvestTransaction(const std::string& fromAddr,
-                                    const std::string& toAddr, const std::string& utxoHash,  void* ack)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	TxHelper::vrfAgentType type;
-	CTransaction outTx;
-    Vrf information;
-
-	DBReader dbReader;
-    uint64_t height = 0;
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
-    {
-		ackT->ErrorMessage = "db get top failed!!";
-        ackT->ErrorCode = "-1";
-		ERRORLOG("db get top failed!!");
-        return "-1";
-    }
-
-	height += 1;
-	//  Check parameters
-	std::vector<std::string> vecfromAddr;
-	vecfromAddr.push_back(fromAddr);
-	int ret = Check(vecfromAddr, height);
-	if(ret != 0)
-	{
-		std::string strError = "Check parameters failed! The error code is " + std::to_string(ret-100);
-		ackT->ErrorMessage = "Check parameters failed!";
-        ackT->ErrorCode = "-2";
-		ERRORLOG(strError);
-		return strError;
-
-	}
-
-	if (CheckBase58Addr(fromAddr, Base58Ver::kBase58Ver_MultiSign) == true)
-	{
-		ackT->ErrorMessage = "FromAddr is not normal base58 addr.";
-        ackT->ErrorCode = "-3";	
-		ERRORLOG("FromAddr is not normal base58 addr.");
-		return "-3";
-
-	}
-
-	if (CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign) == true)
-	{
-		ackT->ErrorMessage = "To address is not base58 address!";
-        ackT->ErrorCode = "-4";		
-		ERRORLOG("To address is not base58 address!");
-		return "-4";
-
-	}
-
-	uint64_t investedAmount = 0;
-	if(IsQualifiedToDisinvest(fromAddr, toAddr, utxoHash, investedAmount) != 0)
-	{
-		ackT->ErrorMessage = "The disinvest is not satisfied!";
-        ackT->ErrorCode = "-5";		
-		ERRORLOG("The disinvest is not satisfied!");
-		return "-5";
-
-	}
-	//  Find utxo
-	uint64_t total = 0;
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	//  The utxo quantity sought here needs to be reduced by 1
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos); 
-	if (ret != 0)
-	{
-		std::string strError = "-6 FindUtxo failed! The error code is " + std::to_string(ret-300);
-		ackT->ErrorMessage = "FindUtxo failed!";
-        ackT->ErrorCode = "-6";		
-		ERRORLOG("FindUtxo failed!");
-		return strError;
-
-	}
-	if (setOutUtxos.empty())
-	{
-		ERRORLOG(RED "Utxo is empty!" RESET);
-		ackT->ErrorMessage = "Utxo is empty!";
-        ackT->ErrorCode = "-7";	
-		return "-7";
-
-	}
-
-	outTx.Clear();
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	if (setTxowners.empty())
-	{
-		ackT->ErrorMessage = "Tx owner is empty!";
-        ackT->ErrorCode = "-8";	
-		ERRORLOG("Tx owner is empty!");
-		return "-8";
-
-	}
-
-	{
-		txUtxo->add_owner(fromAddr);
-		CTxInput* txin = txUtxo->add_vin();
-		txin->set_sequence(0);
-		CTxPrevOutput* prevout = txin->add_prevout();
-		prevout->set_hash(utxoHash);
-		prevout->set_n(1);
-	}
-
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		uint32_t n = 1;
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-	}
-
-	nlohmann::json txInfo;
-	txInfo["BonusAddr"] = toAddr;
-	txInfo["DisinvestUtxo"] = utxoHash;
-
-	nlohmann::json data;
-	data["TxInfo"] = txInfo;
-	outTx.set_data(data.dump());
-	outTx.set_type(global::ca::kTxSign);	
-
-	uint64_t gas = 0;
-	//  Calculate total expenditure
-	std::map<std::string, int64_t> targetAddrs;
-	targetAddrs.insert(std::make_pair(global::ca::kVirtualStakeAddr, investedAmount));
-	targetAddrs.insert(std::make_pair(fromAddr, total ));
-	targetAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas ));
-	
-	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
-	{
-		ackT->ErrorMessage = "gas = 0 !";
-        ackT->ErrorCode = "-9";	
-		ERRORLOG("gas = 0 !");
-		return "-9";
-
-	}
-
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		type = TxHelper::vrfAgentType_defalut;
-	}
-
-	uint64_t expend = gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-	
-	if(total < expend)
-	{
-		ackT->ErrorMessage = "The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-        ackT->ErrorCode = "-72013";	
-		std::string strError = "-72013 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		ERRORLOG("The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend));
-		return "-72013";
-	}	
-
-	// Fill vout
-	CTxOutput* txoutToAddr = txUtxo->add_vout();
-	txoutToAddr->set_addr(fromAddr);      //  Give my account the money I withdraw
-	txoutToAddr->set_value(investedAmount);
-
-	txoutToAddr = txUtxo->add_vout();
-	txoutToAddr->set_addr(fromAddr);  	  //  Give myself the rest
-	txoutToAddr->set_value(total - expend);
-
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-
-	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDisinvest);
-
-	// Determine whether dropshipping is default or local dropshipping
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else
-	{	
-		// Select dropshippers
-		std::string allUtxos = utxoHash;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-    	int ret= GetBlockPackager(id,allUtxos,information);
-    	if(ret!=0){
-			ackT->ErrorMessage = "GetBlockPackager error";
-        	ackT->ErrorCode = "-11";	
-			std::string strError = "-11";
-			ERRORLOG("GetBlockPackager error");
-			return strError;
-
-    	}
-		outTx.set_identity(id);
-	}
-
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(information,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-std::string TxHelper::ReplaceCreateDeclareTransaction(const std::string & fromaddr, //Initiator
-                                    const std::string & toAddr, //  Recipient
-                                    uint64_t amount, 
-                                    const std::string & multiSignPub, //  Multi-Sig address public key
-                                    const std::vector<std::string> & signAddrList, //Record the federation node
-                                    uint64_t signThreshold,
-									void* ack)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	TxHelper::vrfAgentType type;
-	CTransaction outTx;
-	Vrf information;
-
-	DBReader dbReader;
-
-	uint64_t height = 0;
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
-    {
-        return DSTR"-1 db get top failed!!"; 
-    }
-
-	height += 1;
-	//  Check parameters	
-	std::vector<std::string> vecFromAddr;
-	vecFromAddr.emplace_back(fromaddr);
-	int ret = Check(vecFromAddr, height);
-	if (ret != 0)
-	{
-		std::string strError = "-2 Check parameters failed! The error code is " + std::to_string(ret-100);
-		return strError;
-	}
-
-	if (fromaddr.empty())
-	{
-		return "-3 fromaddr is empty";
-	}
-	if (!CheckBase58Addr(fromaddr, Base58Ver::kBase58Ver_Normal))
-	{
-		return "-4 fromaddr CheckBase58Addr error";
-	}
-
-	if (toAddr.empty())
-	{
-		return "-5 toAddr is empty";
-	}
-
-	if (! CheckBase58Addr(toAddr, Base58Ver::kBase58Ver_MultiSign))
-	{
-		return "-6 toAddr CheckBase58Addr error";
-	}
-
-	if (amount <= 0)
-	{
-		return "-7 amount <= 0";
-	}
-
-	if (multiSignPub.empty())
-	{
-		return "-8 multiSignPub is empty";
-	}
-
-	if (toAddr != GetBase58Addr(multiSignPub, Base58Ver::kBase58Ver_MultiSign))
-	{
-		return "-9 toAddr CheckBase58Addr error";
-	}
-
-	if (signAddrList.size() < 2 || signAddrList.size() > 100)
-	{
-		return "-10 signAddrList.size() < 2 || signAddrList.size() > 100";
-	}
-
-	if (signThreshold > signAddrList.size())
-	{
-		return "-11 signThreshold > signAddrList.size()";
-	}
-
-	for (auto & addr : signAddrList)
-	{
-		if (! CheckBase58Addr(addr, Base58Ver::kBase58Ver_Normal))
-		{
-			return "-12 signAddrList CheckBase58Addr error";
-		}
-	}
-
-
-	std::vector<std::string> multiSignAddrs;
-	auto dbStatus = dbReader.GetMutliSignAddress(multiSignAddrs);
-	if (DBStatus::DB_SUCCESS != dbStatus)
-	{
-		if (DBStatus::DB_NOT_FOUND != dbStatus)
-		{
-			return "-13 DBStatus::DB_NOT_FOUND != dbStatus";
-		}
-	}
-
-	if (std::find(multiSignAddrs.begin(), multiSignAddrs.end(), toAddr) != multiSignAddrs.end())
-	{
-		return "-14 not find toAddr";
-	}
-	
-	uint64_t expend = amount;
-
-	//  Find utxo
-	uint64_t total = 0;
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecFromAddr, TxHelper::kMaxVinSize, total, setOutUtxos);// 
-	if (ret != 0)
-	{
-		std::string strError = "-15 FindUtxo failed! The error code is " + std::to_string(ret-200);
-		return strError;
-	}
-	if (setOutUtxos.empty())
-	{
-		return "-16 Utxo is empty!";
-	}
-
-	outTx.Clear();
-
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-	
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	if (setTxowners.empty())
-	{
-		return "-17 Tx owner is empty!";
-	}
-
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		uint32_t n = 0;
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-	}
-
-	nlohmann::json txInfo;
-	txInfo["SignThreshold"] = signThreshold; //  SignThreshold
-	txInfo["MultiSignPub"] = Base64Encode(multiSignPub); //  MultiSignPub MultiSignAddr
-	txInfo["SignAddrList"] = signAddrList; //  SignAddr
-
-	nlohmann::json data;
-	data["TxInfo"] = txInfo;
-	outTx.set_data(data.dump());
-	outTx.set_type(global::ca::kTxSign);
-
-	uint64_t gas = 0;
-	std::map<std::string, int64_t> targetAddrs ;
-	targetAddrs.insert(make_pair(toAddr, amount));
-	targetAddrs.insert(make_pair(*vecFromAddr.rbegin(), total - expend));
-	targetAddrs.insert(make_pair(global::ca::kVirtualBurnGasAddr, gas));
-	if(GenerateGas(outTx, targetAddrs.size(), gas) != 0)
-	{
-		return "-19 gas = 0 !";
-	}
-
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-
-    GetTxStartIdentity(height, currentTime, type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		return "-20 +++++++vrfAgentType_unknow +++++";
-	}
-
-	expend += gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-
-	if(total < expend)
-	{
-		std::string strError = "-21 The total cost = " + std::to_string(total) + " is less than the cost = {}" + std::to_string(expend);
-		return strError;
-	}
-
-	{
-		CTxOutput * vout = txUtxo->add_vout();
-		vout->set_addr(toAddr);
-		vout->set_value(amount);
-	}
-	CTxOutput * voutFromAddr = txUtxo->add_vout();
-	voutFromAddr->set_addr(*vecFromAddr.rbegin());
-	voutFromAddr->set_value(total - expend);
-
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-
-	outTx.set_time(currentTime);
-
-	// Determine whether dropshipping is default or local dropshipping
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else{
-
-		// Select dropshippers
-		std::string allUtxos;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-    	int ret= GetBlockPackager(id,allUtxos,information);
-    	if(ret!=0){
-        	std::string strError = "-23 GetBlockPackager error , error code is " + std::to_string(ret);
-			return strError;
-    	}
-		outTx.set_identity(id);
-	}
-
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeDeclaration);
-
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(information,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-std::string TxHelper::	ReplaceCreateBonusTransaction(const std::string& Addr, void* ack)
-{
-	tx_ack *ackT=(tx_ack *)ack;
-	TxHelper::vrfAgentType type;
-	CTransaction outTx;
-	Vrf information;
-	uint64_t height;
-
-	DBReader dbReader; 
-
-    if (DBStatus::DB_SUCCESS != dbReader.GetBlockTop(height))
-    {
-        return DSTR"db get top failed!!";
-       
-    }
-
-	std::vector<std::string> vecfromAddr;
-	vecfromAddr.push_back(Addr);
-	int ret = Check(vecfromAddr, height);
-	if(ret != 0)
-	{
-		return DSTR "Check parameters failed"+std::to_string(ret);
-	}
-
-	if (CheckBase58Addr(Addr, Base58Ver::kBase58Ver_MultiSign) == true)
-	{
-		return DSTR"Default is not normal base58 addr.";
-		
-	}
-	std::vector<std::string> utxos;
-	uint64_t curTime = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	ret = CheckBonusQualification(Addr, curTime);
-	if(ret != 0)
-	{
-		return DSTR "Not allowed to Bonus!"+std::to_string(ret);
-	}
-
-	std::map<std::string, uint64_t> companyDividend;
-    ret=ca_algorithm::CalcBonusValue(curTime, Addr, companyDividend);
-	if(ret < 0)
-	{
-		return DSTR"Failed to obtain the amount claimed by the investor ret"+std::to_string(ret);
-	}
-
-	uint64_t expend = 0;
-	uint64_t total = 0;
-	std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare> setOutUtxos;
-	ret = FindUtxo(vecfromAddr, TxHelper::kMaxVinSize - 1, total, setOutUtxos);
-	if (ret != 0)
-	{
-		return DSTR"TxHelper CreatUnstakeTransaction: FindUtxo failed"+std::to_string(ret);
-	}
-	if (setOutUtxos.empty())
-	{
-		return DSTR"TxHelper CreatUnstakeTransaction: utxo is zero"+std::to_string(ret);
-		
-	}
-
-	outTx.Clear();
-	CTxUtxo * txUtxo = outTx.mutable_utxo();
-
-	//  Fill Vin
-	std::set<string> setTxowners;
-	for (auto & utxo : setOutUtxos)
-	{
-		setTxowners.insert(utxo.addr);
-	}
-	if (setTxowners.empty())
-	{
-		return DSTR"Tx owner is empty!" ;
-	}
-
-	for (auto & owner : setTxowners)
-	{
-		txUtxo->add_owner(owner);
-		uint32_t n = 0;
-		CTxInput * vin = txUtxo->add_vin();
-		for (auto & utxo : setOutUtxos)
-		{
-			if (owner == utxo.addr)
-			{
-				CTxPrevOutput * prevOutput = vin->add_prevout();
-				prevOutput->set_hash(utxo.hash);
-				prevOutput->set_n(utxo.n);
-			}
-		}
-		vin->set_sequence(n++);
-	}
-
-	// Fill data
-	uint64_t tempCosto=0;
-	uint64_t tempNodeDividend=0;
-	uint64_t tempTotalClaim=0;
-	double bonusPumping;
-	int rt = ca_algorithm::GetCommissionPercentage(Addr, bonusPumping);
-	if(rt != 0)
-	{
-		return DSTR"TxHelper GetCommissionPercentage error"+std::to_string(rt);
-	}
-	for(auto company : companyDividend)
-	{
-		tempCosto=company.second*bonusPumping+0.5;
-		tempNodeDividend+=tempCosto;
-		std::string addr = company.first;
-		uint64_t award = company.second - tempCosto;
-		tempTotalClaim+=award;		
-	}
-	tempTotalClaim += tempNodeDividend;
-
-	nlohmann::json txInfo;
-	txInfo["BonusAmount"] = tempTotalClaim;
-	txInfo["BonusAddrList"] = companyDividend.size() + 2;
-	nlohmann::json data;
-	data["TxInfo"] = txInfo;
-	outTx.set_data(data.dump());
-	outTx.set_type(global::ca::kTxSign);
-
-	// calculation gas
-	uint64_t gas = 0;
-	std::map<std::string, int64_t> toAddrs;
-	for(const auto & item : companyDividend)
-	{
-		toAddrs.insert(make_pair(item.first, item.second));
-	}
-	toAddrs.insert(std::make_pair(global::ca::kVirtualStakeAddr, total - expend));
-	toAddrs.insert(std::make_pair(global::ca::kVirtualBurnGasAddr, gas));
-
-	if(GenerateGas(outTx, toAddrs.size(), gas) != 0)
-	{
-		return DSTR" gas = 0 !";
-		
-	}
-
-	auto currentTime=MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	GetTxStartIdentity(height,currentTime,type);
-	if(type == TxHelper::vrfAgentType_unknow)
-	{
-		return DSTR" +++++++vrfAgentType_unknow +++++";
-	}
-
-	expend = gas;
-	ackT->gas = std::to_string(gas);
-	ackT->time = std::to_string(currentTime);
-
-	if(total < expend)
-	{
-		//return DSTR"The total cost = {} is less than the cost = {}"+std::to_string(total);
-        return "-72013";
-	}
-
-	outTx.set_time(currentTime);
-	ReplaceTxVersion(outTx);
-	//outTx.set_version(global::ca::kCurrentTransactionVersion);
-	outTx.set_consensus(global::ca::kConsensus);
-	outTx.set_txtype((uint32_t)global::ca::TxType::kTxTypeBonus);
-
-	// Fill vout
-	uint64_t costo=0;
-	uint64_t nodeDividend=0;
-	uint64_t totalClaim=0;
-	std::cout << YELLOW << "Claim Addr : Claim Amount" << RESET << std::endl;
-	for(auto company : companyDividend)
-	{
-		costo=company.second*bonusPumping+0.5;
-		nodeDividend+=costo;
-		std::string addr = company.first;
-		uint64_t award = company.second - costo;
-		totalClaim+=award;
-		CTxOutput* txoutToAddr = txUtxo->add_vout();	
-		txoutToAddr->set_addr(addr); 
-		txoutToAddr->set_value(award);		
-		std::cout << company.first << ":" << company.second << std::endl;		
-	}
-
-	CTxOutput* txoutToAddr = txUtxo->add_vout();
-	txoutToAddr->set_addr(Addr);
-	txoutToAddr->set_value(total - expend + nodeDividend);
-
-	CTxOutput * voutBurn = txUtxo->add_vout();
-	voutBurn->set_addr(global::ca::kVirtualBurnGasAddr);
-	voutBurn->set_value(gas);
-
-
-	std::cout << Addr << ":" << nodeDividend << std::endl;
-	totalClaim+=nodeDividend;
-	if(totalClaim == 0)
-	{
-		return DSTR"The claim amount is 0";
-	}
-
-	// Determine whether dropshipping is default or local dropshipping
-	if(type == TxHelper::vrfAgentType_defalut || type == TxHelper::vrfAgentType_local)
-	{
-		outTx.set_identity(TxHelper::GetEligibleNodes());
-	}
-	else{
-
-		// Select dropshippers
-		std::string allUtxos;
-		for(auto & utxo:setOutUtxos){
-			allUtxos+=utxo.hash;
-		}
-		allUtxos += std::to_string(currentTime);
-		
-		std::string id;
-    	int ret= GetBlockPackager(id,allUtxos,information);
-    	if(ret!=0){
-        	return DSTR"GetBlockPackager fail"+std::to_string(ret);
-    	}
-		outTx.set_identity(id);
-	}
-
-	std::string txJsonString;
-	std::string vrfJsonString;
-	google::protobuf::util::Status status =google::protobuf::util::MessageToJsonString(outTx,&txJsonString);
-	status=google::protobuf::util::MessageToJsonString(information,&vrfJsonString);
-
-	ackT->txJson=txJsonString;
-	ackT->vrfJson=vrfJsonString;
-	ackT->ErrorCode="0";
-	ackT->height=std::to_string(height-1);
-	ackT->txType=std::to_string((int)type);
-
-	return "0";
-}
-
-int TxHelper::SendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vrfAgentType type){
-	std::string txHash = Getsha256hash(outTx.SerializeAsString());
-	outTx.set_hash(txHash);
-
-
-	TxMsgReq txMsg;
-	txMsg.set_version(global::kVersion);
-	TxMsgInfo* txMsgInfo = txMsg.mutable_txmsginfo();
-	txMsgInfo->set_type(0);
-	txMsgInfo->set_tx(outTx.SerializeAsString());
-	txMsgInfo->set_height(height);
-
-	if (type == TxHelper::vrfAgentType::vrfAgentType_vrf) {
-		Vrf* new_info = txMsg.mutable_vrfinfo();
-		new_info->CopyFrom(info);
-		
-	}
-	int ret=0;
-	auto msg = make_shared<TxMsgReq>(txMsg);
-	std::string defaultBase58Addr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if (type == TxHelper::vrfAgentType::vrfAgentType_vrf && outTx.identity() != defaultBase58Addr)
-    {
-
-        ret = DropshippingTx(msg, outTx);
-    }
-    else
-    {
-        ret = DropshippingTx(msg, outTx);
-    }
-	return ret;
+	return "";
 }
 
 std::string TxHelper::GetEligibleNodes(){
@@ -3763,12 +2453,12 @@ std::string TxHelper::GetEligibleNodes(){
     std::vector<std::string> result_node;
     for (const auto &node : nodelist)
     {
-        int ret = VerifyBonusAddr(node.base58Address);
+        int ret = VerifyBonusAddr(node.address);
 
-        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.base58Address, global::ca::StakeType::kStakeType_Node);
+        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
         if (stakeTime > 0 && ret == 0)
         {
-            result_node.push_back(node.base58Address);
+            result_node.push_back(node.address);
         }
     }
 	auto getNextNumber=[&](int limit) ->int {
@@ -3788,24 +2478,4 @@ std::string TxHelper::GetEligibleNodes(){
 	DEBUGLOG("GetEligibleNodes: rumdom: {}",rumdom);
     
 	return result_node[rumdom];
-}
-
-void TxHelper::ReplaceTxVersion(CTransaction& outTx)
-{
-	uint64_t selfNodeHeight;
-	DBReader dbReader;
-	auto status = dbReader.GetBlockTop(selfNodeHeight);
-	if (DBStatus::DB_SUCCESS != status)
-	{
-		ERRORLOG("Get block top error");
-		return ;
-	}
-	if(selfNodeHeight + 1 <= global::ca::OldVersionSmartContractFailureHeight)
-	{
-		outTx.set_version(global::ca::kOldTransactionVersion);
-	}
-	else
-	{
-		outTx.set_version(global::ca::kCurrentTransactionVersion);
-	}
 }

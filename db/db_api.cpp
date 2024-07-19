@@ -10,7 +10,7 @@
 const std::string kBlockHash2BlockHeightKey = "blkhs2blkht_";
 const std::string kBlockHeight2BlockHashKey = "blkht2blkhs_";
 const std::string kBlockHeight2SumHash = "blkht2sumhs_";
-const std::string kBLockComHashHeightKey = "ComHashsblkht2sumhs_";
+const std::string kTopThousandSumhashKey = "topthousandsumhs_";
 const std::string kBlockHeight2thousandSumHash = "thousandsblkht2sumhs_";
 const std::string kBlockHash2BlcokRawKey = "blkhs2blkraw_";
 const std::string kBlockTopKey = "blktop_";
@@ -28,25 +28,28 @@ const std::string kAddress2TransactionTopKey = "addr2txtop_";
 const std::string kAddress2BalanceKey = "addr2bal_";
 const std::string kStakeAddrKey = "stakeaddr_";
 const std::string kMutliSignKey = "mutlisign_";
-const std::string kBonusUtxoKey = "bounsutxo_";
+const std::string kBonusUtxoKey = "bonusutxo_";
 const std::string kBonusAddrKey = "bonusaddr_";
 const std::string kBonusAddr2InvestAddrKey = "bonusaddr2investaddr_";
 const std::string kInvestAddr2BonusAddrKey = "investaddr2bonusaddr_";
 const std::string kBonusAddrInvestAddr2InvestAddrUtxo = "invest_nodeaddr2investaddrutxo_";
-const std::string kInvestUtxoKey = "Investutxo_";
+const std::string kInvestUtxoKey = "investutxo_";
 
 
 const std::string kM2 = "M2_";
 const std::string kDM = "DM_"; //Deflationary Mechanism
 const std::string kTotalInvestAmount = "totalinvestamount_";
-const std::string kInitVersionKey = "initVer_";
+const std::string kInitVersionKey = "initver_";
 const std::string kSignNumberKey = "signnumber_";
 const std::string kBlockNumberKey = "blocknumber_";
-const std::string kSignAddrKey = "signAddr_";
+const std::string kSignAddrKey = "signaddr_";
 const std::string kburnAmountKey = "burnamount_";
 
-const std::string kAllDeployerAddr = "alldeployeraddr_";
-const std::string kDeployerAddr2DeployUtxo = "deployeraddr2deployutxo_";
+const std::string kEvmAllDeployerAddr = "allevmdeployeraddr_";
+const std::string kWasmAllDeployerAddr = "allwasmdepoyeraddr_";
+// const std::string kDeployerAddr2DeployUtxo = "deployeraddr2deployutxo_";
+const std::string kDeployerAddr2ContractAddr = "deployeraddr2contractaddr_";
+const std::string kContractAddr2ContractCode = "contractaddr2contractcode_";
 const std::string kContractAddr2DeployUtxo = "contractaddr2deployutxo_";
 const std::string kContractAddr2LatestUtxo = "contractaddr2latestutxo_";
 const std::string kLatestContractBlockHash = "latestcontractblockhash_";
@@ -71,12 +74,12 @@ DBReader::DBReader() : db_reader_(MagicSingleton<RocksDB>::GetInstance())
 {
 }
 
-DBStatus DBReader::GetBlockHashesByBlockHeight(uint64_t start_height, uint64_t end_height, std::vector<std::string> &block_hashes)
+DBStatus DBReader::GetBlockHashesByBlockHeight(uint64_t startHeight, uint64_t endHeight, std::vector<std::string> &blockHashes)
 {
     std::vector<std::string> keys;
     std::vector<std::string> values;
     std::vector<std::string> hashes;
-    for (uint64_t index_height = start_height; index_height <= end_height; ++index_height)
+    for (uint64_t index_height = startHeight; index_height <= endHeight; ++index_height)
     {
         keys.push_back(kBlockHeight2BlockHashKey + std::to_string(index_height));
     }
@@ -85,19 +88,19 @@ DBStatus DBReader::GetBlockHashesByBlockHeight(uint64_t start_height, uint64_t e
     {
         return ret;
     }
-    block_hashes.clear();
+    blockHashes.clear();
     for (auto &value : values)
     {
         hashes.clear();
         StringUtil::SplitString(value, "_", hashes);
-        block_hashes.insert(block_hashes.end(), hashes.begin(), hashes.end());
+        blockHashes.insert(blockHashes.end(), hashes.begin(), hashes.end());
     }
     return ret;
 }
-DBStatus DBReader::GetBlocksByBlockHash(const std::vector<std::string> &block_hashes, std::vector<std::string> &blocks)
+DBStatus DBReader::GetBlocksByBlockHash(const std::vector<std::string> &blockHashes, std::vector<std::string> &blocks)
 {
     std::vector<std::string> keys;
-    for (auto &hash : block_hashes)
+    for (auto &hash : blockHashes)
     {
         keys.push_back(kBlockHash2BlcokRawKey + hash);
     }
@@ -184,10 +187,10 @@ DBStatus DBReader::GetCheckBlockHashsByBlockHeight(const uint64_t &blockHeight, 
 }
 
 
-DBStatus DBReader::GetBlockComHashHeight(uint64_t &thousandNum)
+DBStatus DBReader::GetTopThousandSumhash(uint64_t &thousandNum)
 {
     std::string value;
-    auto ret = ReadData(kBLockComHashHeightKey, value);
+    auto ret = ReadData(kTopThousandSumhashKey, value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         thousandNum = std::stoul(value);
@@ -222,14 +225,11 @@ DBStatus DBReader::GetUtxoHashsByAddress(const std::string &address, std::vector
     return ret;
 }
 
-
 DBStatus DBReader::GetUtxoValueByUtxoHashs(const std::string &utxoHash, const std::string &address, std::string &balance)
 {
     std::string db_key = address + "_" + utxoHash;
     return ReadData(db_key, balance);
 }
-
-
 
 // Obtain the transaction raw data by the transaction hash
 DBStatus DBReader::GetTransactionByHash(const std::string &txHash, std::string &txRaw)
@@ -237,7 +237,6 @@ DBStatus DBReader::GetTransactionByHash(const std::string &txHash, std::string &
     std::string db_key = kTransactionHash2TransactionRawKey + txHash;
     return ReadData(db_key, txRaw);
 }
-
 
 // Get the block hash by transaction hash
 DBStatus DBReader::GetBlockHashByTransactionHash(const std::string &txHash, std::string &blockHash)
@@ -343,22 +342,22 @@ DBStatus DBReader::GetMutliSignAddressUtxo(const std::string &address,std::vecto
 
 
 // Get the nodes that are invested
-DBStatus DBReader::GetBonusaddr(std::vector<std::string> &addr)
+DBStatus DBReader::GetBonusaddr(std::vector<std::string> &bonusAddrs)
 {
     std::string db_key = kBonusAddrKey;
     std::string value;
     auto ret = ReadData(db_key, value);
     if (DBStatus::DB_SUCCESS == ret)
     {
-        StringUtil::SplitString(value, "_", addr);
+        StringUtil::SplitString(value, "_", bonusAddrs);
     }
     return ret;
 }
 
 // Get the investment pledge address Invest_A:X_Y_Z (where A is the investee address, X, Y, Z is the investor's address)
-DBStatus DBReader::GetInvestAddrsByBonusAddr(const std::string &addr, std::vector<std::string> &addresses)
+DBStatus DBReader::GetInvestAddrsByBonusAddr(const std::string &bonusAddr, std::vector<std::string> &addresses)
 {
-    std::string db_key = kBonusAddr2InvestAddrKey + addr;
+    std::string db_key = kBonusAddr2InvestAddrKey + bonusAddr;
     std::string value;
     auto ret = ReadData(db_key, value);
     if (DBStatus::DB_SUCCESS == ret)
@@ -394,10 +393,10 @@ DBStatus DBReader::GetBonusAddrInvestUtxosByBonusAddr(const std::string & addr,c
     return ret;
 }
 
-DBStatus DBReader::GetBonusUtxoByPeriod(const uint64_t &Period, std::vector<std::string> &utxos)
+DBStatus DBReader::GetBonusUtxoByPeriod(const uint64_t &period, std::vector<std::string> &utxos)
 {
     std::string value;
-    auto ret = ReadData(kBonusUtxoKey + std::to_string(Period), value);
+    auto ret = ReadData(kBonusUtxoKey + std::to_string(period), value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         StringUtil::SplitString(value, "_", utxos);
@@ -405,10 +404,10 @@ DBStatus DBReader::GetBonusUtxoByPeriod(const uint64_t &Period, std::vector<std:
     return ret;
 }
 
-DBStatus DBReader::GetInvestUtxoByPeriod(const uint64_t &Period, std::vector<std::string> &utxos)
+DBStatus DBReader::GetInvestUtxoByPeriod(const uint64_t &period, std::vector<std::string> &utxos)
 {
     std::string value;
-    auto ret = ReadData(kInvestUtxoKey + std::to_string(Period), value);
+    auto ret = ReadData(kInvestUtxoKey + std::to_string(period), value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         StringUtil::SplitString(value, "_", utxos);
@@ -416,11 +415,11 @@ DBStatus DBReader::GetInvestUtxoByPeriod(const uint64_t &Period, std::vector<std
     return ret;
 }
 
-//  Get Number of signatures By Period
-DBStatus DBReader::GetSignNumberByPeriod(const uint64_t &Period, const std::string &address, uint64_t &SignNumber)
+//  Get Number of signatures By period
+DBStatus DBReader::GetSignNumberByPeriod(const uint64_t &period, const std::string &address, uint64_t &SignNumber)
 {
     std::string value;
-    auto ret = ReadData(kSignNumberKey + std::to_string(Period) + address, value);
+    auto ret = ReadData(kSignNumberKey + std::to_string(period) + address, value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         SignNumber = std::stoull(value);
@@ -428,11 +427,11 @@ DBStatus DBReader::GetSignNumberByPeriod(const uint64_t &Period, const std::stri
     return ret;
 }
 
-//  Get Number of blocks By Period
-DBStatus DBReader::GetBlockNumberByPeriod(const uint64_t &Period, uint64_t &BlockNumber)
+//  Get Number of blocks By period
+DBStatus DBReader::GetBlockNumberByPeriod(const uint64_t &period, uint64_t &BlockNumber)
 {
     std::string value;
-    auto ret = ReadData(kBlockNumberKey + std::to_string(Period), value);
+    auto ret = ReadData(kBlockNumberKey + std::to_string(period), value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         BlockNumber = std::stoull(value);
@@ -440,11 +439,11 @@ DBStatus DBReader::GetBlockNumberByPeriod(const uint64_t &Period, uint64_t &Bloc
     return ret;
 }
 
-//  Set Addr of signatures By Period
-DBStatus DBReader::GetSignAddrByPeriod(const uint64_t &Period, std::vector<std::string> &SignAddrs)
+//  Set Addr of signatures By period
+DBStatus DBReader::GetSignAddrByPeriod(const uint64_t &period, std::vector<std::string> &SignAddrs)
 {
     std::string value;
-    auto ret = ReadData(kSignAddrKey + std::to_string(Period), value);
+    auto ret = ReadData(kSignAddrKey + std::to_string(period), value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         StringUtil::SplitString(value, "_", SignAddrs);
@@ -452,10 +451,10 @@ DBStatus DBReader::GetSignAddrByPeriod(const uint64_t &Period, std::vector<std::
     return ret;
 }
 
-DBStatus DBReader::GetburnAmountByPeriod(const uint64_t &Period, uint64_t &burnAmount)
+DBStatus DBReader::GetburnAmountByPeriod(const uint64_t &period, uint64_t &burnAmount)
 {
     std::string value;
-    auto ret = ReadData(kburnAmountKey + std::to_string(Period), value);
+    auto ret = ReadData(kburnAmountKey + std::to_string(period), value);
     if (DBStatus::DB_SUCCESS == ret)
     {
         burnAmount = std::stoull(value);
@@ -463,13 +462,13 @@ DBStatus DBReader::GetburnAmountByPeriod(const uint64_t &Period, uint64_t &burnA
     return ret;
 }
 
-DBStatus DBReader::GetDM(uint64_t &Totalburn)
+DBStatus DBReader::GetDM(uint64_t &totalBurn)
 {
     std::string value;
     auto ret = ReadData(kDM, value);
     if (DBStatus::DB_SUCCESS == ret)
     {
-        Totalburn = std::stoull(value);
+        totalBurn = std::stoull(value);
     }
     return ret;
 }
@@ -498,44 +497,60 @@ DBStatus DBReader::GetM2(uint64_t &Total)
     return ret;
 }
 
-DBStatus DBReader::GetAllDeployerAddr(std::vector<std::string> &DeployerAddr)
+DBStatus DBReader::GetAllEvmDeployerAddr(std::vector<std::string> &deployerAddr)
 {
     std::string value;
-    auto ret = ReadData(kAllDeployerAddr, value);
+    auto ret = ReadData(kEvmAllDeployerAddr, value);
     if (DBStatus::DB_SUCCESS == ret)
     {
-        StringUtil::SplitString(value,  "_", DeployerAddr);
+        StringUtil::SplitString(value,  "_", deployerAddr);
     }
     return ret;
 }
 
-DBStatus DBReader::GetDeployUtxoByDeployerAddr(const std::string &DeployerAddr, std::vector<std::string> &DeployUtxo)
+//DBStatus DBReader::GetAllWasmDeployerAddr(std::vector<std::string> &deployerAddr)
+//{
+//    std::string value;
+//    auto ret = ReadData(kWasmAllDeployerAddr, value);
+//    if (DBStatus::DB_SUCCESS == ret)
+//    {
+//        StringUtil::SplitString(value,  "_", deployerAddr);
+//    }
+//    return ret;
+//}
+
+DBStatus DBReader::GetContractAddrByDeployerAddr(const std::string &deployerAddr, std::vector<std::string> &contractAddr)
 {
-    std::string db_key = kDeployerAddr2DeployUtxo + DeployerAddr;
+    std::string db_key = kDeployerAddr2ContractAddr + deployerAddr;
     std::string value;
     auto ret = ReadData(db_key, value);
     if (DBStatus::DB_SUCCESS == ret)
     {
-        StringUtil::SplitString(value, "_", DeployUtxo);
+        StringUtil::SplitString(value, "_", contractAddr);
     }
     return ret;
 }
 
-DBStatus DBReader::GetContractDeployUtxoByContractAddr(const std::string &ContractAddr, std::string &ContractDeployUtxo)
+DBStatus DBReader::GetContractCodeByContractAddr(const std::string &contractAddr, std::string &contractCode)
 {
-    std::string db_key = kContractAddr2DeployUtxo + ContractAddr;
-    return ReadData(db_key, ContractDeployUtxo);
+    std::string db_key = kContractAddr2ContractCode + contractAddr;
+    return ReadData(db_key, contractCode);
+}
+DBStatus DBReader::GetContractDeployUtxoByContractAddr(const std::string &contractAddr, std::string &contractDeployUtxo)
+{
+    std::string db_key = kContractAddr2DeployUtxo + contractAddr;
+    return ReadData(db_key, contractDeployUtxo);
 }
 
-DBStatus DBReader::GetLatestUtxoByContractAddr(const std::string &ContractAddr, std::string &Utxo)
+DBStatus DBReader::GetLatestUtxoByContractAddr(const std::string &contractAddr, std::string &Utxo)
 {
-    std::string db_key = kContractAddr2LatestUtxo + ContractAddr;
+    std::string db_key = kContractAddr2LatestUtxo + contractAddr;
     return ReadData(db_key, Utxo);
 }
 
-DBStatus DBReader::GetMptValueByMptKey(const std::string &MptKey, std::string &MptValue)
+DBStatus DBReader::GetMptValueByMptKey(const std::string &mptKey, std::string &MptValue)
 {
-    std::string db_key = kContractMptK + MptKey;
+    std::string db_key = kContractMptK + mptKey;
     return ReadData(db_key, MptValue);
 }
 
@@ -556,7 +571,7 @@ DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vect
     {
         return DBStatus::DB_PARAM_NULL;
     }
-//    auto cache = MagicSingleton<DBCache>::GetInstance();
+
     std::vector<std::string> cache_values;
     std::vector<rocksdb::Slice> db_keys;
     std::vector<std::string> str;
@@ -573,22 +588,6 @@ DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vect
     }
 
     std::string value;
-//     for (auto& key : keys)
-//     {
-// //        if (cache->GetData(key, value))
-// //        {
-// //            cache_values.push_back(value);
-// //        }
-// //        else
-//         {
-//             db_keys.push_back(key);
-//         }
-//     }
-//    if (db_keys.empty())
-//    {
-//        values.swap(cache_values);
-//        return DBStatus::DB_SUCCESS;
-//    }
     std::vector<rocksdb::Status> ret_status;
     if (db_reader_.MultiReadData(db_keys, values, ret_status))
     {
@@ -596,10 +595,6 @@ DBStatus DBReader::MultiReadData(const std::vector<std::string> &keys, std::vect
         {
             return DBStatus::DB_ERROR;
         }
-//        for (size_t i = 0; i < db_keys.size(); ++i)
-//        {
-//            cache->SetData(db_keys.at(i).data(), values.at(i));
-//        }
         values.insert(values.end(), cache_values.begin(), cache_values.end());
         return DBStatus::DB_SUCCESS;
     }
@@ -623,15 +618,9 @@ DBStatus DBReader::ReadData(const std::string &key, std::string &value)
         return DBStatus::DB_PARAM_NULL;
     }
 
-//    auto cache = MagicSingleton<DBCache>::GetInstance();
-//    if (cache->GetData(key, value))
-//    {
-//        return DBStatus::DB_SUCCESS;
-//    }
     rocksdb::Status ret_status;
     if (db_reader_.ReadData(key, value, ret_status))
     {
-//        cache->SetData(key, value);
         return DBStatus::DB_SUCCESS;
     }
     else if (ret_status.IsNotFound())
@@ -674,9 +663,6 @@ DBStatus DBReadWriter::TransactionCommit()
     if (db_read_writer_.TransactionCommit(ret_status))
     {
         auto_oper_trans = false;
-//        std::lock_guard<std::mutex> lock(key_mutex_);
-//        MagicSingleton<DBCache>::GetInstance()->DeleteData(delete_keys_);
-//        delete_keys_.clear();
         return DBStatus::DB_SUCCESS;
     }
     ERRORLOG("TransactionCommit faild:{}:{}", ret_status.code(), ret_status.ToString());
@@ -700,10 +686,10 @@ DBStatus DBReadWriter::DeleteBlockHeightByBlockHash(const std::string &blockHash
 }
 
 // Hash data blocks by block height (multiple block hashes at the same height at the same time of concurrency)
-DBStatus DBReadWriter::SetBlockHashByBlockHeight(const unsigned int blockHeight, const std::string &blockHash, bool is_mainblock)
+DBStatus DBReadWriter::SetBlockHashByBlockHeight(const unsigned int blockHeight, const std::string &blockHash, bool isMainBlock)
 {
     std::string db_key = kBlockHeight2BlockHashKey + std::to_string(blockHeight);
-    return MergeValue(db_key, blockHash, is_mainblock);
+    return MergeValue(db_key, blockHash, isMainBlock);
 }
 
 
@@ -761,14 +747,14 @@ DBStatus DBReadWriter::RemoveCheckBlockHashsByBlockHeight(const uint64_t &blockH
 }
 
 
-DBStatus DBReadWriter::SetBlockComHashHeight(const uint64_t &thousandNum)
+DBStatus DBReadWriter::SetTopThousandSumhash(const uint64_t &thousandNum)
 {
-    return WriteData(kBLockComHashHeightKey, std::to_string(thousandNum));
+    return WriteData(kTopThousandSumhashKey, std::to_string(thousandNum));
 }
 
-DBStatus DBReadWriter::RemoveBlockComHashHeight(const uint64_t &thousandNum)
+DBStatus DBReadWriter::RemoveTopThousandSumhash(const uint64_t &thousandNum)
 {
-    return DeleteData(kBLockComHashHeightKey);
+    return DeleteData(kTopThousandSumhashKey);
 }
 
 // Set the highest block
@@ -921,17 +907,17 @@ DBStatus DBReadWriter::RemoveMutliSignAddresses(const std::string &address)
 
 
 // Set up UTXO for the Holddown Asset Account
-DBStatus DBReadWriter::SetStakeAddressUtxo(const std::string &address, const std::string &utxo)
+DBStatus DBReadWriter::SetStakeAddressUtxo(const std::string &stakeAddr, const std::string &utxo)
 {
-    std::string db_key = kStakeAddrKey + address;
+    std::string db_key = kStakeAddrKey + stakeAddr;
     return MergeValue(db_key, utxo);
 }
 
 // Remove the UTXO from the data
-DBStatus DBReadWriter::RemoveStakeAddressUtxo(const std::string &address, const std::string &utxos)
+DBStatus DBReadWriter::RemoveStakeAddressUtxo(const std::string &stakeAddr, const std::string &utxo)
 {
-    std::string db_key = kStakeAddrKey + address;
-    return RemoveMergeValue(db_key, utxos);
+    std::string db_key = kStakeAddrKey + stakeAddr;
+    return RemoveMergeValue(db_key, utxo);
 }
 
 
@@ -952,213 +938,235 @@ DBStatus DBReadWriter::RemoveMutliSignAddressUtxo(const std::string &address, co
 
 
 // Set up the node to be invested
-DBStatus DBReadWriter::SetBonusAddr(const std::string &addr)
+DBStatus DBReadWriter::SetBonusAddr(const std::string &bonusAddr)
 {
     std::string db_key = kBonusAddrKey;
-    return MergeValue(db_key, addr);
+    return MergeValue(db_key, bonusAddr);
 }
 
 
 // Remove the delegated staking address from the database
-DBStatus DBReadWriter::RemoveBonusAddr(const std::string &addr)
+DBStatus DBReadWriter::RemoveBonusAddr(const std::string &bonusAddr)
 {
     std::string db_key = kBonusAddrKey;
-    return RemoveMergeValue(db_key, addr);
+    return RemoveMergeValue(db_key, bonusAddr);
 }
 
 
 // Set the delegated staking address Invest_A:X_Y_Z
-DBStatus DBReadWriter::SetInvestAddrByBonusAddr(const std::string &addr, const std::string& address)
+DBStatus DBReadWriter::SetInvestAddrByBonusAddr(const std::string &bonusAddr, const std::string& investAddr)
 {
-    std::string db_key = kBonusAddr2InvestAddrKey + addr;
-    return MergeValue(db_key, address);
+    std::string db_key = kBonusAddr2InvestAddrKey + bonusAddr;
+    return MergeValue(db_key, investAddr);
 }
 
 
 // Remove the delegated staking address from the database
-DBStatus DBReadWriter::RemoveInvestAddrByBonusAddr(const std::string &addr, const std::string& address)
+DBStatus DBReadWriter::RemoveInvestAddrByBonusAddr(const std::string &bonusAddr, const std::string& investAddr)
 {
-    std::string db_key = kBonusAddr2InvestAddrKey + addr;
-    return RemoveMergeValue(db_key, address);
+    std::string db_key = kBonusAddr2InvestAddrKey + bonusAddr;
+    return RemoveMergeValue(db_key, investAddr);
 }
 
 
 // Set which node the investor invested in
-DBStatus DBReadWriter::SetBonusAddrByInvestAddr(const std::string &address, const std::string& node)
+DBStatus DBReadWriter::SetBonusAddrByInvestAddr(const std::string &investAddr, const std::string& bonusAddr)
 {
-    std::string db_key = kInvestAddr2BonusAddrKey + address;
-    return MergeValue(db_key, node);
+    std::string db_key = kInvestAddr2BonusAddrKey + investAddr;
+    return MergeValue(db_key, bonusAddr);
 }
 
 
 // Remove the node to which the investor invested
-DBStatus DBReadWriter::RemoveBonusAddrByInvestAddr(const std::string &address, const std::string& node)
+DBStatus DBReadWriter::RemoveBonusAddrByInvestAddr(const std::string &investAddr, const std::string& bonusAddr)
 {
-    std::string db_key = kInvestAddr2BonusAddrKey + address;
-    return RemoveMergeValue(db_key, node);
+    std::string db_key = kInvestAddr2BonusAddrKey + investAddr;
+    return RemoveMergeValue(db_key, bonusAddr);
 }
 
 
 // Set the UTXO Invest_A_X:u1_u2_u3 corresponding to the node where you invest in yourself
-DBStatus DBReadWriter::SetBonusAddrInvestAddrUtxoByBonusAddr(const std::string &addr,const std::string &address, const std::string &utxo)
+DBStatus DBReadWriter::SetBonusAddrInvestAddrUtxoByBonusAddr(const std::string &bonusAddr, const std::string &investAddr, const std::string &utxo)
 {
-    MagicSingleton<BounsAddrCache>::GetInstance()->is_dirty(addr);
-    std::string db_key = kBonusAddrInvestAddr2InvestAddrUtxo + addr + "_" + address;
+    MagicSingleton<BonusAddrCache>::GetInstance()->isDirty(bonusAddr);
+    std::string db_key = kBonusAddrInvestAddr2InvestAddrUtxo + bonusAddr + "_" + investAddr;
     return MergeValue(db_key, utxo);
 }
 
 
 // Remove the UTXO corresponding to the node where you invested in it
-DBStatus DBReadWriter::RemoveBonusAddrInvestAddrUtxoByBonusAddr(const std::string &node,const std::string &address, const std::string &utxo)
+DBStatus DBReadWriter::RemoveBonusAddrInvestAddrUtxoByBonusAddr(const std::string &bonusAddr, const std::string &investAddr, const std::string &utxo)
 {
-    MagicSingleton<BounsAddrCache>::GetInstance()->is_dirty(node);
-    std::string db_key = kBonusAddrInvestAddr2InvestAddrUtxo + node + "_" + address;
+    MagicSingleton<BonusAddrCache>::GetInstance()->isDirty(bonusAddr);
+    std::string db_key = kBonusAddrInvestAddr2InvestAddrUtxo + bonusAddr + "_" + investAddr;
     return RemoveMergeValue(db_key, utxo);
 }
 
 // Set up a bonus transaction
-DBStatus DBReadWriter::SetBonusUtxoByPeriod(const uint64_t &Period, const std::string &utxo)
+DBStatus DBReadWriter::SetBonusUtxoByPeriod(const uint64_t &period, const std::string &utxo)
 {
-    return MergeValue(kBonusUtxoKey + std::to_string(Period), utxo);
+    return MergeValue(kBonusUtxoKey + std::to_string(period), utxo);
 }
 // Remove a bonus transaction
-DBStatus DBReadWriter::RemoveBonusUtxoByPeriod(const uint64_t &Period, const std::string &utxo)
+DBStatus DBReadWriter::RemoveBonusUtxoByPeriod(const uint64_t &period, const std::string &utxo)
 {
-    return RemoveMergeValue(kBonusUtxoKey + std::to_string(Period), utxo);
+    return RemoveMergeValue(kBonusUtxoKey + std::to_string(period), utxo);
 }
 
 // Set up an investment transaction
-DBStatus DBReadWriter::SetInvestUtxoByPeriod(const uint64_t &Period, const std::string &utxo)
+DBStatus DBReadWriter::SetInvestUtxoByPeriod(const uint64_t &period, const std::string &utxo)
 {
-    return MergeValue(kInvestUtxoKey + std::to_string(Period), utxo);
+    return MergeValue(kInvestUtxoKey + std::to_string(period), utxo);
 }
 // Remove an investment transaction
-DBStatus DBReadWriter::RemoveInvestUtxoByPeriod(const uint64_t &Period, const std::string &utxo)
+DBStatus DBReadWriter::RemoveInvestUtxoByPeriod(const uint64_t &period, const std::string &utxo)
 {
-    return RemoveMergeValue(kInvestUtxoKey + std::to_string(Period),utxo);
+    return RemoveMergeValue(kInvestUtxoKey + std::to_string(period),utxo);
 }
 
-DBStatus DBReadWriter::SetDeployerAddr(const std::string &DeployerAddr)
+DBStatus DBReadWriter::SetEvmDeployerAddr(const std::string &deployerAddr)
 {
-    return MergeValue(kAllDeployerAddr, DeployerAddr);
+    return MergeValue(kEvmAllDeployerAddr, deployerAddr);
 }
-DBStatus DBReadWriter::RemoveDeployerAddr(const std::string &DeployerAddr)
+DBStatus DBReadWriter::RemoveEvmDeployerAddr(const std::string &deployerAddr)
 {
-    return RemoveMergeValue(kAllDeployerAddr, DeployerAddr);
-}
-
-DBStatus DBReadWriter::SetDeployUtxoByDeployerAddr(const std::string &DeployerAddr, const std::string &DeployUtxo)
-{
-    std::string db_key = kDeployerAddr2DeployUtxo + DeployerAddr;
-    return MergeValue(db_key, DeployUtxo);
+    return RemoveMergeValue(kEvmAllDeployerAddr, deployerAddr);
 }
 
-DBStatus DBReadWriter::RemoveDeployUtxoByDeployerAddr(const std::string &DeployerAddr, const std::string &DeployUtxo)
+//DBStatus DBReadWriter::SetWasmDeployerAddr(const std::string &deployerAddr)
+//{
+//    return MergeValue(kWasmAllDeployerAddr, deployerAddr);
+//}
+//
+//DBStatus DBReadWriter::RemoveWasmDeployerAddr(const std::string &deployerAddr)
+//{
+//    return RemoveMergeValue(kWasmAllDeployerAddr, deployerAddr);
+//}
+
+DBStatus DBReadWriter::SetContractAddrByDeployerAddr(const std::string &deployerAddr, const std::string &contractAddr)
 {
-    std::string db_key = kDeployerAddr2DeployUtxo + DeployerAddr;
-    return RemoveMergeValue(db_key, DeployUtxo);
+    std::string db_key = kDeployerAddr2ContractAddr + deployerAddr;
+    return MergeValue(db_key, contractAddr);
 }
 
-DBStatus DBReadWriter::SetContractDeployUtxoByContractAddr(const std::string &ContractAddr, const std::string &ContractDeployUtxo)
+DBStatus DBReadWriter::RemoveContractAddrByDeployerAddr(const std::string &deployerAddr, const std::string &contractAddr)
 {
-    std::string db_key = kContractAddr2DeployUtxo + ContractAddr;
-    return WriteData(db_key, ContractDeployUtxo);
+    std::string db_key = kDeployerAddr2ContractAddr + deployerAddr;
+    return RemoveMergeValue(db_key, contractAddr);
 }
 
-DBStatus DBReadWriter::RemoveContractDeployUtxoByContractAddr(const std::string &ContractAddr)
+DBStatus DBReadWriter::SetContractCodeByContractAddr(const std::string &contractAddr, const std::string &contractCode)
 {
-    std::string db_key = kContractAddr2DeployUtxo + ContractAddr;
+    std::string db_key = kContractAddr2ContractCode + contractAddr;
+    return WriteData(db_key, contractCode);
+}
+
+DBStatus DBReadWriter::RemoveContractCodeByContractAddr(const std::string &contractAddr)
+{
+    std::string db_key = kContractAddr2ContractCode + contractAddr;
     return DeleteData(db_key);
 }
 
-DBStatus DBReadWriter::SetLatestUtxoByContractAddr(const std::string &ContractAddr, const std::string &Utxo)
+DBStatus DBReadWriter::SetContractDeployUtxoByContractAddr(const std::string &contractAddr, const std::string &contractDeployUtxo)
 {
-    std::string db_key = kContractAddr2LatestUtxo + ContractAddr;
-    return WriteData(db_key, Utxo);
+    std::string db_key = kContractAddr2DeployUtxo + contractAddr;
+    return WriteData(db_key, contractDeployUtxo);
 }
 
-DBStatus DBReadWriter::RemoveLatestUtxoByContractAddr(const std::string &ContractAddr)
+DBStatus DBReadWriter::RemoveContractDeployUtxoByContractAddr(const std::string &contractAddr)
 {
-    std::string db_key = kContractAddr2LatestUtxo + ContractAddr;
+    std::string db_key = kContractAddr2DeployUtxo + contractAddr;
     return DeleteData(db_key);
 }
 
-DBStatus DBReadWriter::SetMptValueByMptKey(const std::string &MptKey, const std::string &MptValue)
+DBStatus DBReadWriter::SetLatestUtxoByContractAddr(const std::string &contractAddr, const std::string &utxo)
 {
-    std::string db_key = kContractMptK + MptKey;
+    std::string db_key = kContractAddr2LatestUtxo + contractAddr;
+    return WriteData(db_key, utxo);
+}
+
+DBStatus DBReadWriter::RemoveLatestUtxoByContractAddr(const std::string &contractAddr)
+{
+    std::string db_key = kContractAddr2LatestUtxo + contractAddr;
+    return DeleteData(db_key);
+}
+
+DBStatus DBReadWriter::SetMptValueByMptKey(const std::string &mptKey, const std::string &MptValue)
+{
+    std::string db_key = kContractMptK + mptKey;
     return WriteData(db_key, MptValue);
 }
-DBStatus DBReadWriter::RemoveMptValueByMptKey(const std::string &MptKey)
+DBStatus DBReadWriter::RemoveMptValueByMptKey(const std::string &mptKey)
 {
-    std::string db_key = kContractMptK + MptKey;
+    std::string db_key = kContractMptK + mptKey;
     return DeleteData(db_key);
 }
-//  Set Number of signatures By Period
-DBStatus DBReadWriter::SetSignNumberByPeriod(const uint64_t &Period, const std::string &address, const uint64_t &SignNumber)
+//  Set Number of signatures By period
+DBStatus DBReadWriter::SetSignNumberByPeriod(const uint64_t &period, const std::string &address, const uint64_t &SignNumber)
 {
-    std::string db_key = kSignNumberKey + std::to_string(Period) + address;
+    std::string db_key = kSignNumberKey + std::to_string(period) + address;
     return WriteData(db_key, std::to_string(SignNumber));
 }
 
-//  Remove Number of signatures By Period
-DBStatus DBReadWriter::RemoveSignNumberByPeriod(const uint64_t &Period, const std::string &address)
+//  Remove Number of signatures By period
+DBStatus DBReadWriter::RemoveSignNumberByPeriod(const uint64_t &period, const std::string &address)
 {
-    std::string db_key = kSignNumberKey + std::to_string(Period) + address;
+    std::string db_key = kSignNumberKey + std::to_string(period) + address;
     return DeleteData(db_key);
 }
 
-//  Set Number of blocks By Period
-DBStatus DBReadWriter::SetBlockNumberByPeriod(const uint64_t &Period, const uint64_t &BlockNumber)
+//  Set Number of blocks By period
+DBStatus DBReadWriter::SetBlockNumberByPeriod(const uint64_t &period, const uint64_t &BlockNumber)
 {
-    std::string db_key = kBlockNumberKey + std::to_string(Period);
+    std::string db_key = kBlockNumberKey + std::to_string(period);
     return WriteData(db_key, std::to_string(BlockNumber));
 }
 
 
-//  Remove Number of blocks By Period
-DBStatus DBReadWriter::RemoveBlockNumberByPeriod(const uint64_t &Period)
+//  Remove Number of blocks By period
+DBStatus DBReadWriter::RemoveBlockNumberByPeriod(const uint64_t &period)
 {
-    std::string db_key = kBlockNumberKey + std::to_string(Period);
+    std::string db_key = kBlockNumberKey + std::to_string(period);
     return DeleteData(db_key);
 }
 
-//  Set Addr of signatures By Period
-DBStatus DBReadWriter::SetSignAddrByPeriod(const uint64_t &Period, const std::string &addr)
+//  Set Addr of signatures By period
+DBStatus DBReadWriter::SetSignAddrByPeriod(const uint64_t &period, const std::string &addr)
 {
-    return MergeValue(kSignAddrKey + std::to_string(Period), addr);
+    return MergeValue(kSignAddrKey + std::to_string(period), addr);
 }
 
-//  Remove Addr of signatures By Period
-DBStatus DBReadWriter::RemoveSignAddrberByPeriod(const uint64_t &Period, const std::string &addr)
+//  Remove Addr of signatures By period
+DBStatus DBReadWriter::RemoveSignAddrberByPeriod(const uint64_t &period, const std::string &addr)
 {
-    return RemoveMergeValue(kSignAddrKey + std::to_string(Period), addr);
+    return RemoveMergeValue(kSignAddrKey + std::to_string(period), addr);
 }
 
-DBStatus DBReadWriter::SetburnAmountByPeriod(const uint64_t &Period, const uint64_t &burnAmount)
+DBStatus DBReadWriter::SetburnAmountByPeriod(const uint64_t &period, const uint64_t &burnAmount)
 {
-    return WriteData(kburnAmountKey + std::to_string(Period), std::to_string(burnAmount));
+    return WriteData(kburnAmountKey + std::to_string(period), std::to_string(burnAmount));
 }
-DBStatus DBReadWriter::RemoveburnAmountByPeriod(const uint64_t &Period, const uint64_t &burnAmount)
+DBStatus DBReadWriter::RemoveburnAmountByPeriod(const uint64_t &period, const uint64_t &burnAmount)
 {
-    return DeleteData(kburnAmountKey + std::to_string(Period));
+    return DeleteData(kburnAmountKey + std::to_string(period));
 }
 
-DBStatus DBReadWriter::SetDM(uint64_t &Totalburn)
+DBStatus DBReadWriter::SetDM(uint64_t &totalBurn)
 {
-    return WriteData(kDM, std::to_string(Totalburn));
+    return WriteData(kDM, std::to_string(totalBurn));
 }
 
 
 // Set the total amount of stake
-DBStatus DBReadWriter::SetTotalInvestAmount(uint64_t &Totalinvest)
+DBStatus DBReadWriter::SetTotalInvestAmount(uint64_t &totalInvest)
 {
-    return WriteData(kTotalInvestAmount, std::to_string(Totalinvest));
+    return WriteData(kTotalInvestAmount, std::to_string(totalInvest));
 }
 
 // Set the total circulation
-DBStatus DBReadWriter::SetTotalCirculation(uint64_t &TotalCirculation)
+DBStatus DBReadWriter::SetTotalCirculation(uint64_t &totalCirculation)
 {
-    return WriteData(kM2, std::to_string(TotalCirculation));
+    return WriteData(kM2, std::to_string(totalCirculation));
 }
 
 
@@ -1189,9 +1197,17 @@ DBStatus DBReadWriter::MultiReadData(const std::vector<std::string> &keys, std::
         return DBStatus::DB_PARAM_NULL;
     }
     std::vector<rocksdb::Slice> db_keys;
+    std::vector<std::string> str;
+    for(auto t : keys)
+    {
+        str.push_back(t);
+    }
+
+    std::vector<std::string> db_keys_str;
     for (auto key : keys)
     {
-        db_keys.push_back(key);
+        db_keys_str.push_back(key);
+        db_keys.push_back(db_keys_str.back());
     }
     std::vector<rocksdb::Status> ret_status;
     if (db_read_writer_.MultiReadData(db_keys, values, ret_status))
@@ -1233,13 +1249,11 @@ DBStatus DBReadWriter::ReadData(const std::string &key, std::string &value)
     }
     return DBStatus::DB_ERROR;
 }
-DBStatus DBReadWriter::MergeValue(const std::string &key, const std::string &value, bool first_or_last)
+DBStatus DBReadWriter::MergeValue(const std::string &key, const std::string &value, bool firstOrLast)
 {
     rocksdb::Status ret_status;
-    if (db_read_writer_.MergeValue(key, value, ret_status, first_or_last))
+    if (db_read_writer_.MergeValue(key, value, ret_status, firstOrLast))
     {
-//        std::lock_guard<std::mutex> lock(key_mutex_);
-//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;
@@ -1249,8 +1263,6 @@ DBStatus DBReadWriter::RemoveMergeValue(const std::string &key, const std::strin
     rocksdb::Status ret_status;
     if (db_read_writer_.RemoveMergeValue(key, value, ret_status))
     {
-//        std::lock_guard<std::mutex> lock(key_mutex_);
-//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;
@@ -1260,8 +1272,6 @@ DBStatus DBReadWriter::WriteData(const std::string &key, const std::string &valu
     rocksdb::Status ret_status;
     if (db_read_writer_.WriteData(key, value, ret_status))
     {
-//        std::lock_guard<std::mutex> lock(key_mutex_);
-//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;
@@ -1271,8 +1281,6 @@ DBStatus DBReadWriter::DeleteData(const std::string &key)
     rocksdb::Status ret_status;
     if (db_read_writer_.DeleteData(key, ret_status))
     {
-//        std::lock_guard<std::mutex> lock(key_mutex_);
-//        delete_keys_.insert(key);
         return DBStatus::DB_SUCCESS;
     }
     return DBStatus::DB_ERROR;

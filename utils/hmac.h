@@ -29,8 +29,25 @@
 # ifdef __cplusplus
 extern "C" {
 # endif
-
+/**
+ * @brief
+ * 
+ * @param       key:
+ * @param       keylen:
+ * @param       msg:
+ * @param       msglen:
+ * @param       hmac:
+*/
 void hmac_sha256(const uint8_t *key, const uint32_t keylen, const uint8_t *msg, const uint32_t msglen, uint8_t *hmac);
+/**
+ * @brief
+ * 
+ * @param       key:
+ * @param       keylen:
+ * @param       msg:
+ * @param       msglen:
+ * @param       hmac:
+*/
 void hmac_sha512(const uint8_t *key, const uint32_t keylen, const uint8_t *msg, const uint32_t msglen, uint8_t *hmac);
 
 # ifdef __cplusplus

@@ -74,20 +74,6 @@ public:
     , portAndIp(0)
     , _isSending(false) 
     {};
-    // ~SocketBuf()
-    // {
-    //     std::lock_guard<std::mutex> lck(_mutexForRead);
-    //     if (!this->cache.empty())
-    //     {
-    //         INFOLOG("SocketBuf is not empty!!");
-    //         INFOLOG("SocketBuf.fd: {}", fd);
-    //         INFOLOG("SocketBuf.portAndIp: {}", portAndIp);
-    //         INFOLOG("SocketBuf.cache: {}", cache.c_str());
-    //     }
-    //     if(!this->_sendCache.empty())
-    //         DEBUGLOG("_sendCache: {}", this->_sendCache.c_str());
-    // };
-/*API*/
 
     /**
      * @brief       
@@ -152,7 +138,7 @@ public:
      * @brief       Fix buffers
      * 
      */
-    void CorrectCache();                       //
+    void CorrectCache();                      
 };
 
 

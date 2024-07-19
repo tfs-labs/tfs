@@ -960,6 +960,7 @@ class CTransaction final :
     kNFieldNumber = 3,
     kConsensusFieldNumber = 8,
     kTxTypeFieldNumber = 9,
+    kNonceFieldNumber = 15,
   };
   // repeated .CSign verifySign = 12;
   int verifysign_size() const;
@@ -1140,6 +1141,15 @@ class CTransaction final :
   void _internal_set_txtype(uint32_t value);
   public:
 
+  // uint64 nonce = 15;
+  void clear_nonce();
+  uint64_t nonce() const;
+  void set_nonce(uint64_t value);
+  private:
+  uint64_t _internal_nonce() const;
+  void _internal_set_nonce(uint64_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:CTransaction)
  private:
   class _Internal;
@@ -1162,6 +1172,7 @@ class CTransaction final :
     uint32_t n_;
     uint32_t consensus_;
     uint32_t txtype_;
+    uint64_t nonce_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2296,6 +2307,26 @@ inline void CTransaction::set_allocated_reserve1(std::string* reserve1) {
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:CTransaction.reserve1)
+}
+
+// uint64 nonce = 15;
+inline void CTransaction::clear_nonce() {
+  _impl_.nonce_ = uint64_t{0u};
+}
+inline uint64_t CTransaction::_internal_nonce() const {
+  return _impl_.nonce_;
+}
+inline uint64_t CTransaction::nonce() const {
+  // @@protoc_insertion_point(field_get:CTransaction.nonce)
+  return _internal_nonce();
+}
+inline void CTransaction::_internal_set_nonce(uint64_t value) {
+  
+  _impl_.nonce_ = value;
+}
+inline void CTransaction::set_nonce(uint64_t value) {
+  _internal_set_nonce(value);
+  // @@protoc_insertion_point(field_set:CTransaction.nonce)
 }
 
 #ifdef __GNUC__

@@ -105,7 +105,6 @@ bool SocketBuf::AddDataToReadBuf(char *data, size_t len)
             }
             this->_cache.erase(0, currMsgLen);
 
-            // data + checkSum + _flag + end
             this->_SendPkToMessQueue(readData);
 
             if (this->_cache.size() < 4)
@@ -114,7 +113,6 @@ bool SocketBuf::AddDataToReadBuf(char *data, size_t len)
             SocketBuf::VerifyCache(currMsgLen);
         }
         
-        //this->_transactionCache.reserve(this->_transactionCache.size());
         if(this->_cache.capacity() > this->_cache.size() * 20)
         {
             this->_cache.shrink_to_fit();

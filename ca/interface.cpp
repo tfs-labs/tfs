@@ -1,18 +1,23 @@
-#include "interface.h"
-#include "net/interface.h"
-#include "include/scope_guard.h"
-#include "utils/return_ack.h"
-#include "utils/util.h"
-#include "utils/magic_singleton.h"
 #include "ca/global.h"
-#include "db/db_api.h"
-#include "db/cache.h"
 #include "ca/txhelper.h"
+#include "ca/interface.h"
 #include "ca/algorithm.h"
+#include "ca/transaction.h"
+#include "ca/sync_block.h"
+
+#include "ca/transaction_cache.h"
+
+#include "utils/util.h"
 #include "utils/time_util.h"
-#include "transaction.h"
+#include "utils/magic_singleton.h"
 #include "utils/account_manager.h"
+#include "utils/contract_utils.h"
+
+#include "db/cache.h"
+#include "db/db_api.h"
+#include "net/interface.h"
 #include "common/global_data.h"
+#include "include/scope_guard.h"
 
 /*************************************SDK access block height, utxo, pledge list, investment list, block request*************************************/
 int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
@@ -37,12 +42,12 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
 
     for(auto& from : fromAddr)
 	{
-		if (!CheckBase58Addr(from))
+		if (!isValidAddress(from))
 		{
             ack.set_code(-2);
-            ack.set_message("request is CheckBase58Addr failed ");
-            std::cout<<"request is CheckBase58Addr failed"<<std::endl;
-            ERRORLOG("Fromaddr is a non base58 address!");
+            ack.set_message("request is isValidAddress failed ");
+            std::cout<<"request is isValidAddress failed"<<std::endl;
+            ERRORLOG("Fromaddr is a non  address!");
             return -2;
 		}
 	}
@@ -57,8 +62,8 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
     for(const auto & node : nodelist)
     {
         //Verification of investment and pledge
-        int ret = VerifyBonusAddr(node.base58Address);
-        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.base58Address, global::ca::StakeType::kStakeType_Node);
+        int ret = VerifyBonusAddr(node.address);
+        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
         if (stakeTime > 0 && ret == 0)
         {
             satisfiedNode.push_back(node);
@@ -78,7 +83,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
        nodeinfo->set_listen_port(node.listenPort);
        nodeinfo->set_public_ip(node.publicIp);
        nodeinfo->set_public_port(node.publicPort);
-       nodeinfo->set_base58addr(node.base58Address);
+       nodeinfo->set_addr(node.address);
        nodeinfo->set_pub(node.pub);
        nodeinfo->set_sign(node.sign);
        nodeinfo->set_identity(node.identity);
@@ -174,7 +179,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
 
     for(auto& from : stakeAddresses)
     {
-        std::vector<string> utxoes;
+        std::vector<std::string> utxoes;
         auto dbStatus = dbReader.GetStakeAddressUtxo(from, utxoes);
         if (DBStatus::DB_SUCCESS != dbStatus)
         {
@@ -206,7 +211,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
     for(auto& bonusAddr : fromAddr)
     {
         uint64_t investAmount;
-        auto ret = MagicSingleton<BounsAddrCache>::GetInstance()->get_amount(bonusAddr, investAmount);
+        auto ret = MagicSingleton<BonusAddrCache>::GetInstance()->getAmount(bonusAddr, investAmount);
         if (ret < 0)
         {
             ERRORLOG("invest BonusAddr: {}, ret:{}", bonusAddr, ret);
@@ -218,7 +223,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
         sdkbonusamout->set_invest_amount(investAmount);
     }
     
-    std::vector<string> bonusAddr;
+    std::vector<std::string> bonusAddr;
 	auto status = dbReader.GetBonusAddrByInvestAddr(fromAddr.at(0), bonusAddr);
 	if (status == DBStatus::DB_SUCCESS && !bonusAddr.empty())
 	{
@@ -230,7 +235,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
         ack.add_bonusaddr(addr);
     }
 
-    std::vector<string> addresses;
+    std::vector<std::string> addresses;
     status = dbReader.GetInvestAddrsByBonusAddr(req->toaddr(), addresses);
 	if (status != DBStatus::DB_SUCCESS && status != DBStatus::DB_NOT_FOUND)
 	{
@@ -245,7 +250,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
    
    for (auto &address : addresses)
    {
-        std::vector<string> utxos;
+        std::vector<std::string> utxos;
         if (dbReader.GetBonusAddrInvestUtxosByBonusAddr(req->toaddr(), address, utxos) != DBStatus::DB_SUCCESS)
         {
             std::cout<<"GetBonusAddrInvestUtxosByBonusAddr failed!"<<std::endl;
@@ -303,7 +308,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
         banorcnt->set_count(kv.second);
     }
     
-    std::vector<string> investaddresses;
+    std::vector<std::string> investaddresses;
     status = dbReader.GetInvestAddrsByBonusAddr(fromAddr.at(0), investaddresses);
 	if (status != DBStatus::DB_SUCCESS && status != DBStatus::DB_NOT_FOUND)
 	{
@@ -317,7 +322,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
     
     for (auto &address : investaddresses)
    {
-        std::vector<string> utxos;
+        std::vector<std::string> utxos;
         if (dbReader.GetBonusAddrInvestUtxosByBonusAddr(fromAddr.at(0), address, utxos) != DBStatus::DB_SUCCESS)
         {
             std::cout<<"GetBonusAddrInvestUtxosByBonusAddr failed!"<<std::endl;
@@ -354,7 +359,7 @@ int GetSDKAllNeed(const std::shared_ptr<GetSDKReq> & req, GetSDKAck & ack)
         std::string strTx;
         if (DBStatus::DB_SUCCESS != dbReader.GetTransactionByHash(*utxo, strTx) )
         {
-            cout<<"Invest tx not found!"<<endl;
+            std::cout<<"Invest tx not found!"<<std::endl;
             continue;
         }
         Claimtx * claimtx = ack.add_claimtx();
@@ -375,14 +380,14 @@ std::map<int32_t, std::string> GetSDKAllNeedReq()
 	return errInfo;												
 }
 //SDK access block height, utxo, pledge list, investment list, block request
-int HandleGetSDKAllNeedReq(const std::shared_ptr<GetSDKReq>& req, const MsgData & msgdata)
+int HandleGetSDKAllNeedReq(const std::shared_ptr<GetSDKReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetSDKAllNeedReq();
     GetSDKAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetSDKAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetSDKAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -447,7 +452,7 @@ int GetBlockReqImpl(const std::shared_ptr<GetBlockReq>& req, GetBlockAck & ack)
         blockitem->set_blockhash(block.hash());
         for(int i = 0; i<block.sign().size();  ++i)
         {
-            blockitem->add_addr(GetBase58Addr(block.sign(i).pub())) ;
+            blockitem->add_addr(GenerateAddr(block.sign(i).pub())) ;
         }
     }
     {
@@ -487,7 +492,7 @@ int GetBlockReqImpl(const std::shared_ptr<GetBlockReq>& req, GetBlockAck & ack)
     ack.set_height(blockHeight);
 	return 0;
 }
-int HandleGetBlockReq(const std::shared_ptr<GetBlockReq>& req, const MsgData & msgdata)
+int HandleGetBlockReq(const std::shared_ptr<GetBlockReq>& req, const MsgData & msgData)
 {
 
     auto errInfo = GetBlockReqCode();
@@ -495,7 +500,7 @@ int HandleGetBlockReq(const std::shared_ptr<GetBlockReq>& req, const MsgData & m
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetBlockAck>(msgdata, errInfo, ack, ret); 
+        ReturnAckCode<GetBlockAck>(msgData, errInfo, ack, ret); 
     };
     if( 0 != Util::IsVersionCompatible( req->version() ) )
 	{
@@ -521,7 +526,7 @@ int GetBalanceReqImpl(const std::shared_ptr<GetBalanceReq>& req, GetBalanceAck &
         return -1;
     } 
 
-    if (!CheckBase58Addr(addr))
+    if (!isValidAddress(addr))
     {
         return -2;
     }
@@ -580,7 +585,7 @@ std::map<int32_t, std::string> GetBalanceReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get Amount Success"), 
 												std::make_pair(-1, "addr is empty"), 
-												std::make_pair(-2, "base58 addr invalid"), 
+												std::make_pair(-2, " addr invalid"), 
 												std::make_pair(-3, "search balance not found"),
                                                 std::make_pair(-4, "get tx failed"),
                                                 std::make_pair(-5, "GetTransactionByHash failed!"),
@@ -589,7 +594,7 @@ std::map<int32_t, std::string> GetBalanceReqCode()
 
 	return errInfo;												
 }
-int HandleGetBalanceReq(const std::shared_ptr<GetBalanceReq>& req, const MsgData& msgdata)
+int HandleGetBalanceReq(const std::shared_ptr<GetBalanceReq>& req, const MsgData& msgData)
 {
     auto errInfo = GetBalanceReqCode();
     GetBalanceAck ack;
@@ -597,7 +602,7 @@ int HandleGetBalanceReq(const std::shared_ptr<GetBalanceReq>& req, const MsgData
 
     ON_SCOPE_EXIT{
 
-        ReturnAckCode<GetBalanceAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetBalanceAck>(msgData, errInfo, ack, ret);
         
     };
 
@@ -619,7 +624,7 @@ int GetNodeInfoReqImpl(const std::shared_ptr<GetNodeInfoReq>& req, GetNodeInfoAc
 {
 	ack.set_version(global::kVersion);
 
-    ack.set_address(MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr());
+    ack.set_address(MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr());
     
     Node selfNode = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
     ack.set_ip(IpPort::IpSz(selfNode.publicIp));
@@ -651,7 +656,7 @@ std::map<int32_t, std::string> GetNodeInfoReqCode()
 
 	return errInfo;												
 }
-int HandleGetNodeInfoReqReq(const std::shared_ptr<GetNodeInfoReq>& req, const MsgData& msgdata)
+int HandleGetNodeInfoReqReq(const std::shared_ptr<GetNodeInfoReq>& req, const MsgData& msgData)
 {
     auto errInfo = GetNodeInfoReqCode();
     GetNodeInfoAck ack;
@@ -659,7 +664,7 @@ int HandleGetNodeInfoReqReq(const std::shared_ptr<GetNodeInfoReq>& req, const Ms
 
     ON_SCOPE_EXIT{
 
-        ReturnAckCode<GetNodeInfoAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetNodeInfoAck>(msgData, errInfo, ack, ret);
         
     };
 
@@ -687,12 +692,12 @@ int GetStakeListReqImpl(const std::shared_ptr<GetStakeListReq>& req, GetStakeLis
         return -1;
     }
 
-	if (!CheckBase58Addr(addr))
+	if (!isValidAddress(addr))
     {
         return -2;
     }
 
-    std::vector<string> utxoes;
+    std::vector<std::string> utxoes;
     DBReader dbReader;
     auto dbStatus = dbReader.GetStakeAddressUtxo(addr, utxoes);
     if (DBStatus::DB_SUCCESS != dbStatus)
@@ -799,21 +804,21 @@ std::map<int32_t, std::string> GetStakeListReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get Stake List Success"), 
 												std::make_pair(-1, "addr is empty !"), 
-												std::make_pair(-2, "base58 addr invalid"), 
+												std::make_pair(-2, " addr invalid"), 
 												std::make_pair(-3, "Get Stake utxo error"),
                                                 std::make_pair(-4, "No stake"),
 												};
 
 	return errInfo;												
 }
-int HandleGetStakeListReq(const std::shared_ptr<GetStakeListReq>& req, const MsgData & msgdata)
+int HandleGetStakeListReq(const std::shared_ptr<GetStakeListReq>& req, const MsgData & msgData)
 {
 	auto errInfo = GetStakeListReqCode();
     GetStakeListAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetStakeListAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetStakeListAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -840,7 +845,7 @@ int GetInvestListReqImpl(const std::shared_ptr<GetInvestListReq>& req, GetInvest
         return -1;
     }
 
-	if (!CheckBase58Addr(addr))
+	if (!isValidAddress(addr))
     {
         return -2;
     }
@@ -964,7 +969,7 @@ std::map<int32_t, std::string> GetInvestListReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair( 0, "Get Invest List Success"), 
 												std::make_pair(-1, "addr is empty !"), 
-												std::make_pair(-2, "base58 addr invalid !"), 
+												std::make_pair(-2, " addr invalid !"), 
 												std::make_pair(-3, "GetBonusAddr failed !"),
 												std::make_pair(-4, "GetBonusAddrInvestUtxos failed !"),
                                                 std::make_pair(-5, "No Invest"),
@@ -973,14 +978,14 @@ std::map<int32_t, std::string> GetInvestListReqCode()
 	return errInfo;												
 }
 
-int HandleGetInvestListReq(const std::shared_ptr<GetInvestListReq>& req, const MsgData & msgdata)
+int HandleGetInvestListReq(const std::shared_ptr<GetInvestListReq>& req, const MsgData & msgData)
 {
 	auto errInfo = GetInvestListReqCode();
     GetInvestListAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetInvestListAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetInvestListAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1000,8 +1005,8 @@ int GetUtxoReqImpl(const std::shared_ptr<GetUtxoReq>& req, GetUtxoAck & ack)
 {
     ack.set_version(global::kVersion);
 
-    string address = req->address();
-    if (address.empty() || !CheckBase58Addr(address))
+    std::string address = req->address();
+    if (address.empty() || !isValidAddress(address))
     {
         return -1;
     }
@@ -1032,20 +1037,20 @@ int GetUtxoReqImpl(const std::shared_ptr<GetUtxoReq>& req, GetUtxoAck & ack)
 std::map<int32_t, std::string> GetUtxoReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair( 0,  "Get Utxo Success"), 
-												std::make_pair(-1,  "The addr is empty / Base58 addr invalid"), 
+												std::make_pair(-1,  "The addr is empty /  addr invalid"), 
 												std::make_pair(-12, "GetUtxos : GetUtxoHashsByAddress failed !"),
 												};
 
 	return errInfo;												
 }
-int HandleGetUtxoReq(const std::shared_ptr<GetUtxoReq>& req, const MsgData & msgdata)
+int HandleGetUtxoReq(const std::shared_ptr<GetUtxoReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetUtxoReqCode();
     GetUtxoAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetUtxoAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetUtxoAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1067,8 +1072,8 @@ int GetAllInvestAddressReqImpl(const std::shared_ptr<GetAllInvestAddressReq>& re
 {
     ack.set_version(global::kVersion);
     
-    string address = req->addr();
-    if (address.empty() || !CheckBase58Addr(address))
+    std::string address = req->addr();
+    if (address.empty() || !isValidAddress(address))
     {
         return -1;
     }
@@ -1127,7 +1132,7 @@ int GetAllInvestAddressReqImpl(const std::shared_ptr<GetAllInvestAddressReq>& re
 std::map<int32_t, std::string> GetAllInvestAddressReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get AllInvestAddress Success"), 
-												std::make_pair(-1, "The addr is empty / Base58 addr invalid"), 
+												std::make_pair(-1, "The addr is empty /  addr invalid"), 
 												std::make_pair(-2, "GetInvestAddrsByBonusAddr failed !"), 
 												std::make_pair(-3, "No Invested addrs !"),
                                                 std::make_pair(-4, "GetBonusAddrInvestUtxos failed !"),
@@ -1136,14 +1141,14 @@ std::map<int32_t, std::string> GetAllInvestAddressReqCode()
 
 	return errInfo;												
 }
-int HandleGetAllInvestAddressReq(const std::shared_ptr<GetAllInvestAddressReq>& req, const MsgData & msgdata)
+int HandleGetAllInvestAddressReq(const std::shared_ptr<GetAllInvestAddressReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetAllInvestAddressReqCode();
     GetAllInvestAddressAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetAllInvestAddressAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetAllInvestAddressAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1169,18 +1174,29 @@ int GetAllStakeNodeListReqImpl(const std::shared_ptr<GetAllStakeNodeListReq>& re
     
 	Node selfNode = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
 	std::vector<Node> tmp = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+    if(tmp.empty())
+    {
+        ack.set_code(-1);
+        ack.set_message("peerlist is empty");
+    }
 	nodelist.insert(nodelist.end(), tmp.begin(), tmp.end());
 	nodelist.push_back(selfNode);
 
     for (auto &node : nodelist)
 	{
+        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+        if(stakeTime < 0)
+        {
+            continue;
+        }
+
         StakeNode* pStakeNode =  ack.add_list();
-        pStakeNode->set_addr(node.base58Address);
+        pStakeNode->set_addr("0x"+node.address);
         pStakeNode->set_name(node.name);
         pStakeNode->set_height(node.height);
         pStakeNode->set_identity(node.identity);
         pStakeNode->set_logo(node.logo);
-        pStakeNode->set_ip(string(IpPort::IpSz(node.publicIp)) );
+        pStakeNode->set_ip(std::string(IpPort::IpSz(node.publicIp)) );
         pStakeNode->set_version(node.ver);
 	}
     ack.set_code(0);
@@ -1201,14 +1217,14 @@ std::map<int32_t, std::string> GetAllStakeNodeListReqCode()
 
 	return errInfo;												
 }
-int HandleGetAllStakeNodeListReq(const std::shared_ptr<GetAllStakeNodeListReq>& req, const MsgData & msgdata)
+int HandleGetAllStakeNodeListReq(const std::shared_ptr<GetAllStakeNodeListReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetAllStakeNodeListReqCode();
     GetAllStakeNodeListAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetAllStakeNodeListAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetAllStakeNodeListAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1230,8 +1246,8 @@ int GetSignCountListReqImpl(const std::shared_ptr<GetSignCountListReq>& req, Get
 {
     ack.set_version(global::kVersion);
 
-    std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultBase58Addr();
-    if (!CheckBase58Addr(defaultAddr))
+    std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
+    if (!isValidAddress(defaultAddr))
     {
         return -1;
     }
@@ -1263,7 +1279,7 @@ std::map<int32_t, std::string> GetSignCountListReqCode()
 												std::make_pair(-1, "defaultAddr is invalid !"), 
 												std::make_pair(-2, "GetBonusaddr failed !"), 
 												std::make_pair(-3, "GetInvestAddrsByBonusAddr failed !"),
-                                                std::make_pair(-4, "BounsdAddrs < 1 || BounsdAddrs > 999"),
+                                                std::make_pair(-4, "BonusdAddrs < 1 || BonusdAddrs > 999"),
                                                 std::make_pair(-5, "GetBonusAddrInvestUtxosByBonusAddr failed !"),
                                                 std::make_pair(-6, "GetTransactionByHash failed !"),
                                                 std::make_pair(-7, "Parse tx failed !"),
@@ -1273,14 +1289,14 @@ std::map<int32_t, std::string> GetSignCountListReqCode()
 
 	return errInfo;												
 }
-int HandleGetSignCountListReq(const std::shared_ptr<GetSignCountListReq>& req, const MsgData & msgdata)
+int HandleGetSignCountListReq(const std::shared_ptr<GetSignCountListReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetSignCountListReqCode();
     GetSignCountListAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetSignCountListAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetSignCountListAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1320,14 +1336,14 @@ std::map<int32_t, std::string> GetHeightReqCode()
 
 	return errInfo;												
 }
-int HandleGetHeightReq(const std::shared_ptr<GetHeightReq>& req, const MsgData & msgdata)
+int HandleGetHeightReq(const std::shared_ptr<GetHeightReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetHeightReqCode();
     GetHeightAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetHeightAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetHeightAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1338,7 +1354,7 @@ int HandleGetHeightReq(const std::shared_ptr<GetHeightReq>& req, const MsgData &
     ret = GetHeightReqImpl(req, ack);
     if (ret != 0)
     {
-        return ret -= 10000;
+        return ret -= 100;
     }
 
     return 0;
@@ -1355,7 +1371,7 @@ int GetBonusListReqImpl(const std::shared_ptr<GetBonusListReq> & req, GetBonusLi
         return -1;
     } 
 
-    if (!CheckBase58Addr(addr))
+    if (!isValidAddress(addr))
     {
         return -2;
     }
@@ -1366,7 +1382,8 @@ int GetBonusListReqImpl(const std::shared_ptr<GetBonusListReq> & req, GetBonusLi
     int ret = ca_algorithm::CalcBonusValue(curTime, addr, values);
     if (ret != 0)
     {
-        return ret -= 10;
+        ERRORLOG("CalcBonusValue RET : {}", ret);
+        return -3;
     }
 
     for (auto & bonus : values)
@@ -1386,7 +1403,7 @@ std::map<int32_t, std::string> GetBonusListReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get Stake List Success !"), 
                                                 std::make_pair(-1, "addr is empty !"),
-                                                std::make_pair(-2, "base58 is invalid !"),
+                                                std::make_pair(-2, "addr is invalid !"),
                                                 std::make_pair(-11, "addr is AbnormalSignAddr !"),
                                                 std::make_pair(-111, "GetInvestAddrsByBonusAddr failed !"),
                                                 std::make_pair(-112, "GetBonusAddrInvestUtxosByBonusAddr failed!"),
@@ -1411,25 +1428,25 @@ std::map<int32_t, std::string> GetBonusListReqCode()
 	return errInfo;												
 }
 
-int HandleGetBonusListReq(const std::shared_ptr<GetBonusListReq>& req, const MsgData & msgdata)
+int HandleGetBonusListReq(const std::shared_ptr<GetBonusListReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetBonusListReqCode();
     GetBonusListAck ack;
     int ret = 0;
-
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetBonusListAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetBonusListAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
 	{
-		return ret = -1;
+		return -1;
 	}
 
     ret = GetBonusListReqImpl(req, ack);
     if (ret != 0)
     {
-        return ret -= 1000;
+        ERRORLOG("GetBonusListReqImpl ret : {}", ret);
+        return -2;
     }
 
     return 0;
@@ -1443,104 +1460,33 @@ std::map<int32_t, std::string> GetReqCode()
 	return errInfo;												
 }
 
-int OldSendCheckTxReq(const std::shared_ptr<IsOnChainReq>& msg,  IsOnChainAck & ack)
+int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,   ConfirmTransactionAck & ack)
 {
-    std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
-    auto nodelistsize = nodelist.size();
-    if(nodelistsize == 0)
-    {
-        DEBUGLOG("Nodelist Size {}",nodelistsize);
-        return -1;
-    }
 
-    std::string msgId;
-    std::map<std::string, uint32_t> successHash;
-    int send_num = nodelist.size();
-    if (!GLOBALDATAMGRPTR.CreateWait(10, send_num * 0.8, msgId))
-    {
-        return -2;
-    }
-
-    CheckTxReq req;
-    req.set_version(global::kVersion);
-    req.set_msg_id(msgId);
-    for(auto & hash : msg->txhash())
-    {
-        req.add_txhash(hash);
-        successHash.insert(std::make_pair(hash, 0));
-    }
-
-    for (auto &node : nodelist)
-    {
-        NetSendMessage<CheckTxReq>(node.base58Address, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
-    }
-
-    std::vector<std::string> ret_datas;
-    if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
-    {
-        return -3;
-    }
-
-
-    CheckTxAck copyAck;
-
-    std::multimap<std::string, int> txFlagHashs;
-
-    for (auto &ret_data : ret_datas)
-    {
-        copyAck.Clear();
-        if (!copyAck.ParseFromString(ret_data))
-        {
-            continue;
+    auto getRandomNumbers = [&](int limit) -> std::vector<int> {
+        std::random_device seed;
+        std::ranlux48 engine(seed());
+        std::uniform_int_distribution<int> u(0, limit - 1);
+        
+        std::set<int> uniqueNumbers;
+        while (uniqueNumbers.size() < 10) {
+            int randomNum = u(engine);
+            uniqueNumbers.insert(randomNum);
         }
         
-        for(auto & flag_hash : copyAck.flaghash())
-        {
-            txFlagHashs.insert(std::make_pair(flag_hash.hash(),flag_hash.flag()));
-        }
-    }
+        std::vector<int> result(uniqueNumbers.begin(), uniqueNumbers.end());
+        return result;
+    };
 
-
-
-    for(auto & item : txFlagHashs)
-    {
-        for(auto & success : successHash)
-        {
-            if(item.second == 1 && item.first == success.first)
-            {
-                success.second ++;
-                DEBUGLOG("success.second size = {}", success.second);
-            }
-        }
-    }
-
-    ack.set_version(global::kVersion);
-    ack.set_time(msg->time());
-
-    for(auto & success : successHash)
-    {
-        SuccessRate * alsuc = ack.add_percentage();
-
-        alsuc->set_hash(success.first);
-        double rate = (double)success.second / (double)(send_num * 0.8);
-        DEBUGLOG("OldSendCheckTxReq = {} , == {}, rate = ", success.second, send_num, rate);
-        alsuc->set_rate(rate);
-
-    }
-
-
-    return 0;
-}
-
-int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,  ConfirmTransactionAck & ack)
-{
     std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
     auto nodelistsize = nodelist.size();
     if(nodelistsize == 0)
     {
-        DEBUGLOG("Nodelist Size {}",nodelistsize);
+        ERRORLOG("Nodelist Size is empty");
+        ack.set_message("Nodelist size is empty");
         return -1;
     }
+    DEBUGLOG("Nodelist Size {}",nodelistsize);
     
     std::vector<Node> FilterHeightNodeList;
     for(auto &item : nodelist)
@@ -1553,17 +1499,19 @@ int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,
     auto send_num = FilterHeightNodeList.size();
     if(send_num == 0)
     {
-        DEBUGLOG("FilterHeightNodeList {}",send_num);
+        ERRORLOG("FilterHeightNodeList is empty");
+        ack.set_message("FilterHeightNodeList size is empty");
         return -2;
     }
+    DEBUGLOG("FilterHeightNodeList {}",send_num);
     ack.set_send_size(send_num);
     //send_size
     std::string msgId;
     std::map<std::string, uint32_t> successHash;
-
-    
     if (!GLOBALDATAMGRPTR.CreateWait(10, send_num * 0.8, msgId))
     {
+        ERRORLOG("SendConfirmTransactionReq CreateWait is error");
+        ack.set_message("CreateWait error");
         return -3;
     }
 
@@ -1576,21 +1524,59 @@ int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,
         successHash.insert(std::make_pair(hash, 0));
     }
 
+    auto needResVec = getRandomNumbers(FilterHeightNodeList.size());
+    int index = 0;
+    std::vector<std::string> needResNode;
     for (auto &node : FilterHeightNodeList)
-    {
-        NetSendMessage<CheckTxReq>(node.base58Address, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
+    {   
+        if(std::find(needResVec.begin(), needResVec.end(), index++) != needResVec.end())
+        {
+            req.set_isresponse(1);
+            needResNode.push_back(node.address);
+        }else{
+            req.set_isresponse(0);
+        }
+        
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, node.address))
+        {
+            ERRORLOG("SendConfirmTransactionReq AddResNode is error");
+            ack.set_message(" AddResNode error");
+            return -4;
+        }
+        NetSendMessage<CheckTxReq>(node.address, req, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
     }
 
     std::vector<std::string> ret_datas;
     if (!GLOBALDATAMGRPTR.WaitData(msgId, ret_datas))
     {
-        return -4;
+        ERRORLOG("SendConfirmTransactionReq WaitData is error");
+        ack.set_message(" WaitData error");
+        return -5;
     }
-    
 
     CheckTxAck copyAck;
-
     std::multimap<std::string, int> txFlagHashs;
+    std::vector<std::string> txRawVec;
+
+    auto findMostFrequentElement = [](const std::vector<std::string>& vec) {
+        std::unordered_map<std::string, int> occurrenceMap;
+
+        for (const std::string& element : vec) {
+            occurrenceMap[element]++;
+        }
+
+        std::string mostFrequentElement;
+        int maxOccurrences = 0;
+
+        for (const auto& entry : occurrenceMap) {
+            if (entry.second > maxOccurrences) {
+                mostFrequentElement = entry.first;
+                maxOccurrences = entry.second;
+            }
+        }
+
+        return std::make_pair(mostFrequentElement, maxOccurrences);
+    };
 
     for (auto &ret_data : ret_datas)
     {
@@ -1603,12 +1589,14 @@ int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,
         for(auto & flag_hash : copyAck.flaghash())
         {
             txFlagHashs.insert(std::make_pair(flag_hash.hash(),flag_hash.flag()));
+
+            if(std::find(needResNode.begin(),needResNode.end(),copyAck.addr()) != needResNode.end() && flag_hash.flag() == 1)
+            {
+                txRawVec.push_back(copyAck.tx());
+            }
         }
     }
-      
-
-
-
+    
     for(auto & item : txFlagHashs)
     {
         for(auto & success : successHash)
@@ -1620,9 +1608,12 @@ int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,
             }
         }
     }
+
+    auto commonSize = findMostFrequentElement(txRawVec);
+    ack.set_tx(commonSize.first);
     ack.set_version(global::kVersion);
     ack.set_time(msg->time());
-    
+
     for(auto & success : successHash)
     {
         SuccessRate * alsuc = ack.add_percentage();
@@ -1635,7 +1626,7 @@ int SendConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& msg,
     ack.set_received_size(ret_datas.size());
     return 0;
 }
-
+ 
 std::map<int32_t, std::string> GetOnChianReqCode()
 {
 	std::map<int32_t, std::string> errInfo = {  std::make_pair(0, "Get  List Success"), 
@@ -1644,38 +1635,14 @@ std::map<int32_t, std::string> GetOnChianReqCode()
 	return errInfo;												
 }
 
-int OldHandleIsOnChainReq(const std::shared_ptr<IsOnChainReq>& req, const MsgData & msgdata)
+int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& req, const MsgData & msgData)
 {
-   
-    auto errInfo = GetOnChianReqCode();
-    IsOnChainAck ack;
-    int ret = 0;
-
-    ON_SCOPE_EXIT{
-        ReturnAckCode<IsOnChainAck>(msgdata, errInfo, ack, ret);
-    };
-
-    if( 0 != Util::IsVersionCompatible( req->version() ) )
-	{
-		return ret = -1;
-	}
-
-    ret = OldSendCheckTxReq(req, ack);
-
-
-    return ret;
-
-}
-
-int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& req, const MsgData & msgdata)
-{
-   
     auto errInfo = GetOnChianReqCode();
     ConfirmTransactionAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<ConfirmTransactionAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<ConfirmTransactionAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1684,10 +1651,7 @@ int HandleConfirmTransactionReq(const std::shared_ptr<ConfirmTransactionReq>& re
 	}
 
     ret = SendConfirmTransactionReq(req, ack);
-
-
     return ret;
-
 }
 
 int GetRestInvestAmountReqImpl(const std::shared_ptr<GetRestInvestAmountReq>& msg,  GetRestInvestAmountAck & ack)
@@ -1695,8 +1659,8 @@ int GetRestInvestAmountReqImpl(const std::shared_ptr<GetRestInvestAmountReq>& ms
     // The node to be invested can only be invested by 999 people at most
     uint64_t investAmount = 0;
     DBReader dbReader;
-    std::vector<string> addresses;
-    auto status = dbReader.GetInvestAddrsByBonusAddr(msg->base58(), addresses);
+    std::vector<std::string> addresses;
+    auto status = dbReader.GetInvestAddrsByBonusAddr(msg->addr(), addresses);
     if (status != DBStatus::DB_SUCCESS && status != DBStatus::DB_NOT_FOUND)
     {
         ERRORLOG("Get invest addrs by node failed!" );
@@ -1708,12 +1672,12 @@ int GetRestInvestAmountReqImpl(const std::shared_ptr<GetRestInvestAmountReq>& ms
         return -2;
     }
 
-    // The node to be invested can only be be invested 100000 DON at most
+    // The node to be invested can only be be invested 100000 at most
     uint64_t sumInvestAmount = 0;
     for (auto &address : addresses)
     {
-        std::vector<string> utxos;
-        if (dbReader.GetBonusAddrInvestUtxosByBonusAddr(msg->base58(), address, utxos) != DBStatus::DB_SUCCESS)
+        std::vector<std::string> utxos;
+        if (dbReader.GetBonusAddrInvestUtxosByBonusAddr(msg->addr(), address, utxos) != DBStatus::DB_SUCCESS)
         {
             ERRORLOG("GetBonusAddrInvestUtxosByBonusAddr failed!");
             return -3;
@@ -1745,7 +1709,7 @@ int GetRestInvestAmountReqImpl(const std::shared_ptr<GetRestInvestAmountReq>& ms
         }
     }
     investAmount = (65000 * global::ca::kDecimalNum) - sumInvestAmount;
-    ack.set_base58(msg->base58());
+    ack.set_addr(msg->addr());
     ack.set_amount(investAmount);
 
     return 0;
@@ -1763,14 +1727,14 @@ std::map<int32_t, std::string> GetRestInvestAmountReqCode()
 	return errInfo;												
 }
 
-int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& req, const MsgData & msgdata)
+int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& req, const MsgData & msgData)
 {
     auto errInfo = GetRestInvestAmountReqCode();
     GetRestInvestAmountAck ack;
     int ret = 0;
 
     ON_SCOPE_EXIT{
-        ReturnAckCode<GetRestInvestAmountAck>(msgdata, errInfo, ack, ret);
+        ReturnAckCode<GetRestInvestAmountAck>(msgData, errInfo, ack, ret);
     };
 
     if( 0 != Util::IsVersionCompatible( req->version() ) )
@@ -1785,21 +1749,65 @@ int HandleGetRestInvestAmountReq(const std::shared_ptr<GetRestInvestAmountReq>& 
 
 void RegisterInterface()
 {
-    CaRegisterCallback<GetBlockReq>(HandleGetBlockReq);
-    CaRegisterCallback<GetBalanceReq>(HandleGetBalanceReq);
-    CaRegisterCallback<GetNodeInfoReq>(HandleGetNodeInfoReqReq);
-	CaRegisterCallback<GetStakeListReq>(HandleGetStakeListReq);
-	CaRegisterCallback<GetInvestListReq>(HandleGetInvestListReq);
-    CaRegisterCallback<GetUtxoReq>(HandleGetUtxoReq);
-    CaRegisterCallback<GetAllInvestAddressReq>(HandleGetAllInvestAddressReq);
-    CaRegisterCallback<GetAllStakeNodeListReq>(HandleGetAllStakeNodeListReq);
-    CaRegisterCallback<GetSignCountListReq>(HandleGetSignCountListReq);
-    CaRegisterCallback<GetHeightReq>(HandleGetHeightReq);
-    CaRegisterCallback<GetBonusListReq>(HandleGetBonusListReq);
-    CaRegisterCallback<GetSDKReq>(HandleGetSDKAllNeedReq);
-    CaRegisterCallback<IsOnChainReq>(OldHandleIsOnChainReq);
-	CaRegisterCallback<ConfirmTransactionReq>(HandleConfirmTransactionReq);
-    CaRegisterCallback<GetRestInvestAmountReq>(HandleGetRestInvestAmountReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetBlockReq>(HandleGetBlockReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetBalanceReq>(HandleGetBalanceReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetNodeInfoReq>(HandleGetNodeInfoReqReq);
+	MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetStakeListReq>(HandleGetStakeListReq);
+	MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetInvestListReq>(HandleGetInvestListReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetUtxoReq>(HandleGetUtxoReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetAllInvestAddressReq>(HandleGetAllInvestAddressReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetAllStakeNodeListReq>(HandleGetAllStakeNodeListReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetSignCountListReq>(HandleGetSignCountListReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetHeightReq>(HandleGetHeightReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetBonusListReq>(HandleGetBonusListReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetSDKReq>(HandleGetSDKAllNeedReq);
+	MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<ConfirmTransactionReq>(HandleConfirmTransactionReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<GetRestInvestAmountReq>(HandleGetRestInvestAmountReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<MultiSignTxReq>(HandleMultiSignTxReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->CaRegisterCallback<BlockStatus>(HandleBlockStatusMsg); //retransmit
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<FastSyncGetHashReq>(HandleFastSyncGetHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<FastSyncGetHashAck>(HandleFastSyncGetHashAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<FastSyncGetBlockReq>(HandleFastSyncGetBlockReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<FastSyncGetBlockAck>(HandleFastSyncGetBlockAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncGetSumHashReq>(HandleSyncGetSumHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncGetSumHashAck>(HandleSyncGetSumHashAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncGetHeightHashReq>(HandleSyncGetHeightHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncGetHeightHashAck>(HandleSyncGetHeightHashAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncGetBlockReq>(HandleSyncGetBlockReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncGetBlockAck>(HandleSyncGetBlockAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncFromZeroGetSumHashReq>(HandleFromZeroSyncGetSumHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncFromZeroGetSumHashAck>(HandleFromZeroSyncGetSumHashAck);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncFromZeroGetBlockReq>(HandleFromZeroSyncGetBlockReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncFromZeroGetBlockAck>(HandleFromZeroSyncGetBlockAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncNodeHashReq>(HandleSyncNodeHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SyncNodeHashAck>(HandleSyncNodeHashAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<GetBlockByUtxoReq>(HandleBlockByUtxoReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<GetBlockByUtxoAck>(HandleBlockByUtxoAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<GetBlockByHashReq>(HandleBlockByHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<GetBlockByHashAck>(HandleBlockByHashAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SeekPreHashByHightReq>(HandleSeekGetPreHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<SeekPreHashByHightAck>(HandleSeekGetPreHashAck);
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<GetCheckSumHashReq>(HandleGetCheckSumHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SyncBlockRegisterCallback<GetCheckSumHashAck>(HandleGetCheckSumHashAck);
+
+    // PCEnd correlation
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->TxRegisterCallback<TxMsgReq>(HandleTx); // PCEnd transaction flow
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->TxRegisterCallback<ContractTxMsgReq>(HandleContractTx);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->TxRegisterCallback<ContractPackagerMsg>(HandleContractPackagerMsg);
+    
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->SaveBlockRegisterCallback<BuildBlockBroadcastMsg>(HandleBuildBlockBroadcastMsg); // Building block broadcasting
+
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->BlockRegisterCallback<BlockMsg>(HandleBlock);      // PCEnd transaction flow
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->BlockRegisterCallback<newSeekContractPreHashReq>(_HandleSeekContractPreHashReq);
+    MagicSingleton<ProtobufDispatcher>::GetInstance()->BlockRegisterCallback<newSeekContractPreHashAck>(_HandleSeekContractPreHashAck);
 
 }
 

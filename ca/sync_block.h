@@ -1,7 +1,7 @@
 /**
  * *****************************************************************************
  * @file        sync_block.h
- * @brief       
+ * @brief       Synchronize data blocks to other investment staking nodes
  * @date        2023-09-27
  * @copyright   tfsc
  * *****************************************************************************
@@ -9,15 +9,14 @@
 #ifndef TFS_CA_SYNC_BLOCK_H_
 #define TFS_CA_SYNC_BLOCK_H_
 
-#include "db/db_api.h"
+#include <map>
+#include <cstdint>
+
 #include "net/msg_queue.h"
 #include "proto/sync_block.pb.h"
-#include <cstdint>
-#include <map>
-#include "block_compare.h"
 #include "utils/timer.hpp"
-#include "utils/console.h"
-#include "check_blocks.h"
+#include "ca/check_blocks.h"
+#include "ca/block_compare.h"
 
 struct FastSyncHelper
 {
@@ -28,7 +27,7 @@ struct FastSyncHelper
 
 /**
  * @brief       
- * 
+ * sync block
  */
 class SyncBlock
 {
@@ -44,290 +43,293 @@ public:
 
     /**
      * @brief       
-     * 
+     * Start synchronization thread
      */
     void ThreadStart();
 
     /**
-     * @brief       
+     * @brief    Enable or disable synchronization threads   
      * 
-     * @param       start: 
+     * @param       start: Enable or disable
      */
     void ThreadStart(bool start);
 
     /**
-     * @brief       
+     * @brief    disable synchronization threads
      * 
      */
     void ThreadStop();
 
     /**
-     * @brief       Get the Sync Node Simplify object
+     * @brief       Get the Sync Node list
      * 
-     * @param       num: 
-     * @param       chainHeight: 
-     * @param       pledgeAddr: 
-     * @param       sendNodeIds: 
-     * @return      int 
+     * @param       num: sync node number
+     * @param       chainHeight: Current whole network chain height
+     * @param       pledgeAddr:  Investment pledge list
+     * @param       sendNodeIds: sync node ids
+     * @return      int : Return 0 on success
      */
     static int GetSyncNodeSimplify(uint32_t num, uint64_t chainHeight, const std::vector<std::string> &pledgeAddr,
                             std::vector<std::string> &sendNodeIds);
     /**
      * @brief       Set the Fast Sync object
      * 
-     * @param       syncStartHeight: 
+     * @param       syncStartHeight: sync height
      */
     static void SetFastSync(uint64_t syncStartHeight);
 
+    /**
+     * @brief       Set the new Sync object
+     * 
+     * @param       syncStartHeight: sync begin height
+     */
     static void SetNewSyncHeight(uint64_t height);
 
     /**
-     * @brief       
+     * @brief   check byzantine    
      * 
-     * @param       receiveCount: 
-     * @param       hitCount: 
-     * @return      true 
-     * @return      false 
+     * @param       receiveCount: receive num
+     * @param       hitCount:   hit num
+     * @return      true    check success
+     * @return      false   check fail
      */
-    static bool check_byzantine(int receiveCount, int hitCount);
+    static bool checkByzantine(int receiveCount, int hitCount);
 
     /**
-     * @brief       
+     * @brief       Calculate height sum hash    
      * 
-     * @param       heightBlocks: 
-     * @param       hash: 
-     * @return      true 
-     * @return      false 
+     * @param       heightBlocks: block height
+     * @param       hash: block hash
+     * @return      true    hash = sum hash
+     * @return      false   hash = nullptr
      */
     static bool SumHeightsHash(const std::map<uint64_t, std::vector<std::string>>& heightBlocks, std::string &hash);
 
+    /**
+     * @brief       get sync node
+     * 
+     * @param       num: sync send num
+     * @param       heightBaseline: filter height
+     * @param       discardComparator: comparators
+     * @param       reserveComparator: comparators
+     * @param       pledgeAddr: Investment pledge list
+     * @param       sendNodeIds: send node list ids
+     * @return      int return 0 success
+     */
+    static int _GetSyncNodeBasic(uint32_t num, uint64_t heightBaseline, const std::function<bool(uint64_t, uint64_t)>& discardComparator, const std::function<bool(uint64_t, uint64_t)>& reserveComparator, const std::vector<std::string> &pledgeAddr,
+                         std::vector<std::string> &sendNodeIds);
+
 private:
     /**
-     * @brief       
+     * @brief       fast sync 
      * 
-     * @param       pledgeAddr: 
-     * @param       chainHeight: 
-     * @param       startSyncHeight: 
-     * @param       endSyncHeight: 
-     * @return      true 
-     * @return      false 
+     * @param       pledgeAddr: Investment pledge list
+     * @param       chainHeight: Current chain height
+     * @param       startSyncHeight: fast sync start height
+     * @param       endSyncHeight: fast sync end height
+     * @return      true    fast sync success
+     * @return      false   fast sync fail
      */
-    static bool _RunFastSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t startSyncHeight, uint64_t endSyncHeight);
+    static bool _RunFastSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t startSyncHeight, uint64_t endSyncHeight, uint32_t syncNodeCount);
     
     /**
-     * @brief       
+     * @brief       new sync
      * 
-     * @param       pledgeAddr: 
-     * @param       chainHeight: 
-     * @param       selfNodeHeight: 
-     * @param       startSyncHeight: 
-     * @param       endSyncHeight: 
-     * @param       newSendNum: 
-     * @return      int 
+     * @param       pledgeAddr: Investment pledge list
+     * @param       chainHeight: Current chain height
+     * @param       selfNodeHeight: self node height
+     * @param       startSyncHeight: new sync start height
+     * @param       endSyncHeight: new sync end height
+     * @param       newSendNum: new sync send node num
+     * @return      int  return 0 success 
      */
-    static int _RunNewSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t selfNodeHeight, uint64_t startSyncHeight, uint64_t endSyncHeight, uint64_t newSendNum = 0);
+    static int _RunNewSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t selfNodeHeight, uint64_t startSyncHeight, uint64_t endSyncHeight, uint32_t syncNodeCount);
     
     /**
-     * @brief       
+     * @brief       from zero sync 
      * 
-     * @param       pledgeAddr: 
-     * @param       chainHeight: 
-     * @param       selfNodeHeight: 
-     * @return      int 
+     * @param       pledgeAddr: Investment pledge list
+     * @param       chainHeight: Current chain height
+     * @param       selfNodeHeight: self node height
+     * @return      int  return 0 success 
      */
-    int _RunFromZeroSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t selfNodeHeight);
+    int _RunFromZeroSyncOnce(const std::vector<std::string> &pledgeAddr, uint64_t chainHeight, uint64_t selfNodeHeight, uint32_t syncNodeCount);
     /**********************************************************************************************************************************/
     
     /**
-     * @brief       
+     * @brief       fast sync get block hash
      * 
-     * @param       sendNodeIds: 
-     * @param       startSyncHeight: 
-     * @param       endSyncHeight: 
-     * @param       requestHashs: 
-     * @param       retNodeIds: 
-     * @param       chainHeight: 
-     * @return      true 
-     * @return      false 
+     * @param       sendNodeIds: send node list ids
+     * @param       startSyncHeight: get block start height
+     * @param       endSyncHeight: get block  end height
+     * @param       requestHashs: need request block hash
+     * @param       retNodeIds: list of successfully returned nodes
+     * @param       chainHeight: current chain height
+     * @return      true    success
+     * @return      false   fail
      */
     static bool _GetFastSyncSumHashNode(const std::vector<std::string> &sendNodeIds, uint64_t startSyncHeight, uint64_t endSyncHeight,
                                     std::vector<FastSyncBlockHashs> &requestHashs, std::vector<std::string> &retNodeIds, uint64_t chainHeight);
     
     /**
-     * @brief       
+     * @brief       fast sync get block
      * 
-     * @param       sendNodeId: 
-     * @param       requestHashs: 
-     * @param       chainHeight: 
-     * @return      true 
-     * @return      false 
+     * @param       sendNodeId: send node list ids
+     * @param       requestHashs: need request block hash
+     * @param       chainHeight: current chain height
+     * @return      true    success
+     * @return      false   fail
      */
     static bool _GetFastSyncBlockData(const std::string &sendNodeId, const std::vector<FastSyncBlockHashs> &requestHashs, uint64_t chainHeight);
 
     /**********************************************************************************************************************************/
     
     /**
-     * @brief       
+     * @brief       new sync get block sum hash
      * 
-     * @param       pledgeAddrSize: 
-     * @param       sendNodeIds: 
-     * @param       startSyncHeight: 
-     * @param       endSyncHeight: 
-     * @param       needSyncHeights: 
-     * @param       retNodeIds: 
-     * @param       chainHeight: 
-     * @param       newSyncSnedNum: 
-     * @return      int 
+     * @param       pledgeAddrSize: Investment pledge list
+     * @param       sendNodeIds: send node list ids
+     * @param       startSyncHeight: get block sum hash start height
+     * @param       endSyncHeight: get block sum hash end height
+     * @param       needSyncHeights: need sync height
+     * @param       retNodeIds: list of successfully returned nodes
+     * @param       chainHeight: current chain height
+     * @param       newSyncSnedNum: new sync send node num
+     * @return      int     return 0 success 
      */
     static int _GetSyncSumHashNode(uint64_t pledgeAddrSize, const std::vector<std::string> &sendNodeIds, uint64_t startSyncHeight, uint64_t endSyncHeight,
                             std::map<uint64_t, uint64_t> &needSyncHeights, std::vector<std::string> &retNodeIds, uint64_t &chainHeight, uint64_t newSyncSnedNum);
-    // static int _GetSyncBlockHashNode(const std::vector<std::string> &sendNodeIds, uint64_t startSyncHeight, uint64_t endSyncHeight, uint64_t selfNodeHeight, uint64_t chainHeight,
     /**
-     * @brief       
+     * @brief       synchronize data to the most forks in the entire network
      * 
-     * @param       sendNodeIds: 
-     * @param       startSyncHeight: 
-     * @param       endSyncHeight: 
-     * @param       selfNodeHeight: 
-     * @param       chainHeight: 
-     * @param       newSyncSnedNum: 
-     * @return      int 
+     * @param       sendNodeIds: send node list ids
+     * @param       startSyncHeight:  get block hash start height
+     * @param       endSyncHeight: get block hash end height
+     * @param       selfNodeHeight: self node height
+     * @param       chainHeight: current chain height
+     * @param       newSyncSnedNum: new sync send node num
+     * @return      int return 0 success 
      */
     static int _GetSyncBlockBySumHashNode(const std::vector<std::string> &sendNodeIds, uint64_t startSyncHeight, uint64_t endSyncHeight, uint64_t selfNodeHeight, uint64_t chainHeight, uint64_t newSyncSnedNum);
     
     /**
-     * @brief       
+     * @brief       new sync get block hash
      * 
-     * @param       sendNodeIds: 
-     * @param       startSyncHeight: 
-     * @param       endSyncHeight: 
-     * @param       selfNodeHeight: 
-     * @param       chainHeight: 
-     * @param       retNodeIds: 
-     * @param       reqHashes: 
-     * @param       newSyncSnedNum: 
-     * @return      int 
+     * @param       sendNodeIds: send node list ids
+     * @param       startSyncHeight: get block hash start height
+     * @param       endSyncHeight: get block hash end height
+     * @param       selfNodeHeight: self node height
+     * @param       chainHeight: current chain height
+     * @param       retNodeIds: list of successfully returned nodes
+     * @param       reqHashes: need sync block hash
+     * @param       newSyncSnedNum: new sync send node num
+     * @return      int int return 0 success 
      */
     static int _GetSyncBlockHashNode(const std::vector<std::string> &sendNodeIds, uint64_t startSyncHeight, uint64_t endSyncHeight, uint64_t selfNodeHeight, uint64_t chainHeight,
                             std::vector<std::string> &retNodeIds, std::vector<std::string> &reqHashes, uint64_t newSyncSnedNum);
     
     /**
-     * @brief       
+     * @brief       new sync get block 
      * 
-     * @param       sendNodeIds: 
-     * @param       reqHashes: 
-     * @param       chainHeight: 
-     * @return      int 
+     * @param       sendNodeIds: send node list ids
+     * @param       reqHashes: need sync block hash
+     * @param       chainHeight: current chain height
+     * @return      int return 0 success
      */
     static int _GetSyncBlockData(const std::vector<std::string> &sendNodeIds, const std::vector<std::string> &reqHashes, uint64_t chainHeight);
     /**********************************************************************************************************************************/
     
     /**
-     * @brief       
+     * @brief       from zero sync get sum hash
      * 
-     * @param       sendNodeIds: 
-     * @param       sendHeights: 
-     * @param       selfNodeHeight: 
-     * @param       retNodeIds: 
-     * @param       sumHashs: 
-     * @return      int 
+     * @param       sendNodeIds: send node list ids
+     * @param       sendHeights: get block sum hash start height
+     * @param       selfNodeHeight: get block sum hash end height
+     * @param       retNodeIds: list of successfully returned nodes
+     * @param       sumHashs: need sync block sum hash
+     * @return      int return 0 success
      */
     static int _GetFromZeroSyncSumHashNode(const std::vector<std::string> &sendNodeIds, const std::vector<uint64_t>& sendHeights, uint64_t selfNodeHeight, std::set<std::string> &retNodeIds, std::map<uint64_t, std::string>& sumHashs);
     
     /**
-     * @brief       
+     * @brief       from zero sync get block
      * 
-     * @param       sumHashes: 
-     * @param       sendHeights: 
-     * @param       setSendNodeIds: 
-     * @param       selfNodeHeight: 
-     * @return      int 
+     * @param       sumHashes: need sync block sum hash
+     * @param       sendHeights: send node list ids
+     * @param       setSendNodeIds: send node list ids
+     * @param       selfNodeHeight: get block sum hash end height
+     * @return      int return 0 success
      */
     int _GetFromZeroSyncBlockData(const std::map<uint64_t, std::string>& sumHashes, std::vector<uint64_t> &sendHeights, std::set<std::string> &setSendNodeIds, uint64_t selfNodeHeight);
     /**********************************************************************************************************************************/
     
     /**
-     * @brief       
+     * @brief       get sync node
      * 
-     * @param       num: 
-     * @param       heightBaseline: 
-     * @param       discardComparator: 
-     * @param       reserveComparator: 
-     * @param       pledgeAddr: 
-     * @param       sendNodeIds: 
-     * @return      int 
-     */
-    static int _GetSyncNodeBasic(uint32_t num, uint64_t heightBaseline, const std::function<bool(uint64_t, uint64_t)>& discardComparator, const std::function<bool(uint64_t, uint64_t)>& reserveComparator, const std::vector<std::string> &pledgeAddr,
-                         std::vector<std::string> &sendNodeIds);
-    
-    /**
-     * @brief       
-     * 
-     * @param       num: 
-     * @param       chainHeight: 
-     * @param       pledgeAddr: 
-     * @param       sendNodeIds: 
-     * @return      int 
+     * @param       num: sync send num
+     * @param       chainHeight: current chain height
+     * @param       pledgeAddr: Investment pledge list
+     * @param       sendNodeIds: send node list ids
+     * @return      int return 0 success
      */
     static int _GetSyncNode(uint32_t num, uint64_t chainHeight, const std::vector<std::string> &pledgeAddr,
                     std::vector<std::string> &sendNodeIds);
 
     /**
-     * @brief       
+     * @brief       add blocks that need to be rolled back
      * 
-     * @param       block: 
-     * @param       syncBlockData: 
+     * @param       block: need to be rolled back
+     * @param       syncBlockData: rolled back block set
      */
     static void _AddBlockToMap(const CBlock &block, std::map<uint64_t, std::set<CBlock, CBlockCompare>> &syncBlockData);
     
     /**
-     * @brief       
+     * @brief       need byzantine adjustment
      * 
-     * @param       chainHeight: 
-     * @param       pledgeAddr: 
-     * @param       selectedAddr: 
-     * @return      true 
-     * @return      false 
+     * @param       chainHeight: current chain height
+     * @param       pledgeAddr: Investment pledge list
+     * @param       selectedAddr: selected addr
+     * @return      true    success
+     * @return      false   fail
      */
-    static bool _NeedByzantineAdjustment(uint64_t chainHeight, const vector<std::string> &pledgeAddr,
+    static bool _NeedByzantineAdjustment(uint64_t chainHeight, const std::vector<std::string> &pledgeAddr,
                                  std::vector<std::string> &selectedAddr);
 
     /**
-     * @brief       
+     * @brief       Check Requirement And Filter Qualifying Nodes
      * 
-     * @param       chainHeight: 
-     * @param       pledgeAddr: 
-     * @param       nodes: 
-     * @param       qualifyingStakeNodes: 
-     * @return      true 
-     * @return      false 
+     * @param       chainHeight: current chain height
+     * @param       pledgeAddr: Investment pledge list
+     * @param       nodes: node
+     * @param       qualifyingStakeNodes: qualify stake nodes
+     * @return      true    success
+     * @return      false   fail
      */
-    static bool _CheckRequirementAndFilterQualifyingNodes(uint64_t chainHeight, const vector<std::string> &pledgeAddr,
-                const vector<Node> &nodes,vector<std::string> &qualifyingStakeNodes);
+    static bool _CheckRequirementAndFilterQualifyingNodes(uint64_t chainHeight, const std::vector<std::string> &pledgeAddr,
+                const std::vector<Node> &nodes,std::vector<std::string> &qualifyingStakeNodes);
 
     /**
-     * @brief       
+     * @brief       Get Sync Node Sumhash Info
      * 
-     * @param       nodes: 
-     * @param       qualifyingStakeNodes: 
-     * @param       sumHash: 
-     * @return      true 
-     * @return      false 
+     * @param       nodes: node 
+     * @param       qualifyingStakeNodes: qualify stake nodes
+     * @param       sumHash: sum hash
+     * @return      true    success
+     * @return      false   fail
      */
-    static bool _GetSyncNodeSumhashInfo(const vector<Node> &nodes, const vector<string> &qualifyingStakeNodes,
-                                       map<string, pair<uint64_t, vector<string>>> sumHash);
+    static bool _GetSyncNodeSumhashInfo(const std::vector<Node> &nodes, const std::vector<std::string> &qualifyingStakeNodes,
+                                       std::map<std::string, std::pair<uint64_t, std::vector<std::string>>> sumHash);
 
     /**
-     * @brief       
+     * @brief        Get selected Addr
      * 
-     * @param       sumHash: 
-     * @param       selectedAddr: 
-     * @return      true 
-     * @return      false 
+     * @param       sumHash: sum hash
+     * @param       selectedAddr: selected addr
+     * @return      true    success
+     * @return      false   fail
      */
-    static bool _GetSelectedAddr(map<std::string, std::pair<uint64_t, std::vector<std::string>>> &sumHash,
-                                vector<std::string> &selectedAddr);
-    // friend std::string PrintCache(int where);
+    static bool _GetSelectedAddr(std::map<std::string, std::pair<uint64_t, std::vector<std::string>>> &sumHash,
+                                std::vector<std::string> &selectedAddr);
     std::thread _syncThread; 
     std::atomic<bool> _syncThreadRuning;
     std::mutex _syncThreadRuningMutex;
@@ -382,5 +384,10 @@ void SendSyncNodeHashReq(const std::string &nodeId, const std::string &msgId);
 void SendSyncNodeHashAck(const std::string &nodeId, const std::string &msgId);
 int HandleSyncNodeHashReq(const std::shared_ptr<SyncNodeHashReq> &msg, const MsgData &msgdata);
 int HandleSyncNodeHashAck(const std::shared_ptr<SyncNodeHashAck> &msg, const MsgData &msgdata);
+
+int HandleBlockByUtxoReq(const std::shared_ptr<GetBlockByUtxoReq> &msg, const MsgData &msgdata);
+int HandleBlockByUtxoAck(const std::shared_ptr<GetBlockByUtxoAck> &msg, const MsgData &msgdata);
+int HandleBlockByHashReq(const std::shared_ptr<GetBlockByHashReq> &msg, const MsgData &msgdata);
+int HandleBlockByHashAck(const std::shared_ptr<GetBlockByHashAck> &msg, const MsgData &msgdata);
 
 #endif

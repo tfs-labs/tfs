@@ -15,9 +15,26 @@ public:
     RocksDBReader(const RocksDBReader &) = delete;
     RocksDBReader &operator=(RocksDBReader &&) = delete;
     RocksDBReader &operator=(const RocksDBReader &) = delete;
-
-    bool MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &ret_status);
-    bool ReadData(const std::string &key, std::string &value, rocksdb::Status &ret_status);
+    /**
+     * @brief
+     * 
+     * @param       keys:
+     * @param       values: 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool MultiReadData(const std::vector<rocksdb::Slice> &keys, std::vector<std::string> &values, std::vector<rocksdb::Status> &retStatus);
+    /**
+     * @brief
+     * 
+     * @param       key:
+     * @param       value: 
+     * @param       retStatus: 
+     * @return      true
+     * @return      false
+     */
+    bool ReadData(const std::string &key, std::string &value, rocksdb::Status &retStatus);
 
 private:
     rocksdb::ReadOptions read_options_;

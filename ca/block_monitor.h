@@ -44,8 +44,6 @@ public:
     BlockMonitor &operator=(BlockMonitor &&) = delete;
     BlockMonitor &operator=(const BlockMonitor &) = delete;
 
-    // int AddBlockMonitor(const std::string& blockhash , const std::string & id , const uint32_t& ackFlag);
-
     /**
      * @brief       
      * 
@@ -54,21 +52,14 @@ public:
      * @param       sendSize: 
      * @return      int 
      */
-    int SendBroadcastAddBlock(std::string strBlock, uint64_t blockHeight,uint64_t sendSize = 100);
-    // int SendSuccessBlockSituationAck(const CBlock &block);
-    // int HandleBroadcastAddBlockAck(const BuildBlockBroadcastMsgAck & msg);
-    // int SendFailedBlockSituationAck(const CBlock &block);
-    // void RemoveSelf(const std::string& bolckraw);
-    // void RemoveCache(const std::string& bolckraw);
-    // void RemoveRespon(const std::string& bolckraw);
-
+    int SendBroadcastAddBlock(std::string strBlock, uint64_t blockHeight, uint64_t sendSize = 100);
+    
     void addDropshippingTxVec(const std::string& txHash);
     void addDoHandleTxTxVec(const std::string& txHash);
     void checkTxSuccessRate();
 
 private:
     static uint32_t _maxSendSize;
-    // static uint64_t selfTime ;
 
     /**
      * @brief       
@@ -79,18 +70,6 @@ private:
         uint32_t isResponse = 0;
         std::string  id;
     };
-    // friend std::string PrintCache(int where);
-
-    /********Store it yourself******/
-    // std::mutex _monitor_mutex_;
-    // std::vector<std::string> success_id;
- 
-    // /********Receipt storage*********/
-
-    // std::map<std::string , BlockAck> _Respon;//Other nodes store blocks
-    // std::map<std::string, std::map<std::string,std::string>> _Self; //The initiating node stores the key and its own ID and success
-
-    // std::map<std::string, std::string> blockCache;
 
     std::mutex mutex_;
     std::vector<std::string> DropshippingTxVec;

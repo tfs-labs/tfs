@@ -4,13 +4,14 @@
 #include <string>
 #include <utility>
 
-#include "check_blocks.h"
-#include "logging.h"
-#include "transaction.h"
-#include "../common/global_data.h"
-#include "algorithm.h"
-#include "block_helper.h"
-// static std::ofstream fout("./test.txt", std::ios::trunc); 
+#include "ca/algorithm.h"
+#include "ca/transaction.h"
+#include "ca/check_blocks.h"
+#include "ca/block_helper.h"
+#include "ca/sync_block.h"
+
+#include "include/logging.h"
+#include "common/global_data.h"
 
 CheckBlocks::CheckBlocks()
 {
@@ -21,7 +22,7 @@ CheckBlocks::CheckBlocks()
 void CheckBlocks::_Init()
 {
     DBReader dbReader;
-    auto ret = dbReader.GetBlockComHashHeight(this->_topBlockHeight);
+    auto ret = dbReader.GetTopThousandSumhash(this->_topBlockHeight);
     if(ret != DBStatus::DB_SUCCESS)
     {
         this->_topBlockHeight = 0;
@@ -45,23 +46,36 @@ void CheckBlocks::StartTimer()
 //get stake and invested addr
 int CheckBlocks::GetPledgeAddr(DBReadWriter& dbReader, std::vector<std::string>& pledgeAddr)
 {
-    std::vector<std::string> stakeAddr;
-    auto status = dbReader.GetStakeAddress(stakeAddr);
-    if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+    std::vector<Node> nodelist = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+
+    for (const auto &node : nodelist)
     {
-        ERRORLOG("GetStakeAddress error, error num:{}", -1);
-        return -1;
+        int ret = VerifyBonusAddr(node.address);
+
+        int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.address, global::ca::StakeType::kStakeType_Node);
+        if (stakeTime > 0 && ret == 0)
+        {
+            pledgeAddr.push_back(node.address);
+        }
     }
 
-    for(const auto& addr : stakeAddr)
-    {
-        if(VerifyBonusAddr(addr) != 0)
-        {
-            DEBUGLOG("{} doesn't get invested, skip", addr);
-            continue;
-        }
-        pledgeAddr.push_back(addr);
-    }
+    // std::vector<std::string> stakeAddr;
+    // auto status = dbReader.GetStakeAddress(stakeAddr);
+    // if (DBStatus::DB_SUCCESS != status && DBStatus::DB_NOT_FOUND != status)
+    // {
+    //     ERRORLOG("GetStakeAddress error, error num:{}", -1);
+    //     return -1;
+    // }
+
+    // for(const auto& addr : stakeAddr)
+    // {
+    //     if(VerifyBonusAddr(addr) != 0)
+    //     {
+    //         DEBUGLOG("{} doesn't get invested, skip", addr);
+    //         continue;
+    //     }
+    //     pledgeAddr.push_back(addr);
+    // }
     return 0;
 }
 
@@ -83,7 +97,7 @@ int CheckBlocks::_ToCheck()
     if(_checkRuning)
     {
         DEBUGLOG("_ToCheck is running");
-        return 1;
+        return 0;
     }
 
     ON_SCOPE_EXIT{
@@ -106,12 +120,12 @@ int CheckBlocks::_ToCheck()
     if(_topBlockHeight == 0 && selfNodeHeight < 1100)
     {
         DEBUGLOG("Currently less than 1100 height");
-        return 2;
+        return 0;
     }
     else if(selfNodeHeight < _topBlockHeight + 1100) 
     {
         DEBUGLOG("selfNodeHeight:{} less than top_block_height + 100:{}", selfNodeHeight, _topBlockHeight + 1100);
-        return 3;
+        return 0;
     }
 
     while(true)
@@ -122,7 +136,7 @@ int CheckBlocks::_ToCheck()
         if(tempHash.empty())
         {
             ERRORLOG("Calc1000HeightsSumHash error, error num:{}", -1);
-            return -1;
+            return -2;
         }
         _SetTempTopData(_topBlockHeight + 1000, tempHash);
 
@@ -131,9 +145,8 @@ int CheckBlocks::_ToCheck()
         if(ret != 0)
         {
             ERRORLOG("GetPledgeAddr error, error num:{}", -2);
-            return -2;
+            return -3;
         }
-
 
         std::vector<std::string> sendNodeIds;
         int peerNodeSize = MagicSingleton<PeerNode>::GetInstance()->GetNodelistSize();
@@ -141,31 +154,31 @@ int CheckBlocks::_ToCheck()
         if(ret != 0)
         {
             ERRORLOG("_GetSyncNode error, error num:{}", ret);
-            return -3;
+            return -4;
         }
 
         std::string msgId;
         size_t sendNum = sendNodeIds.size();
         if (!GLOBALDATAMGRPTR.CreateWait(90, sendNum * 0.9, msgId))
         {
-            ret = -4;
-            ERRORLOG("GLOBALDATAMGRPTR.CreateWait error, error num:{}", ret);
-            return ret;
+            return -5;
         }
         for (auto &nodeId : sendNodeIds)
         {
+            if(!GLOBALDATAMGRPTR.AddResNode(msgId, nodeId))
+            {
+                return -6;
+            }
             SendGetCheckSumHashReq(nodeId, msgId, _topBlockHeight + 1000);
         }
-        // string id = "15nSTKQKgiVh2cgMxACcgtrgJsUvnYQnQH";
-        // SendGetCheckSumHashReq(id, msgId, _topBlockHeight + 1000);
+
         std::vector<std::string> retDatas;
         if (!GLOBALDATAMGRPTR.WaitData(msgId, retDatas))
         {
             if (retDatas.empty() || retDatas.size() < sendNum / 2)
             {
                 ERRORLOG("wait sync height time out send:{} recv:{}", sendNum, retDatas.size());
-                ret = -5;
-                return ret;
+                return -7;
             }
         }
 
@@ -207,7 +220,7 @@ int CheckBlocks::_ToCheck()
         if(!back)
         {
             ERRORLOG("success num:{} less than retDatas.size() * 0.8:{}", successNum, retDatas.size() * 0.8);
-            return -6;
+            return -8;
         }
 
         auto compare = [](const std::pair<std::string, uint64_t>& a, const std::pair<std::string, uint64_t>& b) {
@@ -229,30 +242,30 @@ int CheckBlocks::_ToCheck()
                     if (DBStatus::DB_SUCCESS !=  dbWriter.SetCheckBlockHashsByBlockHeight(timpHeight, timpHash))
                     {
                         ERRORLOG("SetCheckBlockHashsByBlockHeight failed !");
-                        return -7;
+                        return -9;
                     }
 
                     uint64_t lastHeight;
-                    if(DBStatus::DB_SUCCESS != dbWriter.GetBlockComHashHeight(lastHeight))
+                    if(DBStatus::DB_SUCCESS != dbWriter.GetTopThousandSumhash(lastHeight))
                     {
-                        ERRORLOG("GetBlockComHashHeight failed !");
+                        ERRORLOG("GetTopThousandSumhash failed !");
                         lastHeight = 0;
                     }
 
                     if(lastHeight != timpHeight - 1000)
                     {
                         ERRORLOG("lastHeight is: {} != timpHeight - 1000, timpHeight is: {} !", lastHeight, timpHeight);
-                        return -8;
+                        return -10;
                     }
 
-                    if ( DBStatus::DB_SUCCESS != dbWriter.SetBlockComHashHeight(timpHeight))
+                    if ( DBStatus::DB_SUCCESS != dbWriter.SetTopThousandSumhash(timpHeight))
                     {
-                        return -9; 
+                        return -11; 
                     }
                     if (DBStatus::DB_SUCCESS != dbWriter.TransactionCommit())
                     {
                         ERRORLOG("(rocksdb init) TransactionCommit failed !");
-                        return -10;
+                        return -12;
                     }
                     return 0;
                 }
@@ -286,26 +299,25 @@ int CheckBlocks::DoNewSync(std::vector<std::string> sendNodeIds, std::vector<std
     if(ret != 0)
     {
         ERRORLOG("ByzantineSumHash fail:{}", ret);
-        return ret;
+        return -1;
     }
 
     uint64_t chain_height = 0;
     if(!MagicSingleton<BlockHelper>::GetInstance()->ObtainChainHeight(chain_height))
     {
-        return -1;
+        return -2;
     }
     for(const auto& sync_heiht: needSyncHeights)
     {
         DEBUGLOG("needSyncHeights: {}",sync_heiht);
         ret = MagicSingleton<SyncBlock>::GetInstance()->_RunNewSyncOnce(pledgeAddr, chain_height, selfNodeHeight, sync_heiht - 100, sync_heiht, 99999);
+        sleep(10); 
         if(ret != 0)
         {
             ERRORLOG("_RunNewSyncOnce fail:{}", ret);
-            return ret;
+            return -3;
         }
     }
-
-    sleep(10);
     return 0;
 }
 
@@ -325,6 +337,10 @@ int CheckBlocks::ByzantineSumHash(const std::vector<std::string> &sendNodeIds, c
 
     for (auto &nodeId : sendNodeIds)
     {
+        if(!GLOBALDATAMGRPTR.AddResNode(msgId, nodeId))
+        {
+            return -2;
+        }
         DEBUGLOG("get from zero sync sum hash from {}", nodeId);
         SendFromZeroSyncGetSumHashReq(nodeId, msgId, sendHeights);
     }
@@ -334,12 +350,11 @@ int CheckBlocks::ByzantineSumHash(const std::vector<std::string> &sendNodeIds, c
         if (retDatas.empty() || retDatas.size() < sendNum / 2)
         {
             ERRORLOG("wait sync height time out send:{} recv:{}", sendNum, retDatas.size());
-            return -2;
+            return -3;
         }
     }
     
-    //      height               sumhash       num
-    std::map<uint64_t, std::map<std::string, uint64_t>>sumHashDatas;
+    std::map<uint64_t/*height*/, std::map<std::string/*sumhash*/, uint64_t/*num*/>>sumHashDatas;
 
     int successCount = 0;
     for (auto &ret_data : retDatas)
@@ -383,14 +398,14 @@ int CheckBlocks::ByzantineSumHash(const std::vector<std::string> &sendNodeIds, c
 
     uint64_t backNum = sendNum * 0.8;
     bool byzantineSuccess = successCount >= backNum;
-    // if (!check_byzantine(sendNum,successCount))
     if(!byzantineSuccess)
     {
-        ERRORLOG("check_byzantine error, sendNum = {} , successCount = {}", sendNum, successCount);
-        return -3;
+        ERRORLOG("checkByzantine error, sendNum = {} , successCount = {}", sendNum, successCount);
+        return -4;
     }
 
     DBReader dbReader;
+
     auto compare = [](const std::pair<std::string, uint64_t>& a, const std::pair<std::string, uint64_t>& b) {
         return a.second < b.second;
     };
@@ -432,7 +447,7 @@ void SendGetCheckSumHashReq(const std::string &nodeId, const std::string &msgId,
 {
     GetCheckSumHashReq req;
     req.set_height(height);
-    req.set_self_node_id(NetGetSelfNodeId());
+    req.set_self_node_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
     req.set_msg_id(msgId);
     NetSendMessage<GetCheckSumHashReq>(nodeId, req, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
 }
@@ -441,11 +456,11 @@ void SendGetCheckSumHashAck(const std::string &nodeId, const std::string &msgId,
 {
     GetCheckSumHashAck ack;
     DBReader dbReader;
-    string hash;
+    std::string hash;
     bool success = true;
     ack.set_height(height);
     ack.set_msg_id(msgId);
-    ack.set_self_node_id(NetGetSelfNodeId());
+    ack.set_self_node_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
     if(DBStatus::DB_SUCCESS != dbReader.GetCheckBlockHashsByBlockHeight(height, hash))
     {
         auto [timpHeight, timpHash] = MagicSingleton<CheckBlocks>::GetInstance()->GetTempTopData();
@@ -465,14 +480,23 @@ void SendGetCheckSumHashAck(const std::string &nodeId, const std::string &msgId,
     NetSendMessage<GetCheckSumHashAck>(nodeId, ack, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_1);
 }
 
-int HandleGetCheckSumHashReq(const shared_ptr<GetCheckSumHashReq> &msg, const MsgData &msgdata)
+int HandleGetCheckSumHashReq(const std::shared_ptr<GetCheckSumHashReq> &msg, const MsgData &msgdata)
 {
+    if(!PeerNode::PeerNodeVerifyNodeId(msgdata.fd, msg->self_node_id()))
+    {
+        return -1;
+    }
     SendGetCheckSumHashAck(msg->self_node_id(), msg->msg_id(),msg->height());
     return 0;
 }
 
-int HandleGetCheckSumHashAck(const shared_ptr<GetCheckSumHashAck> &msg, const MsgData &msgdata)
+int HandleGetCheckSumHashAck(const std::shared_ptr<GetCheckSumHashAck> &msg, const MsgData &msgdata)
 {
-    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->SerializeAsString());
+     if(!PeerNode::PeerNodeVerifyNodeId(msgdata.fd, msg->self_node_id()))
+    {
+        return -1;
+    }
+
+    GLOBALDATAMGRPTR.AddWaitData(msg->msg_id(), msg->self_node_id(), msg->SerializeAsString());
     return 0;
 }

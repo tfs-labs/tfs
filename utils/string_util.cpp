@@ -39,3 +39,12 @@ void StringUtil::SplitString(const std::string& s, const std::string& c ,std::ve
         }
     }
 }
+
+int64_t StringUtil::StringToNumber(const std::string &s) {
+    int64_t number = 0;
+    for (const char& c : s)
+    {
+        number += static_cast<int64_t>(c);
+    }
+    return number;
+}

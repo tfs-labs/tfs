@@ -4,6 +4,7 @@
 #include <string>
 #include "utils/hex_code.h"
 #include "test.h"
+#include <openssl/evp.h>
 
 static void init_hexdigit_val(unsigned char *hexdigit_val)
 {
@@ -92,6 +93,21 @@ void encode_hex(char *hexstr, const void *p_, size_t len)
     *hexstr = 0;
 }
 
+
+void encode_hex_uint8_t(uint8_t *hexstr, const uint8_t *p, size_t len) {
+    static const char hex_digits[] = "0123456789abcdef";
+
+    size_t i, j;
+    for (i = 0, j = 0; i < len; i++) {
+        uint8_t byte = p[i];
+        hexstr[j++] = hex_digits[(byte >> 4) & 0xF];
+        hexstr[j++] = hex_digits[byte & 0xF];
+        if (i < len - 1) {
+            hexstr[j++] = '-';
+        }
+    }
+    hexstr[j] = '\0'; 
+}
 void hex_print(const unsigned char *hexstr, const int len)
 {
     unsigned int size = len * 2 + 2;
@@ -130,4 +146,14 @@ std::string Hex2Str(const std::string & hexStr)
     std::string retStr(p, size);
     delete [] p;
     return retStr;
+}
+
+void string_to_hex_array(const std::string& str, uint8_t* hex_array, size_t array_size) {
+    size_t str_len = str.length();
+    size_t copy_len = std::min(str_len / 2, array_size);
+
+    for (size_t i = 0, j = 0; i < copy_len; i++, j += 2) {
+        std::string byte_str = str.substr(j, 2);
+        hex_array[i] = static_cast<uint8_t>(strtol(byte_str.c_str(), nullptr, 16));
+    }
 }

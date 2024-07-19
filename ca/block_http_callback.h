@@ -16,9 +16,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
-#include <iomanip>
-#include "block.pb.h"
 
+#include "block.pb.h"
 
 /**
  * @brief       
@@ -71,10 +70,8 @@ public:
      * @param       ip: 
      * @param       port: 
      * @param       path: 
-     * @return      true 
-     * @return      false 
      */
-    bool Start(const std::string& ip, int port, const std::string& path);
+    void Start(const std::string& ip, int port, const std::string& path);
 
     /**
      * @brief       
@@ -86,17 +83,15 @@ public:
      * @brief       
      * 
      * @param       method: 
-     * @return      int 
      */
-    int AddBlockWork(const std::string &method);
+    void AddBlockWork(const std::string &method);
 
     /**
      * @brief       
      * 
      * @param       method: 
-     * @return      int 
      */
-    int RollbackBlockWork(const std::string &method);
+    void RollbackBlockWork(const std::string &method);
 
     /**
      * @brief       

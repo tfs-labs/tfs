@@ -26,7 +26,7 @@ namespace global
     extern MsgQueue g_queueWrite;
     extern std::string g_localIp;
     extern int g_cpuNums;
-    extern atomic<int> g_nodelistRefreshTime;
+    extern std::atomic<int> g_nodelistRefreshTime;
     extern std::list<int> g_phoneList;
     extern std::mutex g_mutexForPhoneList;
     extern CTimer g_heartTimer;

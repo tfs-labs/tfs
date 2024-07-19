@@ -17,11 +17,11 @@ else
     finalname=${finalname}"_"${gitversion}
 fi;
 
-if [ $1 == 0 ]
+if [ "$1" == "0" ]
 then
     finalversion=${finalname}"_""primarynet"
     echo  "${finalversion}"
-elif [ $1 == 1 ]
+elif [ "$1" == "1" ]
 then
     finalversion=${finalname}"_""testnet"
     echo  "${finalversion}"
@@ -37,4 +37,4 @@ else
     echo "tfs not exist"
 fi;
  
-#sed -i "s/build_commit_hash.*;/build_commit_hash = \"${gitversion}\";/g" ./ca/ca_global.cpp
+#sed -i "s/build_commit_hash.*;/build_commit_hash = \"${gitversion}\";/g" ./ca/global.cpp

@@ -10,8 +10,8 @@
 #ifndef __CA_ADVANCEDMENU_H_
 #define __CA_ADVANCEDMENU_H_
 
+#include <string>
 #include <cstdint>
-
 #include "db/db_api.h"
 
 
@@ -31,14 +31,9 @@ void RollBack();
 void GetStakeList();
 
 /**
- * @brief
- */
-void getBlockByBlockHash();
-
-/**
  * @brief      Get a list of addresses that can claim bonuses
  */
-int GetBounsAddrInfo();
+int GetBonusAddrInfo();
 
 /**
  * @brief       
@@ -78,7 +73,6 @@ void MenuBlockInfo();
  */
 void getTxBlockInfo(uint64_t& top);
 
-
 /**
  * @brief       
  */
@@ -93,12 +87,6 @@ void GetBalanceByUtxo();
  * @brief       
  */
 int ImitateCreateTxStruct();
-
-
-/**
- * @brief       
- */
-int ImitateCreateTxStruct_V33_1();
 
 /**
  * @brief       
@@ -161,12 +149,6 @@ void Get_InvestedNodeBlance();
  */
 void PrintDatabaseBlock();
 
-//nodeMenu
-/**
- * @brief       
- */
-void PrintBlockCache();
-
 /**
  * @brief       
  */
@@ -180,17 +162,12 @@ void MultiTx();
 /**
  * @brief       
  */
-void EvmAddrConversion();
+void testNewAddr();
 
 /**
  * @brief       
  */
-void EvmAddrToBase58();
-
-/**
- * @brief       
- */
-void GenerateEvmAddr();
+void getContractAddr();
 
 /**
  * @brief       
@@ -202,12 +179,22 @@ void PrintBenchmarkToFile();
  */
 void GetRewardAmount();
 
+/**
+ * @brief  
+ */
 void TestManToOneDelegate();
 
-void test_contact_thread(uint32_t time, uint32_t second, uint32_t much);
-void contact_thread();
+/**
+ * @brief  open log
+ */
+void OpenLog();
 
+/**
+ * @brief  close log
+ */
+void CloseLog();
 
+void TestSign();
 namespace ThreadTest
 {
     /**
@@ -240,6 +227,7 @@ namespace ThreadTest
      * @param       flag: 
      */
     void GetStopTxFlag(bool &flag);
+
 }
 
 #pragma endregion

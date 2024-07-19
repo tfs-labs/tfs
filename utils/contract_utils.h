@@ -10,6 +10,12 @@
 #define _CONTRACTUTILS_H_
 
 #include <evmc/evmc.hpp>
+#include <future>
+#include <chrono>
+#include <ostream>
+#include <evmc/hex.hpp>
+#include <evmone/evmone.h>
+
 
 namespace evm_utils
 {
@@ -18,11 +24,10 @@ namespace evm_utils
     /**
      * @brief       
      * 
-     * @param       hash: 
      * @param       address: 
      * @return      std::string 
      */
-    std::string ToChecksumAddress(const std::string& hash, const std::string& address);
+    std::string ToChecksumAddress(const std::string& address);
 
     /**
      * @brief       
@@ -46,7 +51,7 @@ namespace evm_utils
      * @param       addr: 
      * @return      std::string 
      */
-    std::string EvmAddrToBase58(const evmc_address& addr);
+    std::string EvmAddrTo(const evmc_address& addr);
 
     /**
      * @brief       
@@ -59,26 +64,18 @@ namespace evm_utils
     /**
      * @brief       
      * 
-     * @param       pub: 
-     * @return      std::string 
-     */
-    std::string GenerateEvmAddr(const std::string& pub);
-
-    /**
-     * @brief       
-     * 
      * @param       input: 
      * @return      std::string 
      */
     std::string GenerateContractAddr(const std::string& input);
 
-    /**
-     * @brief       
-     * 
-     * @param       addr: 
-     * @return      std::string 
-     */
-    std::string EvmAddrToBase58(const std::string& addr);
+    // /**
+    //  * @brief       
+    //  * 
+    //  * @param       addr: 
+    //  * @return      std::string 
+    //  */
+    // std::string EvmAddrTo(const std::string& addr);
 
     /**
      * @brief       Get the Evm Addr object
@@ -88,13 +85,15 @@ namespace evm_utils
      */
     std::string GetEvmAddr(const std::string& pub);
 
-    /**
-     * @brief       
-     * 
-     * @param       addr: 
-     * @return      std::string 
-     */
-    std::string EvmAddrToChecksum(const std::string& addr);
+    evmc_uint256be Uint32ToEvmcUint256be(uint32_t x);
+
+    uint32_t EvmcUint256beToUint32(evmc_uint256be value);
+
+    bytes StringTobytes(const std::string& content);
+
+    std::string BytesToString(const bytes& content);
+
+    int GetContractCode(const std::string& contractAddress, bytes& code);
 }
 
 

@@ -14,7 +14,6 @@
 #include <filesystem>
 #include <dirent.h>
 
-#include "base58.h"
 #include "hex_code.h"
 #include "utils/time_util.h"
 #include "magic_singleton.h"
@@ -24,10 +23,6 @@
 #include "utils/bip39.h"
 #include "include/scope_guard.h"
 
-// #include "../openssl/include/openssl/evp.h"
-// #include "../openssl/include/openssl/ec.h"
-// #include "../openssl/include/openssl/pem.h"
-// #include "../openssl/include/openssl/core_names.h"
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
@@ -37,23 +32,26 @@
  * @brief       
  * 
  */
+static const int PrimeSeedNum = 16;
+static const int DerivedSeedNum = 32;
 class Account
 {
     public:
-        Account();
-        /**
-         * @brief       Construct a new Account object
-         * 
-         * @param       ver: 
-         */
-        Account(Base58Ver ver);
+        Account(const bool isNeedInitialize) :_pkey(nullptr, &EVP_PKEY_free){
+            _GenerateRandomSeed();
+            _GeneratePkey();
+        }
+        Account():_pkey(nullptr, &EVP_PKEY_free),_pubStr(), _priStr(), _Addr(), _seed{}{}
 
         /**
          * @brief       Construct a new Account object
          * 
          * @param       bs58Addr: 
          */
-        Account(const std::string &bs58Addr);
+        Account(const std::string &addressFileName):_pkey(nullptr, &EVP_PKEY_free)
+        {
+            _GenerateFilePkey(addressFileName);
+        }
 
         /**
          * @brief       Construct a new Account object
@@ -176,47 +174,78 @@ class Account
          * 
          * @return      std::string 
          */
-        std::string GetBase58() const
+        std::string GetAddr() const
         {
-            return _base58Addr;
+            return _Addr;
         }
 
         /**
          * @brief       Set the Base 5 8 object
          * 
-         * @param       base58: 
+         * @param       addr: 
          */
-        void SetBase58(std::string & base58)
+        void SetAddr(std::string & addr)
         {
-            _base58Addr = base58;
+            _Addr = addr;
         }
 
+        uint8_t* GetSeed()
+        {
+            return _seed;
+        }
+
+        void SetSeed(const uint8_t* seed)
+        {
+            for(int i = 0;i < PrimeSeedNum ; i++)
+            {
+                _seed[i] =seed[i];
+            }            
+        }
+        
     private:
         /**
-         * @brief       
+         * @brief  Generate a public key through a pointer
+         * 
          * 
          */
-        void _GeneratePubStr();
+        void _GeneratePubStr(EVP_PKEY* pkeyPtr);
 
         /**
-         * @brief       
+         * @brief       _GeneratePriStr
          * 
          */
-        void _GeneratePriStr();
+        void _GeneratePriStr(EVP_PKEY* pkeyPtr);
 
         /**
-         * @brief       
+         * @brief      _GenerateAddr 
          * 
-         * @param       ver: 
          */
-        void _GenerateBase58Addr(Base58Ver ver);
+        void _GenerateAddr();
+        
+        /**
+         * @brief      _GenerateRandomSeed 
+         * 
+         */
+        void _GenerateRandomSeed();
+        
+        /**
+         * @brief     _GeneratePkey  
+         * 
+         */
+        void _GeneratePkey();
+
+        /**
+         * @brief       _GenerateFilePkey
+         * 
+         * @param       base58Address 
+         */
+        void _GenerateFilePkey(const std::string &base58Address);
     private:
         std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> _pkey;
-
         std::string _pubStr;
         std::string _priStr;
-        std::string _base58Addr;
-
+        std::string _Addr;
+        uint8_t  _seed[PrimeSeedNum];
 };
 
 /**
@@ -246,23 +275,23 @@ class AccountManager
         /**
          * @brief       
          * 
-         * @param       base58addr: 
+         * @param       addr: 
          */
-        void DeleteAccount(const std::string& base58addr);
+        void DeleteAccount(const std::string& addr);
 
         /**
          * @brief       Set the Default Base 5 8 Addr object
          * 
          * @param       bs58Addr: 
          */
-        void SetDefaultBase58Addr(const std::string & bs58Addr);
+        void SetDefaultAddr(const std::string & bs58Addr);
 
         /**
          * @brief       Get the Default Base 5 8 Addr object
          * 
          * @return      std::string 
          */
-        std::string GetDefaultBase58Addr() const;
+        std::string GetDefaultAddr() const;
 
         /**
          * @brief       Set the Default Account object
@@ -301,12 +330,12 @@ class AccountManager
         /**
          * @brief       Get the Account List object
          * 
-         * @param       base58_list: 
+         * @param       _list: 
          */
-        void GetAccountList(std::vector<std::string> & base58_list);
+        void GetAccountList(std::vector<std::string> & _list);
 
         /**
-         * @brief       
+         * @brief       The public key is obtained by public key binary
          * 
          * @param       pubStr: 
          * @param       account: 
@@ -318,10 +347,10 @@ class AccountManager
         /**
          * @brief       
          * 
-         * @param       base58Addr: 
+         * @param       Addr: 
          * @return      int 
          */
-        int SavePrivateKeyToFile(const std::string & base58Addr);
+        int SavePrivateKeyToFile(const std::string & Addr);
 
         /**
          * @brief       Get the Mnemonic object
@@ -355,15 +384,60 @@ class AccountManager
          * @param       privateKeyHex: 
          * @return      int 
          */
-        int ImportPrivateKeyHex(const std::string & privateKeyHex);
+        int ImportPrivateKeyHex(uint8_t *inputSeed);
 
     private:
-        // friend std::string PrintCache(int where);
-        std::string _defaultBase58Addr;
-        std::map<std::string /*base58addr*/, std::shared_ptr<Account>> _accountList;
+        std::string _defaultAddr;
+        std::map<std::string /*addr*/, std::shared_ptr<Account>> _accountList;
         
         int _init();
 };
+class VerifiedAddressSet {
+private:
+    std::unordered_set<std::string> verifiedAddresses;
+    std::mutex mutex;
+
+public:
+    void markAddressVerified(const std::string& address) {
+        std::lock_guard<std::mutex> lock(mutex);
+        verifiedAddresses.insert(address);
+    }
+
+    bool isAddressVerified(const std::string& address) {
+        std::lock_guard<std::mutex> lock(mutex);
+        return verifiedAddresses.count(address) > 0;
+    }
+};
+
+class AddressCache {
+private:
+    std::unordered_map<std::string, std::string> cache;
+    std::mutex mutex;
+
+public:
+    void addPublicKey(const std::string& publicKey, const std::string& address) {
+        std::lock_guard<std::mutex> lock(mutex);
+        cache[publicKey] = address;
+    }
+
+    std::string getAddress(const std::string& publicKey) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (cache.count(publicKey) > 0) {
+            return cache[publicKey];
+        }
+        return "";
+    }
+};
+
+bool isValidAddress(const std::string& address);
+
+/**
+ * @brief       
+ * 
+ * @param       publicKey: 
+ * @return      std::string 
+ */
+std::string GenerateAddr(const std::string& publicKey);
 
 /**
  * @brief       
@@ -377,7 +451,6 @@ void TestED25519Time();
  */
 void TestEDFunction();
 
-//base64 Encryption and decryption
 /**
  * @brief       
  * 
@@ -434,4 +507,11 @@ bool ED25519VerifyMessage(const std::string &message, EVP_PKEY* pkey, const std:
  */
 bool GetEDPubKeyByBytes(const std::string &pubStr, EVP_PKEY* &pKey);
 
+/**
+ * @brief       generater random seed
+ * 
+ * @return      std::vector<unsigned char> 
+ */
+
+void sha256_hash(const uint8_t* input, size_t input_len, uint8_t* output);
 #endif

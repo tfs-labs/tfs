@@ -13,8 +13,6 @@
 #include <utils/json.hpp>
 #include "global.h"
 #include "db/db_api.h"
-#include "proto/block.pb.h"
-
 namespace ca_algorithm
 {
 /**
@@ -40,8 +38,6 @@ int GetAbnormalSignAddrListByPeriod(uint64_t &curTime, std::map<std::string, dou
  * @return      int64_t 
  */
 int64_t GetPledgeTimeByAddr(const std::string &addr, global::ca::StakeType stakeType, DBReader *dbReaderPtr = nullptr);
-
-
 /**
  * @brief       
  * 
@@ -49,8 +45,6 @@ int64_t GetPledgeTimeByAddr(const std::string &addr, global::ca::StakeType stake
  * @return      std::string 
  */
 std::string CalcTransactionHash(CTransaction tx);
-
-
 /**
  * @brief       
  * 
@@ -97,24 +91,12 @@ int MemVerifyTransactionTx(const CTransaction &tx);
 int VerifyTransactionTx(const CTransaction &tx, uint64_t txHeight, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true);
 
 /**
- * @brief       Verification transaction
- * 
- * @param       tx: 
- * @param       tx_height: 
- * @param       turn_on_missing_block_protocol: 
- * @param       verify_abnormal: 
- * @return      int 
- */
-int VerifyTransactionTx_V33_1(const CTransaction &tx, uint64_t txHeight, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true);
-
-/**
  * @brief       
  * 
  * @param       block: 
  * @return      int 
  */
 int VerifyPreSaveBlock(const CBlock &block);
-
 /**
  * @brief       
  * 
@@ -123,7 +105,6 @@ int VerifyPreSaveBlock(const CBlock &block);
  * @return      int 
  */
 int VerifySign(const CSign & sign, const std::string & serHash);
-
 /**
  * @brief       Check block
  * 
@@ -134,12 +115,41 @@ int VerifySign(const CSign & sign, const std::string & serHash);
  */
 int MemVerifyBlock(const CBlock& block, bool isVerify = true, BlockStatus* blockStat = nullptr);
 
+/**
+ * @brief
+ * 
+ * @param       verifyCalledContract: 
+ * @param       calledContract: 
+ * @return      bool 
+ */
 bool VerifyDirtyContract(const std::vector<std::string> &verifyCalledContract, const std::vector<std::string> &calledContract);
 
+/**
+ * @brief       Verify the contract storage data
+ * 
+ * @param       txInfo: 
+ * @param       expectedTxInfo: 
+ * @return      int 
+ */
 int VerifyContractStorage(const nlohmann::json& txInfo, const nlohmann::json& expectedTxInfo);
-
-int VerifyContractBlock(const CBlock &block,BlockMsg * msg = nullptr);
+/**
+ * @brief
+ * 
+ * @param       ContractTxs: 
+ * @param       dependTx: 
+ * @param       block:
+ * @param       blockData:
+ * @return      int 
+ */
 int verifyContractDependenciesTx(const std::map<std::string, CTransaction>& ContractTxs, std::map<std::string,std::vector<std::string>>& dependTx, const CBlock &block, nlohmann::json& blockData);
+
+/**
+ * @brief       Verify that the contract block is correct
+ * 
+ * @param       block: 
+ * @return      int 
+ */
+int VerifyContractBlock(const CBlock &block);
 /**
  * @brief       Check block
  * 
@@ -148,11 +158,10 @@ int verifyContractDependenciesTx(const std::map<std::string, CTransaction>& Cont
  * @param       verifyAbnormal: 
  * @param       isVerify: 
  * @param       blockStatus: 
+ * @param       msg: 
  * @return      int 
  */
 int VerifyBlock(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr,BlockMsg* msg = nullptr);
-// int VerifyBlock(const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean, bool verify_abnormal = true);
-int VerifyBlock_V33_1(const CBlock &block, bool turnOnMissingBlockProtocol = false, bool verifyAbnormal = true, bool isVerify = true, BlockStatus* blockStatus = nullptr);
 /**
  * @brief       
  * 
@@ -164,18 +173,6 @@ int VerifyBlock_V33_1(const CBlock &block, bool turnOnMissingBlockProtocol = fal
  */
 int SaveBlock(DBReadWriter &dbWriter, const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean);
 
-
-/**
- * @brief       
- * 
- * @param       dbWriter: 
- * @param       block: 
- * @param       saveType: 
- * @param       obtainMean: 
- * @return      int 
- */
-int SaveBlock_V33_1(DBReadWriter &dbWriter, const CBlock &block, global::ca::SaveType saveType, global::ca::BlockObtainMean obtainMean);
-
 /**
  * @brief       
  * 
@@ -184,16 +181,6 @@ int SaveBlock_V33_1(DBReadWriter &dbWriter, const CBlock &block, global::ca::Sav
  * @return      int 
  */
 int DeleteBlock(DBReadWriter &dbWriter, const std::string &blockHash);
-
-
-/**
- * @brief       
- * 
- * @param       dbWriter: 
- * @param       blockHash: 
- * @return      int 
- */
-int DeleteBlock_V33_1(DBReadWriter &dbWriter, const std::string &blockHash);
 
 /**
  * @brief       When calling, pay attention not to have too much difference between the height and the maximum height. The memory occupation is too large, and the process is easy to be killed
@@ -211,39 +198,28 @@ int RollBackToHeight(uint64_t height);
  * @return      int 
  */
 int RollBackByHash(const std::string &blockHash);
-
 /**
  * @brief       
  * 
  * @param       tx: 
  */
 void PrintTx(const CTransaction &tx);
-
 /**
  * @brief       
  * 
  * @param       block: 
  */
 void PrintBlock(const CBlock &block);
-
 /**
  * @brief       Calculate the pledge rate and obtain the rate of return
  * 
  * @param       curTime: 
  * @param       bonusAddr: 
  * @param       vlaues: 
+ * @param       isDisplay: 
  * @return      int 
  */
-int CalcBonusValue(uint64_t &curTime, const std::string &bonusAddr,std::map<std::string, uint64_t> & vlaues);
-
-/**
- * @brief       
- * 
- * @return      int 
- */
-int CalcBonusValue();
-
-
+int CalcBonusValue(uint64_t &curTime, const std::string &bonusAddr,std::map<std::string, uint64_t> & vlaues,bool isDisplay = false);
 /**
  * @brief       Get the Inflation Rate object
  * 
@@ -253,7 +229,6 @@ int CalcBonusValue();
  * @return      int 
  */
 int GetInflationRate(const uint64_t &curTime, const uint64_t &&StakeRate, double &InflationRate);    
-
 /**
  * @brief       Get the Sum Hash Ceiling Height object
  * 
@@ -261,7 +236,6 @@ int GetInflationRate(const uint64_t &curTime, const uint64_t &&StakeRate, double
  * @return      uint64_t Ceiling Height
  */
 uint64_t GetSumHashCeilingHeight(uint64_t height);
-
 /**
  * @brief       Get the Sum Hash Floor Height object
  * 
@@ -269,7 +243,6 @@ uint64_t GetSumHashCeilingHeight(uint64_t height);
  * @return      uint64_t Floor Height
  */
 uint64_t GetSumHashFloorHeight(uint64_t height);
-
 /**
  * @brief       
  * 
@@ -300,17 +273,22 @@ int Calc1000HeightsSumHash(uint64_t blockHeight, DBReadWriter &dbWriter, std::st
  * @return      false 
  */
 bool CalculateHeightSumHash(uint64_t startHeight, uint64_t endHeight, DBReadWriter &dbWriter, std::string &sumHash);
-
-
 /**
  * @brief       Get the Commission Percentage object
  * 
- * @param       addr: base58
- * @param       commission: Commission Percentage
+ * @param       addr: 
+ * @param       retCommissionRate: Commission Percentage
  * @return      int 0 success
  */
-int GetCommissionPercentage(const std::string& addr, double& commission);
-
+int GetCommissionPercentage(const std::string& addr, double& retCommissionRate);
+/**
+ * @brief       Get the starting address for executing the contract
+ * 
+ * @param       transaction:
+ * @param       isMultiSign:
+ * @param       fromAddr:
+ * @return      int 0 success
+ */
 int GetCallContractFromAddr(const CTransaction& transaction, bool isMultiSign, std::string& fromAddr);
 }; // namespace ca_algorithm
 

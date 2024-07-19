@@ -68,7 +68,7 @@ public:
     const std::string kCfgLogConsole = "console";
     const std::string kCfgServerPort = "server_port";
     const std::string kCfgKeyVersion = "version";
-    const std::string kNewConfigName = "0.34";
+
     nlohmann::json tmpJson ;
     int count = 0;
 
@@ -83,6 +83,7 @@ public:
     {
         int ret = InitFile();
         if ( ret == 0 ) flag = true;
+        _thread = std::thread(std::bind(&Config::_Check, this));
     };
     
     ~Config()
@@ -174,6 +175,8 @@ public:
      */
     std::set<std::string> GetServer();
 
+    std::string GetVersion();
+
     /**
      * @brief       
      * 
@@ -247,9 +250,9 @@ public:
      */
     void GetAllServerAddress();
 
-//    int FilterVersion(std::string  & Version);
-   
+    std::string Get_RequestIp(const std::string& host, const std::string& path, int port);
 
+    std::string ExecuteBasedOnGlobalOptions();
 
 private:
     /**
@@ -279,7 +282,6 @@ private:
      * 
      */
     void _Check();
-
  
 private:
 

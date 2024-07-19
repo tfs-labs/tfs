@@ -65,10 +65,12 @@ public:
         }
         return false;
     }
+
 private:
     std::unordered_map<std::string, std::string> contractDataMap;
     mutable std::shared_mutex contractDataMapMutex;
 };
+
 class Trie
 {
 public:
@@ -76,6 +78,21 @@ public:
     {
         root = NULL;
     }
+
+    Trie(std::string ContractAddr) 
+    {
+        root = NULL;
+        this->contractAddr = ContractAddr;
+    }
+    
+    Trie(std::string roothash, std::string ContractAddr) 
+    {
+        this->contractAddr = ContractAddr;
+        auto roothashnode = std::shared_ptr<packing<HashNode>>(
+            new packing<HashNode>(HashNode{ roothash }));
+        root = ResolveHash(roothashnode, "");
+    }
+
     Trie(std::string ContractAddr, ContractDataCache* contractDataCache) 
     {
         root = NULL;
@@ -106,7 +123,6 @@ public:
     nodePtr Update(std::string key, std::string value);
 
     nodePtr DescendKey(std::string key) const;
-    nodePtr DescendKey_V33_1(std::string key) const;
     nodePtr DecodeShort(std::string hash, dev::RLP const& r) const;
     nodePtr DecodeFull(std::string hash, dev::RLP const& r) const;
     nodePtr DecodeRef(dev::RLP const& r) const;
@@ -131,12 +147,11 @@ public:
     int Toint(char c) const;
 
     void GetBlockStorage(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash);
-    void GetBlockStorage_V33_1(std::pair<std::string, std::string>& rootHash, std::map<std::string, std::string>& dirtyHash);
 public:
     mutable nodePtr root;
     std::string contractAddr;
     std::map<std::string, std::string> dirtyHash;
-    mutable ContractDataCache* contractDataCache;
+     mutable ContractDataCache* contractDataCache;
 };
 #endif
 

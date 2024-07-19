@@ -28,17 +28,19 @@
 
 #include "../proto/net.pb.h"
 #include "../proto/common.pb.h"
+#include "../proto/block.pb.h"
+#include "db/db_api.h"
+
 #include "../common/global.h"
 #include "../include/logging.h"
-#include "../ca/global.h"
-#include "../ca/transaction.h"
 #include "../utils/time_util.h"
 #include "../utils/console.h"
 
 #include "../utils/account_manager.h"
 #include "../utils/cycliclist.hpp"
 #include "../utils/tmp_log.h"
-#include "../ca/algorithm.h"
+#include "common/global_data.h"
+#include "key_exchange.h"
 
 int net_tcp::Socket(int family, int type, int protocol)
 {
@@ -142,7 +144,7 @@ int net_tcp::Send(int sockfd, const void *buf, size_t len, int flags)
 			else 
 			{
 				MagicSingleton<PeerNode>::GetInstance()->DeleteByFd(sockfd);
-				return -1;
+				return -2;
 			}
 		}
 
@@ -302,6 +304,10 @@ int net_com::InitConnection(u32 u32_ip, u16 u16_port, u16 &connectedPort)
 	return confd;
 }
 
+void net_com::SendMessageTask(const std::string& addr, BuildBlockBroadcastMsg &msg) {
+  	net_com::SendMessage(addr, msg);
+}
+
 bool net_com::SendOneMessage(const Node &to, const NetPack &pack)
 {
 	auto msg = Pack::PackagToStr(pack);
@@ -338,9 +344,16 @@ bool net_com::SendOneMessage(const MsgData& to, const NetPack &pack)
 	return bRet;
 }
 
-void net_com::SendMessageTask(const std::string& addr, BuildBlockBroadcastMsg &msg) {
-  	net_com::SendMessage(addr, msg);
+bool net_com::SendEcdhMessage(const Node &dest, KeyExchangeRequest &msg)
+{
+	CommonMsg comm_msg;
+	Pack::InitCommonMsg(comm_msg, msg, 0, 0);
+	NetPack pack;
+	Pack::PackCommonMsg(comm_msg, (uint8_t)Priority::kPriority_High_2, pack);
+
+	return net_com::SendOneMessage(dest, pack);
 }
+
 
 uint64_t net_data::DataPackPortAndIp(uint16_t port, uint32_t ip)
 {
@@ -380,58 +393,11 @@ int net_com::AnalysisConnectionKind(Node &to)
 	return to.connKind;
 }
 
-bool net_com::IsNeedSendTransactionMessage(const Node & to)
-{
-	Node node;
-	bool isFind = MagicSingleton<PeerNode>::GetInstance()->FindNode(to.base58Address, node);
-	auto self_node  = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();
-	
-	if (isFind)
-	{
-		if ((to.connKind != NOTYET))
-		{
-			// Found, and not unconnected or forwarded, can be sent directly
-			return false;
-		}
-		else
-		{
-			// Found, need to forward
-			return true;
-		}
-	}
-	else
-	{
-		if (to.publicBase58Addr.empty())
-		{
-			// There is no connection to the public network forwarding server, 
-			// and it is generally necessary to connect for the first time
-			if (to.listenIp != 0)
-			{
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
-		else
-		{
-			// Nodes that cannot be seen by relying on Internet forwarding
-			return true;
-		}
-	}
-}
-
-void handle_pipe(int sig)
-{
-	// Do nothing
-}
-
 bool net_com::InitializeNetwork()
 {
 	// Capture SIGPIPE signal to prevent accidental exit of the program
 	struct sigaction sa;
-	sa.sa_handler = handle_pipe;
+	sa.sa_handler = SIG_IGN;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = 0;
 	sigaction(SIGPIPE, &sa, NULL);
@@ -444,10 +410,6 @@ bool net_com::InitializeNetwork()
 
 	// Ignore the SIGPIPE signal
 	signal(SIGPIPE, SIG_IGN);
-
-
-	// Register the callback function
-	MagicSingleton<ProtobufDispatcher>::GetInstance()->RetisterAll();
 
 	if (MagicSingleton<Config>::GetInstance()->GetIP().empty())
 	{
@@ -474,14 +436,6 @@ bool net_com::InitializeNetwork()
 		std::cout << "The current IP address is " << global::g_localIp << ". Please use an external IP address." << std::endl;
 		return false;
 	}
-	
-	if (global::kBuildType == global::BuildType::kBuildType_Primary && 
-		IpPort::IsPublicIp(global::g_localIp) == false)
-	{
-		ERRORLOG("Primary net local IP must be public IP");
-		return false;
-	}
-
 
 	INFOLOG("The Intranet ip is not empty");
 	
@@ -491,7 +445,7 @@ bool net_com::InitializeNetwork()
 		return false;
 	}
 
-	MagicSingleton<PeerNode>::GetInstance()->SetSelfId(acc.GetBase58());
+	MagicSingleton<PeerNode>::GetInstance()->SetSelfId(acc.GetAddr());
 	MagicSingleton<PeerNode>::GetInstance()->SetSelfIdentity(acc.GetPubStr());
 	MagicSingleton<PeerNode>::GetInstance()->SetSelfHeight();
 	
@@ -504,7 +458,7 @@ bool net_com::InitializeNetwork()
 	MagicSingleton<Config>::GetInstance()->GetInfo(info);
 
 	MagicSingleton<PeerNode>::GetInstance()->SetSelfName(info.name);
-	MagicSingleton<PeerNode>::GetInstance()->SetSelfLogo(  info.logo );
+	MagicSingleton<PeerNode>::GetInstance()->SetSelfLogo(info.logo );
 
 	MagicSingleton<PeerNode>::GetInstance()->SetSelfVer(global::kVersion);
 
@@ -530,18 +484,18 @@ bool net_com::InitializeNetwork()
 int net_com::SendOneMessageByInput()
 {
 	DEBUGLOG(RED "SendOneMessageByInput start" RESET);
-	string id;
-	cout << "please input id:";
-	cin >> id;
+	std::string id;
+	std::cout << "please input id:";
+	std::cin >> id;
 
 	while (true)
 	{
 		//Verify that the ID is legitimate
-		bool result = CheckBase58Addr(id, Base58Ver::kBase58Ver_Normal);
+		bool result = isValidAddress(id);
 		if (false == result)
 		{
-			cout << "invalid id , please input id:";
-			cin >> id;
+			std::cout << "invalid id , please input id:";
+			std::cin >> id;
 			continue;
 		}
 		else
@@ -550,13 +504,13 @@ int net_com::SendOneMessageByInput()
 		}
 	};
 
-	string msg;
-	cout << "please input msg:";
-	cin >> msg;
+	std::string msg;
+	std::cout << "please input msg:";
+	std::cin >> msg;
 
 	int num;
-	cout << "please input num:";
-	cin >> num;
+	std::cout << "please input num:";
+	std::cin >> num;
 
 	bool bl;
 	for (int i = 0; i < num; ++i)
@@ -579,7 +533,7 @@ int net_com::SendOneMessageByInput()
 //Test the broadcast information
 int net_com::BroadCastMessageByTest()
 {
-	string str_buf = "Hello World!";
+	std::string str_buf = "Hello World!";
 
 	PrintMsgReq printMsgReq;
 	printMsgReq.set_data(str_buf);
@@ -595,10 +549,10 @@ int net_com::BroadCastMessageByTest()
 
 bool net_com::SendBigDataByTest()
 {
-	string id;
-	cout << "please input id:";
-	cin >> id;
-	auto IsVaild = [](string idStr) {
+	std::string id;
+	std::cout << "please input id:";
+	std::cin >> id;
+	auto IsVaild = [](std::string idStr) {
 		int count = 0;
 		for (auto i : idStr)
 		{
@@ -610,8 +564,8 @@ bool net_com::SendBigDataByTest()
 	};
 	while (IsVaild(id))
 	{
-		cout << "IsVaild id , please input id:";
-		cin >> id;
+		std::cout << "IsVaild id , please input id:";
+		std::cin >> id;
 	};
 	Node tmpNode;
 	if (!MagicSingleton<PeerNode>::GetInstance()->FindNode(std::string(id), tmpNode))
@@ -619,10 +573,10 @@ bool net_com::SendBigDataByTest()
 		DEBUGLOG("invaild id, not in my peer node");
 		return false;
 	}
-	string tmpData;
+	std::string tmpData;
 	int txtNum;
-	cout << "please input test byte num:";
-	cin >> txtNum;
+	std::cout << "please input test byte num:";
+	std::cin >> txtNum;
 	for (int i = 0; i < txtNum; i++)
 	{
 		char x, s;									  
@@ -676,13 +630,13 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msgId, bool isGetNodeL
 		return 0;
 	}
 
-	if(!CheckBase58Addr(selfNode.base58Address, Base58Ver::kBase58Ver_Normal))
+	if(!isValidAddress(selfNode.address))
 	{
-		ERRORLOG(" SendRegisterNodeReq selfNode.base58Address {} error",selfNode.base58Address);
+		ERRORLOG(" SendRegisterNodeReq selfNode.address {} error",selfNode.address);
 		return -1;
 	}
 
-    mynode->set_base58addr(selfNode.base58Address);
+    mynode->set_addr(selfNode.address);
 	mynode->set_name(selfNode.name);
 	mynode->set_listen_ip( selfNode.listenIp);
 	mynode->set_logo(selfNode.logo);
@@ -699,28 +653,33 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msgId, bool isGetNodeL
 		ERRORLOG("The default account does not exist");
 		return -2;
 	}
-	if (selfNode.base58Address != acc.GetBase58())
+	if (selfNode.address != acc.GetAddr())
 	{
-		ERRORLOG("The account address is incorrect : {} , : {}", selfNode.base58Address, acc.GetBase58());
+		ERRORLOG("The account address is incorrect : {} , : {}", selfNode.address, acc.GetAddr());
 		return -3;
 	}
-	if(!acc.Sign(Getsha256hash(acc.GetBase58()), signature))
+	if(!acc.Sign(Getsha256hash(acc.GetAddr()), signature))
 	{
-		ERRORLOG("sign fail , address : {}", acc.GetBase58());
+		ERRORLOG("sign fail , address : {}", acc.GetAddr());
 		return -4;
 	}
 
 	mynode->set_identity(acc.GetPubStr());
 	mynode->set_sign(signature);
 
-	// connect
-	if (MagicSingleton<PeerNode>::GetInstance()->ConnectNode(dest) != 0)
+	auto ret = MagicSingleton<KeyExchangeManager>::GetInstance()->SendKeyExchangeReq(dest);
+	if(ret < 0)
 	{
-		ERRORLOG(" ConnectNode error ip:{}", IpPort::IpSz(dest.publicIp));
+		ERRORLOG("KeyExchange fail !!!, ret:{}", ret);
 		return -5;
 	}
- 
-	net_com::SendMessage(dest, getNodes, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
+	std::string ipPort = std::to_string(dest.publicIp) + ":" + std::to_string(dest.publicPort);
+	DEBUGLOG("AddResNode, msg_id:{} peerId:{}", msgId, ipPort);
+	if(!GLOBALDATAMGRPTR.AddResNode(msgId, ipPort))
+	{
+		return -6;
+	}
+	net_com::SendMessage(dest, getNodes, net_com::Compress::kCompress_True, net_com::Priority::kPriority_High_2);
 	
 	return 0;
 }
@@ -728,42 +687,46 @@ int net_com::SendRegisterNodeReq(Node& dest, std::string &msgId, bool isGetNodeL
 void net_com::SendPingReq(const Node& dest)
 {
 	PingReq pingReq;
-	pingReq.set_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
-	net_com::SendMessage(dest, pingReq, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
+	std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
+	pingReq.set_id(defaultAddr);
+	DEBUGLOG("dest addr:{}", dest.address);
+	net_com::SendMessage(dest, pingReq, net_com::Compress::kCompress_True, net_com::Priority::kPriority_High_2);
 }
 
 void net_com::SendPongReq(const Node& dest)
 {
 	PongReq pongReq;
-	pongReq.set_id(MagicSingleton<PeerNode>::GetInstance()->GetSelfId());
-
-	net_com::SendMessage(dest, pongReq, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
+	std::string defaultAddr = MagicSingleton<AccountManager>::GetInstance()->GetDefaultAddr();
+	pongReq.set_id(defaultAddr);
+	DEBUGLOG("dest addr:{}", dest.address);
+	net_com::SendMessage(dest, pongReq, net_com::Compress::kCompress_True, net_com::Priority::kPriority_High_2);
 }
 
 void net_com::DealHeart()
 {
 	Node mynode = MagicSingleton<PeerNode>::GetInstance()->GetSelfNode();	
-	vector<Node> pubNodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
+	std::vector<Node> pubNodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 
 	//Exclude yourself
-	vector<Node>::iterator end = pubNodeList.end();
-	for(vector<Node>::iterator it = pubNodeList.begin(); it != end; ++it)
+	std::vector<Node>::iterator end = pubNodeList.end();
+	for(std::vector<Node>::iterator it = pubNodeList.begin(); it != end; ++it)
 	{
-		if(mynode.base58Address == it->base58Address)
+		if(mynode.address == it->address)
 		{
 			it = pubNodeList.erase(it);
 		}
 	}
-	vector<Node> nodelist;
+	std::vector<Node> nodelist;
 	nodelist.insert(nodelist.end(),pubNodeList.begin(),pubNodeList.end());
 	for(auto &node:nodelist)
 	{
-		node.heartProbes -= 1;
-		if(node.heartProbes <= 0)
+		node.pulse -= 1;
+		if(node.pulse <= 0)
 		{
-			DEBUGLOG("DealHeart delete node: {}", node.base58Address);
+			// net_com::SendPingReq(node);
+			DEBUGLOG("DealHeart delete node: {}", node.address);
 
-			MagicSingleton<PeerNode>::GetInstance()->DeleteNode(node.base58Address);
+			MagicSingleton<PeerNode>::GetInstance()->DeleteNode(node.address);
 		}
 		else
 		{
@@ -786,9 +749,13 @@ bool net_com::SendSyncNodeReq(const Node& dest, std::string &msgId)
 		return false;
 	}
 	//Stores its own node ID
-	syncNodeReq.set_ids(std::move(self_node.base58Address));
+	syncNodeReq.set_ids(std::move(self_node.address));
 	syncNodeReq.set_msg_id(msgId);
-	return net_com::SendMessage(dest, syncNodeReq, net_com::Compress::kCompress_True, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
+	if(!GLOBALDATAMGRPTR.AddResNode(msgId, dest.address))
+	{
+		return false;
+	}
+	return net_com::SendMessage(dest, syncNodeReq, net_com::Compress::kCompress_True, net_com::Priority::kPriority_High_2);
 }
 
 void net_com::SendNodeHeightChanged()
@@ -804,10 +771,10 @@ void net_com::SendNodeHeightChanged()
 	Account defaultEd;
 	MagicSingleton<AccountManager>::GetInstance()->GetDefaultAccount(defaultEd);
 
-	std::stringstream base58Height;
+	std::stringstream Height;
 
-	base58Height << selfId << "_" << std::to_string(chainHeight);
-	std::string serVinHash = Getsha256hash(base58Height.str());
+	Height << selfId << "_" << std::to_string(chainHeight);
+	std::string serVinHash = Getsha256hash(Height.str());
 	std::string signature;
 	std::string pub;
 
@@ -824,29 +791,29 @@ void net_com::SendNodeHeightChanged()
 	std::vector<Node> publicNodes = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 	for (auto& node : publicNodes)
 	{
-		net_com::SendMessage(node, heightChangeReq, net_com::Compress::kCompress_False, net_com::Encrypt::kEncrypt_False, net_com::Priority::kPriority_High_2);
+		net_com::SendMessage(node, heightChangeReq, net_com::Compress::kCompress_False, net_com::Priority::kPriority_High_2);
 	}
 }
 
 namespace net_callback
 {
-	std::function<int(uint32_t &)> chainHeightCallback =  nullptr;
+	GetChainHeightCallback chainHeightCallback =  nullptr;
+	CalculateChainHeightCallback calculateChainHeightCallback = nullptr;
 }
 
-void net_callback::RegisterChainHeightCallback(std::function<int(uint32_t &)> callback)
+void net_callback::RegisterChainHeightCallback(GetChainHeightCallback callback)
 {
 	net_callback::chainHeightCallback = callback;
 }
 
+void net_callback::RegisterCalculateChainHeightCallback(CalculateChainHeightCallback callback)
+{
+	net_callback::calculateChainHeightCallback = callback;
+}
+
 bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, const net_com::Compress isCompress, const net_com::Encrypt isEncrypt, const net_com::Priority priority)
 {	
-
 	const std::vector<Node>&& publicNodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
-	if(global::kBuildType == global::BuildType::kBuildType_Dev)
-	{
-		// std::cout << "Total number of public nodelists:" << publicNodeList.size() << std::endl;
-		INFOLOG("Total number of public nodelists: {}",  publicNodeList.size());
-	}
 	if(publicNodeList.empty())
 	{
 		ERRORLOG("publicNodeList is empty!");
@@ -861,7 +828,7 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 		ERRORLOG("Unconnected nodes are {},accounting for {}%", cntUnConnected, percent * 100);
 		return false;
 	}
-	// std::cout << "Verification passed, start broadcasting!" << std::endl;
+
 	INFOLOG("Verification passed, start broadcasting!");
 
 	CBlock block;
@@ -887,14 +854,14 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 		{
 			for(const auto & node : source)
 			{
-				allAddresses.insert(node.base58Address);
+				allAddresses.insert(node.address);
 			}
 			return allAddresses;
 		}
 
 		while(allAddresses.size()< num){
 			int index=getNextNumber(limit);
-			allAddresses.insert(source[index].base58Address);
+			allAddresses.insert(source[index].address);
 		}
 		return allAddresses;
 	};
@@ -909,16 +876,17 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 	std::vector<Node> nodeList = MagicSingleton<PeerNode>::GetInstance()->GetNodelist();
 	std::set<std::string> addrs;
 	
-    uint64_t t9 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	if(block.height() < 500)
+	if(block.height() < global::ca::kMinUnstakeHeight)
 	{
 		if(nodeList.size() <= global::g_broadcastThreshold)
 		{
-			BuildBlockMsg.set_type(2);//Set the number of broadcasts to two
+			BuildBlockMsg.set_type(1);//Set the number of broadcasts to two
+			for(auto &node : nodeList)
+			{
+				BuildBlockMsg.add_castaddrs(node.address);
+			}
 			for(auto & node : nodeList){
-				
-				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", node.base58Address, block.hash().substr(0,6));		
-				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, node.base58Address, BuildBlockMsg));
+				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, node.address, BuildBlockMsg));
 			}
 
 		}else{
@@ -929,28 +897,27 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 			{
 				BuildBlockMsg.add_castaddrs(addr);	
 			}
-			for(auto & addr: addrs) {
-				
-				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", addr,block.hash().substr(0,6));		
+			for(auto & addr : addrs) {		
 				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, addr, BuildBlockMsg));
 			}
 		}
 	}
 	else
 	{
+		DBReader dbReader;
 		std::vector<Node> eligibleAddress;
+		std::vector<std::string> pledgeUtxoHashs;
 		for(auto & node : nodeList)
 		{
 			//Verification of  pledge
-			int64_t stakeTime = ca_algorithm::GetPledgeTimeByAddr(node.base58Address, global::ca::StakeType::kStakeType_Node);
-			if (stakeTime > 0)
-			{
+			int ret = dbReader.GetStakeAddressUtxo(node.address, pledgeUtxoHashs);
+			if(DBStatus::DB_SUCCESS == ret || !pledgeUtxoHashs.empty()){
 				eligibleAddress.push_back(node);
 			}
 		}
 
 		if(nodeList.size() >= global::g_broadcastThreshold * global::g_broadcastThreshold)
-		{//2500 m+m^2=nodelist.size();
+		{
 			int m = getRootOfEquation(nodeList.size());
 			int threshold = eligibleAddress.size() > m ? m : eligibleAddress.size();
 			addrs = getTargetIndexs(threshold, eligibleAddress.size(), eligibleAddress);
@@ -961,9 +928,7 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 				BuildBlockMsg.add_castaddrs(addr);	
 			}
 			
-			for(auto & addr : addrs){
-				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", addr,block.hash().substr(0,6));			
-				//net_com::SendMessage(addr, BuildBlockMsg);
+			for(auto & addr : addrs){	
 				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, addr, BuildBlockMsg));
 			}
 		}
@@ -979,22 +944,11 @@ bool net_com::BroadBroadcastMessage( BuildBlockBroadcastMsg& BuildBlockMsg, cons
 				BuildBlockMsg.add_castaddrs(addr);	
 			}
 
-			for(auto & addr : addrs)
-			{
-				DEBUGLOG("Level 1 broadcasting address: {} , block hash : {}", addr,block.hash().substr(0,6));		
-				//net_com::SendMessage(addr, BuildBlockMsg);
+			for(auto & addr : addrs){	
 				MagicSingleton<TaskPool>::GetInstance()->CommitBroadcastTask(std::bind(&net_com::SendMessageTask, addr, BuildBlockMsg));
 			}
 		}
 	}
 	
-    uint64_t t10 = MagicSingleton<TimeUtil>::GetInstance()->GetUTCTimestamp();
-	auto t11 = t10 - t9;
-	DEBUGLOG("send broadcast time : {}", t11);
-	for(auto & addr : addrs)
-	{
-		DEBUGLOG("Level 1 broadcasting address {} , block hash : {}", addr,block.hash().substr(0,6));
-	}
-	MagicSingleton<BlockStroage>::GetInstance()->AddBlockStatus(block.hash(), block, addrs);
 	return true;
 }

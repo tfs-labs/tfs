@@ -9,8 +9,6 @@
 #include "../../utils/util.h"
 
 
-using namespace std;
-
 void Pack::PackagToBuff(const NetPack & pack, char* buff, int buffLen)
 {
 	memcpy(buff, &pack.len, 4);
@@ -20,12 +18,12 @@ void Pack::PackagToBuff(const NetPack & pack, char* buff, int buffLen)
 	memcpy(buff + 4 + pack.data.size() + 4 + 4, &pack.endFlag, 4);
 }
 
-string Pack::PackagToStr(const NetPack& pack)
+std::string Pack::PackagToStr(const NetPack& pack)
 {
 	int buffSize = pack.len + sizeof(int);
 	char* buff = new char[buffSize]{0};
 	Pack::PackagToBuff(pack, buff, buffSize);
-	string msg(buff, buffSize);
+	std::string msg(buff, buffSize);
 	delete [] buff;
 	return msg;
 }

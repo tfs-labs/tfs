@@ -12,8 +12,6 @@
 
 #include <string>
 
-using namespace std;
-
 class TimeReport
 {
 public:
@@ -48,7 +46,7 @@ public:
      * 
      * @param       title 
      */
-    void Report(const string& title);
+    void Report(const std::string& title);
     
     /**
      * @brief       Get the Start object
@@ -65,7 +63,7 @@ public:
     uint64_t GetEnd() { return _end; }
 
 private:
-    string _title;
+    std::string _title;
     uint64_t _start;
     uint64_t _end;
 };

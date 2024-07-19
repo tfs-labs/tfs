@@ -16,36 +16,70 @@
 
 class TransactionEntity
 {
-public:
-	CTransaction _transaction;
-	uint64_t _height;
-	bool _executedBefore;
-    
-public:
-	TransactionEntity(CTransaction transaction, uint64_t height, bool executedBefore)
-			: _transaction(transaction), _height(height), _executedBefore(executedBefore){};
-	TransactionEntity() = default;
-	~TransactionEntity() = default;
+private:
+		TxMsgReq _msg;
+        CTransaction _transaction;
+		uint64_t _txUtxoHeight;
+        uint64_t _height;
+        bool _executedBefore;
 
-	/**
-	 * @brief       Get the transaction object
-	 * 
-	 * @return      CTransaction 
-	 */
-	inline CTransaction GetTransaction() const
-	{
-		return _transaction;
-	}
+    public:
+	    TransactionEntity(const TxMsgReq& msg, CTransaction& transaction, const uint64_t txUtxoHeight)
+			 : _msg(msg), _transaction(transaction), _txUtxoHeight(txUtxoHeight) {};
+        TransactionEntity(CTransaction transaction, uint64_t height, bool executedBefore)
+			 : _transaction(transaction), _height(height), _executedBefore(executedBefore){};
+		TransactionEntity() = default;
+        ~TransactionEntity() = default;
 
-	/**
-	 * @brief       Get the txmsg object
-	 * 
-	 * @return      TxMsgReq 
-	 */
-	inline uint64_t GetHeight() const
-	{
-		return _height;
-	}
+		/**
+		 * @brief       Get the TxMsgReq object
+		 * 
+		 * @return      TxMsgReq 
+		 */
+        inline const TxMsgReq& GetTxMsg() const
+		{
+			return _msg;
+		}
+
+		/**
+		 * @brief       Get the transaction object
+		 * 
+		 * @return      CTransaction 
+		 */
+        inline CTransaction GetTransaction() const
+		{
+			return _transaction;
+		}
+
+		/**
+		 * @brief       Get the transaction object
+		 * 
+		 * @return      CTransaction 
+		 */
+		inline CTransaction& GetTx()
+		{
+			return _transaction;
+		}
+
+		/**
+		 * @brief
+		 * 
+		 * @return      uint64_t 
+		 */
+		inline uint64_t GetTxUtxoHeight() const
+		{
+			return _txUtxoHeight;
+		}
+
+		/**
+		 * @brief       Get the txmsg object
+		 * 
+		 * @return      TxMsgReq 
+		 */
+		inline uint64_t GetHeight() const
+		{
+			return _height;
+		}
 
 	/**
 	 * @brief       Get the timestamp object

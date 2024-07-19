@@ -1,11 +1,10 @@
 #include "ca/failed_transaction_cache.h" 
 #include "db/db_api.h"
 #include "transaction.h"
-#include "utils/account_manager.h"
-#include "utils/tfs_bench_mark.h"
-#include "common/time_report.h"
+
 #include "utils/tmp_log.h"
 #include "common/task_pool.h"
+#include "include/logging.h"
 
 void FailedTransactionCache::_StartTimer()
 {
@@ -94,6 +93,7 @@ void FailedTransactionCache::_Check()
 	
 int FailedTransactionCache::Add(uint64_t height, const TxMsgReq& msg)
 {
+    DEBUGLOG("TTT NodelistHeight discontent, repeat commit tx ,NodeHeight:{}, txUtxoHeight:{}",height, msg.txmsginfo().txutxoheight());
     std::unique_lock<std::shared_mutex> lock(_txPendingMutex);
     _txPending[height].push_back(msg);
 	return 0;

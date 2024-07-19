@@ -1,131 +1,157 @@
+/**
+ * *****************************************************************************
+ * @file        sync_block.proto
+ * @brief       sync block related agreements
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax = "proto3";
 
 
 /*************************************Fast synchronization*************************************/
 
-
+//fast sunc get block hash
 message FastSyncGetHashReq
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
-    uint64                 start_height       = 3;
-    uint64                 end_height         = 4;
+    string                 self_node_id       = 1;  //self node id
+    string                 msg_id             = 2;  //mark message
+    uint64                 start_height       = 3;  //start height
+    uint64                 end_height         = 4;  //end height
 }
 
+//block hash
 message FastSyncBlockHashs
 {
-    uint64 height = 1;
-    repeated string hashs = 2;
+    uint64 height         = 1;  //block height
+    repeated string hashs = 2;  //block hashs
 };
 
+//fast sunc send block hash
 message FastSyncGetHashAck
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
-    uint64                 node_block_height  = 3;
-    repeated FastSyncBlockHashs  hashs = 4;
+    string                 self_node_id       = 1; //self node id
+    string                 msg_id             = 2; //mark message
+    uint64                 node_block_height  = 3; //self top hight
+    repeated FastSyncBlockHashs  hashs        = 4;
 }
 
+//fast sync get block 
 message FastSyncGetBlockReq
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
-    repeated FastSyncBlockHashs  hashs = 3;
+    string                 self_node_id       = 1;  //self node id
+    string                 msg_id             = 2;  //mark message
+    repeated FastSyncBlockHashs  hashs        = 3;  
 }
 
+//block message
 message FastSyncBlock
 {
-    uint64 height = 1;
-    repeated bytes         blocks             = 2;
+    uint64 height            = 1;   //height
+    repeated bytes blocks    = 2;   //blocks
 }
 
+//fast sync send block 
 message FastSyncGetBlockAck
 {
-    string                 msg_id             = 1;
-    repeated FastSyncBlock         blocks             = 2;
+    string                 msg_id             = 1;  //mark message
+    repeated FastSyncBlock blocks             = 2;  
 }
 
 
 /*************************************New synchronization*************************************/
 
+//new sunc get sum hash
 message SyncGetSumHashReq
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
-    uint64 		           start_height	      = 3;
-    uint64 		           end_height		  = 4;
+    string                 self_node_id       = 1;  //self node id
+    string                 msg_id             = 2;  //mark message
+    uint64 		           start_height	      = 3;  //start height
+    uint64 		           end_height		  = 4;  //end height
 }
 
+//sum hash
 message SyncSumHash
 {
-    uint64 		           start_height	      = 1;
-    uint64 		           end_height		  = 2;
-    string                 hash               = 3;
+    uint64 		           start_height	      = 1;  //start height
+    uint64 		           end_height		  = 2;  //end height
+    string                 hash               = 3;  //hash
 }
 
+//new sync get sum hash
 message SyncGetSumHashAck
 {
-    string                  self_node_id       = 1;
-    string                  msg_id             = 2;
-    uint64 		            node_block_height  = 3;
+    string                  self_node_id       = 1;  //self node id
+    string                  msg_id             = 2;  //mark message
+    uint64 		            node_block_height  = 3;  //self node top height
     repeated SyncSumHash    sync_sum_hashes    = 4;
 }
 
+//new sync get height block hash
 message SyncGetHeightHashReq
 {
-    string                  self_node_id       = 1;
-    string                  msg_id             = 2;
-    uint64 		            start_height       = 3;
-    uint64 		            end_height		   = 4;
+    string                  self_node_id       = 1; //self node id
+    string                  msg_id             = 2; //mark message
+    uint64 		            start_height       = 3; //start height
+    uint64 		            end_height		   = 4; //end height
 }
 
+//new sync send height block hash
 message SyncGetHeightHashAck
 {
-    int32                   code               = 1;
-    string                  self_node_id       = 2;
-    string                  msg_id             = 3;
-    repeated string         block_hashes       = 4;
+    int32                   code               = 1; //error code
+    string                  self_node_id       = 2; //self node id
+    string                  msg_id             = 3; //mark message
+    repeated string         block_hashes       = 4; //block hashes
 }
 
+//new sync get block
 message SyncGetBlockReq
 {
-    string                  self_node_id       = 1;
-    string                  msg_id             = 2;
-    repeated string         block_hashes       = 3;
+    string                  self_node_id       = 1; //self node id
+    string                  msg_id             = 2; //mark message
+    repeated string         block_hashes       = 3; //block hashes
 }
 
+//new sync send block
 message SyncGetBlockAck
 {
-    string                  msg_id             = 1;
-    repeated bytes          blocks             = 2;
+    string                  msg_id             = 1; //mark message
+    repeated bytes          blocks             = 2; //blocks
 }
 
+//sum hash
 message SyncFromZeroSumHash
 {
-    uint64                 height              = 1;
-    string                 hash                = 2;
+    uint64                 height              = 1; //height 
+    string                 hash                = 2; //hash
 }
 
+//from zero sync get sum hash
 message SyncFromZeroGetSumHashReq
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
-    repeated uint64 	   heights	          = 3;
+    string                 self_node_id       = 1; //self node id
+    string                 msg_id             = 2; //mark message
+    repeated uint64 	   heights	          = 3; //block heights
 }
 
+//from zero sync send sum hash
 message SyncFromZeroGetSumHashAck
 {
-    int32                           code               = 1;
-    string                          self_node_id       = 2;
-    string                          msg_id             = 3;
-    repeated SyncFromZeroSumHash    sum_hashes         = 4;
+    int32                           code               = 1; //error code
+    string                          self_node_id       = 2; //self node id
+    string                          msg_id             = 3; //mark message
+    repeated SyncFromZeroSumHash    sum_hashes         = 4; //block sum hashes
 }
 
+//from zero sync get block
 message SyncFromZeroGetBlockReq
 {
-    string                  self_node_id       = 1;
-    string                  msg_id             = 2;
-    uint64                  height             = 3;
+    string                  self_node_id       = 1; //self node id
+    string                  msg_id             = 2; //mark message
+    uint64                  height             = 3; //height 
 }
 
 message SyncFromZeroGetBlockAck
@@ -139,71 +165,79 @@ message SyncFromZeroGetBlockAck
 
 /*************************************Handle missing block related protocols*************************************/
 
-
+//get block by utxo
 message GetBlockByUtxoReq
 {
-    string                  addr                = 1;
-    string                  utxo                = 2;
-    string                  msg_id              = 3;
+    string                  addr                = 1; //self addr
+    string                  utxo                = 2; //utxo
+    string                  msg_id              = 3; //mark message
 }
 
+//send block by utxo
 message GetBlockByUtxoAck
 {
-    string                  addr                = 1;
-    string                  utxo                = 2;
-    string                  msg_id              = 3;
-    bytes                   block_raw           = 4;
+    string                  addr                = 1;    //self addr
+    string                  utxo                = 2;    //utxo
+    string                  msg_id              = 3;    //mark message
+    bytes                   block_raw           = 4;    //block
 }
 
+//determine hash type
 message HashType
 {
-    string      hash                = 1;
-    bool        tx_or_block         = 2;
-    bytes       block_raw           = 3; 
+    string      hash                = 1;    //hash
+    bool        tx_or_block         = 2;    //tx or block
+    bytes       block_raw           = 3;    //block
 }
 
+//get block by hash
 message GetBlockByHashReq
 {
-    string                           addr                = 1;
-    repeated HashType                missingHashs        = 2;
-    string                           msg_id              = 3;
+    string                           addr                = 1;   //self addr
+    repeated HashType                missingHashs        = 2;   //block hash
+    string                           msg_id              = 3;   //mark message
 }
 
+//send block by hash
 message GetBlockByHashAck
 {
-    string                           addr                = 1;
-    repeated HashType                blocks              = 2;
-    string                           msg_id              = 3;
+    string                           addr                = 1;   //self addr
+    repeated HashType                blocks              = 2;   //block
+    string                           msg_id              = 3;   //mark message
 }
 
+//new sync get node hash
 message SyncNodeHashReq
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
+    string                 self_node_id       = 1;  //self node id
+    string                 msg_id             = 2;  //mark message
 }
 
+//new sync send node hash
 message SyncNodeHashAck
 {
-    string                 self_node_id       = 1;
-    string                 msg_id             = 2;
-    string                 hash               = 3;
+    string                 self_node_id       = 1;  //self node id
+    string                 msg_id             = 2;  //mark message
+    string                 hash               = 3;  //block hash
 }
 
 
 /*************************************New GetCheckSumHash*************************************/
+//get every 1000 heights sum hash
 message GetCheckSumHashReq
 {
-    uint64                 height             = 1;
-    string                 msg_id             = 2;
-    string                 self_node_id       = 3;
+    uint64                 height             = 1;  //height
+    string                 msg_id             = 2;  //mark message
+    string                 self_node_id       = 3;  //self node id
 }
 
+//send every 1000 heights sum hash
 message GetCheckSumHashAck
 {
-    uint64                  height            = 1;
-    string                  hash              = 2;
-    string                  msg_id            = 3;
-    bool                    success           = 4;
-    string                  self_node_id       = 5;
+    uint64                  height            = 1;  //height
+    string                  hash              = 2;  //hash
+    string                  msg_id            = 3;  //mark message
+    bool                    success           = 4;  //whether succeed
+    string                  self_node_id      = 5;  //self node id
 
 }

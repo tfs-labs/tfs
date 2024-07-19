@@ -4,7 +4,7 @@ namespace global
 {
     std::string g_localIp;
     int g_cpuNums;
-    atomic<int> g_nodelistRefreshTime = 100;
+    std::atomic<int> g_nodelistRefreshTime = 100; 
     MsgQueue g_queueRead("ReadQueue");   // Read queue
     MsgQueue g_queueWork("WorkQueue");   // Work queue is mainly used to process the queue calling CA code after read
     MsgQueue g_queueWrite("WriteQueue"); // Write queue

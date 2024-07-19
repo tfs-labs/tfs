@@ -16,8 +16,12 @@
 #include <vector>
 #include <iostream>
 #include <utils/json.hpp>
-#include "../proto/ca_protomsg.pb.h"
-#include "../proto/transaction.pb.h"
+#include <google/protobuf/util/json_util.h>
+#include <evmc/evmc.h>
+#include "proto/ca_protomsg.pb.h"
+#include "proto/transaction.pb.h"
+
+class EvmHost;
 /**
  * @brief       
  */
@@ -55,15 +59,23 @@ public:
     enum vrfAgentType
     {
         vrfAgentType_defalut = 0, 
-        vrfAgentType_vrf ,
+        vrfAgentType_vrf,
         vrfAgentType_local ,
-        vrfAgentType_unknow,
     };
 
     static const uint32_t kMaxVinSize;
 
     TxHelper() = default;
     ~TxHelper() = default;
+
+    /**
+     * @brief       
+     * 
+     * @param       tx: 
+     * @param       txUtxoHeight: 
+     * @return      int 
+     */
+    static int GetTxUtxoHeight(const CTransaction &tx, uint64_t& txUtxoHeight);
 
     /**
      * @brief       Get the Tx Owner object
@@ -101,7 +113,9 @@ public:
      * @return      int 
      */
     static int FindUtxo(const std::vector<std::string>& fromAddr,const uint64_t needUtxoAmount,
-						uint64_t& total,std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare>& setOutUtxos);
+						uint64_t& total,std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare>& setOutUtxos, bool isFindUtxo = false);
+
+    static int SendConfirmUtxoHashReq(const std::multiset<TxHelper::Utxo, TxHelper::UtxoCompare>& setOutUtxos);
 
     /**
      * @brief       Create a Tx Transaction object
@@ -116,8 +130,9 @@ public:
      */
     static int CreateTxTransaction(const std::vector<std::string>& fromAddr,
                             const std::map<std::string, int64_t> & toAddr,
+                            const std::string& encodedInfo,
                             uint64_t height,CTransaction& outTx,TxHelper::vrfAgentType &type,
-                            Vrf & information);
+                            Vrf & information, bool isFindUtxo = false);
 
     /**
      * @brief       Create a Stake Transaction object
@@ -133,10 +148,10 @@ public:
      * @param       commission: commission percentage (0.05 - 0.2)
      * @return      int 
      */
-    static int CreateStakeTransaction(const std::string & fromAddr,uint64_t stakeAmount,uint64_t height,
+    static int CreateStakeTransaction(const std::string & fromAddr,uint64_t stakeAmount, const std::string& encodedInfo, uint64_t height,
                         TxHelper::pledgeType pledgeType,CTransaction &outTx,
                         std::vector<TxHelper::Utxo> & outVin,TxHelper::vrfAgentType &type,
-                        Vrf & information, double commission);
+                        Vrf & information, double commissionRate, bool isFindUtxo = false);
 
     /**
      * @brief       
@@ -150,9 +165,9 @@ public:
      * @param       information: 
      * @return      int 
      */
-    static int CreatUnstakeTransaction(const std::string& fromAddr,const std::string& utxoHash,uint64_t height,
+    static int CreatUnstakeTransaction(const std::string& fromAddr,const std::string& utxoHash, const std::string& encodedInfo, uint64_t height,
                                         CTransaction &outTx, std::vector<TxHelper::Utxo> & outVin,
-                                        TxHelper::vrfAgentType &type ,Vrf & information);
+                                        TxHelper::vrfAgentType &type ,Vrf & information, bool isFindUtxo = false);
 
     /**
      * @brief       Create a Invest Transaction object
@@ -169,10 +184,10 @@ public:
      * @return      int 
      */
     static int CreateInvestTransaction(const std::string & fromAddr,const std::string& toAddr,
-                                    uint64_t investAmount,uint64_t height,
+                                    uint64_t investAmount, const std::string& encodedInfo, uint64_t height,
                                     TxHelper::InvestType investType,CTransaction & outTx,
                                     std::vector<TxHelper::Utxo> & outVin,TxHelper::vrfAgentType &type,
-                                    Vrf & information);
+                                    Vrf & information, bool isFindUtxo = false);
 
     /**
      * @brief       Create a Disinvest Transaction object
@@ -188,9 +203,9 @@ public:
      * @return      int 
      */
     static int CreateDisinvestTransaction(const std::string& fromAddr,const std::string& toAddr,
-                                        const std::string& utxoHash,uint64_t height,CTransaction& outTx,
+                                        const std::string& utxoHash, const std::string& encodedInfo, uint64_t height,CTransaction& outTx,
 										std::vector<TxHelper::Utxo> & outVin,TxHelper::vrfAgentType &type,
-                                        Vrf & information);
+                                        Vrf & information, bool isFindUtxo = false);
 
     /**
      * @brief       Create a Bonus Transaction object
@@ -203,9 +218,24 @@ public:
      * @param       information: 
      * @return      int 
      */
-    static int CreateBonusTransaction(const std::string& Addr,uint64_t height,CTransaction& outTx,
+    static int CreateBonusTransaction(const std::string& Addr, const std::string& encodedInfo, uint64_t height,CTransaction& outTx,
 										std::vector<TxHelper::Utxo> & outVin,TxHelper::vrfAgentType &type,
-                                        Vrf & information);
+                                        Vrf & information, bool isFindUtxo = false);
+										
+    static int MakeEvmDeployContractTransaction(uint64_t height, CTransaction &outTx,
+                                                std::vector<std::string> &dirtyContract,
+                                                TxHelper::vrfAgentType &type, Vrf &information, EvmHost &host,
+                                                evmc_message &message, bool isFindUtxo, const std::string& encodedInfo,
+                                                std::function<int(CTransaction &,std::string &)> signFunction);
+
+    static int
+    MakeEvmCallContractTransaction(uint64_t height, CTransaction &outTx, std::vector<std::string> &dirtyContract,
+                                   TxHelper::vrfAgentType &type, Vrf &information, EvmHost &host,
+                                   evmc_message &message, const std::string &strInput, const uint64_t contractTip,
+                                   const uint64_t contractTransfer, const std::string &toAddr, bool isFindUtxo,
+                                   const std::string& encodedInfo,
+                                   std::function<int(CTransaction &,std::string &)> signFunction);
+
 
     /**
      * @brief       Create a Evm Deploy Contract Transaction object
@@ -220,24 +250,22 @@ public:
      * @param       information: 
      * @return      int 
      */
-    static int CreateEvmDeployContractTransaction(const std::string &fromAddr, const std::string &OwnerEvmAddr,
-                                                  const std::string &code, uint64_t height,
-                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
-                                                  std::vector<std::string> &dirtyContract,
-                                                  TxHelper::vrfAgentType &type, Vrf &information);
+	 
+    static int CreateEvmDeployContractTransaction(uint64_t height, CTransaction &outTx, std::vector<std::string> &dirtyContract,
+                                       TxHelper::vrfAgentType &type, Vrf &information, std::string &code,
+                                       const std::string &from, uint64_t transfer, const std::string &to,  
+                                       const std::string& encodedInfo, bool isFindUtxo = false, bool isRpc = false);
 
-    static int CreateEvmDeployContractTransaction_V33_1(const std::string &fromAddr, const std::string &OwnerEvmAddr,
-                                                  const std::string &code, uint64_t height,
-                                                  const nlohmann::json &contractInfo, CTransaction &outTx,
-                                                  TxHelper::vrfAgentType &type, Vrf &information);
+//    static int CreateWasmDeployContractTransaction(const std::string &fromaddr, const std::string &OwnerWasmAddr,
+//                                    const std::string &code, uint64_t height,
+//                                    CTransaction &outTx,TxHelper::vrfAgentType &type, Vrf &information);
 
     /**
      * @brief       Create a Evm Call Contract Transaction object
      * 
      * @param       fromAddr: 
      * @param       toAddr: 
-     * @param       txHash: 
-     * @param       strInput: 
+     * @param       strInput:
      * @param       OwnerEvmAddr: 
      * @param       height: 
      * @param       outTx: 
@@ -247,18 +275,25 @@ public:
      * @param       contractTransfer: 
      * @return      int 
      */
-    static int CreateEvmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr,
-                                                const std::string &txHash, const std::string &strInput,
-                                                const std::string &OwnerEvmAddr, uint64_t height,
-                                                CTransaction &outTx, TxHelper::vrfAgentType &type,
-                                                Vrf &information, const uint64_t contractTip,
-                                                const uint64_t contractTransfer,
-                                                std::vector<std::string> &dirtyContract);
-    static int CreateEvmCallContractTransaction_V33_1(const std::string &fromAddr, const std::string &toAddr, 
-                                const std::string &txHash,const std::string &strInput, const std::string &OwnerEvmAddr, 
-                                uint64_t height,CTransaction &outTx, TxHelper::vrfAgentType &type, 
-                                Vrf &information,const uint64_t contractTip,const uint64_t contractTransfer);
+    static int
+    CreateEvmCallContractTransaction(const std::string &from, const std::string &toAddr, const std::string &strInput,
+                                     const std::string& encodedInfo,
+                                     uint64_t height, CTransaction &outTx, TxHelper::vrfAgentType &type,
+                                     Vrf &information,
+                                     const uint64_t contractTip, const uint64_t contractTransfer,
+                                     std::vector<std::string> &dirtyContract, const std::string &to,
+                                     bool isFindUtxo = false,bool isRpc = false);
 
+//    static int CreateWasmCallContractTransaction(const std::string &fromAddr, const std::string &toAddr, const std::string &txHash,
+//                                const std::string &strInput, uint64_t height,CTransaction &outTx, TxHelper::vrfAgentType &type,
+//                                Vrf &information,const uint64_t contractTip, const std::string &contractFunName);
+    int RPC_CreateEvmCallContractTransaction(const std::string &from, const std::string &toAddr,
+                                               const std::string &strInput,
+                                               uint64_t height, CTransaction &outTx, TxHelper::vrfAgentType &type,
+                                               Vrf &information,
+                                               const uint64_t contractTip, const uint64_t contractTransfer,
+                                               std::vector<std::string> &dirtyContract, const std::string &to,
+                                               bool isFindUtxo,bool isRpc);
     /**
      * @brief       
      * 
@@ -336,125 +371,15 @@ public:
      * @param       type: 
      */
     static void GetTxStartIdentity(const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type);
-    static void GetTxStartIdentity_V33_1(const std::vector<std::string> &fromaddr,const uint64_t &height,const uint64_t &currentTime,TxHelper::vrfAgentType &type);
-    /**
-     * @brief       Get the Initiator Type object
-     * 
-     * @param       fromaddr: 
-     * @param       type: 
-     */
-    static void GetInitiatorType(const std::vector<std::string> &fromaddr, TxHelper::vrfAgentType &type);
 
     /**
-     * @brief       
-     * 
-     * @param       fromAddr: 
-     * @param       toAddr: 
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreateTxTransaction(const std::vector<std::string>& fromAddr,
-									const std::map<std::string, int64_t> & toAddr, void* ack);
-
-    /**
-     * @brief       
-     * 
-     * @param       fromAddr: 
-     * @param       stakeAmount: 
-     * @param       pledgeType: 
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreateStakeTransaction(const std::string & fromAddr, uint64_t stakeAmount,  int32_t pledgeType, void* ack, double commission);
-
-    /**
-     * @brief       
-     * 
-     * @param       fromAddr: 
-     * @param       utxoHash: 
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreatUnstakeTransaction(const std::string& fromAddr, const std::string& utxoHash, void* ack);
-    
-    /**
-     * @brief       
-     * 
-     * @param       fromAddr: 
-     * @param       toAddr: 
-     * @param       investAmount: 
-     * @param       investType: 
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreateInvestTransaction(const std::string & fromAddr,
-                                    const std::string& toAddr,uint64_t investAmount, int32_t investType, void* ack);
-
-    /**
-     * @brief       
-     * 
-     * @param       fromAddr: 
-     * @param       toAddr: 
-     * @param       utxoHash: 
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreateDisinvestTransaction(const std::string& fromAddr,
-                                    const std::string& toAddr, const std::string& utxoHash, void* ack);
-
-    /**
-     * @brief       
-     * 
-     * @param       fromAddr: Initiator
-     * @param       toAddr: Recipient
-     * @param       amount: 
-     * @param       multiSignPub: Multi-Sig address public key
-     * @param       signAddrList: Record the federation node
-     * @param       signThreshold: The number of consensus numbers for multiple signs
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreateDeclareTransaction(const std::string & fromaddr, //Initiator
-                                    const std::string & toAddr, //Recipient
-                                    uint64_t amount, 
-                                    const std::string & multiSignPub, //Multi-Sig address public key
-                                    const std::vector<std::string> & signAddrList, // Record the federation node
-                                    uint64_t signThreshold, //The number of consensus numbers for multiple signs
-                                    void* ack);
-
-    /**
-     * @brief       
-     * 
-     * @param       Addr: 
-     * @param       ack: 
-     * @return      std::string 
-     */
-    static std::string ReplaceCreateBonusTransaction(const std::string& Addr, void* ack);
-
-    /**
-     * @brief       
-     * 
-     * @param       outTx: 
-     * @param       height: 
-     * @param       info: 
-     * @param       type: 
-     * @return      int 
-     */
-    static int SendMessage(CTransaction & outTx,int height,Vrf &info,TxHelper::vrfAgentType type);
-
-    /**
-     * @brief       Get the Eligible Nodes object
-     * 
-     * @return      std::string 
-     */
+    * @brief       Get the Eligible Nodes object
+    * 
+    * @return      std::string 
+    */
     static std::string GetEligibleNodes();
-    
-    /**
-     * @brief       ReplaceTxVersion
-     * 
-     * @return      int
-     */
-    static void ReplaceTxVersion(CTransaction& outTx);
+
+    static std::string GetIdentityNodes();
 };
 
 #endif

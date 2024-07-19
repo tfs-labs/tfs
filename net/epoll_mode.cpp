@@ -39,7 +39,7 @@ void EpollMode::EpollWork(EpollMode *epmd)
 
 bool EpollMode::EpoolModeStart()
 {
-    this->_listenThread = new thread(EpollMode::EpollWork, this);
+    this->_listenThread = new std::thread(EpollMode::EpollWork, this);
     this->_listenThread->detach();
     return true;
 }

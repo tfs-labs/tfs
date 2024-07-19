@@ -32,7 +32,7 @@ void TimeReport::Report()
     Report(_title);
 }
 
-void TimeReport::Report(const string& title)
+void TimeReport::Report(const std::string& title)
 {
     End();
     int64_t usedTime = _end - _start;

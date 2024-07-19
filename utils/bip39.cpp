@@ -28,7 +28,7 @@
 #include "utils/sha2.h"
 #include "bip39_english.h"
 #include "../include/logging.h"
-
+#include "utils/hex_code.h"
 
 int mnemonic_from_data(const uint8_t *data, int len, char *out, size_t outLen)
 {
@@ -141,4 +141,21 @@ int mnemonic_check(const char *mnemonic, char *out, int *outLen)
 		return bits[0] == bits[32]; // compare 8 bits
 	}
 	return 0;
+}
+
+int import_mnemonic(const std::string & mnemonic,uint8_t* seed){
+    char out[33] = {0};
+    int outLen = 0;
+	if(mnemonic_check((char *)mnemonic.c_str(), out, &outLen) == 0)
+    {
+        return -1;
+    }
+    char mnemonicHex[65] = {0};
+	encode_hex(mnemonicHex, out, outLen);
+	//std::cout << "mnemonci_hex" << mnemonicHex <<std::endl;
+	std::string mnemonicKey;
+    //std::cout<<"seed"<<seed<<std::endl;
+	mnemonicKey.append(mnemonicHex, outLen * 2);
+	seed = (uint8_t *)mnemonicKey.c_str();
+    return 0;
 }

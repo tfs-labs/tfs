@@ -13,11 +13,12 @@
 #include <memory>
 
 #include "./msg_queue.h"
-
+#include "../utils/cycliclist.hpp"
 #include "../common/task_pool.h"
 #include "../proto/net.pb.h"
 #include "../proto/ca_protomsg.pb.h"
 #include "../proto/interface.pb.h"
+
 
 /**
  * @brief       
@@ -50,11 +51,17 @@ int VerifyRegisterNode(const NodeInfo &nodeinfo, uint32_t &fromIp, uint32_t &fro
 /**
  * @brief       
  * 
- * @param       broadcastMsgReq 
- * @param       from 
- * @return      int 
+ * @param       msg
+ * @param       targetAddressCycleList  
  */
-int HandleBroadcastMsgReq(const std::shared_ptr<BroadcastMsgReq> &broadcastMsgReq, const MsgData &from);
+void initCyclicTargetAddresses(const std::shared_ptr<BuildBlockBroadcastMsg>& msg, Cycliclist<std::string> & targetAddressCycleList);
+
+/**
+ * @brief       
+ * 
+ * @param       cyclicNodeList
+ */
+void initCyclicNodeList(Cycliclist<std::string>& cyclicNodeList);
 
 /**
  * @brief       
@@ -183,6 +190,9 @@ int HandleNodeHeightChangedReq(const std::shared_ptr<NodeHeightChangedReq>& req,
  * @param       from 
  * @return      int 
  */
-int HandleNodeBase58AddrChangedReq(const std::shared_ptr<NodeBase58AddrChangedReq>& req, const MsgData& from);
+int HandleNodeAddrChangedReq(const std::shared_ptr<NodeAddrChangedReq>& req, const MsgData& from);
+
+int HandleGetTxUtxoHashReq(const std::shared_ptr<GetUtxoHashReq>& req, const MsgData& from);
+int HandleGetTxUtxoHashAck(const std::shared_ptr<GetUtxoHashAck>& ack, const MsgData& from);
 
 #endif

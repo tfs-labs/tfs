@@ -12,8 +12,11 @@
 #include "ca/block_monitor.h"
 #include "utils/magic_singleton.h"
 #include "utils/vrf.hpp"
-#include "block.pb.h"
 #include <future>
+#include <unordered_map>
+#include <shared_mutex>
+#include <chrono>
+#include <thread>
 
 using RetType = std::pair<std::string, uint16_t>;
 
@@ -45,11 +48,7 @@ public:
     BlockStroage &operator=(BlockStroage&&) = delete;
     BlockStroage &operator=(const BlockStroage &) = delete;
 
-
-
 public:
-
-
 	/**
 	 * @brief       
 	 * 
@@ -71,7 +70,6 @@ public:
 	 * @return      int 
 	 */
 	int UpdateBlock(const BlockMsg &msg);
-
 	/**
 	 * @brief       Get the Prehash object
 	 * 
@@ -182,9 +180,12 @@ private:
 	/**
 	 * @brief       
 	 * 
-	 * @param       msgvec: 
+	 * @param       msgVec: 
+	 * @param		outMsg:
+	 * @param		isVrf
+	 * @return		int
 	 */
-	int _ComposeEndBlockmsg(const std::vector<BlockMsg> &msgvec, BlockMsg & outMsg , bool isVrf);
+	int _ComposeEndBlockmsg(const std::vector<BlockMsg> &msgVec, BlockMsg & outMsg , bool isVrf);
 
 	/**
 	 * @brief       
@@ -200,7 +201,13 @@ private:
 	 * @return      RetType 
 	 */
 	RetType _SeekPreHashThread(uint64_t seekHeight);
-	int VerifyBlockFlowSignNode(const BlockMsg & blockmsg);
+	/**
+	 * @brief       
+	 * 
+	 * @param       blockMsg: 
+	 * @return      int 
+	 */
+	int VerifyBlockFlowSignNode(const BlockMsg & blockMsg);
 
 	/**
 	 * @brief       
@@ -208,11 +215,10 @@ private:
 	 * @param       sendNodeIds: 
 	 * @param       seekHeight: 
 	 * @param       selfNodeHeight: 
-	 * @param       chainHeight: 
 	 * @return      RetType 
 	 */
 	RetType _SeekPreHashByNode(
-		const std::vector<std::string> &sendNodeIds, uint64_t seekHeight, const uint64_t &selfNodeHeight, const uint64_t &chainHeight);
+		const std::vector<std::string> &sendNodeIds, uint64_t seekHeight, const uint64_t &selfNodeHeight);
 private:
 	/**
 	 * @brief       
@@ -234,16 +240,64 @@ private:
 
 	double _failureRate = 0.75;
 };
+/**
+ * @brief       
+ * 
+ * @param       num:
+ * @param       selfNodeHeight:
+ * @param       pledgeAddr:
+ * @param       sendNodeIds:
+ * @return      int 
+ */
 int GetPrehashFindNode(uint32_t num, uint64_t selfNodeHeight, const std::vector<std::string> &pledgeAddr,
                             std::vector<std::string> &sendNodeIds);
+/**
+ * @brief       
+ * 
+ * @param       nodeId:
+ * @param       msgId: 
+ * @param       seekHeight:  
+ */
 void SendSeekGetPreHashReq(const std::string &nodeId, const std::string &msgId, uint64_t seekHeight);
-void SendSeekGetPreHashAck(SeekPreHashByHightAck& ack,const std::string &nodeId, const std::string &msgId, uint64_t seekHeight);
-
-int HandleSeekGetPreHashReq(const std::shared_ptr<SeekPreHashByHightReq> &msg, const MsgData &msgdata);
-int HandleSeekGetPreHashAck(const std::shared_ptr<SeekPreHashByHightAck> &msg, const MsgData &msgdata);
-
+/**
+ * @brief       
+ * 
+ * @param       ack:
+ * @param       nodeId: 
+ * @param       msgId:
+ * @param       seekHeight:    
+ */
+void SendSeekGetPreHashAck(SeekPreHashByHightAck& ack, const std::string &nodeId, const std::string &msgId, uint64_t seekHeight);
+/**
+ * @brief       
+ * 
+ * @param       msg:
+ * @param       msgData:
+ * @return      int
+ */
+int HandleSeekGetPreHashReq(const std::shared_ptr<SeekPreHashByHightReq> &msg, const MsgData &msgData);
+/**
+ * @brief       
+ * 
+ * @param       msg:
+ * @param       msgData: 
+ * @return      int 
+ */
+int HandleSeekGetPreHashAck(const std::shared_ptr<SeekPreHashByHightAck> &msg, const MsgData &msgData);
+/**
+ * @brief       
+ * 
+ * @param       msg:
+ * @param       destNode: 
+ * @return      int  
+ */
 int DoProtoBlockStatus(const BlockStatus& blockStatus, const std::string destNode);
-int HandleBlockStatusMsg(const std::shared_ptr<BlockStatus> &msg, const MsgData &msgdata);
-
-
+/**
+ * @brief       
+ * 
+ * @param       msg:
+ * @param       msgData: 
+ * @return      int 
+ */
+int HandleBlockStatusMsg(const std::shared_ptr<BlockStatus> &msg, const MsgData &msgData);
 #endif

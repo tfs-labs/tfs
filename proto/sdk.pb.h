@@ -1742,8 +1742,8 @@ class SDKNodeInfo final :
     kPubFieldNumber = 1,
     kSignFieldNumber = 2,
     kIdentityFieldNumber = 3,
-    kBase58AddrFieldNumber = 4,
-    kPublicBase58AddrFieldNumber = 5,
+    kAddrFieldNumber = 4,
+    kPublicAddrFieldNumber = 5,
     kNameFieldNumber = 6,
     kLogoFieldNumber = 7,
     kVersionFieldNumber = 14,
@@ -1796,32 +1796,32 @@ class SDKNodeInfo final :
   std::string* _internal_mutable_identity();
   public:
 
-  // string base58addr = 4;
-  void clear_base58addr();
-  const std::string& base58addr() const;
+  // string addr = 4;
+  void clear_addr();
+  const std::string& addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_base58addr(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_base58addr();
-  PROTOBUF_NODISCARD std::string* release_base58addr();
-  void set_allocated_base58addr(std::string* base58addr);
+  void set_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_addr();
+  PROTOBUF_NODISCARD std::string* release_addr();
+  void set_allocated_addr(std::string* addr);
   private:
-  const std::string& _internal_base58addr() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_base58addr(const std::string& value);
-  std::string* _internal_mutable_base58addr();
+  const std::string& _internal_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_addr(const std::string& value);
+  std::string* _internal_mutable_addr();
   public:
 
-  // string public_base58addr = 5;
-  void clear_public_base58addr();
-  const std::string& public_base58addr() const;
+  // string public_addr = 5;
+  void clear_public_addr();
+  const std::string& public_addr() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_public_base58addr(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_public_base58addr();
-  PROTOBUF_NODISCARD std::string* release_public_base58addr();
-  void set_allocated_public_base58addr(std::string* public_base58addr);
+  void set_public_addr(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_public_addr();
+  PROTOBUF_NODISCARD std::string* release_public_addr();
+  void set_allocated_public_addr(std::string* public_addr);
   private:
-  const std::string& _internal_public_base58addr() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_public_base58addr(const std::string& value);
-  std::string* _internal_mutable_public_base58addr();
+  const std::string& _internal_public_addr() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_public_addr(const std::string& value);
+  std::string* _internal_mutable_public_addr();
   public:
 
   // string name = 6;
@@ -1931,8 +1931,8 @@ class SDKNodeInfo final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pub_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr sign_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr identity_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr base58addr_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr public_base58addr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr addr_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr public_addr_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr logo_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr version_;
@@ -5294,104 +5294,104 @@ inline void SDKNodeInfo::set_allocated_identity(std::string* identity) {
   // @@protoc_insertion_point(field_set_allocated:SDKNodeInfo.identity)
 }
 
-// string base58addr = 4;
-inline void SDKNodeInfo::clear_base58addr() {
-  _impl_.base58addr_.ClearToEmpty();
+// string addr = 4;
+inline void SDKNodeInfo::clear_addr() {
+  _impl_.addr_.ClearToEmpty();
 }
-inline const std::string& SDKNodeInfo::base58addr() const {
-  // @@protoc_insertion_point(field_get:SDKNodeInfo.base58addr)
-  return _internal_base58addr();
+inline const std::string& SDKNodeInfo::addr() const {
+  // @@protoc_insertion_point(field_get:SDKNodeInfo.addr)
+  return _internal_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void SDKNodeInfo::set_base58addr(ArgT0&& arg0, ArgT... args) {
+void SDKNodeInfo::set_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.base58addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:SDKNodeInfo.base58addr)
+ _impl_.addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:SDKNodeInfo.addr)
 }
-inline std::string* SDKNodeInfo::mutable_base58addr() {
-  std::string* _s = _internal_mutable_base58addr();
-  // @@protoc_insertion_point(field_mutable:SDKNodeInfo.base58addr)
+inline std::string* SDKNodeInfo::mutable_addr() {
+  std::string* _s = _internal_mutable_addr();
+  // @@protoc_insertion_point(field_mutable:SDKNodeInfo.addr)
   return _s;
 }
-inline const std::string& SDKNodeInfo::_internal_base58addr() const {
-  return _impl_.base58addr_.Get();
+inline const std::string& SDKNodeInfo::_internal_addr() const {
+  return _impl_.addr_.Get();
 }
-inline void SDKNodeInfo::_internal_set_base58addr(const std::string& value) {
+inline void SDKNodeInfo::_internal_set_addr(const std::string& value) {
   
-  _impl_.base58addr_.Set(value, GetArenaForAllocation());
+  _impl_.addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* SDKNodeInfo::_internal_mutable_base58addr() {
+inline std::string* SDKNodeInfo::_internal_mutable_addr() {
   
-  return _impl_.base58addr_.Mutable(GetArenaForAllocation());
+  return _impl_.addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* SDKNodeInfo::release_base58addr() {
-  // @@protoc_insertion_point(field_release:SDKNodeInfo.base58addr)
-  return _impl_.base58addr_.Release();
+inline std::string* SDKNodeInfo::release_addr() {
+  // @@protoc_insertion_point(field_release:SDKNodeInfo.addr)
+  return _impl_.addr_.Release();
 }
-inline void SDKNodeInfo::set_allocated_base58addr(std::string* base58addr) {
-  if (base58addr != nullptr) {
+inline void SDKNodeInfo::set_allocated_addr(std::string* addr) {
+  if (addr != nullptr) {
     
   } else {
     
   }
-  _impl_.base58addr_.SetAllocated(base58addr, GetArenaForAllocation());
+  _impl_.addr_.SetAllocated(addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.base58addr_.IsDefault()) {
-    _impl_.base58addr_.Set("", GetArenaForAllocation());
+  if (_impl_.addr_.IsDefault()) {
+    _impl_.addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:SDKNodeInfo.base58addr)
+  // @@protoc_insertion_point(field_set_allocated:SDKNodeInfo.addr)
 }
 
-// string public_base58addr = 5;
-inline void SDKNodeInfo::clear_public_base58addr() {
-  _impl_.public_base58addr_.ClearToEmpty();
+// string public_addr = 5;
+inline void SDKNodeInfo::clear_public_addr() {
+  _impl_.public_addr_.ClearToEmpty();
 }
-inline const std::string& SDKNodeInfo::public_base58addr() const {
-  // @@protoc_insertion_point(field_get:SDKNodeInfo.public_base58addr)
-  return _internal_public_base58addr();
+inline const std::string& SDKNodeInfo::public_addr() const {
+  // @@protoc_insertion_point(field_get:SDKNodeInfo.public_addr)
+  return _internal_public_addr();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void SDKNodeInfo::set_public_base58addr(ArgT0&& arg0, ArgT... args) {
+void SDKNodeInfo::set_public_addr(ArgT0&& arg0, ArgT... args) {
  
- _impl_.public_base58addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:SDKNodeInfo.public_base58addr)
+ _impl_.public_addr_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:SDKNodeInfo.public_addr)
 }
-inline std::string* SDKNodeInfo::mutable_public_base58addr() {
-  std::string* _s = _internal_mutable_public_base58addr();
-  // @@protoc_insertion_point(field_mutable:SDKNodeInfo.public_base58addr)
+inline std::string* SDKNodeInfo::mutable_public_addr() {
+  std::string* _s = _internal_mutable_public_addr();
+  // @@protoc_insertion_point(field_mutable:SDKNodeInfo.public_addr)
   return _s;
 }
-inline const std::string& SDKNodeInfo::_internal_public_base58addr() const {
-  return _impl_.public_base58addr_.Get();
+inline const std::string& SDKNodeInfo::_internal_public_addr() const {
+  return _impl_.public_addr_.Get();
 }
-inline void SDKNodeInfo::_internal_set_public_base58addr(const std::string& value) {
+inline void SDKNodeInfo::_internal_set_public_addr(const std::string& value) {
   
-  _impl_.public_base58addr_.Set(value, GetArenaForAllocation());
+  _impl_.public_addr_.Set(value, GetArenaForAllocation());
 }
-inline std::string* SDKNodeInfo::_internal_mutable_public_base58addr() {
+inline std::string* SDKNodeInfo::_internal_mutable_public_addr() {
   
-  return _impl_.public_base58addr_.Mutable(GetArenaForAllocation());
+  return _impl_.public_addr_.Mutable(GetArenaForAllocation());
 }
-inline std::string* SDKNodeInfo::release_public_base58addr() {
-  // @@protoc_insertion_point(field_release:SDKNodeInfo.public_base58addr)
-  return _impl_.public_base58addr_.Release();
+inline std::string* SDKNodeInfo::release_public_addr() {
+  // @@protoc_insertion_point(field_release:SDKNodeInfo.public_addr)
+  return _impl_.public_addr_.Release();
 }
-inline void SDKNodeInfo::set_allocated_public_base58addr(std::string* public_base58addr) {
-  if (public_base58addr != nullptr) {
+inline void SDKNodeInfo::set_allocated_public_addr(std::string* public_addr) {
+  if (public_addr != nullptr) {
     
   } else {
     
   }
-  _impl_.public_base58addr_.SetAllocated(public_base58addr, GetArenaForAllocation());
+  _impl_.public_addr_.SetAllocated(public_addr, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.public_base58addr_.IsDefault()) {
-    _impl_.public_base58addr_.Set("", GetArenaForAllocation());
+  if (_impl_.public_addr_.IsDefault()) {
+    _impl_.public_addr_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:SDKNodeInfo.public_base58addr)
+  // @@protoc_insertion_point(field_set_allocated:SDKNodeInfo.public_addr)
 }
 
 // string name = 6;

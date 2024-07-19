@@ -18,7 +18,6 @@
 #include <thread>
 
 #include "./peer_node.h"
-#include "./api.h"
 #include "./socket_buf.h"
 
 #include "../include/logging.h"
@@ -33,9 +32,6 @@ public:
      * @return      int 
      */
     int EpollLoop();
-    //Pub Func
-    //Control Epoll Func
-
     /**
      * @brief       
      * 
@@ -89,11 +85,8 @@ public:
 
 public:
     int epollFd;
-
-    //Inner Var
 private:
     std::thread* _listenThread;
-    //Inner Func
 private:
     int _fdSerMain;
     std::atomic<bool> _haltListening = true;

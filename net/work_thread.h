@@ -15,25 +15,8 @@
 #include <list>
 #include <deque>
 
-#include "./api.h"
-
 #include "./msg_queue.h"
 #include "../common/config.h"
-
-/**
- * @brief       
- * 
- * @param       cpuIndex 
- * @param       tid 
- */
-void SysThreadSetCpu(unsigned int cpuIndex, pthread_t tid);
-
-/**
- * @brief       Get the Cpu Index object
- * 
- * @return      int 
- */
-int GetCpuIndex();
 
 class WorkThreads
 {

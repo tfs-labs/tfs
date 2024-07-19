@@ -1,16 +1,26 @@
+/**
+ * *****************************************************************************
+ * @file        common.proto
+ * @brief       Generic message body
+ * @author  ()
+ * @date        2023-09-27
+ * @copyright   tfsc
+ * *****************************************************************************
+ */
+
 syntax                  = "proto3";
 
 /**********Generic message body********/
 
-
+//Generic message
 message CommonMsg 
 {
-  string version         = 1;
-  string type           = 2;
-  int32 encrypt         = 3;
-  int32 compress        = 4;
-  bytes data            = 5;
-  bytes pub    = 6;
-  bytes sign = 7;
-  bytes key = 8;
+  string version  = 1;  //version
+  string type     = 2;  //type
+  int32 encrypt   = 3;  //Whether to encrypt
+  int32 compress  = 4;  //Whether to compress
+  bytes data      = 5;  //ciphertext data
+  bytes pub       = 6;  //public key
+  bytes sign      = 7;  //sign
+  bytes key       = 8;  
 }

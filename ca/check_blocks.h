@@ -13,7 +13,11 @@
 #include <mutex>
 #include <string>
 #include <utility>
-#include "sync_block.h"
+
+#include "db/db_api.h"
+#include "utils/timer.hpp"
+#include "proto/sync_block.pb.h"
+#include "net/msg_queue.h"
 
 /**
  * @brief       Verify the sum hash per 1000 heights
